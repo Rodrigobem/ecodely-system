@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = "https://xklvqcxhtariqghvnseh.supabase.co";
+const SUPABASE_URL = "https://xklvqcxtariqqhvnseh.supabase.co";
 const SUPABASE_KEY = "sb_publishable_0Y8LZnFlLIrVrQ-EdsjTQQ_1w0MwYQ2";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
