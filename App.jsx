@@ -1867,7 +1867,34 @@ export default function App(){
             const campsFin=camps.filter(c=>c.stage===5);
             const myProspects=prospects.filter(p=>p.owner===user.name||user.role==="admin");
             const myPipeTotal=myProspects.reduce((a,p)=>a+(p.value||0),0);
-            const myFat=CLIENT_BILLING.reduce((a,c)=>a+c.faturado,0);
+
+            // Faturamento real — soma entradas dos lançamentos
+            const receitaReal=lancamentos.reduce((a,l)=>a+(l.entrada||0),0);
+            const despesaReal=lancamentos.reduce((a,l)=>a+(l.saida||0),0);
+
+            // Faturamento por cliente — agrupa camps por client com valorLiquido
+            const fatPorCliente=Object.values(camps.reduce((acc,c)=>{
+              if(!c.client)return acc;
+              if(!acc[c.client])acc[c.client]={name:c.client,faturado:0,campanhas:0,pendente:0};
+              acc[c.client].faturado+=(c.valorLiquido||0);
+              acc[c.client].campanhas+=1;
+              return acc;
+            },{})).sort((a,b)=>b.faturado-a.faturado);
+
+            // Meta comercial — total valorLiquido das campanhas ativas
+            const metaComercial=Math.max(camps.reduce((a,c)=>a+(c.valorLiquido||0),0),150000);
+
+            // Prazos críticos reais — campanhas com prazo de gráfica ou logística
+            const hoje=new Date();
+            const parsePrazo=(s)=>{if(!s)return null;const p=s.includes("-")?new Date(s):new Date(s.split("/").reverse().join("-"));return isNaN(p)?null:p;};
+            const prazos=camps.filter(c=>c.stage<5).flatMap(c=>[
+              c.graficaPrazo?{camp:c.name,prazo:`Gráfica: ${c.graficaPrazo}`,dt:parsePrazo(c.graficaPrazo),id:c.id,color:T.purple}:null,
+              c.logisticaPrazo?{camp:c.name,prazo:`Logística: ${c.logisticaPrazo}`,dt:parsePrazo(c.logisticaPrazo),id:c.id,color:T.warn}:null
+            ]).filter(Boolean).filter(p=>p.dt).map(p=>({...p,dias:Math.ceil((p.dt-hoje)/(1000*60*60*24))}))
+              .sort((a,b)=>a.dias-b.dias).slice(0,5);
+
+            // Mês atual para DRE
+            const mesAtual=new Date().toLocaleDateString("pt-BR",{month:"short",year:"numeric"});
 
             // -- DASH COMERCIAL --
             const DashComercial=()=>(
@@ -1897,9 +1924,9 @@ export default function App(){
                     <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16}}>
                       <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:10}}>Meta do mês</div>
                       <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:26,color:T.accent,marginBottom:4}}>{fmtK(myPipeTotal)}</div>
-                      <div style={{fontSize:9,color:T.muted,marginBottom:8}}>Meta: {fmtK(150000)}</div>
-                      <PBar pct={(myPipeTotal/150000)*100} color={myPipeTotal>=150000?T.accent:T.info}/>
-                      <div style={{fontSize:9,color:T.muted,marginTop:4}}>{Math.round((myPipeTotal/150000)*100)}% da meta</div>
+                      <div style={{fontSize:9,color:T.muted,marginBottom:8}}>Meta: {fmtK(metaComercial)}</div>
+                      <PBar pct={(myPipeTotal/metaComercial)*100} color={myPipeTotal>=metaComercial?T.accent:T.info}/>
+                      <div style={{fontSize:9,color:T.muted,marginTop:4}}>{Math.round((myPipeTotal/metaComercial)*100)}% da meta</div>
                     </div>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
                       <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Próximos follow-ups</div>
@@ -1971,13 +1998,19 @@ export default function App(){
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.pink,marginBottom:10}}>Redes sociais ativas</div>
-                      {["Instagram","LinkedIn","TikTok","YouTube"].map((r,i)=>(
-                        <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${T.border}`}}>
-                          <span style={{fontSize:11}}>{r}</span>
-                          <Badge label="Ativo" color={T.accent}/>
-                        </div>
-                      ))}
+                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.pink,marginBottom:10}}>Posts por campanha ativa</div>
+                      {campsAtivas.slice(0,4).map((c,i)=>{
+                        const mkt=c.tasks?.marketing||[];
+                        const posts=mkt.filter(t=>t.label.toLowerCase().includes("post")&&t.done).length;
+                        const total=mkt.filter(t=>t.label.toLowerCase().includes("post")).length;
+                        return(
+                          <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${T.border}`}}>
+                            <span style={{fontSize:10,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</span>
+                            <span style={{fontSize:10,color:posts===total&&total>0?T.accent:T.muted,fontFamily:"'JetBrains Mono',monospace",flexShrink:0,marginLeft:8}}>{posts}/{total} posts</span>
+                          </div>
+                        );
+                      })}
+                      {campsAtivas.length===0&&<div style={{fontSize:11,color:T.muted}}>Nenhuma campanha ativa</div>}
                     </div>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
                       <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.warn,marginBottom:10}}>Projetos em andamento</div>
@@ -2003,28 +2036,27 @@ export default function App(){
             const DashFinanceiro=()=>(
               <div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-                  <KCard label="Faturado total" value={fmtK(myFat)} sub="no período" color={T.accent} icon="-" onClick={()=>{setTab("comercial");setCommTab("faturamento");}} hint="Ver faturamento -"/>
-                  <KCard label="Contas a receber" value={fmtK(CLIENT_BILLING.reduce((a,c)=>a+c.pendente,0))} sub="NFs em aberto" color={T.warn} icon="-"/>
-                  <KCard label="Contas a pagar" value={fmtK(closings.filter(c=>c.status==="aprovado"&&!c.pago).reduce((a,c)=>a+c.value,0))} sub="comissões aprovadas" color={T.danger} icon="-"/>
+                  <KCard label="Receita total" value={fmtK(receitaReal)} sub="lançamentos no período" color={T.accent} icon="-" onClick={()=>{setTab("financeiro-modulo");}} hint="Ver financeiro -"/>
+                  <KCard label="Total despesas" value={fmtK(despesaReal)} sub="lançamentos no período" color={T.danger} icon="-"/>
+                  <KCard label="Resultado líquido" value={fmtK(receitaReal-despesaReal)} sub="receita - despesas" color={receitaReal>despesaReal?T.accent:T.danger} icon="-"/>
                   <KCard label="Pendente aprovação" value={closings.filter(c=>c.status==="pendente").length} sub="comissões" color={T.purple} icon="-" onClick={()=>setTab("comissoes")} hint="Aprovar -"/>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
                     <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Faturamento por cliente</div>
-                    {CLIENT_BILLING.map((c,i)=>(
+                    {fatPorCliente.length>0?fatPorCliente.slice(0,5).map((c,i)=>(
                       <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}>
-                        <div><div style={{fontSize:11,fontWeight:600}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.segment}</div></div>
+                        <div><div style={{fontSize:11,fontWeight:600}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.campanhas} campanha{c.campanhas!==1?"s":""}</div></div>
                         <div style={{textAlign:"right"}}>
                           <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmtK(c.faturado)}</div>
-                          {c.pendente>0&&<div style={{fontSize:9,color:T.danger}}>+{fmtK(c.pendente)} pendente</div>}
                         </div>
                       </div>
-                    ))}
+                    )):<div style={{fontSize:11,color:T.muted}}>Nenhuma campanha com valor líquido cadastrado</div>}
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:12}}>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>DRE simplificado - Mai/2025</div>
-                      {[{l:"Receita bruta",v:myFat,c:T.accent},{l:"Despesas brutas",v:-closings.filter(c=>c.status==="aprovado").reduce((a,c)=>a+c.value,0),c:T.danger},{l:"Resultado líquido",v:myFat-closings.filter(c=>c.status==="aprovado").reduce((a,c)=>a+c.value,0),c:T.purple}].map((k,i)=>(
+                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>DRE — {mesAtual}</div>
+                      {[{l:"Receita bruta",v:receitaReal,c:T.accent},{l:"Despesas totais",v:-despesaReal,c:T.danger},{l:"Resultado líquido",v:receitaReal-despesaReal,c:receitaReal>despesaReal?T.accent:T.danger}].map((k,i)=>(
                         <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}>
                           <span style={{fontSize:10,color:T.soft}}>{k.l}</span>
                           <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:k.c,fontSize:12}}>{k.v<0?"-":""}{fmtK(Math.abs(k.v))}</span>
@@ -2043,14 +2075,15 @@ export default function App(){
                   </div>
                 </div>
                 <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
-                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Fluxo de caixa projetado</div>
+                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Pipeline de receita (prospects)</div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
-                    {[{l:"30 dias",v:fmtK(CLIENT_BILLING.reduce((a,c)=>a+c.pendente,0)),c:T.warn},{l:"60 dias",v:fmtK(58000),c:T.info},{l:"90 dias",v:fmtK(72000),c:T.accent}].map((k,i)=>(
-                      <div key={i} style={{background:T.surface,borderRadius:8,padding:"12px",textAlign:"center"}}>
+                    {[{l:"Em negociação",stages:["negociacao"],c:T.warn},{l:"Propostas enviadas",stages:["proposta"],c:T.info},{l:"Total pipeline",stages:["lead","qualificado","proposta","negociacao"],c:T.accent}].map((k,i)=>{
+                      const v=prospects.filter(p=>k.stages.includes(p.stage)).reduce((a,p)=>a+(p.value||0),0);
+                      return(<div key={i} style={{background:T.surface,borderRadius:8,padding:"12px",textAlign:"center"}}>
                         <div style={{fontSize:9,color:T.muted,marginBottom:4}}>{k.l}</div>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:k.c}}>{k.v}</div>
-                      </div>
-                    ))}
+                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:k.c}}>{fmtK(v)}</div>
+                      </div>);
+                    })}
                   </div>
                 </div>
               </div>
@@ -2084,10 +2117,10 @@ export default function App(){
                   </div>
                   <div style={{background:T.card,border:`1px solid ${T.warnDim}`,borderLeft:`3px solid ${T.warn}`,borderRadius:12,padding:16}}>
                     <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.warn,marginBottom:10}}>Prazos críticos</div>
-                    {[{camp:"T4F - Maio 2025",prazo:"Gráfica: 08/05",dias:5,id:4},{camp:"O Boticário - Maio",prazo:"Logística: 02/05",dias:1,id:1}].map((a,i)=>(
+                    {prazos.length===0?<div style={{fontSize:11,color:T.accent}}>Nenhum prazo cadastrado</div>:prazos.map((a,i)=>(
                       <div key={i} onClick={()=>{const c=camps.find(x=>x.id===a.id);if(c)setSelCamp(c);}} className="hr" style={{padding:"6px 4px",borderRadius:6,cursor:"pointer",marginBottom:6}}>
                         <div style={{fontSize:11,fontWeight:600}}>{a.camp}</div>
-                        <div style={{fontSize:9,color:T.warn}}>{a.prazo} · {a.dias}d restantes</div>
+                        <div style={{fontSize:9,color:a.dias<=3?T.danger:a.dias<=7?T.warn:T.muted}}>{a.prazo} · {a.dias<=0?"VENCIDO":a.dias===1?"amanhã":`${a.dias}d`}</div>
                       </div>
                     ))}
                   </div>
