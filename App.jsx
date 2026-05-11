@@ -1054,8 +1054,8 @@ export default function App(){
       if(compras.data?.length)setComprasCartao(compras.data.map(r=>({...r,cartaoId:r.cartaoId,valorTotal:r.valorTotal,parcelaAtual:r.parcelaAtual,valorParcela:r.valorParcela,mesInicio:r.mesInicio})));
       if(custos.data?.length)setCustosFix(custos.data.map(r=>({...r,centrosCusto:r.centrosCusto})));
       if(fats.data?.length)setFatMensais(fats.data);
-      if(camps.data?.length)setCamps(camps.data.map(r=>({...r,endDate:r.endDate,tasks:r.tasks||{},timeline:r.timeline||[],partners:r.partners||[],tags:r.tags||[]})));
-      if(prosps.data?.length)setProspects(prosps.data);
+      if(camps.data?.length)setCamps(camps.data.map(r=>r.data));
+      if(prosps.data?.length)setProspects(prosps.data.map(r=>({...r,segment:r.email||r.segment||"",value:Number(r.value)||0})));
     };
     load();
   },[]);
@@ -1113,14 +1113,17 @@ export default function App(){
   const onCampDrop=(e,stageId)=>{
     e.preventDefault();
     if(dragCampId===null||dragCampId===undefined)return;
+    let updatedCamp=null;
     setCamps(prev=>prev.map(c=>{
       if(c.id!==dragCampId)return c;
       const prevStage=STAGES_CAMP.find(s=>s.id===c.stage);
       const newStage=STAGES_CAMP.find(s=>s.id===stageId);
       const entry={id:Date.now(),type:"stage",text:`Etapa movida: ${prevStage?.label} - ${newStage?.label}`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:newStage?.color||T.accent};
       const newProgress=Math.round(((stageId-1)/4)*100);
-      return{...c,stage:stageId,progress:newProgress,timeline:[...c.timeline,entry]};
+      updatedCamp={...c,stage:stageId,progress:newProgress,timeline:[...c.timeline,entry]};
+      return updatedCamp;
     }));
+    if(updatedCamp)supabase.from("campanhas").upsert({id:updatedCamp.id,data:updatedCamp}).then(({error})=>{if(error)console.error("SUPABASE camp stage:",error);});
     addNotif("etapa","Campanha avancou","Movida para "+STAGES_CAMP.find(s=>s.id===stageId)?.label,STAGES_CAMP.find(s=>s.id===stageId)?.label,STAGES_CAMP.find(s=>s.id===stageId)?.color||T.accent,["sistema","whatsapp","email"]);
     setDragCampId(null);setDragOverCampStage(null);
   };
@@ -1134,6 +1137,7 @@ export default function App(){
     if(dragProspId===null||dragProspId===undefined)return;
     const prevP=prospects.find(p=>p.id===dragProspId);
     setProspects(prev=>prev.map(p=>p.id===dragProspId?{...p,stage:stageId}:p));
+    supabase.from("prospects").update({stage:stageId}).eq("id",dragProspId).then(({error})=>{if(error)console.error("SUPABASE prosp stage:",error);});
     if(selProsp?.id===dragProspId)setSelProsp(prev=>({...prev,stage:stageId}));
     pushNotif("Prospect movido",`${prevP?.name} - ${PIPE_STAGES.find(s=>s.id===stageId)?.label}`,PIPE_STAGES.find(s=>s.id===stageId)?.color||T.accent);
     setDragProspId(null);setDragOverPipeStage(null);
@@ -1190,6 +1194,7 @@ export default function App(){
   const toggleTask=(campId,sec,taskId,byUser)=>{
     let taskLabel="";
     let wasDone=false;
+    let updatedCamp=null;
     setCamps(prev=>prev.map(c=>{
       if(c.id!==campId)return c;
       const newTasks={...c.tasks,[sec]:c.tasks[sec].map(t=>{
@@ -1200,8 +1205,10 @@ export default function App(){
         return{...t,done,doneAt:done?now():undefined,doneBy:done?byUser?.name:undefined};
       })};
       const newTl=[...c.timeline,{id:Date.now(),type:"task",text:(newTasks[sec].find(t=>t.id===taskId)?.done?"Concluido":"Reaberto")+": "+taskLabel,user:byUser?.name||"Sistema",avatar:byUser?.avatar||"?",at:now(),color:SEC_COLOR[sec]||T.accent}];
-      return{...c,tasks:newTasks,timeline:newTl};
+      updatedCamp={...c,tasks:newTasks,timeline:newTl};
+      return updatedCamp;
     }));
+    if(updatedCamp)supabase.from("campanhas").upsert({id:updatedCamp.id,data:updatedCamp}).then(({error})=>{if(error)console.error("SUPABASE toggleTask:",error);});
     if(selCamp?.id===campId){
       setSelCamp(prev=>{
         const newTasks={...prev.tasks,[sec]:prev.tasks[sec].map(t=>t.id===taskId?{...t,done:!t.done,doneAt:!t.done?now():undefined,doneBy:!t.done?byUser?.name:undefined}:t)};
@@ -1215,35 +1222,46 @@ export default function App(){
 
   const addComment=(campId,text,byUser)=>{
     const entry={id:Date.now(),type:"comment",text,user:byUser.name,avatar:byUser.avatar,at:now(),color:T.soft};
-    setCamps(prev=>prev.map(c=>c.id===campId?{...c,timeline:[...c.timeline,entry]}:c));
+    let updatedCamp=null;
+    setCamps(prev=>prev.map(c=>{if(c.id!==campId)return c;updatedCamp={...c,timeline:[...c.timeline,entry]};return updatedCamp;}));
+    if(updatedCamp)supabase.from("campanhas").upsert({id:updatedCamp.id,data:updatedCamp}).then(({error})=>{if(error)console.error("SUPABASE addComment:",error);});
     setSelCamp(prev=>prev&&prev.id===campId?{...prev,timeline:[...prev.timeline,entry]}:prev);
     pushNotif("Comentário adicionado",`${byUser.name}: "${text.slice(0,40)}..."`,T.soft);
   };
 
   const addFile=(campId,file)=>{
     const entry={id:Date.now(),type:"file",text:`Arquivo enviado: ${file.name}`,user:file.uploadedBy,avatar:user?.avatar||"?",at:file.at,color:FILE_COLOR[file.type]||T.soft};
-    setCamps(prev=>prev.map(c=>c.id===campId?{...c,files:[...c.files,file],timeline:[...c.timeline,entry]}:c));
+    let updatedCamp=null;
+    setCamps(prev=>prev.map(c=>{if(c.id!==campId)return c;updatedCamp={...c,files:[...c.files,file],timeline:[...c.timeline,entry]};return updatedCamp;}));
+    if(updatedCamp)supabase.from("campanhas").upsert({id:updatedCamp.id,data:updatedCamp}).then(({error})=>{if(error)console.error("SUPABASE addFile:",error);});
     setSelCamp(prev=>prev&&prev.id===campId?{...prev,files:[...prev.files,file],timeline:[...prev.timeline,entry]}:prev);
     pushNotif("Arquivo enviado",file.name,T.accent);
   };
 
   const updateSacolas=(campId,val)=>{
-    setCamps(prev=>prev.map(c=>c.id===campId?{...c,sacolasDistribuidas:val}:c));
+    let updatedCamp=null;
+    setCamps(prev=>prev.map(c=>{if(c.id!==campId)return c;updatedCamp={...c,sacolasDistribuidas:val};return updatedCamp;}));
+    if(updatedCamp)supabase.from("campanhas").upsert({id:updatedCamp.id,data:updatedCamp}).then(({error})=>{if(error)console.error("SUPABASE updateSacolas:",error);});
     setSelCamp(prev=>prev&&prev.id===campId?{...prev,sacolasDistribuidas:val}:prev);
     if(clientPanelCamp?.id===campId)setClientPanelCamp(prev=>({...prev,sacolasDistribuidas:val}));
   };
 
   const updateImpactos=(campId,newImpactos)=>{
-    setCamps(prev=>prev.map(c=>c.id===campId?{...c,impactos:newImpactos}:c));
+    let updatedCamp=null;
+    setCamps(prev=>prev.map(c=>{if(c.id!==campId)return c;updatedCamp={...c,impactos:newImpactos};return updatedCamp;}));
+    if(updatedCamp)supabase.from("campanhas").upsert({id:updatedCamp.id,data:updatedCamp}).then(({error})=>{if(error)console.error("SUPABASE updateImpactos:",error);});
     setSelCamp(prev=>prev&&prev.id===campId?{...prev,impactos:newImpactos}:prev);
     if(clientPanelCamp?.id===campId)setClientPanelCamp(prev=>({...prev,impactos:newImpactos}));
   };
 
-  const addProsp=()=>{
+  const addProsp=async()=>{
     if(!newProsp.name)return;
-    setProspects(p=>[...p,{...newProsp,id:Date.now(),value:Number(newProsp.value)||0}]);
+    const rec={...newProsp,id:Date.now(),value:Number(newProsp.value)||0};
+    setProspects(p=>[...p,rec]);
     setNewProsp({name:"",contact:"",email:"",segment:"Beleza",value:"",stage:"lead",owner:"Ana Lima",notes:""});
     setShowNewProsp(false);
+    const{error}=await supabase.from("prospects").insert({id:rec.id,name:rec.name,contact:rec.contact,email:rec.email,phone:rec.phone||"",notes:rec.notes,stage:rec.stage,value:rec.value,owner:rec.owner});
+    if(error)console.error("SUPABASE addProsp:",error);
   };
 
   const submitClosing=()=>{
@@ -1280,6 +1298,7 @@ export default function App(){
     const withScore={...newP,score:calcScore(newP)};
     setBasePartners(prev=>[...prev,withScore]);
     setProspects(prev=>prev.map(p=>p.id===prosp.id?{...p,stage:"fechado"}:p));
+    supabase.from("prospects").update({stage:"fechado"}).eq("id",prosp.id).then(({error})=>{if(error)console.error("SUPABASE closing:",error);});
     pushNotif("Adicionado à base!",prosp.name,T.accent);
   };
 
