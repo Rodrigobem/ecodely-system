@@ -1175,11 +1175,14 @@ export default function App(){
       const prevStage=STAGES_CAMP.find(s=>s.id===camps.find(x=>x.id===campId)?.stage);
       const newStage=STAGES_CAMP.find(s=>s.id===stageId);
       if(prevStage?.id===stageId)return;
+      let updatedCamp=null;
       setCamps(prev=>prev.map(c=>{
         if(c.id!==campId)return c;
         const entry={id:Date.now(),type:"stage",text:`Etapa movida: ${prevStage?.label} - ${newStage?.label}`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:newStage?.color||T.accent};
-        return{...c,stage:stageId,progress:Math.round(((stageId-1)/4)*100),timeline:[...c.timeline,entry]};
+        updatedCamp={...c,stage:stageId,progress:Math.round(((stageId-1)/4)*100),timeline:[...c.timeline,entry]};
+        return updatedCamp;
       }));
+      if(updatedCamp)supabase.from("campanhas").upsert({id:updatedCamp.id,data:updatedCamp}).then(({error})=>{if(error)console.error("SUPABASE touch camp:",error);});
       pushNotif("Campanha movida",`- ${newStage?.label}`,newStage?.color||T.accent);
     }
     if(type==="prosp"&&prospId){
@@ -1187,6 +1190,7 @@ export default function App(){
       const prevP=prospects.find(p=>p.id===prospId);
       if(prevP?.stage===stageId)return;
       setProspects(prev=>prev.map(p=>p.id===prospId?{...p,stage:stageId}:p));
+      supabase.from("prospects").update({stage:stageId}).eq("id",prospId).then(({error})=>{if(error)console.error("SUPABASE touch prosp:",error);});
       pushNotif("Prospect movido",`${prevP?.name} - ${PIPE_STAGES.find(s=>s.id===stageId)?.label}`,PIPE_STAGES.find(s=>s.id===stageId)?.color||T.accent);
     }
   };
