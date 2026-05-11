@@ -1293,11 +1293,6 @@ export default function App(){
         supabase.from("fornecedores").select("*").order("id"),
         supabase.from("configuracoes").select("*"),
       ]);
-      console.log("SUPABASE load - lancamentos:",lanc.data?.length,"erro:",lanc.error?.message);
-      console.log("SUPABASE load - contas:",conts.data?.length,"erro:",conts.error?.message);
-      console.log("SUPABASE load - usuarios:",usrs.data?.length,"erro:",usrs.error?.message);
-      console.log("SUPABASE load - centros:",centros.data?.length,"erro:",centros.error?.message);
-      console.log("SUPABASE load - fornecedores:",forn.data?.length,"erro:",forn.error?.message);
       if(lanc.data?.length)setLancamentos(lanc.data.map(r=>({...r,centrosCusto:r.centrosCusto,contaBancoId:r.contaBancoId})));
       if(conts.data?.length)setContas(conts.data);
       if(carts.data?.length)setCartoes(carts.data);
@@ -1367,8 +1362,6 @@ export default function App(){
     setInbox(p=>[entry,...p]);
     pushNotif(title,msg,color);
     // Simulate WhatsApp/email log
-    if(via&&via.includes("whatsapp")) console.log("[WhatsApp] ->",user?.name,":",title,"-",msg);
-    if(via&&via.includes("email")) console.log("[Email] ->",user?.email,":",title,"-",msg);
   };
 
   // -- DRAG HANDLERS - CAMPAIGNS --
@@ -1645,7 +1638,6 @@ export default function App(){
     setNewUser({name:"",email:"",pass:"",role:"base"});setShowNewUser(false);
     const{error}=await supabase.from("usuarios").insert(rec);
     if(error)console.error("SUPABASE addUser erro:",error.message,error.details);
-    else console.log("SUPABASE addUser OK:",rec.name);
   };
 
   // -- LOGIN ------------------------------------------------------------------
