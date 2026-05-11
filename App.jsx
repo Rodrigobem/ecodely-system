@@ -329,11 +329,13 @@ const FILE_COLOR={arte:T.pink,pi:T.info,contrato:T.purple,base:T.green,nf:T.warn
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 // CAMPAIGN MODAL - with Tarefas, Etapas, Histórico, Arquivos
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
-const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddFile,onUpdateSacolas,onUpdateImpactos,onOpenClientPanel})=>{
+const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddFile,onUpdateSacolas,onUpdateImpactos,onOpenClientPanel,onEditCamp,projects,suppliers,users:allUsers})=>{
   const[iTab,setITab]=useState("tarefas");
   const[comment,setComment]=useState("");
   const[uploading,setUploading]=useState(false);
   const fileInputRef=useRef(null);
+  const[editMode,setEditMode]=useState(false);
+  const[editData,setEditData]=useState({...camp});
   const td=tasksDone(camp.tasks);
 
   const handleComment=()=>{
@@ -379,7 +381,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
 
         {/* Tabs */}
         <div style={{display:"flex",borderBottom:`1px solid ${T.border}`,flexShrink:0,overflowX:"auto"}}>
-          {[["tarefas","Tarefas"],["etapas","Etapas"],["historico",`Histórico (${camp.timeline.length})`],["arquivos",`Arquivos (${camp.files.length})`],["impactos","- Impactos"],["cliente","- Painel Cliente"]].map(([id,l])=>(
+          {[["tarefas","Tarefas"],["etapas","Etapas"],["historico",`Histórico (${camp.timeline.length})`],["arquivos",`Arquivos (${camp.files.length})`],["impactos","- Impactos"],["editar","✎ Editar"],["cliente","- Painel Cliente"]].map(([id,l])=>(
             <div key={id} onClick={()=>setITab(id)} style={{padding:"10px 18px",fontSize:11,cursor:"pointer",color:iTab===id?(id==="cliente"?T.purple:T.accent):T.muted,borderBottom:`2px solid ${iTab===id?(id==="cliente"?T.purple:T.accent):"transparent"}`,transition:"all 0.15s",whiteSpace:"nowrap"}}>{l}</div>
           ))}
         </div>
@@ -540,6 +542,92 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
           {/* -- IMPACTOS -- */}
           {iTab==="impactos"&&(
             <ImpactosTab camp={camp} allPartners={allPartners} onUpdate={onUpdateImpactos}/>
+          )}
+
+          {/* -- EDITAR CAMPANHA -- */}
+          {iTab==="editar"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                {[["Nome","name"],["Cliente","client"],["Agência","agencia"],["Nº PI","numPI"],["Região","region"],["Responsável","responsavel"]].map(([l,k])=>(
+                  <div key={k}>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+                    <input value={editData[k]||""} onChange={e=>setEditData(p=>({...p,[k]:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,fontFamily:"'JetBrains Mono',monospace",outline:"none"}}/>
+                  </div>
+                ))}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+                <div>
+                  <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Projeto</div>
+                  <select value={editData.project||""} onChange={e=>setEditData(p=>({...p,project:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}>
+                    {(projects||[]).map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Data início</div>
+                  <input type="date" value={editData.startDate||""} onChange={e=>setEditData(p=>({...p,startDate:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+                </div>
+                <div>
+                  <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Data fim</div>
+                  <input type="date" value={editData.endDate||""} onChange={e=>setEditData(p=>({...p,endDate:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+                </div>
+              </div>
+              <div style={{borderTop:`1px solid ${T.border}`,paddingTop:14}}>
+                <div style={{fontSize:10,color:T.purple,fontFamily:"'Syne',sans-serif",fontWeight:700,marginBottom:10}}>Operacional</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+                  <div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Gráfica</div>
+                    <select value={editData.graficaFornecedor||""} onChange={e=>setEditData(p=>({...p,graficaFornecedor:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}>
+                      <option value="">Selecione...</option>
+                      {(suppliers||[]).filter(s=>s.type==="grafica").map(s=><option key={s.id} value={s.name}>{s.name}</option>)}
+                      <option value="Outro">Outro</option>
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Material</div>
+                    <input value={editData.material||""} onChange={e=>setEditData(p=>({...p,material:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Prazo gráfica</div>
+                    <input type="date" value={editData.graficaPrazo||""} onChange={e=>setEditData(p=>({...p,graficaPrazo:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Logística</div>
+                    <select value={editData.logistica||""} onChange={e=>setEditData(p=>({...p,logistica:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}>
+                      <option value="">Selecione...</option>
+                      {(suppliers||[]).filter(s=>s.type==="logistica").map(s=><option key={s.id} value={s.name}>{s.name}</option>)}
+                      <option value="Outro">Outro</option>
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Fornecedor logística</div>
+                    <input value={editData.logisticaFornecedor||""} onChange={e=>setEditData(p=>({...p,logisticaFornecedor:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Prazo logística</div>
+                    <input type="date" value={editData.logisticaPrazo||""} onChange={e=>setEditData(p=>({...p,logisticaPrazo:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Nº parceiros</div>
+                    <input type="number" value={editData.parceiros||""} onChange={e=>setEditData(p=>({...p,parceiros:Number(e.target.value)}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Qtd embalagens</div>
+                    <input type="number" value={editData.sacolas||""} onChange={e=>setEditData(p=>({...p,sacolas:Number(e.target.value)}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,color:T.accent,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Valor líquido (R$)</div>
+                    <input type="number" value={editData.valorLiquido||""} onChange={e=>setEditData(p=>({...p,valorLiquido:Number(e.target.value)}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+                  </div>
+                </div>
+              </div>
+              <div style={{borderTop:`1px solid ${T.border}`,paddingTop:14}}>
+                <div style={{fontSize:9,color:T.muted,marginBottom:6,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Briefing</div>
+                <textarea value={editData.briefing||""} onChange={e=>setEditData(p=>({...p,briefing:e.target.value}))} rows={4} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none",resize:"vertical",lineHeight:1.6,fontFamily:"'JetBrains Mono',monospace"}}/>
+              </div>
+              <button onClick={()=>{onEditCamp(camp.id,editData);setITab("tarefas");}} style={{padding:"10px 20px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,alignSelf:"flex-start"}}>
+                Salvar alterações ✓
+              </button>
+            </div>
           )}
 
           {/* -- PAINEL CLIENTE -- */}
@@ -1590,7 +1678,7 @@ export default function App(){
       )}
 
       {/* MODAL */}
-      {selCamp&&<CampModal camp={selCamp} user={user} allPartners={basePartners} onClose={()=>setSelCamp(null)} onToggleTask={toggleTask} onAddComment={addComment} onAddFile={addFile} onUpdateSacolas={updateSacolas} onUpdateImpactos={updateImpactos} onOpenClientPanel={(c)=>{setClientPanelCamp(c);setSelCamp(null);}}/>}
+      {selCamp&&<CampModal camp={selCamp} user={user} allPartners={basePartners} onClose={()=>setSelCamp(null)} onToggleTask={toggleTask} onAddComment={addComment} onAddFile={addFile} onUpdateSacolas={updateSacolas} onUpdateImpactos={updateImpactos} onOpenClientPanel={(c)=>{setClientPanelCamp(c);setSelCamp(null);}} onEditCamp={async(id,fields)=>{let upd=null;setCamps(p=>p.map(c=>{if(c.id!==id)return c;upd={...c,...fields};return upd;}));setSelCamp(p=>({...p,...fields}));if(upd)await supabase.from("campanhas").upsert({id:upd.id,data:upd});}} projects={projects} suppliers={suppliers} users={users}/>}
 
       {/* CLIENT PANEL */}
       {clientPanelCamp&&<ClientPanel camp={clientPanelCamp} allPartners={basePartners} onClose={()=>setClientPanelCamp(null)} onPDF={()=>setPdfCamp(clientPanelCamp)}/>}
@@ -2231,7 +2319,7 @@ export default function App(){
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
                 <div style={{display:"flex",gap:6}}>
-                  {[["kanban","Kanban"],["lista","Lista"]].map(([v,l])=>(
+                  {[["kanban","Kanban"],["lista","Lista"],["projetos","Projetos"]].map(([v,l])=>(
                     <div key={v} onClick={()=>setCampView(v)} className="tb" style={{padding:"6px 12px",borderRadius:6,fontSize:10,background:campView===v?T.accentDim:T.card,border:`1px solid ${campView===v?T.accentBorder:T.border}`,color:campView===v?T.accent:T.muted}}>{l}</div>
                   ))}
                 </div>
@@ -2436,12 +2524,14 @@ export default function App(){
                             onTouchEnd={e=>onTouchEnd(e,"camp")}
                             onClick={()=>!isDragging&&setSelCamp(c)}
                             style={{background:T.card,border:`1px solid ${isDragging?stage.color+"88":T.border}`,borderLeft:`3px solid ${stage.color}`,borderRadius:10,padding:"12px 13px",marginBottom:8,boxShadow:isDragging?`0 8px 24px ${stage.color}33`:"none",userSelect:"none",touchAction:"none"}}>
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:3}}>
-                              <div style={{fontSize:9,color:T.purple,fontFamily:"'JetBrains Mono',monospace"}}>{c.project}</div>
-                              <div style={{fontSize:9,color:T.muted,opacity:0.5}}>-</div>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+                              <div style={{fontSize:9,color:T.purple,fontFamily:"'JetBrains Mono',monospace",flex:1}}>{c.project||"—"}</div>
+                              {!c.graficaFornecedor&&<div title="Operacional pendente" style={{fontSize:8,color:T.warn,background:T.warnDim,padding:"1px 5px",borderRadius:3,whiteSpace:"nowrap"}}>Op. pendente</div>}
                             </div>
-                            <div style={{fontSize:11,fontWeight:700,fontFamily:"'Syne',sans-serif",marginBottom:3,lineHeight:1.3}}>{c.name}</div>
-                            <div style={{fontSize:9,color:T.muted,marginBottom:7}}>{c.region}</div>
+                            <div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif",marginBottom:2,lineHeight:1.3}}>{c.name}</div>
+                            <div style={{fontSize:9,color:T.soft,marginBottom:1}}>{c.client}</div>
+                            {c.agencia&&<div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",marginBottom:5}}>{c.agencia}</div>}
+                            {!c.agencia&&<div style={{marginBottom:5}}/>}
                             <PBar pct={c.progress} color={stage.color} h={4}/>
                             <div style={{display:"flex",justifyContent:"space-between",marginTop:5,gap:6}}>
                               <span style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{td.done}/{td.total} tarefas</span>
@@ -2479,6 +2569,63 @@ export default function App(){
                       <div style={{fontSize:10,color:T.purple}}>- {c.files.length}</div>
                     </div>
                   );})}
+                </div>
+              )}
+
+              {/* PROJETOS VIEW */}
+              {campView==="projetos"&&(
+                <div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
+                    {projects.map(proj=>{
+                      const projCamps=camps.filter(c=>c.project===proj.name);
+                      const done=projCamps.filter(c=>c.stage===5).length;
+                      const emAndamento=projCamps.filter(c=>c.stage>1&&c.stage<5).length;
+                      const totalVal=projCamps.reduce((a,c)=>a+(c.valorLiquido||0),0);
+                      return(
+                        <div key={proj.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"16px 18px",cursor:"pointer"}} onClick={()=>{setCampView("kanban");}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                            <div>
+                              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,marginBottom:3}}>{proj.name}</div>
+                              <div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{projCamps.length} campanha{projCamps.length!==1?"s":""}</div>
+                            </div>
+                            <div style={{fontSize:9,padding:"3px 8px",borderRadius:4,background:proj.active?T.accentDim:T.border,color:proj.active?T.accent:T.muted,border:`1px solid ${proj.active?T.accentBorder:T.border}`}}>
+                              {proj.active?"Ativo":"Inativo"}
+                            </div>
+                          </div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
+                            {[["Em andamento",emAndamento,T.info],["Finalizadas",done,T.accent],["Pendentes",projCamps.filter(c=>c.stage===1).length,T.warn]].map(([l,v,c])=>(
+                              <div key={l} style={{background:T.surface,borderRadius:8,padding:"8px 10px",textAlign:"center"}}>
+                                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:c}}>{v}</div>
+                                <div style={{fontSize:8,color:T.muted}}>{l}</div>
+                              </div>
+                            ))}
+                          </div>
+                          {totalVal>0&&<div style={{fontSize:10,color:T.accent,fontFamily:"'JetBrains Mono',monospace",marginBottom:8}}>R$ {totalVal.toLocaleString("pt-BR")} em valor líquido</div>}
+                          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                            {projCamps.slice(0,3).map(c=>{
+                              const s=STAGES_CAMP.find(x=>x.id===c.stage);
+                              return(
+                                <div key={c.id} onClick={e=>{e.stopPropagation();setSelCamp(c);}} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 8px",background:T.surface,borderRadius:6,cursor:"pointer"}}>
+                                  <div style={{fontSize:10,fontWeight:600}}>{c.name}</div>
+                                  <div style={{fontSize:8,color:s?.color,background:s?.color+"22",padding:"2px 6px",borderRadius:3}}>{s?.label}</div>
+                                </div>
+                              );
+                            })}
+                            {projCamps.length>3&&<div style={{fontSize:9,color:T.muted,textAlign:"center"}}>+{projCamps.length-3} mais</div>}
+                          </div>
+                          <button onClick={e=>{e.stopPropagation();setNewCamp(p=>({...p,project:proj.name}));setShowNewCamp(true);setNewCampStep(1);}} style={{marginTop:10,width:"100%",padding:"7px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>
+                            + Nova campanha neste projeto
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {/* Card criar novo projeto */}
+                    <div style={{background:"transparent",border:`2px dashed ${T.border}`,borderRadius:12,padding:"16px 18px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,minHeight:120,cursor:"pointer"}}
+                         onClick={()=>{const n=prompt("Nome do novo projeto:");if(n?.trim()){const rec={id:Date.now(),name:n.trim(),active:true};setProjects(p=>[...p,rec]);supabase.from("projects").insert(rec);}}}>
+                      <div style={{fontSize:24,color:T.muted}}>+</div>
+                      <div style={{fontSize:11,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>Novo projeto</div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
