@@ -1046,6 +1046,8 @@ export default function App(){
         supabase.from("campanhas").select("*").order("id"),
         supabase.from("prospects").select("*").order("id"),
       ]);
+      console.log("SUPABASE load - lancamentos:",lanc.data?.length,"erro:",lanc.error?.message);
+      console.log("SUPABASE load - contas:",conts.data?.length,"erro:",conts.error?.message);
       if(lanc.data?.length)setLancamentos(lanc.data.map(r=>({...r,centrosCusto:r.centrosCusto,contaBancoId:r.contaBancoId})));
       if(conts.data?.length)setContas(conts.data);
       if(carts.data?.length)setCartoes(carts.data);
@@ -2498,9 +2500,10 @@ export default function App(){
                               setContas(p=>p.map(c=>c.id===novoLanc.contaBancoId?{...c,saldo:c.saldo+novoLanc.entrada-novoLanc.saida}:c));
                               setShowAdd(false);
                               setNovoLanc({data:new Date().toISOString().slice(0,10),descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1});
-                              await supabase.from("lancamentos").upsert({...rec,centrosCusto:rec.centrosCusto,contaBancoId:rec.contaBancoId});
+                              const {error:errLanc}=await supabase.from("lancamentos").upsert({...rec,centrosCusto:rec.centrosCusto,contaBancoId:rec.contaBancoId});
+                              if(errLanc){console.error("SUPABASE upsert lancamento:",errLanc);alert("Erro Supabase: "+errLanc.message);}
                               const contaAtual=contas.find(c=>c.id===novoLanc.contaBancoId);
-                              if(contaAtual)await supabase.from("contas").update({saldo:contaAtual.saldo+novoLanc.entrada-novoLanc.saida}).eq("id",novoLanc.contaBancoId);
+                              if(contaAtual){const{error:errConta}=await supabase.from("contas").update({saldo:contaAtual.saldo+novoLanc.entrada-novoLanc.saida}).eq("id",novoLanc.contaBancoId);if(errConta)console.error("SUPABASE update conta:",errConta);}
                             }} className="btn" style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700}}>Salvar</button>
                           </div>
                         </div>
