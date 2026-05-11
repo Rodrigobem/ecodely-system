@@ -1050,6 +1050,16 @@ export default function App(){
   const[camps,setCamps]=useState(CAMPS_INIT);
   const[selCamp,setSelCamp]=useState(null);
   const[campView,setCampView]=useState("kanban");
+  const[showNewCamp,setShowNewCamp]=useState(false);
+  const[newCampStep,setNewCampStep]=useState(1);
+  const[newCamp,setNewCamp]=useState({
+    name:"",client:"",agencia:"",numPI:"",project:"",responsavel:"",
+    startDate:"",endDate:"",region:"",
+    graficaFornecedor:"",material:"",graficaPrazo:"",
+    logistica:"",logisticaFornecedor:"",logisticaPrazo:"",
+    parceiros:"",sacolas:"",valorLiquido:"",
+    briefing:"",segments:[]
+  });
   const[calMonth,setCalMonth]=useState(4); // 0-indexed, 4=May
   const[calYear,setCalYear]=useState(2025);
   const[calHover,setCalHover]=useState(null);
@@ -1429,6 +1439,54 @@ export default function App(){
     await supabase.from("parceiros").upsert({id:withScore.id,data:withScore});
     await supabase.from("prospects").update({stage:"fechado"}).eq("id",prosp.id);
     pushNotif("Adicionado à base!",prosp.name,T.accent);
+  };
+
+  const createCamp=async()=>{
+    if(!newCamp.name||!newCamp.client)return;
+    const id=Date.now();
+    const rec={
+      id,
+      name:newCamp.name,
+      client:newCamp.client,
+      agencia:newCamp.agencia,
+      numPI:newCamp.numPI,
+      project:newCamp.project,
+      responsavel:newCamp.responsavel,
+      startDate:newCamp.startDate,
+      endDate:newCamp.endDate,
+      region:newCamp.region,
+      graficaFornecedor:newCamp.graficaFornecedor,
+      material:newCamp.material,
+      graficaPrazo:newCamp.graficaPrazo,
+      logistica:newCamp.logistica,
+      logisticaFornecedor:newCamp.logisticaFornecedor,
+      logisticaPrazo:newCamp.logisticaPrazo,
+      parceiros:Number(newCamp.parceiros)||0,
+      sacolas:Number(newCamp.sacolas)||0,
+      valorLiquido:Number(newCamp.valorLiquido)||0,
+      briefing:newCamp.briefing,
+      segments:newCamp.segments,
+      sacolasDistribuidas:null,
+      progress:0,
+      stage:1,
+      parceirosIds:[],
+      tasks:{
+        comercial:[{id:"c1",label:"Emitir PI",done:false},{id:"c2",label:"Enviar contrato ao cliente",done:false}],
+        financeiro:[{id:"f1",label:"Receber PI",done:false},{id:"f2",label:"Faturar NF",done:false},{id:"f3",label:"Lançar planilha financeira",done:false}],
+        marketing:[{id:"m1",label:"Post Instagram",done:false},{id:"m2",label:"Post LinkedIn",done:false},{id:"m3",label:"Contratar influencer",done:false}],
+        base:[{id:"b1",label:"Confirmar base participante",done:false},{id:"b2",label:"Enviar contrato de exclusividade",done:false}]
+      },
+      timeline:[{id:Date.now(),type:"stage",text:"Campanha criada",user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.info}],
+      files:[],
+      impactos:{stories:[],influencer:[],impulsionado:[],galeria:[]}
+    };
+    setCamps(p=>[...p,rec]);
+    setShowNewCamp(false);
+    setNewCampStep(1);
+    setNewCamp({name:"",client:"",agencia:"",numPI:"",project:"",responsavel:"",startDate:"",endDate:"",region:"",graficaFornecedor:"",material:"",graficaPrazo:"",logistica:"",logisticaFornecedor:"",logisticaPrazo:"",parceiros:"",sacolas:"",valorLiquido:"",briefing:"",segments:[]});
+    const{error}=await supabase.from("campanhas").insert({id:rec.id,data:rec});
+    if(error)console.error("SUPABASE createCamp:",error);
+    else pushNotif("Campanha criada!",rec.name,T.accent);
   };
 
   const addCommEntry=async()=>{
@@ -2177,8 +2235,176 @@ export default function App(){
                     <div key={v} onClick={()=>setCampView(v)} className="tb" style={{padding:"6px 12px",borderRadius:6,fontSize:10,background:campView===v?T.accentDim:T.card,border:`1px solid ${campView===v?T.accentBorder:T.border}`,color:campView===v?T.accent:T.muted}}>{l}</div>
                   ))}
                 </div>
-                <button className="btn" style={{padding:"8px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>+ Nova Campanha</button>
+                {["admin","comercial","operacional"].includes(user.role)&&(
+                  <button className="btn" onClick={()=>{setShowNewCamp(true);setNewCampStep(1);}} style={{padding:"8px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>+ Nova Campanha</button>
+                )}
               </div>
+
+              {/* ── MODAL NOVA CAMPANHA ── */}
+              {showNewCamp&&(
+                <div style={{position:"fixed",inset:0,background:"#000000D0",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>setShowNewCamp(false)}>
+                  <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:16,width:"100%",maxWidth:680,maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+
+                    {/* Header */}
+                    <div style={{padding:"18px 24px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+                      <div>
+                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16}}>Nova Campanha</div>
+                        <div style={{fontSize:9,color:T.muted,marginTop:2,fontFamily:"'JetBrains Mono',monospace"}}>Etapa {newCampStep} de 3</div>
+                      </div>
+                      <div style={{display:"flex",gap:6}}>
+                        {[1,2,3].map(s=>(
+                          <div key={s} style={{width:28,height:4,borderRadius:2,background:newCampStep>=s?T.accent:T.border,transition:"all 0.3s"}}/>
+                        ))}
+                      </div>
+                      <div onClick={()=>setShowNewCamp(false)} style={{cursor:"pointer",color:T.muted,fontSize:20}}>×</div>
+                    </div>
+
+                    {/* Body */}
+                    <div style={{flex:1,overflow:"auto",padding:"20px 24px"}}>
+
+                      {/* ETAPA 1 — BÁSICO */}
+                      {newCampStep===1&&(
+                        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.accent,fontSize:12,marginBottom:2}}>Informações básicas</div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                            {[["Nome da campanha","name","text",true],["Cliente","client","text",true],["Agência","agencia","text",false],["Nº PI","numPI","text",false]].map(([l,k,t,req])=>(
+                              <div key={k}>
+                                <div style={{fontSize:9,color:req?T.accent:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{l}{req&&" *"}</div>
+                                <input type={t} value={newCamp[k]} onChange={e=>setNewCamp(p=>({...p,[k]:e.target.value}))} style={inpS}/>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+                            <div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Projeto</div>
+                              <select value={newCamp.project} onChange={e=>setNewCamp(p=>({...p,project:e.target.value}))} style={selS}>
+                                <option value="">Selecione...</option>
+                                {projects.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Comercial Responsável</div>
+                              <select value={newCamp.responsavel} onChange={e=>setNewCamp(p=>({...p,responsavel:e.target.value}))} style={selS}>
+                                <option value="">Selecione...</option>
+                                {users.filter(u=>["admin","comercial"].includes(u.role)&&u.active).map(u=><option key={u.id} value={u.name}>{u.name}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Região</div>
+                              <input value={newCamp.region} onChange={e=>setNewCamp(p=>({...p,region:e.target.value}))} placeholder="Ex: São Paulo · SP" style={inpS}/>
+                            </div>
+                          </div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                            <div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Data início</div>
+                              <input type="date" value={newCamp.startDate} onChange={e=>setNewCamp(p=>({...p,startDate:e.target.value}))} style={inpS}/>
+                            </div>
+                            <div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Data fim</div>
+                              <input type="date" value={newCamp.endDate} onChange={e=>setNewCamp(p=>({...p,endDate:e.target.value}))} style={inpS}/>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ETAPA 2 — OPERACIONAL */}
+                      {newCampStep===2&&(
+                        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.purple,fontSize:12,marginBottom:2}}>Operacional & Produção</div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+                            <div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Gráfica</div>
+                              <select value={newCamp.graficaFornecedor} onChange={e=>setNewCamp(p=>({...p,graficaFornecedor:e.target.value}))} style={selS}>
+                                <option value="">Selecione...</option>
+                                {suppliers.filter(s=>s.type==="grafica").map(s=><option key={s.id} value={s.name}>{s.name}</option>)}
+                                <option value="Outro">Outro</option>
+                              </select>
+                            </div>
+                            <div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Material</div>
+                              <input value={newCamp.material} onChange={e=>setNewCamp(p=>({...p,material:e.target.value}))} placeholder="Ex: Sacola kraft 30x40" style={inpS}/>
+                            </div>
+                            <div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Prazo gráfica</div>
+                              <input type="date" value={newCamp.graficaPrazo} onChange={e=>setNewCamp(p=>({...p,graficaPrazo:e.target.value}))} style={inpS}/>
+                            </div>
+                          </div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+                            <div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Logística</div>
+                              <select value={newCamp.logistica} onChange={e=>setNewCamp(p=>({...p,logistica:e.target.value}))} style={selS}>
+                                <option value="">Selecione...</option>
+                                {suppliers.filter(s=>s.type==="logistica").map(s=><option key={s.id} value={s.name}>{s.name}</option>)}
+                                <option value="Outro">Outro</option>
+                              </select>
+                            </div>
+                            <div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Fornecedor logística</div>
+                              <input value={newCamp.logisticaFornecedor} onChange={e=>setNewCamp(p=>({...p,logisticaFornecedor:e.target.value}))} placeholder="Nome do fornecedor" style={inpS}/>
+                            </div>
+                            <div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Prazo logística</div>
+                              <input type="date" value={newCamp.logisticaPrazo} onChange={e=>setNewCamp(p=>({...p,logisticaPrazo:e.target.value}))} style={inpS}/>
+                            </div>
+                          </div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+                            <div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Nº de parceiros</div>
+                              <input type="number" value={newCamp.parceiros} onChange={e=>setNewCamp(p=>({...p,parceiros:e.target.value}))} placeholder="0" style={inpS}/>
+                            </div>
+                            <div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Qtd de embalagens</div>
+                              <input type="number" value={newCamp.sacolas} onChange={e=>setNewCamp(p=>({...p,sacolas:e.target.value}))} placeholder="0" style={inpS}/>
+                            </div>
+                            <div>
+                              <div style={{fontSize:9,color:T.accent,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Valor Líquido (R$)</div>
+                              <input type="number" value={newCamp.valorLiquido} onChange={e=>setNewCamp(p=>({...p,valorLiquido:e.target.value}))} placeholder="0,00" style={inpS}/>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ETAPA 3 — BRIEFING & SEGMENTOS */}
+                      {newCampStep===3&&(
+                        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+                          <div>
+                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.warn,fontSize:12,marginBottom:10}}>Briefing da campanha</div>
+                            <textarea value={newCamp.briefing} onChange={e=>setNewCamp(p=>({...p,briefing:e.target.value}))} placeholder="Descreva o briefing completo da campanha — objetivos, público-alvo, diretrizes criativas, observações importantes..." rows={6} style={{...inpS,width:"100%",resize:"vertical",lineHeight:1.6}}/>
+                          </div>
+                          <div>
+                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.info,fontSize:12,marginBottom:10}}>Segmentos de parceiro</div>
+                            <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                              {["Hamburguer","Pizza","Japonesa","Açaí","Café","Padaria","Churrascaria","Regional","Sobremesa","Bar","Restaurante","Sorvete","Saudável","Petshop","Farmácia"].map(seg=>{
+                                const sel=newCamp.segments.includes(seg);
+                                return(
+                                  <div key={seg} onClick={()=>setNewCamp(p=>({...p,segments:sel?p.segments.filter(s=>s!==seg):[...p.segments,seg]}))} style={{padding:"6px 14px",borderRadius:20,cursor:"pointer",border:`1px solid ${sel?T.info+"88":T.border}`,background:sel?T.infoDim:T.surface,color:sel?T.info:T.muted,fontSize:11,fontFamily:"'JetBrains Mono',monospace",transition:"all 0.15s"}}>
+                                    {seg}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div style={{padding:"14px 24px",borderTop:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",flexShrink:0}}>
+                      <button onClick={()=>newCampStep>1?setNewCampStep(s=>s-1):setShowNewCamp(false)} style={{padding:"8px 16px",background:T.card,border:`1px solid ${T.border}`,color:T.muted,borderRadius:8,cursor:"pointer",fontSize:11}}>
+                        {newCampStep>1?"← Voltar":"Cancelar"}
+                      </button>
+                      {newCampStep<3
+                        ?<button onClick={()=>{if(newCampStep===1&&(!newCamp.name||!newCamp.client))return;setNewCampStep(s=>s+1);}} style={{padding:"8px 20px",background:newCampStep===1&&(!newCamp.name||!newCamp.client)?T.border:`linear-gradient(135deg,${T.accent},#00B87A)`,color:newCampStep===1&&(!newCamp.name||!newCamp.client)?T.muted:"#000",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,border:"none"}}>
+                            Próximo →
+                          </button>
+                        :<button onClick={createCamp} style={{padding:"8px 20px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,border:"none"}}>
+                            Criar Campanha ✓
+                          </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {campView==="kanban"&&(
                 <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,alignItems:"start"}}>
