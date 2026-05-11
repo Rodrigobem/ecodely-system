@@ -252,7 +252,7 @@ const CONTRATO_COLOR={"assinado":T.accent,"pendente":T.warn,"expirando":T.danger
 const SUPPLIERS=[{id:1,name:"Gráfica TopPrint",type:"grafica",contact:"Roberto Alves",phone:"(11) 3333-0001",email:"roberto@topprint.com.br",leadTime:"7 dias",rating:5,campaigns:2},{id:2,name:"Gráfica ColorMax",type:"grafica",contact:"Sandra Reis",phone:"(11) 3333-0002",email:"sandra@colormax.com.br",leadTime:"10 dias",rating:4,campaigns:1},{id:3,name:"TransBrasil Cargo",type:"logistica",contact:"Fernando Dias",phone:"(11) 4444-0001",email:"fernando@transbrasil.com.br",leadTime:"3 dias",rating:4,campaigns:1},{id:4,name:"ECT Correios",type:"logistica",contact:"Agência SP",phone:"0800-725-0100",email:"",leadTime:"5-10 dias",rating:3,campaigns:1}];
 
 // --- NAV ---------------------------------------------------------------------
-const getNav=(role,queueCount,notifCount)=>[
+const getNav=(role,queueCount,notifCount,extraRoles=[])=>[
   {id:"dashboard",label:"Dashboard",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base"]},
   {id:"minha-fila",label:"Minha Fila",icon:"-",roles:["comercial","operacional","marketing","financeiro","base","admin"],badge:queueCount||null},
   {id:"campanhas",label:"Campanhas",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro"]},
@@ -264,7 +264,7 @@ const getNav=(role,queueCount,notifCount)=>[
   {id:"base",label:"Base",icon:"-",roles:["admin","base","comercial"]},
   {id:"cadastros",label:"Cadastros",icon:"-",roles:["admin","comercial","operacional"]},
   {id:"usuarios",label:"Usuários",icon:"-",roles:["admin"]},
-].filter(n=>n.roles.includes(role));
+].filter(n=>n.roles.includes(role)||extraRoles.some(r=>n.roles.includes(r)));
 
 // --- HELPERS -----------------------------------------------------------------
 const Badge=({label,color})=>(<span style={{fontSize:9,padding:"2px 8px",borderRadius:4,background:color+"22",color,border:`1px solid ${color}33`,fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap"}}>{label}</span>);
@@ -1206,7 +1206,7 @@ export default function App(){
   const pipeTotal=prospects.reduce((a,p)=>a+(p.value||0),0);
   const forecastTotal=prospects.reduce((a,p)=>{const s=PIPE_STAGES.find(x=>x.id===p.stage);return a+(p.value||0)*(s?.prob||0)/100;},0);
 
-  const nav=user?getNav(user.role,pendingQueue.length):[];
+  const nav=user?getNav(user.role,pendingQueue.length,0,user.extraRoles||[]):[];
 
   // --- HANDLERS ------------------------------------------------------------
   const handleLogin=()=>{
@@ -3870,14 +3870,31 @@ export default function App(){
               )}
               <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                 <div style={{display:"grid",gridTemplateColumns:"2fr 2fr 1fr 1fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
-                  {["Usuário","E-mail","Perfil","Último acesso","Status"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
+                  {["Usuário","E-mail","Perfil","Acessos extras","Status"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
                 </div>
                 {users.map((u,i)=>(
-                  <div key={i} style={{display:"grid",gridTemplateColumns:"2fr 2fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center",opacity:u.active?1:0.5}}>
+                  <div key={i} style={{display:"grid",gridTemplateColumns:"2fr 2fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"start",opacity:u.active?1:0.5}}>
                     <div style={{display:"flex",gap:8,alignItems:"center"}}><div style={{width:26,height:26,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",border:`1px solid ${ROLE_COLOR[u.role]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:ROLE_COLOR[u.role],fontWeight:700,flexShrink:0}}>{u.avatar}</div><span style={{fontSize:12,fontWeight:600,fontFamily:"'Syne',sans-serif"}}>{u.name}</span></div>
                     <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{u.email}</div>
                     <Badge label={ROLE_LABELS[u.role]} color={ROLE_COLOR[u.role]}/>
-                    <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>-</div>
+                    {/* Acessos extras — só aparece para não-admin */}
+                    <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                      {u.role!=="admin"&&Object.entries(ROLE_LABELS).filter(([r])=>r!=="admin"&&r!==u.role).map(([r,l])=>{
+                        const extras=u.extraRoles||[];
+                        const tem=extras.includes(r);
+                        return(
+                          <div key={r} onClick={async()=>{
+                            const novas=tem?extras.filter(x=>x!==r):[...extras,r];
+                            setUsers(p=>p.map(x=>x.id===u.id?{...x,extraRoles:novas}:x));
+                            if(u.id===user.id)setUser(p=>({...p,extraRoles:novas}));
+                            await supabase.from("usuarios").update({extraRoles:novas}).eq("id",u.id);
+                          }} style={{fontSize:8,padding:"2px 7px",borderRadius:4,cursor:"pointer",border:`1px solid ${tem?ROLE_COLOR[r]+"66":T.border}`,background:tem?ROLE_COLOR[r]+"22":T.surface,color:tem?ROLE_COLOR[r]:T.muted,fontFamily:"'JetBrains Mono',monospace",transition:"all 0.15s"}}>
+                            {l}
+                          </div>
+                        );
+                      })}
+                      {u.role==="admin"&&<span style={{fontSize:9,color:T.muted}}>Acesso total</span>}
+                    </div>
                     <div style={{display:"flex",gap:6,alignItems:"center"}}>
                       <div style={{width:7,height:7,borderRadius:"50%",background:u.active?T.accent:T.danger}}/>
                       {u.id!==user.id&&<div onClick={async()=>{const na=!u.active;setUsers(p=>p.map(x=>x.id===u.id?{...x,active:na}:x));await supabase.from("usuarios").update({active:na}).eq("id",u.id);}} style={{fontSize:9,color:u.active?T.danger:T.accent,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}}>{u.active?"Aposentar":"Reativar"}</div>}
