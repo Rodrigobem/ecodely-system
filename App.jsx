@@ -3434,7 +3434,7 @@ export default function App(){
                             <div style={{display:"flex",gap:8,alignItems:"center"}}>
                               <input type="number" step="0.01" value={dasManual} onChange={async e=>{const v=Number(e.target.value);setDasManual(e.target.value);setDasAjuste(v);await supabase.from("configuracoes").upsert({chave:"dasAjuste",valor:v});}} style={{flex:1,background:T.surface,border:`1px solid ${T.warn}44`,borderRadius:6,padding:"6px 8px",fontSize:13,color:T.text,outline:"none",fontWeight:700}}/>
                               <span style={{fontSize:11,color:T.muted}}>%</span>
-                              <button onClick={async()=>{setDasAjuste(null);setDasManual(aliquotaEfetiva.toFixed(4)*100+"");await supabase.from("configuracoes").upsert({chave:"dasAjuste",valor:"null"});}}} className="btn" style={{padding:"6px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:9}}>Resetar</button>
+                              <button onClick={async()=>{setDasAjuste(null);setDasManual(aliquotaEfetiva.toFixed(4)*100+"");await supabase.from("configuracoes").upsert({chave:"dasAjuste",valor:"null"});}} className="btn" style={{padding:"6px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:9}}>Resetar</button>
                             </div>
                           </div>
                         </div>
