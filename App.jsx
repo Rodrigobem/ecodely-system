@@ -391,13 +391,49 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
           {/* -- TAREFAS -- */}
           {iTab==="tarefas"&&(
             <div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
-                {[{l:"Parceiros",v:camp.parceiros,c:T.accent},{l:"Sacolas",v:camp.sacolas.toLocaleString(),c:T.purple},{l:"Tarefas",v:`${td.done}/${td.total}`,c:td.done===td.total?T.accent:T.info}].map((k,i)=>(
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:12}}>
+                {[{l:"Parceiros",v:camp.parceiros,c:T.accent},{l:"Embalagens",v:(camp.sacolas||0).toLocaleString("pt-BR"),c:T.purple},{l:"Tarefas",v:`${td.done}/${td.total}`,c:td.done===td.total?T.accent:T.info}].map((k,i)=>(
                   <div key={i} style={{background:T.card,borderRadius:10,padding:"12px 14px",border:`1px solid ${T.border}`}}>
                     <div style={{fontFamily:"'Syne',sans-serif",fontSize:20,fontWeight:800,color:k.c}}>{k.v}</div>
                     <div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{k.l}</div>
                   </div>
                 ))}
+              </div>
+
+              {/* Bloco Operacional */}
+              <div style={{background:T.card,border:`1px solid ${camp.graficaFornecedor?T.purple+"44":T.warn+"44"}`,borderLeft:`3px solid ${camp.graficaFornecedor?T.purple:T.warn}`,borderRadius:10,padding:"12px 16px",marginBottom:14}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:camp.graficaFornecedor?T.purple:T.warn}}>Operacional</div>
+                  {!camp.graficaFornecedor&&<div style={{fontSize:8,color:T.warn,background:T.warnDim,padding:"2px 8px",borderRadius:4,fontFamily:"'JetBrains Mono',monospace"}}>Pendente — preencha na aba Editar</div>}
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+                  {[
+                    {l:"Gráfica",v:camp.graficaFornecedor,c:T.purple},
+                    {l:"Material",v:camp.material,c:T.purple},
+                    {l:"Prazo Gráfica",v:camp.graficaPrazo,c:T.purple},
+                    {l:"Logística",v:camp.logistica,c:T.info},
+                    {l:"Fornecedor Log.",v:camp.logisticaFornecedor,c:T.info},
+                    {l:"Prazo Logística",v:camp.logisticaPrazo,c:T.info},
+                  ].map(({l,v,c})=>(
+                    <div key={l}>
+                      <div style={{fontSize:8,color:T.muted,marginBottom:3,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+                      <div style={{fontSize:11,color:v?c:T.border,fontFamily:"'JetBrains Mono',monospace"}}>{v||"—"}</div>
+                    </div>
+                  ))}
+                </div>
+                {(camp.valorLiquido>0||camp.numPI||camp.agencia)&&(
+                  <div style={{display:"flex",gap:16,marginTop:10,paddingTop:10,borderTop:`1px solid ${T.border}`}}>
+                    {camp.numPI&&<div><div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Nº PI</div><div style={{fontSize:11,color:T.text}}>{camp.numPI}</div></div>}
+                    {camp.agencia&&<div><div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Agência</div><div style={{fontSize:11,color:T.text}}>{camp.agencia}</div></div>}
+                    {camp.valorLiquido>0&&<div><div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Valor Líquido</div><div style={{fontSize:12,color:T.accent,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>R$ {camp.valorLiquido.toLocaleString("pt-BR")}</div></div>}
+                  </div>
+                )}
+                {camp.briefing&&(
+                  <div style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${T.border}`}}>
+                    <div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Briefing</div>
+                    <div style={{fontSize:10,color:T.soft,lineHeight:1.6,fontFamily:"'JetBrains Mono',monospace"}}>{camp.briefing}</div>
+                  </div>
+                )}
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                 {Object.entries(camp.tasks).map(([sec,tasks])=>{
