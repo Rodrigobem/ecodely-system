@@ -1274,7 +1274,7 @@ export default function App(){
   // --- SUPABASE LOAD -------------------------------------------------------
   useEffect(()=>{
     const load=async()=>{
-      const [lanc,conts,carts,compras,custos,fats,camps,prosps,parts,cls,commt,projs,pts,usrs,centros,forn]=await Promise.all([
+      const [lanc,conts,carts,compras,custos,fats,camps,prosps,parts,cls,commt,projs,pts,usrs,centros,forn,cfgs]=await Promise.all([
         supabase.from("lancamentos").select("*").order("id"),
         supabase.from("contas").select("*").order("id"),
         supabase.from("cartoes").select("*").order("id"),
@@ -1291,6 +1291,7 @@ export default function App(){
         supabase.from("usuarios").select("*").order("id"),
         supabase.from("centros_custo").select("*").order("id"),
         supabase.from("fornecedores").select("*").order("id"),
+        supabase.from("configuracoes").select("*"),
       ]);
       console.log("SUPABASE load - lancamentos:",lanc.data?.length,"erro:",lanc.error?.message);
       console.log("SUPABASE load - contas:",conts.data?.length,"erro:",conts.error?.message);
@@ -1313,6 +1314,12 @@ export default function App(){
       if(usrs.data?.length)setUsers(usrs.data);
       if(centros.data?.length)setCentrosCusto(centros.data.map(r=>r.nome));
       if(forn.data?.length)setSuppliers(forn.data);
+      if(cfgs.data?.length){
+        const cfg=Object.fromEntries(cfgs.data.map(r=>[r.chave,r.valor]));
+        if(cfg.reservaCaixaPct!=null)setReservaCaixaPct(Number(cfg.reservaCaixaPct));
+        if(cfg.socios!=null&&Array.isArray(cfg.socios))setSocios(cfg.socios);
+        if(cfg.dasAjuste!=null&&cfg.dasAjuste!=="null")setDasAjuste(Number(cfg.dasAjuste));
+      }
     };
     load();
   },[]);
@@ -3425,9 +3432,9 @@ export default function App(){
                             <div style={{fontSize:9,color:T.muted,marginBottom:12}}>{faixa.label} - ({fmt(rbt12)} x {(faixa.aliquota*100).toFixed(1)}% - {fmt(faixa.deducao)}) / {fmt(rbt12)}</div>
                             <div style={{fontSize:10,color:T.warn,marginBottom:6}}>Ajuste manual (se contador informar diferente):</div>
                             <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                              <input type="number" step="0.01" value={dasManual} onChange={e=>{setDasManual(e.target.value);setDasAjuste(Number(e.target.value));}} style={{flex:1,background:T.surface,border:`1px solid ${T.warn}44`,borderRadius:6,padding:"6px 8px",fontSize:13,color:T.text,outline:"none",fontWeight:700}}/>
+                              <input type="number" step="0.01" value={dasManual} onChange={async e=>{const v=Number(e.target.value);setDasManual(e.target.value);setDasAjuste(v);await supabase.from("configuracoes").upsert({chave:"dasAjuste",valor:v});}} style={{flex:1,background:T.surface,border:`1px solid ${T.warn}44`,borderRadius:6,padding:"6px 8px",fontSize:13,color:T.text,outline:"none",fontWeight:700}}/>
                               <span style={{fontSize:11,color:T.muted}}>%</span>
-                              <button onClick={()=>{setDasAjuste(null);setDasManual(aliquotaEfetiva.toFixed(4)*100+"");}} className="btn" style={{padding:"6px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:9}}>Resetar</button>
+                              <button onClick={async()=>{setDasAjuste(null);setDasManual(aliquotaEfetiva.toFixed(4)*100+"");await supabase.from("configuracoes").upsert({chave:"dasAjuste",valor:"null"});}}} className="btn" style={{padding:"6px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:9}}>Resetar</button>
                             </div>
                           </div>
                         </div>
@@ -3470,7 +3477,7 @@ export default function App(){
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                             <span style={{fontSize:11,color:T.warn}}>Reserva de caixa</span>
                             <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                              <input type="number" min="0" max="100" value={reservaCaixaPct} onChange={e=>setReservaCaixaPct(Number(e.target.value))} style={{width:50,background:T.surface,border:`1px solid ${T.warn}44`,borderRadius:5,padding:"3px 6px",fontSize:12,color:T.text,outline:"none",textAlign:"center"}}/>
+                              <input type="number" min="0" max="100" value={reservaCaixaPct} onChange={async e=>{const v=Number(e.target.value);setReservaCaixaPct(v);await supabase.from("configuracoes").upsert({chave:"reservaCaixaPct",valor:v});}} style={{width:50,background:T.surface,border:`1px solid ${T.warn}44`,borderRadius:5,padding:"3px 6px",fontSize:12,color:T.text,outline:"none",textAlign:"center"}}/>
                               <span style={{fontSize:11,color:T.muted}}>%</span>
                               <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.warn,fontSize:13}}>{fmt(reserva)}</span>
                             </div>
@@ -3490,7 +3497,7 @@ export default function App(){
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                                 <span style={{fontWeight:700,fontSize:12}}>{s.nome}</span>
                                 <div style={{display:"flex",gap:5,alignItems:"center"}}>
-                                  <input type="number" min="0" max="100" value={s.pct} onChange={e=>setSocios(p=>p.map((x,j)=>j===i?{...x,pct:Number(e.target.value)}:x))} style={{width:45,background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"2px 5px",fontSize:11,color:T.text,outline:"none",textAlign:"center"}}/>
+                                  <input type="number" min="0" max="100" value={s.pct} onChange={async e=>{const novosSocios=socios.map((x,j)=>j===i?{...x,pct:Number(e.target.value)}:x);setSocios(novosSocios);await supabase.from("configuracoes").upsert({chave:"socios",valor:JSON.stringify(novosSocios)});}} style={{width:45,background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"2px 5px",fontSize:11,color:T.text,outline:"none",textAlign:"center"}}/>
                                   <span style={{fontSize:10,color:T.muted}}>%</span>
                                 </div>
                               </div>
