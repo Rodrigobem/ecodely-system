@@ -283,7 +283,8 @@ const FILE_COLOR={arte:T.pink,pi:T.info,contrato:T.purple,base:T.green,nf:T.warn
 const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddFile,onUpdateSacolas,onUpdateImpactos,onOpenClientPanel})=>{
   const[iTab,setITab]=useState("tarefas");
   const[comment,setComment]=useState("");
-  const[fakeUpload,setFakeUpload]=useState(false);
+  const[uploading,setUploading]=useState(false);
+  const fileInputRef=React.useRef(null);
   const td=tasksDone(camp.tasks);
 
   const handleComment=()=>{
@@ -292,12 +293,21 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
     setComment("");
   };
 
-  const handleFakeFile=()=>{
-    setFakeUpload(true);
-    setTimeout(()=>{
-      onAddFile(camp.id,{id:Date.now(),name:`Arquivo_${camp.client.replace(/\s/g,"_")}_${Date.now()}.pdf`,type:"outro",size:"1.2 MB",uploadedBy:user.name,at:now(),icon:"-"});
-      setFakeUpload(false);
-    },1400);
+  const handleRealFile=async(e)=>{
+    const file=e.target.files?.[0];
+    if(!file)return;
+    setUploading(true);
+    const ext=file.name.split(".").pop();
+    const path=`campanhas/${camp.id}/${Date.now()}_${file.name.replace(/\s/g,"_")}`;
+    const{data,error}=await supabase.storage.from("ecodely-files").upload(path,file,{upsert:true});
+    if(error){console.error("Storage upload error:",error);setUploading(false);return;}
+    const{data:{publicUrl}}=supabase.storage.from("ecodely-files").getPublicUrl(path);
+    const tipo=["pdf","doc","docx"].includes(ext)?"outro":["jpg","jpeg","png","gif","webp"].includes(ext)?"arte":["mp4","mov","avi"].includes(ext)?"outro":"outro";
+    const kb=Math.round(file.size/1024);
+    const size=kb>1024?`${(kb/1024).toFixed(1)} MB`:`${kb} KB`;
+    onAddFile(camp.id,{id:Date.now(),name:file.name,type:tipo,size,uploadedBy:user.name,at:now(),icon:"-",url:publicUrl});
+    setUploading(false);
+    e.target.value="";
   };
 
   return(
@@ -431,9 +441,10 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
           {/* -- ARQUIVOS -- */}
           {iTab==="arquivos"&&(
             <div>
-              {/* Upload area */}
-              <div onClick={handleFakeFile} style={{border:`2px dashed ${T.border}`,borderRadius:12,padding:"24px",textAlign:"center",cursor:"pointer",marginBottom:16,transition:"all 0.2s",background:fakeUpload?T.accentDim:"transparent",borderColor:fakeUpload?T.accent:T.border}}>
-                {fakeUpload?(
+              {/* Upload area — real file input */}
+              <input ref={fileInputRef} type="file" accept="*/*" style={{display:"none"}} onChange={handleRealFile}/>
+              <div onClick={()=>!uploading&&fileInputRef.current?.click()} style={{border:`2px dashed ${T.border}`,borderRadius:12,padding:"24px",textAlign:"center",cursor:"pointer",marginBottom:16,transition:"all 0.2s",background:uploading?T.accentDim:"transparent",borderColor:uploading?T.accent:T.border}}>
+                {uploading?(
                   <div>
                     <div style={{fontSize:22,marginBottom:6}}>-</div>
                     <div style={{fontSize:11,color:T.accent,fontFamily:"'JetBrains Mono',monospace"}}>Enviando arquivo...</div>
@@ -442,7 +453,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                   <div>
                     <div style={{fontSize:22,marginBottom:6}}>-</div>
                     <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,marginBottom:3,fontSize:13}}>Subir arquivo</div>
-                    <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>Arte · PI · Contrato · NF · Checklist · Qualquer doc</div>
+                    <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>PDF · DOC · JPG · PNG · MP4 · Qualquer formato</div>
                   </div>
                 )}
               </div>
@@ -465,7 +476,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                     <div key={f.id} style={{display:"flex",gap:12,alignItems:"center",padding:"12px 16px",background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${FILE_COLOR[f.type]||T.soft}`,borderRadius:10}}>
                       <div style={{fontSize:20,flexShrink:0}}>{f.icon}</div>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif",marginBottom:2}}>{f.name}</div>
+                        <div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif",marginBottom:2}}>{f.url?<a href={f.url} target="_blank" rel="noreferrer" style={{color:T.accent,textDecoration:"none"}}>{f.name} -</a>:f.name}</div>
                         <div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{f.size} · por {f.uploadedBy} · {f.at}</div>
                       </div>
                       <Badge label={f.type} color={FILE_COLOR[f.type]||T.soft}/>
@@ -1036,7 +1047,7 @@ export default function App(){
   // --- SUPABASE LOAD -------------------------------------------------------
   useEffect(()=>{
     const load=async()=>{
-      const [lanc,conts,carts,compras,custos,fats,camps,prosps]=await Promise.all([
+      const [lanc,conts,carts,compras,custos,fats,camps,prosps,parts,cls,commt,projs,pts]=await Promise.all([
         supabase.from("lancamentos").select("*").order("id"),
         supabase.from("contas").select("*").order("id"),
         supabase.from("cartoes").select("*").order("id"),
@@ -1045,6 +1056,11 @@ export default function App(){
         supabase.from("fat_mensais").select("*").order("id"),
         supabase.from("campanhas").select("*").order("id"),
         supabase.from("prospects").select("*").order("id"),
+        supabase.from("parceiros").select("*").order("id"),
+        supabase.from("closings").select("*").order("id"),
+        supabase.from("comm_table").select("*").order("id"),
+        supabase.from("projects").select("*").order("id"),
+        supabase.from("ptypes").select("*").order("id"),
       ]);
       console.log("SUPABASE load - lancamentos:",lanc.data?.length,"erro:",lanc.error?.message);
       console.log("SUPABASE load - contas:",conts.data?.length,"erro:",conts.error?.message);
@@ -1056,6 +1072,11 @@ export default function App(){
       if(fats.data?.length)setFatMensais(fats.data);
       if(camps.data?.length)setCamps(camps.data.map(r=>r.data));
       if(prosps.data?.length)setProspects(prosps.data.map(r=>({...r,segment:r.email||r.segment||"",value:Number(r.value)||0})));
+      if(parts.data?.length)setBasePartners(parts.data.map(r=>r.data));
+      if(cls.data?.length)setClosings(cls.data);
+      if(commt.data?.length)setCommTable(commt.data);
+      if(projs.data?.length)setProjects(projs.data);
+      if(pts.data?.length)setPtypes(pts.data);
     };
     load();
   },[]);
@@ -1268,51 +1289,59 @@ export default function App(){
     if(error)console.error("SUPABASE addProsp:",error);
   };
 
-  const submitClosing=()=>{
+  const submitClosing=async()=>{
     if(!newClosing.partner||!newClosing.typeId||!newClosing.projectId)return;
     const type=ptypes.find(t=>t.id===Number(newClosing.typeId));
     const proj=projects.find(p=>p.id===Number(newClosing.projectId));
     const comm=commTable.find(c=>c.typeId===Number(newClosing.typeId)&&c.projectId===Number(newClosing.projectId));
-    setClosings(p=>[...p,{id:Date.now(),user:user.name,userId:user.id,partner:newClosing.partner,type:type?.name||"",typeId:Number(newClosing.typeId),project:proj?.name||"",projectId:Number(newClosing.projectId),value:comm?.value||0,date:now().slice(0,5),status:"pendente",pago:false}]);
+    const rec={id:Date.now(),user:user.name,userId:user.id,partner:newClosing.partner,type:type?.name||"",typeId:Number(newClosing.typeId),project:proj?.name||"",projectId:Number(newClosing.projectId),value:comm?.value||0,date:now().slice(0,5),status:"pendente",pago:false};
+    setClosings(p=>[...p,rec]);
     setNewClosing({partner:"",typeId:"",projectId:""});setShowNewClosing(false);
     pushNotif("Fechamento registrado",`${newClosing.partner} · aguardando aprovação`,T.warn);
+    await supabase.from("closings").insert(rec);
   };
 
-  const enviarContrato=(partnerId)=>{
-    setBasePartners(prev=>prev.map(p=>p.id!==partnerId?p:{...p,contrato:{...p.contrato,status:"pendente",enviadoEm:new Date().toLocaleDateString("pt-BR")}}));
+  const enviarContrato=async(partnerId)=>{
+    let upd=null;
+    setBasePartners(prev=>prev.map(p=>{if(p.id!==partnerId)return p;upd={...p,contrato:{...p.contrato,status:"pendente",enviadoEm:new Date().toLocaleDateString("pt-BR")}};return upd;}));
+    if(upd)await supabase.from("parceiros").upsert({id:upd.id,data:upd});
     addNotif("contrato","Contrato enviado","Aguardando assinatura do parceiro",null,T.warn,["sistema","email","whatsapp"]);
   };
-  const assinarContrato=(partnerId)=>{
-    const expira=new Date();
-    expira.setFullYear(expira.getFullYear()+1);
+  const assinarContrato=async(partnerId)=>{
+    const expira=new Date();expira.setFullYear(expira.getFullYear()+1);
     const assinadoEm=new Date().toLocaleDateString("pt-BR");
     const expiraEm=expira.toLocaleDateString("pt-BR");
-    setBasePartners(prev=>prev.map(p=>{
-      if(p.id!==partnerId)return p;
-      const updated={...p,contrato:{status:"assinado",enviadoEm:p.contrato.enviadoEm,assinadoEm,expiraEm}};
-      return{...updated,score:calcScore(updated)};
-    }));
+    let upd=null;
+    setBasePartners(prev=>prev.map(p=>{if(p.id!==partnerId)return p;upd={...p,contrato:{status:"assinado",enviadoEm:p.contrato.enviadoEm,assinadoEm,expiraEm}};return{...upd,score:calcScore(upd)};}));
+    if(upd)await supabase.from("parceiros").upsert({id:upd.id,data:{...upd,score:calcScore(upd)}});
     setSelPartner(prev=>prev?{...prev,contrato:{...prev.contrato,status:"assinado",assinadoEm,expiraEm}}:null);
     addNotif("contrato","Contrato assinado!",basePartners.find(p=>p.id===partnerId)?.name+" assinou o contrato de exclusividade",null,T.accent,["sistema","email"]);
   };
-  const addProspectToBase=(prosp)=>{
+  const addProspectToBase=async(prosp)=>{
     const already=basePartners.find(p=>p.name===prosp.name);
     if(already){pushNotif("Já na base",`${prosp.name} já está cadastrado`,T.warn);return;}
     const newP={id:Date.now(),name:prosp.name,handle:`@${prosp.name.toLowerCase().replace(/\s/g,"_")}`,city:"-",state:"-",category:prosp.segment,deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:1,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null}};
     const withScore={...newP,score:calcScore(newP)};
     setBasePartners(prev=>[...prev,withScore]);
     setProspects(prev=>prev.map(p=>p.id===prosp.id?{...p,stage:"fechado"}:p));
-    supabase.from("prospects").update({stage:"fechado"}).eq("id",prosp.id).then(({error})=>{if(error)console.error("SUPABASE closing:",error);});
+    await supabase.from("parceiros").upsert({id:withScore.id,data:withScore});
+    await supabase.from("prospects").update({stage:"fechado"}).eq("id",prosp.id);
     pushNotif("Adicionado à base!",prosp.name,T.accent);
   };
 
-  const addCommEntry=()=>{
+  const addCommEntry=async()=>{
     if(!newComm.typeId||!newComm.projectId||!newComm.value)return;
     const type=ptypes.find(t=>t.id===Number(newComm.typeId));
     const proj=projects.find(p=>p.id===Number(newComm.projectId));
     const exists=commTable.find(c=>c.typeId===Number(newComm.typeId)&&c.projectId===Number(newComm.projectId));
-    if(exists)setCommTable(p=>p.map(c=>c.id===exists.id?{...c,value:Number(newComm.value)}:c));
-    else setCommTable(p=>[...p,{id:Date.now(),typeId:Number(newComm.typeId),typeName:type.name,projectId:Number(newComm.projectId),projectName:proj.name,value:Number(newComm.value)}]);
+    if(exists){
+      setCommTable(p=>p.map(c=>c.id===exists.id?{...c,value:Number(newComm.value)}:c));
+      await supabase.from("comm_table").update({value:Number(newComm.value)}).eq("id",exists.id);
+    } else {
+      const rec={id:Date.now(),typeId:Number(newComm.typeId),typeName:type.name,projectId:Number(newComm.projectId),projectName:proj.name,value:Number(newComm.value)};
+      setCommTable(p=>[...p,rec]);
+      await supabase.from("comm_table").insert(rec);
+    }
     setNewComm({typeId:"",projectId:"",value:""});
   };
 
@@ -3165,8 +3194,8 @@ export default function App(){
                               <div style={{flex:1}}><div style={{display:"flex",gap:5,marginBottom:5}}><Badge label={c.type} color={T.purple}/><Badge label={c.project} color={T.info}/></div><div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14}}>{c.partner}</div><div style={{fontSize:10,color:T.muted}}>por {c.user} · {c.date}</div></div>
                               <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:T.warn}}>{fmt(c.value)}</div>
                               <div style={{display:"flex",gap:8}}>
-                                <button className="btn" onClick={()=>{setClosings(p=>p.map(x=>x.id===c.id?{...x,status:"aprovado"}:x));pushNotif("Comissão aprovada",`${c.partner} · ${fmt(c.value)}`,T.accent);}} style={{padding:"8px 14px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>- Aprovar</button>
-                                <button className="btn" onClick={()=>setClosings(p=>p.map(x=>x.id===c.id?{...x,status:"reprovado"}:x))} style={{padding:"8px 12px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:7,fontSize:11}}>-</button>
+                                <button className="btn" onClick={async()=>{setClosings(p=>p.map(x=>x.id===c.id?{...x,status:"aprovado"}:x));await supabase.from("closings").update({status:"aprovado"}).eq("id",c.id);pushNotif("Comissão aprovada",`${c.partner} · ${fmt(c.value)}`,T.accent);}} style={{padding:"8px 14px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>- Aprovar</button>
+                                <button className="btn" onClick={async()=>{setClosings(p=>p.map(x=>x.id===c.id?{...x,status:"reprovado"}:x));await supabase.from("closings").update({status:"reprovado"}).eq("id",c.id);}} style={{padding:"8px 12px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:7,fontSize:11}}>-</button>
                               </div>
                             </div>
                           ))}
@@ -3179,19 +3208,19 @@ export default function App(){
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
                         <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Projetos</div>
                         <div style={{display:"flex",gap:8,marginBottom:10}}>
-                          <input value={newProject} onChange={e=>setNewProject(e.target.value)} placeholder="Nome..." style={{...inpS,flex:1}} onKeyDown={e=>e.key==="Enter"&&newProject.trim()&&(setProjects(p=>[...p,{id:Date.now(),name:newProject.trim(),active:true}]),setNewProject(""))}/>
-                          <button className="btn" onClick={()=>newProject.trim()&&(setProjects(p=>[...p,{id:Date.now(),name:newProject.trim(),active:true}]),setNewProject(""))} style={{padding:"8px 12px",background:T.accent,color:"#000",borderRadius:7,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>+</button>
+                          <input value={newProject} onChange={e=>setNewProject(e.target.value)} placeholder="Nome..." style={{...inpS,flex:1}} onKeyDown={e=>e.key==="Enter"&&newProject.trim()&&(setProjects(p=>{const rec={id:Date.now(),name:newProject.trim(),active:true};supabase.from("projects").insert(rec);return[...p,rec];}),setNewProject(""))}/>
+                          <button className="btn" onClick={()=>newProject.trim()&&(setProjects(p=>{const rec={id:Date.now(),name:newProject.trim(),active:true};supabase.from("projects").insert(rec);return[...p,rec];}),setNewProject(""))} style={{padding:"8px 12px",background:T.accent,color:"#000",borderRadius:7,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>+</button>
                         </div>
                         {projects.map(p=>(<div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 12px",background:T.surface,borderRadius:8,marginBottom:5,border:`1px solid ${T.border}`}}>
                           <span style={{fontSize:12}}>{p.name}</span>
-                          <div onClick={()=>setProjects(prev=>prev.map(x=>x.id===p.id?{...x,active:!x.active}:x))} style={{fontSize:10,cursor:"pointer",color:p.active?T.accent:T.muted}}>{p.active?"- Ativo":"- Inativo"}</div>
+                          <div onClick={async()=>{const na=!p.active;setProjects(prev=>prev.map(x=>x.id===p.id?{...x,active:na}:x));await supabase.from("projects").update({active:na}).eq("id",p.id);}} style={{fontSize:10,cursor:"pointer",color:p.active?T.accent:T.muted}}>{p.active?"- Ativo":"- Inativo"}</div>
                         </div>))}
                       </div>
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
                         <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Tipos de Parceiro</div>
                         <div style={{display:"flex",gap:8,marginBottom:10}}>
-                          <input value={newPtype} onChange={e=>setNewPtype(e.target.value)} placeholder="Ex: Sorveteria..." style={{...inpS,flex:1}} onKeyDown={e=>e.key==="Enter"&&newPtype.trim()&&(setPtypes(p=>[...p,{id:Date.now(),name:newPtype.trim()}]),setNewPtype(""))}/>
-                          <button className="btn" onClick={()=>newPtype.trim()&&(setPtypes(p=>[...p,{id:Date.now(),name:newPtype.trim()}]),setNewPtype(""))} style={{padding:"8px 12px",background:T.accent,color:"#000",borderRadius:7,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>+</button>
+                          <input value={newPtype} onChange={e=>setNewPtype(e.target.value)} placeholder="Ex: Sorveteria..." style={{...inpS,flex:1}} onKeyDown={e=>e.key==="Enter"&&newPtype.trim()&&(setPtypes(p=>{const rec={id:Date.now(),name:newPtype.trim()};supabase.from("ptypes").insert(rec);return[...p,rec];}),setNewPtype(""))}/>
+                          <button className="btn" onClick={()=>newPtype.trim()&&(setPtypes(p=>{const rec={id:Date.now(),name:newPtype.trim()};supabase.from("ptypes").insert(rec);return[...p,rec];}),setNewPtype(""))} style={{padding:"8px 12px",background:T.accent,color:"#000",borderRadius:7,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>+</button>
                         </div>
                         <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{ptypes.map(t=><div key={t.id} style={{padding:"5px 11px",background:T.purpleDim,border:`1px solid ${T.purple}44`,borderRadius:6,fontSize:11,color:T.purple}}>{t.name}</div>)}</div>
                       </div>
@@ -3212,7 +3241,7 @@ export default function App(){
                               <Badge label={c.typeName} color={T.purple}/>
                               <Badge label={c.projectName} color={T.info}/>
                               <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15,color:T.accent}}>{fmt(c.value)}</div>
-                              <div onClick={()=>setCommTable(p=>p.filter(x=>x.id!==c.id))} style={{fontSize:9,color:T.danger,cursor:"pointer"}}>remover</div>
+                              <div onClick={async()=>{setCommTable(p=>p.filter(x=>x.id!==c.id));await supabase.from("comm_table").delete().eq("id",c.id);}} style={{fontSize:9,color:T.danger,cursor:"pointer"}}>remover</div>
                             </div>
                           ))}
                         </div>
@@ -3232,7 +3261,7 @@ export default function App(){
                           <Badge label={c.project.split(" ")[0]} color={T.info}/>
                           <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmt(c.value)}</div>
                           <Badge label={c.status} color={c.status==="aprovado"?T.accent:c.status==="pendente"?T.warn:T.danger}/>
-                          <div>{c.status==="aprovado"&&!c.pago?(<button className="btn" onClick={()=>setClosings(p=>p.map(x=>x.id===c.id?{...x,pago:true}:x))} style={{padding:"3px 8px",background:T.greenDim,border:`1px solid ${T.green}44`,color:T.green,borderRadius:5,fontSize:9}}>Marcar pago</button>):(<span style={{fontSize:9,color:c.pago?T.green:T.muted}}>{c.pago?"- Pago":"-"}</span>)}</div>
+                          <div>{c.status==="aprovado"&&!c.pago?(<button className="btn" onClick={async()=>{setClosings(p=>p.map(x=>x.id===c.id?{...x,pago:true}:x));await supabase.from("closings").update({pago:true}).eq("id",c.id);}} style={{padding:"3px 8px",background:T.greenDim,border:`1px solid ${T.green}44`,color:T.green,borderRadius:5,fontSize:9}}>Marcar pago</button>):(<span style={{fontSize:9,color:c.pago?T.green:T.muted}}>{c.pago?"- Pago":"-"}</span>)}</div>
                         </div>
                       ))}
                     </div>
@@ -3428,7 +3457,7 @@ export default function App(){
                             - Coordenadas: {selPartner.endereco.lat.toFixed(4)}, {selPartner.endereco.lng.toFixed(4)}
                           </div>
                         )}
-                        <button className="btn" onClick={()=>setBasePartners(prev=>prev.map(p=>p.id===selPartner.id?{...p,endereco:selPartner.endereco}:p))} style={{width:"100%",marginTop:10,padding:"8px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>- Salvar endereço</button>
+                        <button className="btn" onClick={async()=>{let upd=null;setBasePartners(prev=>prev.map(p=>{if(p.id!==selPartner.id)return p;upd={...p,endereco:selPartner.endereco};return upd;}));if(upd)await supabase.from("parceiros").upsert({id:upd.id,data:upd});}} style={{width:"100%",marginTop:10,padding:"8px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>- Salvar endereço</button>
                       </div>
 
                       {/* Contract */}
