@@ -13,9 +13,9 @@ const SIMPLES_ANEXO_III=[
 ];
 const calcAliquotaEfetiva=(rbt12)=>{
   const faixa=SIMPLES_ANEXO_III.find(f=>rbt12>=f.min&&rbt12<f.max)||SIMPLES_ANEXO_III[0];
-  if(rbt12===0)return{faixa,aliquotaEfetiva:0};
+  if(rbt12===0)return {faixa,aliquotaEfetiva:0};
   const aliquotaEfetiva=((rbt12*faixa.aliquota)-faixa.deducao)/rbt12;
-  return{faixa,aliquotaEfetiva:Math.max(0,aliquotaEfetiva)};
+  return {faixa,aliquotaEfetiva:Math.max(0,aliquotaEfetiva)};
 };
 const CONTAS_INIT=[
   {id:1,banco:"Bradesco",tipo:"Conta Corrente",agencia:"1234-5",conta:"98765-4",saldo:14915.62,cor:"#CC0000"},
@@ -267,7 +267,7 @@ const PBar=({pct,color,h=5})=>(<div style={{height:h,background:T.border,borderR
 const KCard=({label,value,sub,color,icon,onClick,hint})=>(<div onClick={onClick} style={{background:T.card,border:`1px solid ${onClick?color+"44":T.border}`,borderRadius:12,padding:"16px 18px",cursor:onClick?"pointer":"default",transition:"all 0.15s",position:"relative"}} onMouseEnter={e=>{if(onClick)e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";}}>  <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1.5}}>{label}</span>{icon&&<span style={{fontSize:14}}>{icon}</span>}</div><div style={{fontFamily:"'Syne',sans-serif",fontSize:24,fontWeight:800,color,marginBottom:3}}>{value}</div>{sub&&<div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{sub}</div>}{onClick&&<div style={{fontSize:8,color:color,marginTop:5,fontFamily:"'JetBrains Mono',monospace",opacity:0.7}}>{hint||"Ver detalhes -"}</div>}</div>);
 const inpS={width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,fontFamily:"'JetBrains Mono',monospace",outline:"none"};
 const selS={...inpS};
-const tasksDone=(tasks)=>{const all=Object.values(tasks).flat();return{done:all.filter(t=>t.done).length,total:all.length};};
+const tasksDone=(tasks)=>{const all=Object.values(tasks).flat();return {done:all.filter(t=>t.done).length,total:all.length};};
 
 // --- FILE TYPE COLORS ---------------------------------------------------------
 const FILE_COLOR={arte:T.pink,pi:T.info,contrato:T.purple,base:T.green,nf:T.warn,relatorio:T.accent,outro:T.soft};
@@ -707,7 +707,7 @@ const ClientPanel=({camp,allPartners,onClose,onPDF})=>{
   const isFin=camp.stage===5;
   const campPartners=allPartners.filter(p=>camp.parceirosIds&&camp.parceirosIds.includes(p.id));
   const pieData=[{name:'Offline',value:offline,color:'#00C48C'},{name:'Stories',value:stTotal,color:'#E1306C'},{name:'Influencer',value:inTotal,color:'#F5A623'},{name:'Impulsionado',value:imTotal,color:'#3D9EFF'}].filter(d=>d.value>0);
-  const barData=campPartners.map(p=>{const st=imp.stories.find(s=>s.parceiro===p.name);return{name:p.name.split(' ').slice(0,2).join(' '),entregas:p.deliveries,stories:st?Number(st.impressoes):0};});
+  const barData=campPartners.map(p=>{const st=imp.stories.find(s=>s.parceiro===p.name);return {name:p.name.split(' ').slice(0,2).join(' '),entregas:p.deliveries,stories:st?Number(st.impressoes):0};});
   return(
     <div style={{position:'fixed',inset:0,zIndex:400,background:'#04060E',color:'#fff',fontFamily:"'JetBrains Mono',monospace",overflow:'auto'}}>
       <style>{'@import url(https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;500&display=swap);.leaflet-container{font-family:sans-serif;}.cp-card{background:linear-gradient(135deg,#0E1020,#0A0C18);border:1px solid #1E2240;border-radius:16px;}'}</style>
@@ -1091,7 +1091,7 @@ export default function App(){
       const newStage=STAGES_CAMP.find(s=>s.id===stageId);
       const entry={id:Date.now(),type:"stage",text:`Etapa movida: ${prevStage?.label} - ${newStage?.label}`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:newStage?.color||T.accent};
       const newProgress=Math.round(((stageId-1)/4)*100);
-      return{...c,stage:stageId,progress:newProgress,timeline:[...c.timeline,entry]};
+      return {...c,stage:stageId,progress:newProgress,timeline:[...c.timeline,entry]};
     }));
     addNotif("etapa","Campanha avancou","Movida para "+STAGES_CAMP.find(s=>s.id===stageId)?.label,STAGES_CAMP.find(s=>s.id===stageId)?.label,STAGES_CAMP.find(s=>s.id===stageId)?.color||T.accent,["sistema","whatsapp","email"]);
     setDragCampId(null);setDragOverCampStage(null);
@@ -1146,7 +1146,7 @@ export default function App(){
       setCamps(prev=>prev.map(c=>{
         if(c.id!==campId)return c;
         const entry={id:Date.now(),type:"stage",text:`Etapa movida: ${prevStage?.label} - ${newStage?.label}`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:newStage?.color||T.accent};
-        return{...c,stage:stageId,progress:Math.round(((stageId-1)/4)*100),timeline:[...c.timeline,entry]};
+        return {...c,stage:stageId,progress:Math.round(((stageId-1)/4)*100),timeline:[...c.timeline,entry]};
       }));
       pushNotif("Campanha movida",`- ${newStage?.label}`,newStage?.color||T.accent);
     }
@@ -1169,16 +1169,16 @@ export default function App(){
         taskLabel=t.label;
         wasDone=t.done;
         const done=!t.done;
-        return{...t,done,doneAt:done?now():undefined,doneBy:done?byUser?.name:undefined};
+        return {...t,done,doneAt:done?now():undefined,doneBy:done?byUser?.name:undefined};
       })};
       const newTl=[...c.timeline,{id:Date.now(),type:"task",text:(newTasks[sec].find(t=>t.id===taskId)?.done?"Concluido":"Reaberto")+": "+taskLabel,user:byUser?.name||"Sistema",avatar:byUser?.avatar||"?",at:now(),color:SEC_COLOR[sec]||T.accent}];
-      return{...c,tasks:newTasks,timeline:newTl};
+      return {...c,tasks:newTasks,timeline:newTl};
     }));
     if(selCamp?.id===campId){
       setSelCamp(prev=>{
         const newTasks={...prev.tasks,[sec]:prev.tasks[sec].map(t=>t.id===taskId?{...t,done:!t.done,doneAt:!t.done?now():undefined,doneBy:!t.done?byUser?.name:undefined}:t)};
         const newTl=[...prev.timeline,{id:Date.now(),type:"task",text:(newTasks[sec].find(t=>t.id===taskId)?.done?"Concluido":"Reaberto")+": "+taskLabel,user:byUser?.name||"Sistema",avatar:byUser?.avatar||"?",at:now(),color:SEC_COLOR[sec]||T.accent}];
-        return{...prev,tasks:newTasks,timeline:newTl};
+        return {...prev,tasks:newTasks,timeline:newTl};
       });
     }
     if(!wasDone) addNotif("tarefa","Tarefa concluida",byUser?.name+" concluiu: "+taskLabel,camps.find(c=>c.id===campId)?.name,SEC_COLOR[sec]||T.accent,["sistema","email"]);
@@ -1240,7 +1240,7 @@ export default function App(){
     setBasePartners(prev=>prev.map(p=>{
       if(p.id!==partnerId)return p;
       const updated={...p,contrato:{status:"assinado",enviadoEm:p.contrato.enviadoEm,assinadoEm,expiraEm}};
-      return{...updated,score:calcScore(updated)};
+      return {...updated,score:calcScore(updated)};
     }));
     setSelPartner(prev=>prev?{...prev,contrato:{...prev.contrato,status:"assinado",assinadoEm,expiraEm}}:null);
     addNotif("contrato","Contrato assinado!",basePartners.find(p=>p.id===partnerId)?.name+" assinou o contrato de exclusividade",null,T.accent,["sistema","email"]);
@@ -2258,7 +2258,7 @@ export default function App(){
 
                   // Running balance
                   let saldoAcum=saldoInicial;
-                  const lancComSaldo=lancOrdenados.map(l=>{ saldoAcum+=l.entrada-l.saida; return{...l,saldoAcum}; });
+                  const lancComSaldo=lancOrdenados.map(l=>{ saldoAcum+=l.entrada-l.saida; return ({...l,saldoAcum}); });
                   const saldoReal=lancComSaldo.length>0?lancComSaldo[lancComSaldo.length-1].saldoAcum:saldoInicial;
 
                   // Custos fixos restantes no mes (ainda nao lancados)
