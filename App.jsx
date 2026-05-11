@@ -2530,8 +2530,24 @@ export default function App(){
                             </div>
                             <div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif",marginBottom:2,lineHeight:1.3}}>{c.name}</div>
                             <div style={{fontSize:9,color:T.soft,marginBottom:1}}>{c.client}</div>
-                            {c.agencia&&<div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",marginBottom:5}}>{c.agencia}</div>}
-                            {!c.agencia&&<div style={{marginBottom:5}}/>}
+                            {c.agencia&&<div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",marginBottom:6}}>{c.agencia}</div>}
+                            {!c.agencia&&<div style={{marginBottom:4}}/>}
+
+                            {/* Bloco operacional */}
+                            {(c.graficaFornecedor||c.material||c.logistica||c.sacolas)?(
+                              <div style={{background:T.surface,borderRadius:6,padding:"7px 8px",marginBottom:7,fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",display:"flex",flexDirection:"column",gap:3}}>
+                                {c.graficaFornecedor&&<div style={{display:"flex",gap:4}}><span style={{color:T.purple}}>Grá:</span><span style={{color:T.soft}}>{c.graficaFornecedor}</span></div>}
+                                {c.material&&<div style={{display:"flex",gap:4}}><span style={{color:T.purple}}>Mat:</span><span style={{color:T.soft,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.material}</span></div>}
+                                {c.logistica&&<div style={{display:"flex",gap:4}}><span style={{color:T.info}}>Log:</span><span style={{color:T.soft}}>{c.logistica}</span></div>}
+                                {c.sacolas>0&&<div style={{display:"flex",gap:4}}><span style={{color:T.accent}}>Emb:</span><span style={{color:T.soft}}>{c.sacolas.toLocaleString("pt-BR")}</span></div>}
+                                {c.valorLiquido>0&&<div style={{display:"flex",gap:4}}><span style={{color:T.accent}}>Val:</span><span style={{color:T.accent,fontWeight:700}}>R${c.valorLiquido.toLocaleString("pt-BR")}</span></div>}
+                              </div>
+                            ):(
+                              <div style={{background:T.warnDim,border:`1px solid ${T.warn}33`,borderRadius:6,padding:"5px 8px",marginBottom:7,fontSize:8,color:T.warn,fontFamily:"'JetBrains Mono',monospace"}}>
+                                Operacional não preenchido
+                              </div>
+                            )}
+
                             <PBar pct={c.progress} color={stage.color} h={4}/>
                             <div style={{display:"flex",justifyContent:"space-between",marginTop:5,gap:6}}>
                               <span style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{td.done}/{td.total} tarefas</span>
