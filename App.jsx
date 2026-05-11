@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { createClient } from "@supabase/supabase-js";
+
+const SUPABASE_URL = "https://xklvqcxhtariqghvnseh.supabase.co";
+const SUPABASE_KEY = "sb_publishable_0Y8LZnFlLIrVrQ-EdsjTQQ_1w0MwYQ2";
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const T={bg:"#06070D",surface:"#0C0E18",card:"#10121E",border:"#1A1E30",accent:"#00E5A0",accentDim:"#00E5A012",accentBorder:"#00E5A038",text:"#E6E8F0",muted:"#4A5070",soft:"#8A90A8",warn:"#F5A623",warnDim:"#F5A62315",danger:"#FF4D6A",dangerDim:"#FF4D6A12",info:"#3D9EFF",infoDim:"#3D9EFF12",purple:"#9B7FFF",purpleDim:"#9B7FFF12",pink:"#F472B6",green:"#25D366",greenDim:"#25D36612"};
 
@@ -1026,6 +1031,31 @@ export default function App(){
   const[novoCusto,setNovoCusto]=useState({descricao:"",valor:0,dia:5,categoria:"Outros",centrosCusto:"Administrativo",ativo:true});
   const[novaConta,setNovaConta]=useState({banco:"",tipo:"Conta Corrente",agencia:"",conta:"",saldo:0,cor:"#00E5A0"});
   const[novoCentro,setNovoCentro]=useState("");
+
+  // --- SUPABASE LOAD -------------------------------------------------------
+  useEffect(()=>{
+    const load=async()=>{
+      const [lanc,conts,carts,compras,custos,fats,camps,prosps]=await Promise.all([
+        supabase.from("lancamentos").select("*").order("id"),
+        supabase.from("contas").select("*").order("id"),
+        supabase.from("cartoes").select("*").order("id"),
+        supabase.from("compras_cartao").select("*").order("id"),
+        supabase.from("custos_fixos").select("*").order("id"),
+        supabase.from("fat_mensais").select("*").order("id"),
+        supabase.from("campanhas").select("*").order("id"),
+        supabase.from("prospects").select("*").order("id"),
+      ]);
+      if(lanc.data?.length)setLancamentos(lanc.data.map(r=>({...r,centrosCusto:r.centrosCusto,contaBancoId:r.contaBancoId})));
+      if(conts.data?.length)setContas(conts.data);
+      if(carts.data?.length)setCartoes(carts.data);
+      if(compras.data?.length)setComprasCartao(compras.data.map(r=>({...r,cartaoId:r.cartaoId,valorTotal:r.valorTotal,parcelaAtual:r.parcelaAtual,valorParcela:r.valorParcela,mesInicio:r.mesInicio})));
+      if(custos.data?.length)setCustosFix(custos.data.map(r=>({...r,centrosCusto:r.centrosCusto})));
+      if(fats.data?.length)setFatMensais(fats.data);
+      if(camps.data?.length)setCamps(camps.data.map(r=>({...r,endDate:r.endDate,tasks:r.tasks||{},timeline:r.timeline||[],partners:r.partners||[],tags:r.tags||[]})));
+      if(prosps.data?.length)setProspects(prosps.data);
+    };
+    load();
+  },[]);
 
   // --- DERIVED -------------------------------------------------------------
   const sec=user?ROLE_TO_SEC[user.role]:null;
@@ -2458,14 +2488,18 @@ export default function App(){
                           </div>
                           <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
                             <button onClick={()=>setShowAdd(false)} className="btn" style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10}}>Cancelar</button>
-                            <button onClick={()=>{
+                            <button onClick={async()=>{
                               if(!novoLanc.data||!novoLanc.descricao)return;
                               const dateFmt=novoLanc.data.split("-").reverse().join("/");
-                              setLancamentos(p=>[...p,{...novoLanc,id:Date.now(),data:dateFmt}]);
-                              // Update account balance
+                              const novoId=Date.now();
+                              const rec={...novoLanc,id:novoId,data:dateFmt};
+                              setLancamentos(p=>[...p,rec]);
                               setContas(p=>p.map(c=>c.id===novoLanc.contaBancoId?{...c,saldo:c.saldo+novoLanc.entrada-novoLanc.saida}:c));
                               setShowAdd(false);
                               setNovoLanc({data:"",descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1});
+                              await supabase.from("lancamentos").upsert({...rec,centrosCusto:rec.centrosCusto,contaBancoId:rec.contaBancoId});
+                              const contaAtual=contas.find(c=>c.id===novoLanc.contaBancoId);
+                              if(contaAtual)await supabase.from("contas").update({saldo:contaAtual.saldo+novoLanc.entrada-novoLanc.saida}).eq("id",novoLanc.contaBancoId);
                             }} className="btn" style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700}}>Salvar</button>
                           </div>
                         </div>
@@ -2534,7 +2568,7 @@ export default function App(){
                           </div>
                           <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
                             <button onClick={()=>setShowAddCartao(false)} className="btn" style={{padding:"6px 12px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10}}>Cancelar</button>
-                            <button onClick={()=>{if(!novoCartao.nome)return;setCartoes(p=>[...p,{...novoCartao,id:Date.now()}]);setShowAddCartao(false);}} className="btn" style={{padding:"6px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700}}>Salvar</button>
+                            <button onClick={async()=>{if(!novoCartao.nome)return;const rec={...novoCartao,id:Date.now()};setCartoes(p=>[...p,rec]);setShowAddCartao(false);await supabase.from("cartoes").upsert(rec);}} className="btn" style={{padding:"6px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700}}>Salvar</button>
                           </div>
                         </div>
                       )}
@@ -2565,7 +2599,7 @@ export default function App(){
                           )}
                           <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
                             <button onClick={()=>setShowAddCompra(false)} className="btn" style={{padding:"6px 12px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10}}>Cancelar</button>
-                            <button onClick={()=>{if(!novaCompra.projeto||!novaCompra.valorTotal)return;setComprasCartao(p=>[...p,{...novaCompra,id:Date.now(),valorParcela:novaCompra.valorTotal/novaCompra.parcelas}]);setShowAddCompra(false);}} className="btn" style={{padding:"6px 12px",background:T.warnDim,border:`1px solid ${T.warn}44`,color:T.warn,borderRadius:7,fontSize:10,fontWeight:700}}>Salvar</button>
+                            <button onClick={async()=>{if(!novaCompra.projeto||!novaCompra.valorTotal)return;const rec={...novaCompra,id:Date.now(),valorParcela:novaCompra.valorTotal/novaCompra.parcelas};setComprasCartao(p=>[...p,rec]);setShowAddCompra(false);await supabase.from("compras_cartao").upsert({...rec,cartaoId:rec.cartaoId,valorTotal:rec.valorTotal,parcelaAtual:rec.parcelaAtual,valorParcela:rec.valorParcela,mesInicio:rec.mesInicio});}} className="btn" style={{padding:"6px 12px",background:T.warnDim,border:`1px solid ${T.warn}44`,color:T.warn,borderRadius:7,fontSize:10,fontWeight:700}}>Salvar</button>
                           </div>
                         </div>
                       )}
@@ -2643,7 +2677,7 @@ export default function App(){
                             {fatMensais.map((f,i)=>(
                               <div key={i} style={{display:"flex",gap:8,alignItems:"center"}}>
                                 <span style={{fontSize:9,color:T.muted,width:60,flexShrink:0}}>{f.mes}</span>
-                                <input type="number" value={f.fat} onChange={e=>setFatMensais(p=>p.map((x,j)=>j===i?{...x,fat:Number(e.target.value)}:x))} style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"4px 8px",fontSize:11,color:T.text,outline:"none"}}/>
+                                <input type="number" value={f.fat} onChange={async e=>{const v=Number(e.target.value);setFatMensais(p=>p.map((x,j)=>j===i?{...x,fat:v}:x));await supabase.from("fat_mensais").update({fat:v}).eq("mes",f.mes);}} style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"4px 8px",fontSize:11,color:T.text,outline:"none"}}/>
                                 <span style={{fontSize:9,color:T.accent,fontFamily:"'JetBrains Mono',monospace",width:80,textAlign:"right",flexShrink:0}}>{fmt(f.fat)}</span>
                               </div>
                             ))}
@@ -2773,7 +2807,7 @@ export default function App(){
                             </div>
                             <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
                               <button onClick={()=>setShowAddFixo(false)} className="btn" style={{padding:"5px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:9}}>Cancelar</button>
-                              <button onClick={()=>{if(!novoCusto.descricao)return;setCustosFix(p=>[...p,{...novoCusto,id:Date.now()}]);setShowAddFixo(false);}} className="btn" style={{padding:"5px 10px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,fontSize:9,fontWeight:700}}>Salvar</button>
+                              <button onClick={async()=>{if(!novoCusto.descricao)return;const rec={...novoCusto,id:Date.now()};setCustosFix(p=>[...p,rec]);setShowAddFixo(false);await supabase.from("custos_fixos").upsert({...rec,centrosCusto:rec.centrosCusto});}} className="btn" style={{padding:"5px 10px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,fontSize:9,fontWeight:700}}>Salvar</button>
                             </div>
                           </div>
                         )}
@@ -2786,7 +2820,7 @@ export default function App(){
                             </div>
                             <span style={{fontSize:11,color:T.danger,fontFamily:"'JetBrains Mono',monospace"}}>{fmt(c.valor)}</span>
                             <Badge label={c.ativo?"Ativo":"Inativo"} color={c.ativo?T.accent:T.muted}/>
-                            <div onClick={()=>setCustosFix(p=>p.map(x=>x.id===c.id?{...x,ativo:!x.ativo}:x))} style={{fontSize:9,color:T.muted,cursor:"pointer",textAlign:"center"}}>Toggle</div>
+                            <div onClick={async()=>{const novoAtivo=!c.ativo;setCustosFix(p=>p.map(x=>x.id===c.id?{...x,ativo:novoAtivo}:x));await supabase.from("custos_fixos").update({ativo:novoAtivo}).eq("id",c.id);}} style={{fontSize:9,color:T.muted,cursor:"pointer",textAlign:"center"}}>Toggle</div>
                           </div>
                         ))}
                       </div>
@@ -2807,7 +2841,7 @@ export default function App(){
                             </div>
                             <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
                               <button onClick={()=>setShowAddConta(false)} className="btn" style={{padding:"5px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:9}}>Cancelar</button>
-                              <button onClick={()=>{if(!novaConta.banco)return;setContas(p=>[...p,{...novaConta,id:Date.now()}]);setShowAddConta(false);}} className="btn" style={{padding:"5px 10px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,fontSize:9,fontWeight:700}}>Salvar</button>
+                              <button onClick={async()=>{if(!novaConta.banco)return;const rec={...novaConta,id:Date.now()};setContas(p=>[...p,rec]);setShowAddConta(false);await supabase.from("contas").upsert(rec);}} className="btn" style={{padding:"5px 10px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,fontSize:9,fontWeight:700}}>Salvar</button>
                             </div>
                           </div>
                         )}
@@ -2821,8 +2855,8 @@ export default function App(){
                               </div>
                             </div>
                             <div style={{display:"flex",gap:10,alignItems:"center"}}>
-                              <input type="number" value={c.saldo} onChange={e=>setContas(p=>p.map(x=>x.id===c.id?{...x,saldo:Number(e.target.value)}:x))} style={{width:100,background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"4px 7px",fontSize:11,color:T.text,outline:"none",textAlign:"right"}}/>
-                              <div onClick={()=>setContas(p=>p.filter(x=>x.id!==c.id))} style={{fontSize:9,color:T.danger,cursor:"pointer"}}>x</div>
+                              <input type="number" value={c.saldo} onChange={async e=>{const s=Number(e.target.value);setContas(p=>p.map(x=>x.id===c.id?{...x,saldo:s}:x));await supabase.from("contas").update({saldo:s}).eq("id",c.id);}} style={{width:100,background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"4px 7px",fontSize:11,color:T.text,outline:"none",textAlign:"right"}}/>
+                              <div onClick={async()=>{setContas(p=>p.filter(x=>x.id!==c.id));await supabase.from("contas").delete().eq("id",c.id);}} style={{fontSize:9,color:T.danger,cursor:"pointer"}}>x</div>
                             </div>
                           </div>
                         ))}
