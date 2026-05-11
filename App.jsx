@@ -1018,7 +1018,8 @@ export default function App(){
   const[touchOverStage,setTouchOverStage]=useState(null);
   // --- FINANCEIRO STATES (movidos do IIFE para nivel do componente) --------
   const[showAdd,setShowAdd]=useState(false);
-  const[novoLanc,setNovoLanc]=useState({data:"",descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1});
+  const todayISO=new Date().toISOString().slice(0,10);
+  const[novoLanc,setNovoLanc]=useState({data:todayISO,descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1});
   const[showAddCartao,setShowAddCartao]=useState(false);
   const[showAddCompra,setShowAddCompra]=useState(false);
   const[novoCartao,setNovoCartao]=useState({nome:"",titular:"",vencimento:15,limite:0,banco:"",cor:"#3D9EFF"});
@@ -2496,7 +2497,7 @@ export default function App(){
                               setLancamentos(p=>[...p,rec]);
                               setContas(p=>p.map(c=>c.id===novoLanc.contaBancoId?{...c,saldo:c.saldo+novoLanc.entrada-novoLanc.saida}:c));
                               setShowAdd(false);
-                              setNovoLanc({data:"",descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1});
+                              setNovoLanc({data:new Date().toISOString().slice(0,10),descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1});
                               await supabase.from("lancamentos").upsert({...rec,centrosCusto:rec.centrosCusto,contaBancoId:rec.contaBancoId});
                               const contaAtual=contas.find(c=>c.id===novoLanc.contaBancoId);
                               if(contaAtual)await supabase.from("contas").update({saldo:contaAtual.saldo+novoLanc.entrada-novoLanc.saida}).eq("id",novoLanc.contaBancoId);
