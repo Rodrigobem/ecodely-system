@@ -619,6 +619,8 @@ const ImpactosTab=({camp,allPartners,onUpdate})=>{
   const[newInfl,setNewInfl]=useState({nome:'',alcance:''});
   const[newImp,setNewImp]=useState({plataforma:'',alcance:''});
   const[newFoto,setNewFoto]=useState({url:'',legenda:''});
+  const[uploadingGal,setUploadingGal]=useState(false);
+  const galFileRef=useRef(null);
   const imp=camp.impactos||{stories:[],influencer:[],impulsionado:[],galeria:[]};
   const sacolas=camp.sacolasDistribuidas||camp.sacolas||0;
   const offline=Math.round(sacolas*3.3);
@@ -628,6 +630,39 @@ const ImpactosTab=({camp,allPartners,onUpdate})=>{
   const total=offline+stTotal+inTotal+imTotal;
   const upd=(field,val)=>onUpdate(camp.id,{...imp,[field]:val});
   const iS={width:'100%',background:'#0C0E18',border:'1px solid #1A1E30',borderRadius:7,padding:'7px 11px',fontSize:11,color:'#E6E8F0',outline:'none',fontFamily:"'JetBrains Mono',monospace"};
+
+  // Converte link do Drive/YouTube para embed/direto
+  const convertUrl=(url)=>{
+    if(!url)return url;
+    // Google Drive: /file/d/ID/view → uc?export=view&id=ID
+    const driveMatch=url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    if(driveMatch)return`https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
+    // Google Drive open?id=ID
+    const driveOpen=url.match(/drive\.google\.com\/open\?id=([^&]+)/);
+    if(driveOpen)return`https://drive.google.com/uc?export=view&id=${driveOpen[1]}`;
+    // YouTube: watch?v=ID ou youtu.be/ID → embed
+    const ytWatch=url.match(/youtube\.com\/watch\?v=([^&]+)/);
+    if(ytWatch)return`https://www.youtube.com/embed/${ytWatch[1]}`;
+    const ytShort=url.match(/youtu\.be\/([^?]+)/);
+    if(ytShort)return`https://www.youtube.com/embed/${ytShort[1]}`;
+    return url;
+  };
+
+  const isVideo=(url)=>url&&(url.includes('youtube.com/embed')||url.includes('youtu.be')||/\.(mp4|mov|webm)$/i.test(url));
+
+  const handleGalUpload=async(e)=>{
+    const file=e.target.files?.[0];
+    if(!file)return;
+    setUploadingGal(true);
+    const path=`campanhas/${camp.id}/galeria/${Date.now()}_${file.name.replace(/\s/g,'_')}`;
+    const{error}=await supabase.storage.from('ecodely-files').upload(path,file,{upsert:true});
+    if(error){console.error('Galeria upload error:',error);setUploadingGal(false);return;}
+    const{data:{publicUrl}}=supabase.storage.from('ecodely-files').getPublicUrl(path);
+    const tipo=file.type.startsWith('video')?'video':'foto';
+    upd('galeria',[...imp.galeria,{id:Date.now(),url:publicUrl,legenda:file.name.replace(/\.[^.]+$/,''),tipo,at:new Date().toLocaleDateString('pt-BR')}]);
+    setUploadingGal(false);
+    e.target.value='';
+  };
   return(
     <div>
       <div style={{background:'linear-gradient(135deg,#00E5A015,#9B7FFF10)',border:'1px solid #00E5A040',borderRadius:12,padding:'18px 20px',marginBottom:16}}>
@@ -691,20 +726,37 @@ const ImpactosTab=({camp,allPartners,onUpdate})=>{
       ))}
       <div style={{background:T.card,border:'1px solid '+T.border,borderRadius:10,padding:'12px 16px'}}>
         <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:10}}>Galeria da Campanha</div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:10}}>
-          {imp.galeria.map((g,i)=>(
-            <div key={i} style={{position:'relative',borderRadius:8,overflow:'hidden',aspectRatio:'1'}}>
-              <img src={g.url} alt={g.legenda} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-              {g.legenda&&<div style={{position:'absolute',bottom:0,left:0,right:0,background:'#00000088',padding:'4px 6px',fontSize:8,color:'#fff'}}>{g.legenda}</div>}
-              <div onClick={()=>upd('galeria',imp.galeria.filter((_,j)=>j!==i))} style={{position:'absolute',top:4,right:4,width:18,height:18,borderRadius:'50%',background:T.danger,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,cursor:'pointer',fontWeight:700}}>x</div>
-            </div>
-          ))}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:12}}>
+          {imp.galeria.map((g,i)=>{
+            const url=convertUrl(g.url);
+            const vid=isVideo(url);
+            return(
+              <div key={i} style={{position:'relative',borderRadius:8,overflow:'hidden',aspectRatio:'1',background:T.surface}}>
+                {vid
+                  ?<iframe src={url} style={{width:'100%',height:'100%',border:'none'}} allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowFullScreen/>
+                  :<img src={url} alt={g.legenda} style={{width:'100%',height:'100%',objectFit:'cover'}} onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} />
+                }
+                {!vid&&<div style={{display:'none',position:'absolute',inset:0,alignItems:'center',justifyContent:'center',background:T.surface,fontSize:9,color:T.muted,flexDirection:'column',gap:4}}><span style={{fontSize:20}}>-</span><a href={g.url} target="_blank" rel="noreferrer" style={{color:T.accent,fontSize:9}}>Abrir link</a></div>}
+                {g.legenda&&<div style={{position:'absolute',bottom:0,left:0,right:0,background:'#00000088',padding:'4px 6px',fontSize:8,color:'#fff'}}>{g.legenda}</div>}
+                <div onClick={()=>upd('galeria',imp.galeria.filter((_,j)=>j!==i))} style={{position:'absolute',top:4,right:4,width:18,height:18,borderRadius:'50%',background:T.danger,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,cursor:'pointer',fontWeight:700}}>x</div>
+              </div>
+            );
+          })}
         </div>
+        {/* Upload direto */}
+        <input ref={galFileRef} type="file" accept="image/*,video/*" style={{display:'none'}} onChange={handleGalUpload}/>
+        <div style={{display:'flex',gap:8,marginBottom:8}}>
+          <button onClick={()=>!uploadingGal&&galFileRef.current?.click()} style={{padding:'7px 12px',background:uploadingGal?T.accentDim:T.surface,border:`1px solid ${T.accent}55`,color:T.accent,borderRadius:7,cursor:'pointer',fontSize:10,fontWeight:700,whiteSpace:'nowrap'}}>
+            {uploadingGal?'Enviando...':'- Upload foto/vídeo'}
+          </button>
+        </div>
+        {/* Link externo (Drive, YouTube, etc.) */}
         <div style={{display:'flex',gap:8}}>
-          <input placeholder="URL da foto/video" value={newFoto.url} onChange={e=>setNewFoto(p=>({...p,url:e.target.value}))} style={{...iS,flex:2}}/>
+          <input placeholder="Link externo — Google Drive, YouTube, Instagram..." value={newFoto.url} onChange={e=>setNewFoto(p=>({...p,url:e.target.value}))} style={{...iS,flex:2}}/>
           <input placeholder="Legenda" value={newFoto.legenda} onChange={e=>setNewFoto(p=>({...p,legenda:e.target.value}))} style={{...iS,flex:1}}/>
-          <button onClick={()=>{if(!newFoto.url)return;upd('galeria',[...imp.galeria,{id:Date.now(),...newFoto,tipo:'foto',at:new Date().toLocaleDateString('pt-BR')}]);setNewFoto({url:'',legenda:''}); }} style={{padding:'7px 12px',background:T.accent,color:'#000',borderRadius:7,border:'none',cursor:'pointer',fontWeight:700,fontSize:11}}>+</button>
+          <button onClick={()=>{if(!newFoto.url)return;upd('galeria',[...imp.galeria,{id:Date.now(),url:newFoto.url,legenda:newFoto.legenda,tipo:isVideo(convertUrl(newFoto.url))?'video':'foto',at:new Date().toLocaleDateString('pt-BR')}]);setNewFoto({url:'',legenda:''}); }} style={{padding:'7px 12px',background:T.accent,color:'#000',borderRadius:7,border:'none',cursor:'pointer',fontWeight:700,fontSize:11}}>+</button>
         </div>
+        <div style={{fontSize:9,color:T.muted,marginTop:5,fontFamily:"'JetBrains Mono',monospace"}}>Drive: cole o link de compartilhamento — convertido automaticamente</div>
       </div>
     </div>
   );
@@ -851,12 +903,16 @@ const ClientPanel=({camp,allPartners,onClose,onPDF})=>{
           <div className="cp-card" style={{padding:'20px 24px',marginBottom:20}}>
             <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:'#fff',marginBottom:14}}>Campanha em campo</div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10}}>
-              {imp.galeria.map((g,i)=>(
-                <div key={i} style={{borderRadius:12,overflow:'hidden',aspectRatio:'4/3',position:'relative'}}>
-                  <img src={g.url} alt={g.legenda} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-                  {g.legenda&&<div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,#000000CC)',padding:'12px 12px 10px',fontSize:10,color:'#fff'}}>{g.legenda}</div>}
-                </div>
-              ))}
+              {imp.galeria.map((g,i)=>{
+                const url=g.url?.includes('drive.google.com/file/d/')?`https://drive.google.com/uc?export=view&id=${g.url.match(/\/d\/([^/]+)/)?.[1]}`:g.url?.includes('youtube.com/watch')?`https://www.youtube.com/embed/${g.url.match(/v=([^&]+)/)?.[1]}`:g.url?.includes('youtu.be/')?`https://www.youtube.com/embed/${g.url.split('youtu.be/')[1]}`:g.url;
+                const vid=url&&(url.includes('youtube.com/embed')||/\.(mp4|mov|webm)$/i.test(url));
+                return(
+                  <div key={i} style={{borderRadius:12,overflow:'hidden',aspectRatio:'4/3',position:'relative',background:'#111'}}>
+                    {vid?<iframe src={url} style={{width:'100%',height:'100%',border:'none'}} allowFullScreen/>:<img src={url} alt={g.legenda} style={{width:'100%',height:'100%',objectFit:'cover'}}/>}
+                    {g.legenda&&<div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,#000000CC)',padding:'12px 12px 10px',fontSize:10,color:'#fff'}}>{g.legenda}</div>}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
