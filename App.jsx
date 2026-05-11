@@ -1094,7 +1094,7 @@ export default function App(){
   const[newComm,setNewComm]=useState({typeId:"",projectId:"",value:""});
   const[users,setUsers]=useState(USERS_DB);
   const[showNewUser,setShowNewUser]=useState(false);
-  const[newUser,setNewUser]=useState({name:"",email:"",role:"base"});
+  const[newUser,setNewUser]=useState({name:"",email:"",pass:"",role:"base"});
   const[baseSearch,setBaseSearch]=useState("");
   const[baseFilter,setBaseFilter]=useState("todos");
   const[baseScoreMin,setBaseScoreMin]=useState(0);
@@ -1448,10 +1448,10 @@ export default function App(){
   };
 
   const addUser=async()=>{
-    if(!newUser.name||!newUser.email)return;
+    if(!newUser.name||!newUser.email||!newUser.pass)return;
     const rec={id:Date.now(),...newUser,avatar:newUser.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2),active:true,lastAccess:"nunca"};
     setUsers(p=>[...p,rec]);
-    setNewUser({name:"",email:"",role:"base"});setShowNewUser(false);
+    setNewUser({name:"",email:"",pass:"",role:"base"});setShowNewUser(false);
     const{error}=await supabase.from("usuarios").insert(rec);
     if(error)console.error("SUPABASE addUser erro:",error.message,error.details);
     else console.log("SUPABASE addUser OK:",rec.name);
@@ -3862,7 +3862,7 @@ export default function App(){
                 <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18,marginBottom:12}} className="fade">
                   <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.accent,marginBottom:12}}>Novo Usuário</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
-                    {[["Nome","name","text"],["E-mail","email","email"]].map(([l,k,t])=>(<div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{l}</div><input type={t} value={newUser[k]} onChange={e=>setNewUser(p=>({...p,[k]:e.target.value}))} style={inpS}/></div>))}
+                    {[["Nome","name","text"],["E-mail","email","email"],["Senha","pass","password"]].map(([l,k,t])=>(<div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{l}</div><input type={t} value={newUser[k]} onChange={e=>setNewUser(p=>({...p,[k]:e.target.value}))} style={inpS}/></div>))}
                     <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Perfil</div><select value={newUser.role} onChange={e=>setNewUser(p=>({...p,role:e.target.value}))} style={selS}>{Object.entries(ROLE_LABELS).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
                   </div>
                   <div style={{display:"flex",gap:8}}><button className="btn" onClick={addUser} style={{padding:"8px 16px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>Criar</button><button className="btn" onClick={()=>setShowNewUser(false)} style={{padding:"8px 12px",background:T.card,border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:11}}>Cancelar</button></div>
