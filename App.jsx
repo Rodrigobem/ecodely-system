@@ -268,6 +268,55 @@ const getNav=(role,queueCount,notifCount)=>[
 
 // --- HELPERS -----------------------------------------------------------------
 const Badge=({label,color})=>(<span style={{fontSize:9,padding:"2px 8px",borderRadius:4,background:color+"22",color,border:`1px solid ${color}33`,fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap"}}>{label}</span>);
+
+// Helper: converte qualquer link externo para URL de embed
+const toEmbedUrl=(url)=>{
+  if(!url)return url;
+  const driveId=url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/)?.[1];
+  if(driveId)return{url:`https://drive.google.com/file/d/${driveId}/preview`,type:'drive',thumb:null};
+  const ytId=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)?.[1];
+  if(ytId)return{url:`https://www.youtube.com/embed/${ytId}?autoplay=1`,type:'youtube',thumb:`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`};
+  if(/\.(mp4|mov|webm)$/i.test(url))return{url,type:'video',thumb:null};
+  return null; // imagem normal
+};
+
+const GaleriaItem=({g,onRemove,editable=false})=>{
+  const[playing,setPlaying]=useState(false);
+  const embed=toEmbedUrl(g.url);
+  const ar=g.orientacao==='vertical'?'9/16':g.orientacao==='quadrado'?'1/1':'16/9';
+  return(
+    <div style={{position:'relative',borderRadius:8,overflow:'hidden',background:T.surface,cursor:embed&&!playing?'pointer':'default'}}
+         onClick={()=>embed&&!playing&&setPlaying(true)}>
+      {/* Container com aspect ratio fixo apenas para embeds */}
+      <div style={embed?{position:'relative',paddingBottom:ar==='9/16'?'177.77%':ar==='1/1'?'100%':'56.25%'}:{}}>
+        {embed&&playing?(
+          <iframe src={embed.url} style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',border:'none'}}
+                  allow="autoplay;accelerometer;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowFullScreen/>
+        ):embed?(
+          // Thumbnail + play button
+          <div style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            {embed.thumb
+              ?<img src={embed.thumb} alt="" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>
+              :<div style={{position:'absolute',inset:0,background:'#0d1117',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                 <span style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{embed.type==='drive'?'Google Drive':'Vídeo'}</span>
+               </div>
+            }
+            {/* Play button overlay */}
+            <div style={{position:'relative',zIndex:2,width:44,height:44,borderRadius:'50%',background:'rgba(255,255,255,0.92)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 2px 12px #0006'}}>
+              <div style={{width:0,height:0,borderTop:'9px solid transparent',borderBottom:'9px solid transparent',borderLeft:'15px solid #111',marginLeft:3}}/>
+            </div>
+          </div>
+        ):(
+          // Imagem normal — sem aspect ratio forçado
+          <img src={g.url} alt={g.legenda||''} style={{width:'100%',height:'auto',display:'block'}}
+               onError={e=>{e.currentTarget.style.display='none';}}/>
+        )}
+      </div>
+      {g.legenda&&<div style={{position:'absolute',bottom:0,left:0,right:0,background:'#00000088',padding:'4px 6px',fontSize:8,color:'#fff',lineHeight:1.3}}>{g.legenda}</div>}
+      {editable&&<div onClick={e=>{e.stopPropagation();onRemove();}} style={{position:'absolute',top:4,right:4,width:18,height:18,borderRadius:'50%',background:T.danger,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,cursor:'pointer',fontWeight:700,zIndex:3}}>x</div>}
+    </div>
+  );
+};
 const PBar=({pct,color,h=5})=>(<div style={{height:h,background:T.border,borderRadius:h}}><div style={{height:"100%",width:`${Math.min(100,pct)}%`,background:color||T.accent,borderRadius:h,transition:"width 0.4s ease"}}/></div>);
 const KCard=({label,value,sub,color,icon,onClick,hint})=>(<div onClick={onClick} style={{background:T.card,border:`1px solid ${onClick?color+"44":T.border}`,borderRadius:12,padding:"16px 18px",cursor:onClick?"pointer":"default",transition:"all 0.15s",position:"relative"}} onMouseEnter={e=>{if(onClick)e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";}}>  <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1.5}}>{label}</span>{icon&&<span style={{fontSize:14}}>{icon}</span>}</div><div style={{fontFamily:"'Syne',sans-serif",fontSize:24,fontWeight:800,color,marginBottom:3}}>{value}</div>{sub&&<div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{sub}</div>}{onClick&&<div style={{fontSize:8,color:color,marginTop:5,fontFamily:"'JetBrains Mono',monospace",opacity:0.7}}>{hint||"Ver detalhes -"}</div>}</div>);
 const inpS={width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,fontFamily:"'JetBrains Mono',monospace",outline:"none"};
@@ -727,21 +776,9 @@ const ImpactosTab=({camp,allPartners,onUpdate})=>{
       <div style={{background:T.card,border:'1px solid '+T.border,borderRadius:10,padding:'12px 16px'}}>
         <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:10}}>Galeria da Campanha</div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:8,marginBottom:12}}>
-          {imp.galeria.map((g,i)=>{
-            const url=convertUrl(g.url);
-            const embed=isDriveOrYT(g.url)||isVideo(url);
-            const ar=g.orientacao==='vertical'?'9/16':g.orientacao==='quadrado'?'1/1':'16/9';
-            return(
-              <div key={i} style={{position:'relative',borderRadius:8,overflow:'hidden',aspectRatio:embed?ar:'auto',background:T.surface}}>
-                {embed
-                  ?<iframe src={url} style={{width:'100%',height:'100%',border:'none'}} allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowFullScreen/>
-                  :<img src={url} alt={g.legenda} style={{width:'100%',height:'auto',display:'block'}} onError={e=>{e.target.style.display='none';}}/>
-                }
-                {g.legenda&&<div style={{position:'absolute',bottom:0,left:0,right:0,background:'#00000088',padding:'4px 6px',fontSize:8,color:'#fff'}}>{g.legenda}</div>}
-                <div onClick={()=>upd('galeria',imp.galeria.filter((_,j)=>j!==i))} style={{position:'absolute',top:4,right:4,width:18,height:18,borderRadius:'50%',background:T.danger,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,cursor:'pointer',fontWeight:700}}>x</div>
-              </div>
-            );
-          })}
+          {imp.galeria.map((g,i)=>(
+            <GaleriaItem key={i} g={g} editable onRemove={()=>upd('galeria',imp.galeria.filter((_,j)=>j!==i))}/>
+          ))}
         </div>
         {/* Upload direto */}
         <input ref={galFileRef} type="file" accept="image/*,video/*" style={{display:'none'}} onChange={handleGalUpload}/>
@@ -909,19 +946,9 @@ const ClientPanel=({camp,allPartners,onClose,onPDF})=>{
           <div className="cp-card" style={{padding:'20px 24px',marginBottom:20}}>
             <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:'#fff',marginBottom:14}}>Campanha em campo</div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))',gap:10}}>
-              {imp.galeria.map((g,i)=>{
-                const driveId=g.url?.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/)?.[1];
-                const ytId=g.url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)?.[1];
-                const url=driveId?`https://drive.google.com/file/d/${driveId}/preview`:ytId?`https://www.youtube.com/embed/${ytId}`:g.url;
-                const embed=!!(driveId||ytId||/\.(mp4|mov|webm)$/i.test(g.url||''));
-                const ar=g.orientacao==='vertical'?'9/16':g.orientacao==='quadrado'?'1/1':'16/9';
-                return(
-                  <div key={i} style={{borderRadius:12,overflow:'hidden',aspectRatio:embed?ar:'auto',position:'relative',background:'#111'}}>
-                    {embed?<iframe src={url} style={{width:'100%',height:'100%',border:'none'}} allowFullScreen/>:<img src={url} alt={g.legenda} style={{width:'100%',height:'auto',display:'block'}}/>}
-                    {g.legenda&&<div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,#000000CC)',padding:'12px 12px 10px',fontSize:10,color:'#fff'}}>{g.legenda}</div>}
-                  </div>
-                );
-              })}
+              {imp.galeria.map((g,i)=>(
+                <GaleriaItem key={i} g={g}/>
+              ))}
             </div>
           </div>
         )}
