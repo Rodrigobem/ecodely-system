@@ -1011,6 +1011,21 @@ export default function App(){
   const[touchDrag,setTouchDrag]=useState(null); // {type:'camp'|'prosp', id}
   const[ghostPos,setGhostPos]=useState(null);   // {x,y}
   const[touchOverStage,setTouchOverStage]=useState(null);
+  // --- FINANCEIRO STATES (movidos do IIFE para nivel do componente) --------
+  const[showAdd,setShowAdd]=useState(false);
+  const[novoLanc,setNovoLanc]=useState({data:"",descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1});
+  const[showAddCartao,setShowAddCartao]=useState(false);
+  const[showAddCompra,setShowAddCompra]=useState(false);
+  const[novoCartao,setNovoCartao]=useState({nome:"",titular:"",vencimento:15,limite:0,banco:"",cor:"#3D9EFF"});
+  const[novaCompra,setNovaCompra]=useState({cartaoId:1,projeto:"",descricao:"",valorTotal:0,parcelas:2,parcelaAtual:1,mesInicio:"04/2026"});
+  const[nfValor,setNfValor]=useState("");
+  const[dasManual,setDasManual]=useState("");
+  const[showAddFixo,setShowAddFixo]=useState(false);
+  const[showAddConta,setShowAddConta]=useState(false);
+  const[showAddCentro,setShowAddCentro]=useState(false);
+  const[novoCusto,setNovoCusto]=useState({descricao:"",valor:0,dia:5,categoria:"Outros",centrosCusto:"Administrativo",ativo:true});
+  const[novaConta,setNovaConta]=useState({banco:"",tipo:"Conta Corrente",agencia:"",conta:"",saldo:0,cor:"#00E5A0"});
+  const[novoCentro,setNovoCentro]=useState("");
 
   // --- DERIVED -------------------------------------------------------------
   const sec=user?ROLE_TO_SEC[user.role]:null;
@@ -2367,8 +2382,7 @@ export default function App(){
 
                 {/* FLUXO DE CAIXA */}
                 {finTab==="fluxo"&&(()=>{
-                  const[showAdd,setShowAdd]=useState(false);
-                  const[novoLanc,setNovoLanc]=useState({data:"",descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1});
+                  // showAdd, novoLanc ja declarados no nivel do componente
                   const lancOrdenados=[...lancMesFilt].sort((a,b)=>a.data.split("/").reverse().join("")-b.data.split("/").reverse().join(""));
                   // Running balance
                   let saldoAcum=0;
@@ -2492,10 +2506,7 @@ export default function App(){
 
                 {/* CARTOES */}
                 {finTab==="cartoes"&&(()=>{
-                  const[showAddCartao,setShowAddCartao]=useState(false);
-                  const[showAddCompra,setShowAddCompra]=useState(false);
-                  const[novoCartao,setNovoCartao]=useState({nome:"",titular:"",vencimento:15,limite:0,banco:"",cor:"#3D9EFF"});
-                  const[novaCompra,setNovaCompra]=useState({cartaoId:1,projeto:"",descricao:"",valorTotal:0,parcelas:2,parcelaAtual:1,mesInicio:finMesRef});
+                  // showAddCartao, showAddCompra, novoCartao, novaCompra ja declarados no nivel do componente
                   return(
                     <div>
                       <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}>
@@ -2620,8 +2631,7 @@ export default function App(){
 
                 {/* DAS / SIMPLES NACIONAL */}
                 {finTab==="das"&&(()=>{
-                  const[nfValor,setNfValor]=useState("");
-                  const[dasManual,setDasManual]=useState(aliqDisplay);
+                  // nfValor, dasManual ja declarados no nivel do componente
                   const dasCalcNf=Number(nfValor)*(Number(dasManual)/100);
                   return(
                     <div>
@@ -2744,12 +2754,7 @@ export default function App(){
 
                 {/* CONFIGURACOES */}
                 {finTab==="config"&&(()=>{
-                  const[showAddFixo,setShowAddFixo]=useState(false);
-                  const[showAddConta,setShowAddConta]=useState(false);
-                  const[showAddCentro,setShowAddCentro]=useState(false);
-                  const[novoCusto,setNovoCusto]=useState({descricao:"",valor:0,dia:5,categoria:"Outros",centrosCusto:"Administrativo",ativo:true});
-                  const[novaConta,setNovaConta]=useState({banco:"",tipo:"Conta Corrente",agencia:"",conta:"",saldo:0,cor:"#00E5A0"});
-                  const[novoCentro,setNovoCentro]=useState("");
+                  // showAddFixo, showAddConta, showAddCentro, novoCusto, novaConta, novoCentro ja declarados no nivel do componente
                   return(
                     <div>
                       {/* Custos fixos */}
