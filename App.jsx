@@ -1938,6 +1938,37 @@ export default function App(){
                     </div>
                   </div>
                 </div>
+                <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16,marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Meta do mês vs Realizado</div>
+                    {user.meta>0&&<div style={{fontSize:11,color:myPipeTotal>=user.meta?T.accent:T.info,fontFamily:"'Syne',sans-serif",fontWeight:700}}>
+                      {Math.round((myPipeTotal/user.meta)*100)}% atingido
+                    </div>}
+                  </div>
+                  {user.meta>0?(
+                    <div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:14}}>
+                        {[
+                          {l:"Meta",v:fmtK(user.meta),c:T.muted},
+                          {l:"Realizado",v:fmtK(myPipeTotal),c:T.info},
+                          {l:"Falta",v:fmtK(Math.max(0,user.meta-myPipeTotal)),c:myPipeTotal>=user.meta?T.accent:T.danger}
+                        ].map((k,i)=>(
+                          <div key={i} style={{background:T.surface,borderRadius:8,padding:"10px 14px",textAlign:"center"}}>
+                            <div style={{fontSize:9,color:T.muted,marginBottom:3}}>{k.l}</div>
+                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:k.c}}>{k.v}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{height:14,background:T.surface,borderRadius:7,overflow:"hidden",position:"relative"}}>
+                        <div style={{height:"100%",width:`${Math.min(100,Math.round((myPipeTotal/user.meta)*100))}%`,background:`linear-gradient(90deg,${T.info},${T.accent})`,borderRadius:7,transition:"width 0.6s ease",display:"flex",alignItems:"center",justifyContent:"flex-end",paddingRight:6}}>
+                          {myPipeTotal>0&&<span style={{fontSize:8,color:"#000",fontWeight:700}}>{Math.round((myPipeTotal/user.meta)*100)}%</span>}
+                        </div>
+                      </div>
+                    </div>
+                  ):(
+                    <div style={{textAlign:"center",padding:"20px",color:T.warn,fontSize:11}}>Meta não definida — solicite ao gestor</div>
+                  )}
+                </div>
                 <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
                   <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.purple,marginBottom:10}}>Simulador de receita por campanha</div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
@@ -2261,6 +2292,70 @@ export default function App(){
                     </div>
                   </div>
                 </div>
+                {/* Metas do time comercial */}
+                {users.filter(u=>["comercial","admin"].includes(u.role)&&u.active&&u.meta>0).length>0&&(
+                  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:12}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Metas do time comercial</div>
+                      <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{new Date().toLocaleDateString("pt-BR",{month:"long",year:"numeric"})}</div>
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                      {users.filter(u=>["comercial","admin"].includes(u.role)&&u.active).map(u=>{
+                        const pipeline=prospects.filter(p=>p.owner===u.name).reduce((a,p)=>a+(p.value||0),0);
+                        const meta=u.meta||0;
+                        const pct=meta>0?Math.min(Math.round((pipeline/meta)*100),100):0;
+                        return(
+                          <div key={u.id}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                                <div style={{width:24,height:24,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",border:`1px solid ${ROLE_COLOR[u.role]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:ROLE_COLOR[u.role],fontWeight:700,flexShrink:0}}>{u.avatar}</div>
+                                <span style={{fontSize:11,fontWeight:600}}>{u.name}</span>
+                              </div>
+                              <div style={{display:"flex",gap:16,alignItems:"center"}}>
+                                {meta>0?(
+                                  <>
+                                    <span style={{fontSize:10,color:T.info,fontFamily:"'JetBrains Mono',monospace"}}>{fmtK(pipeline)}</span>
+                                    <span style={{fontSize:9,color:T.muted}}>/</span>
+                                    <span style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{fmtK(meta)}</span>
+                                    <div style={{width:42,height:20,background:pct>=100?T.accent:pct>=70?T.info:pct>=40?T.warn:T.danger,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                                      <span style={{fontSize:9,color:"#000",fontWeight:700}}>{pct}%</span>
+                                    </div>
+                                  </>
+                                ):(
+                                  <span style={{fontSize:9,color:T.warn}}>Sem meta</span>
+                                )}
+                              </div>
+                            </div>
+                            {meta>0&&(
+                              <div style={{height:8,background:T.surface,borderRadius:4,overflow:"hidden"}}>
+                                <div style={{height:"100%",width:`${pct}%`,background:pct>=100?`linear-gradient(90deg,${T.accent},#00B87A)`:pct>=70?`linear-gradient(90deg,${T.info},${T.accent})`:pct>=40?`linear-gradient(90deg,${T.warn},${T.info})`:`linear-gradient(90deg,${T.danger},${T.warn})`,borderRadius:4,transition:"width 0.5s ease"}}/>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Totalizador */}
+                    {(()=>{
+                      const totalMeta=users.filter(u=>["comercial","admin"].includes(u.role)&&u.active&&u.meta>0).reduce((a,u)=>a+(u.meta||0),0);
+                      const totalReal=users.filter(u=>["comercial","admin"].includes(u.role)&&u.active).reduce((a,u)=>a+prospects.filter(p=>p.owner===u.name).reduce((s,p)=>s+(p.value||0),0),0);
+                      const pctTotal=totalMeta>0?Math.min(Math.round((totalReal/totalMeta)*100),100):0;
+                      return totalMeta>0?(
+                        <div style={{marginTop:14,paddingTop:14,borderTop:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                          <div style={{fontSize:10,color:T.muted}}>Time completo</div>
+                          <div style={{display:"flex",gap:12,alignItems:"center"}}>
+                            <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:T.info}}>{fmtK(totalReal)}</span>
+                            <span style={{fontSize:9,color:T.muted}}>de</span>
+                            <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:T.muted}}>{fmtK(totalMeta)}</span>
+                            <div style={{width:52,height:24,background:pctTotal>=100?T.accent:pctTotal>=70?T.info:T.warn,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                              <span style={{fontSize:11,color:"#000",fontWeight:800}}>{pctTotal}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      ):null;
+                    })()}
+                  </div>
+                )}
                 {/* Receita mensal com valores */}
                 <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
