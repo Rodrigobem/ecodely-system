@@ -1160,6 +1160,9 @@ export default function App(){
       ]);
       console.log("SUPABASE load - lancamentos:",lanc.data?.length,"erro:",lanc.error?.message);
       console.log("SUPABASE load - contas:",conts.data?.length,"erro:",conts.error?.message);
+      console.log("SUPABASE load - usuarios:",usrs.data?.length,"erro:",usrs.error?.message);
+      console.log("SUPABASE load - centros:",centros.data?.length,"erro:",centros.error?.message);
+      console.log("SUPABASE load - fornecedores:",forn.data?.length,"erro:",forn.error?.message);
       if(lanc.data?.length)setLancamentos(lanc.data.map(r=>({...r,centrosCusto:r.centrosCusto,contaBancoId:r.contaBancoId})));
       if(conts.data?.length)setContas(conts.data);
       if(carts.data?.length)setCartoes(carts.data);
@@ -1449,7 +1452,9 @@ export default function App(){
     const rec={id:Date.now(),...newUser,avatar:newUser.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2),active:true,lastAccess:"nunca"};
     setUsers(p=>[...p,rec]);
     setNewUser({name:"",email:"",role:"base"});setShowNewUser(false);
-    await supabase.from("usuarios").insert(rec);
+    const{error}=await supabase.from("usuarios").insert(rec);
+    if(error)console.error("SUPABASE addUser erro:",error.message,error.details);
+    else console.log("SUPABASE addUser OK:",rec.name);
   };
 
   // -- LOGIN ------------------------------------------------------------------
