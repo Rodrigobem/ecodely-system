@@ -396,7 +396,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                 <div style={{position:"absolute",left:16,top:0,bottom:0,width:1,background:T.border,zIndex:0}}/>
                 {camp.timeline.map((e,i)=>(
                   <div key={e.id} style={{display:"flex",gap:14,alignItems:"flex-start",paddingBottom:16,position:"relative",zIndex:1}}>
-                    <div style={{width:32,height:32,borderRadius:"50%",background:e.color+"22",border:`2px solid ${e.color}55`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:e.color,fontWeight:700,flexShrink:0,background:T.surface}}>{e.avatar}</div>
+                    <div style={{width:32,height:32,borderRadius:"50%",border:`2px solid ${e.color}55`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:e.color,fontWeight:700,flexShrink:0,background:T.surface}}>{e.avatar}</div>
                     <div style={{flex:1,background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px"}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4,flexWrap:"wrap",gap:4}}>
                         <div style={{display:"flex",gap:6,alignItems:"center"}}>
