@@ -1064,6 +1064,7 @@ export default function App(){
   const[contas,setContas]=useState(CONTAS_INIT);
   const[fatMensais,setFatMensais]=useState(FAT_MENSAIS_INIT);
   const[centrosCusto,setCentrosCusto]=useState(CENTROS_CUSTO_INIT);
+  const[suppliers,setSuppliers]=useState(SUPPLIERS);
   const[reservaCaixaPct,setReservaCaixaPct]=useState(10);
   const[socios,setSocios]=useState([{id:1,nome:"Rodrigo Bem",pct:50},{id:2,nome:"Pedro",pct:50}]);
   const[dasAjuste,setDasAjuste]=useState(null); // manual override
@@ -1139,7 +1140,7 @@ export default function App(){
   // --- SUPABASE LOAD -------------------------------------------------------
   useEffect(()=>{
     const load=async()=>{
-      const [lanc,conts,carts,compras,custos,fats,camps,prosps,parts,cls,commt,projs,pts]=await Promise.all([
+      const [lanc,conts,carts,compras,custos,fats,camps,prosps,parts,cls,commt,projs,pts,usrs,centros,forn]=await Promise.all([
         supabase.from("lancamentos").select("*").order("id"),
         supabase.from("contas").select("*").order("id"),
         supabase.from("cartoes").select("*").order("id"),
@@ -1153,6 +1154,9 @@ export default function App(){
         supabase.from("comm_table").select("*").order("id"),
         supabase.from("projects").select("*").order("id"),
         supabase.from("ptypes").select("*").order("id"),
+        supabase.from("usuarios").select("*").order("id"),
+        supabase.from("centros_custo").select("*").order("id"),
+        supabase.from("fornecedores").select("*").order("id"),
       ]);
       console.log("SUPABASE load - lancamentos:",lanc.data?.length,"erro:",lanc.error?.message);
       console.log("SUPABASE load - contas:",conts.data?.length,"erro:",conts.error?.message);
@@ -1169,6 +1173,9 @@ export default function App(){
       if(commt.data?.length)setCommTable(commt.data);
       if(projs.data?.length)setProjects(projs.data);
       if(pts.data?.length)setPtypes(pts.data);
+      if(usrs.data?.length)setUsers(usrs.data);
+      if(centros.data?.length)setCentrosCusto(centros.data.map(r=>r.nome));
+      if(forn.data?.length)setSuppliers(forn.data);
     };
     load();
   },[]);
@@ -1200,7 +1207,7 @@ export default function App(){
 
   // --- HANDLERS ------------------------------------------------------------
   const handleLogin=()=>{
-    const u=USERS_DB.find(u=>u.email===loginForm.email&&u.pass===loginForm.pass);
+    const u=users.find(u=>u.email===loginForm.email&&u.pass===loginForm.pass&&u.active!==false);
     if(u&&u.active){setUser(u);setTab("minha-fila");setLoginErr("");}
     else setLoginErr("E-mail ou senha incorretos.");
   };
@@ -1437,10 +1444,12 @@ export default function App(){
     setNewComm({typeId:"",projectId:"",value:""});
   };
 
-  const addUser=()=>{
+  const addUser=async()=>{
     if(!newUser.name||!newUser.email)return;
-    setUsers(p=>[...p,{id:Date.now(),...newUser,avatar:newUser.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2),active:true,lastAccess:"nunca"}]);
+    const rec={id:Date.now(),...newUser,avatar:newUser.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2),active:true,lastAccess:"nunca"};
+    setUsers(p=>[...p,rec]);
     setNewUser({name:"",email:"",role:"base"});setShowNewUser(false);
+    await supabase.from("usuarios").insert(rec);
   };
 
   // -- LOGIN ------------------------------------------------------------------
@@ -1835,7 +1844,7 @@ export default function App(){
                     </div>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
                       <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Pagamento por fornecedor</div>
-                      {SUPPLIERS.map((s,i)=>(
+                      {suppliers.map((s,i)=>(
                         <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:`1px solid ${T.border}`}}>
                           <span style={{fontSize:10}}>{s.name}</span>
                           <Badge label={s.type==="grafica"?"Gráfica":"Logística"} color={s.type==="grafica"?T.purple:T.warn}/>
@@ -3018,13 +3027,13 @@ export default function App(){
                           {centrosCusto.map(c=>(
                             <div key={c} style={{display:"flex",gap:5,alignItems:"center",padding:"5px 12px",background:T.surface,border:`1px solid ${T.border}`,borderRadius:20}}>
                               <span style={{fontSize:11}}>{c}</span>
-                              <div onClick={()=>setCentrosCusto(p=>p.filter(x=>x!==c))} style={{fontSize:9,color:T.danger,cursor:"pointer",marginLeft:4}}>x</div>
+                              <div onClick={async()=>{setCentrosCusto(p=>p.filter(x=>x!==c));await supabase.from("centros_custo").delete().eq("nome",c);}} style={{fontSize:9,color:T.danger,cursor:"pointer",marginLeft:4}}>x</div>
                             </div>
                           ))}
                         </div>
                         <div style={{display:"flex",gap:8}}>
                           <input value={novoCentro} onChange={e=>setNovoCentro(e.target.value)} placeholder="Novo centro de custo..." style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"7px 10px",fontSize:11,color:T.text,outline:"none"}}/>
-                          <button onClick={()=>{if(!novoCentro.trim())return;setCentrosCusto(p=>[...p,novoCentro.trim()]);setNovoCentro("");}} className="btn" style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700}}>+ Adicionar</button>
+                          <button onClick={async()=>{if(!novoCentro.trim())return;const nome=novoCentro.trim();const id=Date.now();setCentrosCusto(p=>[...p,nome]);setNovoCentro("");await supabase.from("centros_custo").insert({id,nome});}} className="btn" style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700}}>+ Adicionar</button>
                         </div>
                       </div>
                     </div>
@@ -3803,16 +3812,34 @@ export default function App(){
               )}
               {cadTab==="fornecedores"&&(
                 <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
-                  <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 0.8fr 0.6fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
-                    {["Fornecedor","Tipo","Contato","Prazo","-"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
+                  <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 0.8fr 0.6fr 0.3fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
+                    {["Fornecedor","Tipo","Contato","Prazo","-",""].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
                   </div>
-                  {SUPPLIERS.map((s,i)=>(<div key={i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 0.8fr 0.6fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
+                  {suppliers.map((s,i)=>(<div key={i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 0.8fr 0.6fr 0.3fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
                     <div><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{s.name}</div><div style={{fontSize:9,color:T.muted}}>{s.email}</div></div>
                     <Badge label={s.type==="grafica"?"Gráfica":"Logística"} color={s.type==="grafica"?T.purple:T.warn}/>
                     <div style={{fontSize:11,color:T.soft}}>{s.contact}</div>
                     <div style={{fontSize:10,color:T.soft,fontFamily:"'JetBrains Mono',monospace"}}>{s.leadTime}</div>
                     <div style={{fontSize:11}}>{"-".repeat(s.rating)}<span style={{color:T.border}}>{"-".repeat(5-s.rating)}</span></div>
+                    <div onClick={async()=>{setSuppliers(p=>p.filter(x=>x.id!==s.id));await supabase.from("fornecedores").delete().eq("id",s.id);}} style={{fontSize:9,color:T.danger,cursor:"pointer",textAlign:"center"}}>x</div>
                   </div>))}
+                  {/* Adicionar fornecedor */}
+                  <div style={{padding:"12px 16px",borderTop:`1px solid ${T.border}`,display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {(()=>{
+                      const[nf,setNf]=useState({name:"",type:"grafica",contact:"",phone:"",email:"",leadTime:"7 dias",rating:4});
+                      return(<>
+                        <input placeholder="Nome" value={nf.name} onChange={e=>setNf(p=>({...p,name:e.target.value}))} style={{...inpS,flex:2,minWidth:120}}/>
+                        <select value={nf.type} onChange={e=>setNf(p=>({...p,type:e.target.value}))} style={{...inpS,width:"auto"}}>
+                          <option value="grafica">Gráfica</option>
+                          <option value="logistica">Logística</option>
+                        </select>
+                        <input placeholder="Contato" value={nf.contact} onChange={e=>setNf(p=>({...p,contact:e.target.value}))} style={{...inpS,flex:1,minWidth:80}}/>
+                        <input placeholder="Email" value={nf.email} onChange={e=>setNf(p=>({...p,email:e.target.value}))} style={{...inpS,flex:1,minWidth:100}}/>
+                        <input placeholder="Prazo" value={nf.leadTime} onChange={e=>setNf(p=>({...p,leadTime:e.target.value}))} style={{...inpS,width:80}}/>
+                        <button onClick={async()=>{if(!nf.name)return;const rec={...nf,id:Date.now(),campaigns:0};setSuppliers(p=>[...p,rec]);setNf({name:"",type:"grafica",contact:"",phone:"",email:"",leadTime:"7 dias",rating:4});await supabase.from("fornecedores").insert(rec);}} style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer"}}>+ Adicionar</button>
+                      </>);
+                    })()}
+                  </div>
                 </div>
               )}
             </div>
@@ -3848,7 +3875,7 @@ export default function App(){
                     <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>-</div>
                     <div style={{display:"flex",gap:6,alignItems:"center"}}>
                       <div style={{width:7,height:7,borderRadius:"50%",background:u.active?T.accent:T.danger}}/>
-                      {u.id!==user.id&&<div onClick={()=>setUsers(p=>p.map(x=>x.id===u.id?{...x,active:!x.active}:x))} style={{fontSize:9,color:u.active?T.danger:T.accent,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}}>{u.active?"Aposentar":"Reativar"}</div>}
+                      {u.id!==user.id&&<div onClick={async()=>{const na=!u.active;setUsers(p=>p.map(x=>x.id===u.id?{...x,active:na}:x));await supabase.from("usuarios").update({active:na}).eq("id",u.id);}} style={{fontSize:9,color:u.active?T.danger:T.accent,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}}>{u.active?"Aposentar":"Reativar"}</div>}
                     </div>
                   </div>
                 ))}
