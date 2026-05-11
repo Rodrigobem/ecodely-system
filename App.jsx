@@ -1924,9 +1924,10 @@ export default function App(){
                     <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16}}>
                       <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:10}}>Meta do mês</div>
                       <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:26,color:T.accent,marginBottom:4}}>{fmtK(myPipeTotal)}</div>
-                      <div style={{fontSize:9,color:T.muted,marginBottom:8}}>Meta: {fmtK(metaComercial)}</div>
-                      <PBar pct={(myPipeTotal/metaComercial)*100} color={myPipeTotal>=metaComercial?T.accent:T.info}/>
-                      <div style={{fontSize:9,color:T.muted,marginTop:4}}>{Math.round((myPipeTotal/metaComercial)*100)}% da meta</div>
+                      <div style={{fontSize:9,color:T.muted,marginBottom:8}}>Meta: {user.meta>0?fmtK(user.meta):<span style={{color:T.warn}}>não definida</span>}</div>
+                      {user.meta>0&&<><PBar pct={(myPipeTotal/user.meta)*100} color={myPipeTotal>=user.meta?T.accent:T.info}/>
+                      <div style={{fontSize:9,color:T.muted,marginTop:4}}>{Math.round((myPipeTotal/user.meta)*100)}% da meta</div></>}
+                      {!user.meta&&<div style={{fontSize:9,color:T.warn,marginTop:4}}>Solicite ao gestor definir sua meta</div>}
                     </div>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
                       <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Próximos follow-ups</div>
@@ -3514,7 +3515,7 @@ export default function App(){
           {tab==="comercial"&&(
             <div>
               <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid ${T.border}`}}>
-                {[["pipeline","Pipeline"],...(["admin","financeiro"].includes(user.role)?[["faturamento","Faturamento"]]:[[]]),...(["admin","comercial","financeiro"].includes(user.role)?[["clientes","Clientes"]]:[[]])].map(([id,l])=>(
+                {[["pipeline","Pipeline"],...(["admin","financeiro"].includes(user.role)?[["faturamento","Faturamento"]]:[[]]),...(["admin","comercial","financeiro"].includes(user.role)?[["clientes","Clientes"]]:[[]]),...(["admin","comercial"].includes(user.role)?[["metas","Metas"]]:[[]])].map(([id,l])=>(
                   <div key={id} onClick={()=>setCommTab(id)} style={{padding:"10px 18px",fontSize:11,cursor:"pointer",color:commTab===id?T.accent:T.muted,borderBottom:`2px solid ${commTab===id?T.accent:"transparent"}`,transition:"all 0.15s"}}>{l}</div>
                 ))}
               </div>
@@ -3709,6 +3710,59 @@ export default function App(){
                       </div>
                     );})}
                   </div>
+                </div>
+              )}
+
+              {/* METAS */}
+              {commTab==="metas"&&(
+                <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                  <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderLeft:`3px solid ${T.accent}`,borderRadius:12,padding:"14px 18px"}}>
+                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:T.accent,marginBottom:4}}>Metas do time comercial</div>
+                    <div style={{fontSize:10,color:T.muted}}>Defina a meta mensal de cada membro. Clique no valor para editar.</div>
+                  </div>
+                  {users.filter(u=>["comercial","admin"].includes(u.role)&&u.active).map(u=>{
+                    const pipeline=prospects.filter(p=>p.owner===u.name).reduce((a,p)=>a+(p.value||0),0);
+                    const meta=u.meta||0;
+                    const pct=meta>0?Math.min(Math.round((pipeline/meta)*100),100):0;
+                    return(
+                      <div key={u.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"16px 20px"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                          <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                            <div style={{width:32,height:32,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",border:`2px solid ${ROLE_COLOR[u.role]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:ROLE_COLOR[u.role],fontWeight:700}}>{u.avatar}</div>
+                            <div>
+                              <div style={{fontSize:13,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{u.name}</div>
+                              <div style={{fontSize:9,color:T.muted}}>{ROLE_LABELS[u.role]}</div>
+                            </div>
+                          </div>
+                          <div style={{display:"flex",gap:12,alignItems:"center"}}>
+                            <div style={{textAlign:"right"}}>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:2}}>Pipeline atual</div>
+                              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:T.info}}>{fmtK(pipeline)}</div>
+                            </div>
+                            <div style={{textAlign:"right"}}>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:2}}>Meta mensal</div>
+                              <input
+                                type="number"
+                                defaultValue={meta}
+                                onBlur={async e=>{
+                                  const v=Number(e.target.value)||0;
+                                  setUsers(p=>p.map(x=>x.id===u.id?{...x,meta:v}:x));
+                                  await supabase.from("usuarios").update({meta:v}).eq("id",u.id);
+                                }}
+                                style={{width:100,background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"4px 8px",fontSize:13,color:T.accent,fontWeight:700,fontFamily:"'Syne',sans-serif",outline:"none",textAlign:"right"}}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <PBar pct={pct} color={pct>=100?T.accent:pct>=70?T.info:T.warn} h={6}/>
+                        <div style={{display:"flex",justifyContent:"space-between",marginTop:5}}>
+                          <div style={{fontSize:9,color:T.muted}}>{pct}% da meta atingida</div>
+                          {meta>0&&<div style={{fontSize:9,color:pct>=100?T.accent:T.muted}}>Falta: {fmtK(Math.max(0,meta-pipeline))}</div>}
+                          {meta===0&&<div style={{fontSize:9,color:T.warn}}>Meta não definida</div>}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
