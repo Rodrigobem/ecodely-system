@@ -2,6 +2,92 @@ import { useState, useEffect } from "react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 const T={bg:"#06070D",surface:"#0C0E18",card:"#10121E",border:"#1A1E30",accent:"#00E5A0",accentDim:"#00E5A012",accentBorder:"#00E5A038",text:"#E6E8F0",muted:"#4A5070",soft:"#8A90A8",warn:"#F5A623",warnDim:"#F5A62315",danger:"#FF4D6A",dangerDim:"#FF4D6A12",info:"#3D9EFF",infoDim:"#3D9EFF12",purple:"#9B7FFF",purpleDim:"#9B7FFF12",pink:"#F472B6",green:"#25D366",greenDim:"#25D36612"};
+
+// --- FINANCIAL MODULE DATA ----------------------------------------------------
+const SIMPLES_ANEXO_III=[
+  {faixa:1,min:0,max:180000,aliquota:0.06,deducao:0,label:"Faixa 1"},
+  {faixa:2,min:180000,max:360000,aliquota:0.112,deducao:9360,label:"Faixa 2"},
+  {faixa:3,min:360000,max:720000,aliquota:0.135,deducao:17640,label:"Faixa 3"},
+  {faixa:4,min:720000,max:1800000,aliquota:0.16,deducao:35640,label:"Faixa 4"},
+  {faixa:5,min:1800000,max:3600000,aliquota:0.21,deducao:125640,label:"Faixa 5"},
+];
+const calcAliquotaEfetiva=(rbt12)=>{
+  const faixa=SIMPLES_ANEXO_III.find(f=>rbt12>=f.min&&rbt12<f.max)||SIMPLES_ANEXO_III[0];
+  if(rbt12===0)return{faixa,aliquotaEfetiva:0};
+  const aliquotaEfetiva=((rbt12*faixa.aliquota)-faixa.deducao)/rbt12;
+  return{faixa,aliquotaEfetiva:Math.max(0,aliquotaEfetiva)};
+};
+const CONTAS_INIT=[
+  {id:1,banco:"Bradesco",tipo:"Conta Corrente",agencia:"1234-5",conta:"98765-4",saldo:14915.62,cor:"#CC0000"},
+  {id:2,banco:"Nubank",tipo:"Conta Corrente",agencia:"",conta:"",saldo:5000,cor:"#820AD1"},
+  {id:3,banco:"C6 Bank",tipo:"Conta Corrente",agencia:"",conta:"",saldo:2000,cor:"#F5C518"},
+];
+const CARTOES_INIT=[
+  {id:1,nome:"C6 Azul Dani",titular:"Daniela Gmeiner",vencimento:15,limite:30000,banco:"C6 Bank",cor:"#3D9EFF"},
+  {id:2,nome:"Latam Dani",titular:"Daniela Gmeiner",vencimento:20,limite:20000,banco:"Itau",cor:"#F5A623"},
+  {id:3,nome:"Mastercard Daniela",titular:"Daniela Gmeiner",vencimento:10,limite:25000,banco:"Santander",cor:"#FF4D6A"},
+  {id:4,nome:"Master Santander Rodrigo",titular:"Rodrigo Bem",vencimento:15,limite:30000,banco:"Santander",cor:"#9B7FFF"},
+];
+const COMPRAS_CARTAO_INIT=[
+  {id:1,cartaoId:1,projeto:"PP 131 - Grafica EVO - Sensia",valorTotal:4490,parcelas:2,parcelaAtual:2,valorParcela:2245,mesInicio:"04/2026",descricao:"GRAFICA EVO SENSIA 2.000 MEGABOX"},
+  {id:2,cartaoId:1,projeto:"PP 130 - Grafica EVO - UNEX",valorTotal:7860,parcelas:2,parcelaAtual:2,valorParcela:3930,mesInicio:"04/2026",descricao:"GRAFICA EVO UNEX 3.000 MEGABOX BAHIA"},
+  {id:3,cartaoId:4,projeto:"Fluxo Ecodely Midia",valorTotal:5000,parcelas:12,parcelaAtual:10,valorParcela:416.74,mesInicio:"07/2025",descricao:"FLUXO PAGAMENTOS ECODELY MIDIA"},
+  {id:4,cartaoId:2,projeto:"Fluxo Ecodely Midia",valorTotal:5000,parcelas:12,parcelaAtual:10,valorParcela:416.74,mesInicio:"07/2025",descricao:"FLUXO PAGAMENTOS ECODELY MIDIA LATAM"},
+];
+const CUSTOS_FIXOS_INIT=[
+  {id:1,descricao:"PRONAMP - Bradesco (Capital de Giro)",valor:2494.85,dia:2,categoria:"Financiamento",centrosCusto:"Financeiro",ativo:true},
+  {id:2,descricao:"Advogado - Masserotto",valor:1860,dia:5,categoria:"Juridico",centrosCusto:"Administrativo",ativo:true},
+  {id:3,descricao:"Salario Priscila",valor:1000,dia:5,categoria:"Salario",centrosCusto:"Comercial",ativo:true},
+  {id:4,descricao:"Salario Larissa",valor:1343.75,dia:5,categoria:"Salario",centrosCusto:"Marketing",ativo:true},
+  {id:5,descricao:"Salario Victoria (base)",valor:1000,dia:5,categoria:"Salario",centrosCusto:"Base",ativo:true},
+  {id:6,descricao:"Salario Pedro Designer",valor:2500,dia:5,categoria:"Salario",centrosCusto:"Operacional",ativo:true},
+  {id:7,descricao:"Coworking Delta",valor:212,dia:10,categoria:"Infraestrutura",centrosCusto:"Administrativo",ativo:true},
+  {id:8,descricao:"Sistema Operand",valor:240,dia:15,categoria:"SaaS",centrosCusto:"Operacional",ativo:true},
+  {id:9,descricao:"Google GSuite",valor:441,dia:15,categoria:"SaaS",centrosCusto:"Administrativo",ativo:true},
+  {id:10,descricao:"Hostgator (Site Lock)",valor:38.99,dia:15,categoria:"SaaS",centrosCusto:"Marketing",ativo:true},
+  {id:11,descricao:"Hostgator (Mensal)",valor:16.79,dia:15,categoria:"SaaS",centrosCusto:"Marketing",ativo:true},
+  {id:12,descricao:"Contador (+ 13o proporcional)",valor:568.62,dia:15,categoria:"Contador",centrosCusto:"Financeiro",ativo:true},
+  {id:13,descricao:"Salario Pedro (socio)",valor:12500,dia:15,categoria:"Pro-Labore",centrosCusto:"Administrativo",ativo:true},
+  {id:14,descricao:"Salario Rodrigo (socio)",valor:12500,dia:15,categoria:"Pro-Labore",centrosCusto:"Administrativo",ativo:true},
+  {id:15,descricao:"DARF",valor:178.31,dia:20,categoria:"Imposto",centrosCusto:"Financeiro",ativo:true},
+  {id:16,descricao:"Acao Ambiental - Selo EPN",valor:226,dia:30,categoria:"Ambiental",centrosCusto:"Operacional",ativo:true},
+];
+const LANCAMENTOS_INIT=[
+  {id:1,data:"02/04/2026",descricao:"PI 2523 CLIENTE DIALOGO | BAIRRO IPIRANGA - NF 134",entrada:76800,saida:0,tipo:"Receita",categoria:"Projeto",centrosCusto:"Comercial",forma:"PIX",projeto:"NF 134",contaBancoId:1},
+  {id:2,data:"02/04/2026",descricao:"PI 2555 CLIENTE DIALOGO | BAIRRO MOOCA - NF 135",entrada:76800,saida:0,tipo:"Receita",categoria:"Projeto",centrosCusto:"Comercial",forma:"PIX",projeto:"NF 135",contaBancoId:1},
+  {id:3,data:"02/04/2026",descricao:"PRONAMP - Conta Bradesco 13/42",entrada:0,saida:2494.85,tipo:"Despesa",categoria:"Financiamento",centrosCusto:"Financeiro",forma:"Debito",projeto:"",contaBancoId:1},
+  {id:4,data:"02/04/2026",descricao:"SALARIO PRISCILA",entrada:0,saida:1000,tipo:"Despesa",categoria:"Salario",centrosCusto:"Comercial",forma:"PIX",projeto:"",contaBancoId:1},
+  {id:5,data:"02/04/2026",descricao:"SALARIO VICTORIA (base)",entrada:0,saida:1000,tipo:"Despesa",categoria:"Salario",centrosCusto:"Base",forma:"PIX",projeto:"",contaBancoId:1},
+  {id:6,data:"02/04/2026",descricao:"SALARIO LARISSA",entrada:0,saida:1343.75,tipo:"Despesa",categoria:"Salario",centrosCusto:"Marketing",forma:"PIX",projeto:"",contaBancoId:1},
+  {id:7,data:"02/04/2026",descricao:"SALARIO PEDRO DESIGNER",entrada:0,saida:2500,tipo:"Despesa",categoria:"Salario",centrosCusto:"Operacional",forma:"PIX",projeto:"",contaBancoId:1},
+  {id:8,data:"02/04/2026",descricao:"JUROS APORTE RENATO",entrada:0,saida:2400,tipo:"Despesa",categoria:"Financiamento",centrosCusto:"Financeiro",forma:"PIX",projeto:"",contaBancoId:1},
+  {id:9,data:"02/04/2026",descricao:"SALARIO PEDRO (socio)",entrada:0,saida:12500,tipo:"Despesa",categoria:"Pro-Labore",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1},
+  {id:10,data:"02/04/2026",descricao:"SALARIO RODRIGO (socio)",entrada:0,saida:12500,tipo:"Despesa",categoria:"Pro-Labore",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1},
+  {id:11,data:"18/04/2026",descricao:"DAS - NF 134 e 135 DIALOGO",entrada:0,saida:173.34,tipo:"Despesa",categoria:"Imposto",centrosCusto:"Financeiro",forma:"Boleto",projeto:"DAS Abril/2026",contaBancoId:1},
+  {id:12,data:"18/04/2026",descricao:"DARF",entrada:0,saida:178.31,tipo:"Despesa",categoria:"Imposto",centrosCusto:"Financeiro",forma:"DARF",projeto:"",contaBancoId:1},
+  {id:13,data:"15/04/2026",descricao:"CONTADOR",entrada:0,saida:568.62,tipo:"Despesa",categoria:"Contador",centrosCusto:"Financeiro",forma:"Boleto",projeto:"",contaBancoId:1},
+  {id:14,data:"15/04/2026",descricao:"COWORKING DELTA",entrada:0,saida:212,tipo:"Despesa",categoria:"Infraestrutura",centrosCusto:"Administrativo",forma:"Boleto",projeto:"",contaBancoId:1},
+  {id:15,data:"30/04/2026",descricao:"ACAO AMBIENTAL - SELO EPN",entrada:0,saida:226,tipo:"Despesa",categoria:"Ambiental",centrosCusto:"Operacional",forma:"Boleto",projeto:"",contaBancoId:1},
+];
+const FAT_MENSAIS_INIT=[
+  {mes:"Mai/2025",fat:80000},
+  {mes:"Jun/2025",fat:45000},
+  {mes:"Jul/2025",fat:60000},
+  {mes:"Ago/2025",fat:120000},
+  {mes:"Set/2025",fat:95000},
+  {mes:"Out/2025",fat:110000},
+  {mes:"Nov/2025",fat:85000},
+  {mes:"Dez/2025",fat:70000},
+  {mes:"Jan/2026",fat:115440},
+  {mes:"Fev/2026",fat:39840},
+  {mes:"Mar/2026",fat:90000},
+  {mes:"Abr/2026",fat:153600},
+];
+const CAT_RECEITA=["Projeto","Acao Delivery","Consultoria","Patrocinio","Transferencia","Outros"];
+const CAT_DESPESA=["Salario","Pro-Labore","Grafica","Frete","Imposto","Contador","Financiamento","SaaS","Infraestrutura","Marketing","Viagem","Juridico","Ambiental","Reembolso","Outros"];
+const CENTROS_CUSTO_INIT=["Comercial","Operacional","Marketing","Financeiro","Base","Administrativo","RH"];
+const FORMAS_PAG=["PIX","Cartao","Boleto","Debito","DARF","Cheque","Dinheiro"];
+// --- END FINANCIAL DATA ------------------------------------------------------
 const fmt=(v)=>"R$\u00A0"+Number(v).toLocaleString("pt-BR",{minimumFractionDigits:0});
 const fmtK=(v)=>v>=1000?`R$ ${(v/1000).toFixed(0)}k`:fmt(v);
 const now=()=>new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
@@ -27,8 +113,8 @@ const ROLE_TO_SEC={comercial:"comercial",financeiro:"financeiro",marketing:"mark
 // --- CAMPAIGNS ---------------------------------------------------------------
 const STAGES_CAMP=[
   {id:1,label:"Fechamento",color:T.info},
-  {id:2,label:"Gráfica",color:T.purple},
-  {id:3,label:"Logística",color:T.warn},
+  {id:2,label:"Grafica",color:T.purple},
+  {id:3,label:"Logistica",color:T.warn},
   {id:4,label:"Checking",color:T.pink},
   {id:5,label:"Finalizada",color:T.accent},
 ];
@@ -38,24 +124,24 @@ const mkFiles=(files)=>files;
 const mkImpactos=()=>({stories:[],influencer:[],impulsionado:[],galeria:[]});
 
 const CAMPS_INIT=[
-  {id:1,name:"O Boticário - Maio 2025",client:"O Boticário",stage:3,project:"Dia das Mães",startDate:"05/05/2025",endDate:"31/05/2025",region:"São Paulo · SP",segments:["Hamburguer","Açaí","Café"],graficaFornecedor:"Gráfica TopPrint",material:"Sacola kraft 30x40",graficaPrazo:"28/04/2025",logistica:"Transportadora",logisticaFornecedor:"TransBrasil Cargo",logisticaPrazo:"02/05/2025",parceiros:87,sacolas:18000,sacolasDistribuidas:null,progress:60,
+  {id:1,name:"O Boticario - Maio 2025",client:"O Boticario",stage:3,project:"Dia das Maes",startDate:"05/05/2025",endDate:"31/05/2025",region:"Sao Paulo . SP",segments:["Hamburguer","Acai","Cafe"],graficaFornecedor:"Grafica TopPrint",material:"Sacola kraft 30x40",graficaPrazo:"28/04/2025",logistica:"Transportadora",logisticaFornecedor:"TransBrasil Cargo",logisticaPrazo:"02/05/2025",parceiros:87,sacolas:18000,sacolasDistribuidas:null,progress:60,
     parceirosIds:[1,7],
     impactos:{
-      stories:[{id:1,parceiro:"Burger Bros SP",impressoes:4200,at:"02/05 18:00"},{id:2,parceiro:"Café Paulistano",impressoes:2800,at:"03/05 10:00"}],
+      stories:[{id:1,parceiro:"Burger Bros SP",impressoes:4200,at:"02/05 18:00"},{id:2,parceiro:"Cafe Paulistano",impressoes:2800,at:"03/05 10:00"}],
       influencer:[],
       impulsionado:[],
       galeria:[{id:1,url:"https://images.unsplash.com/photo-1591715088903-00b4d9543e87?w=400",tipo:"foto",legenda:"Sacolas em campo - SP",at:"01/05"},{id:2,url:"https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400",tipo:"foto",legenda:"Parceiro Burger Bros",at:"02/05"}]
     },
-    tasks:{comercial:[{id:"c1",label:"Emitir PI",done:true,doneAt:"28/04 10:20",doneBy:"Ana Lima"},{id:"c2",label:"Enviar contrato ao cliente",done:true,doneAt:"28/04 11:05",doneBy:"Ana Lima"}],financeiro:[{id:"f1",label:"Receber PI",done:true,doneAt:"29/04 09:00",doneBy:"Paulo Neto"},{id:"f2",label:"Faturar NF",done:false},{id:"f3",label:"Lançar planilha financeira",done:false}],marketing:[{id:"m1",label:"Post Instagram",done:true,doneAt:"01/05 14:30",doneBy:"Juliana Faria"},{id:"m2",label:"Post LinkedIn",done:false},{id:"m3",label:"Contratar influencer",done:false}],base:[{id:"b1",label:"Confirmar base participante",done:true,doneAt:"27/04 16:00",doneBy:"Mariana Costa"},{id:"b2",label:"Enviar contrato de exclusividade",done:false}]},
+    tasks:{comercial:[{id:"c1",label:"Emitir PI",done:true,doneAt:"28/04 10:20",doneBy:"Ana Lima"},{id:"c2",label:"Enviar contrato ao cliente",done:true,doneAt:"28/04 11:05",doneBy:"Ana Lima"}],financeiro:[{id:"f1",label:"Receber PI",done:true,doneAt:"29/04 09:00",doneBy:"Paulo Neto"},{id:"f2",label:"Faturar NF",done:false},{id:"f3",label:"Lancar planilha financeira",done:false}],marketing:[{id:"m1",label:"Post Instagram",done:true,doneAt:"01/05 14:30",doneBy:"Juliana Faria"},{id:"m2",label:"Post LinkedIn",done:false},{id:"m3",label:"Contratar influencer",done:false}],base:[{id:"b1",label:"Confirmar base participante",done:true,doneAt:"27/04 16:00",doneBy:"Mariana Costa"},{id:"b2",label:"Enviar contrato de exclusividade",done:false}]},
     timeline:mkTimeline([
       {id:1,type:"stage",text:"Campanha criada - Etapa: Fechamento",user:"Rodrigo Bem",avatar:"RB",at:"25/04 09:00",color:T.info},
-      {id:2,type:"task",text:"Tarefa concluída: Confirmar base participante",user:"Mariana Costa",avatar:"MC",at:"27/04 16:00",color:T.green},
-      {id:3,type:"task",text:"Tarefa concluída: Emitir PI",user:"Ana Lima",avatar:"AL",at:"28/04 10:20",color:T.info},
-      {id:4,type:"task",text:"Tarefa concluída: Enviar contrato ao cliente",user:"Ana Lima",avatar:"AL",at:"28/04 11:05",color:T.info},
-      {id:5,type:"stage",text:"Etapa avançada: Gráfica - Logística",user:"Carlos Mendes",avatar:"CM",at:"02/05 08:30",color:T.purple},
-      {id:6,type:"task",text:"Tarefa concluída: Receber PI",user:"Paulo Neto",avatar:"PN",at:"29/04 09:00",color:T.warn},
-      {id:7,type:"comment",text:"Arte aprovada pelo cliente. Seguindo para impressão.",user:"Ana Lima",avatar:"AL",at:"30/04 15:00",color:T.soft},
-      {id:8,type:"task",text:"Tarefa concluída: Post Instagram",user:"Juliana Faria",avatar:"JF",at:"01/05 14:30",color:T.pink},
+      {id:2,type:"task",text:"Tarefa concluida: Confirmar base participante",user:"Mariana Costa",avatar:"MC",at:"27/04 16:00",color:T.green},
+      {id:3,type:"task",text:"Tarefa concluida: Emitir PI",user:"Ana Lima",avatar:"AL",at:"28/04 10:20",color:T.info},
+      {id:4,type:"task",text:"Tarefa concluida: Enviar contrato ao cliente",user:"Ana Lima",avatar:"AL",at:"28/04 11:05",color:T.info},
+      {id:5,type:"stage",text:"Etapa avancada: Grafica - Logistica",user:"Carlos Mendes",avatar:"CM",at:"02/05 08:30",color:T.purple},
+      {id:6,type:"task",text:"Tarefa concluida: Receber PI",user:"Paulo Neto",avatar:"PN",at:"29/04 09:00",color:T.warn},
+      {id:7,type:"comment",text:"Arte aprovada pelo cliente. Seguindo para impressao.",user:"Ana Lima",avatar:"AL",at:"30/04 15:00",color:T.soft},
+      {id:8,type:"task",text:"Tarefa concluida: Post Instagram",user:"Juliana Faria",avatar:"JF",at:"01/05 14:30",color:T.pink},
     ]),
     files:mkFiles([
       {id:1,name:"Arte_Boticario_MaeDias.pdf",type:"arte",size:"4.2 MB",uploadedBy:"Ana Lima",at:"30/04 14:55",icon:"-"},
@@ -64,24 +150,24 @@ const CAMPS_INIT=[
       {id:4,name:"Base_Parceiros_Confirmada.xlsx",type:"base",size:"320 KB",uploadedBy:"Mariana Costa",at:"27/04 16:00",icon:"-"},
     ])},
 
-  {id:2,name:"Pirelli - Junho 2025",client:"Pirelli Brasil",stage:1,project:"Copa 2025",startDate:"01/06/2025",endDate:"30/06/2025",region:"Rio de Janeiro · RJ",segments:["Pizza","Japonesa","Hamburguer"],graficaFornecedor:"",material:"",graficaPrazo:"",logistica:"",logisticaFornecedor:"",logisticaPrazo:"",parceiros:54,sacolas:10000,progress:15,
+  {id:2,name:"Pirelli - Junho 2025",client:"Pirelli Brasil",stage:1,project:"Copa 2025",startDate:"01/06/2025",endDate:"30/06/2025",region:"Rio de Janeiro . RJ",segments:["Pizza","Japonesa","Hamburguer"],graficaFornecedor:"",material:"",graficaPrazo:"",logistica:"",logisticaFornecedor:"",logisticaPrazo:"",parceiros:54,sacolas:10000,progress:15,
     parceirosIds:[2],impactos:mkImpactos(),
-    tasks:{comercial:[{id:"c1",label:"Emitir PI",done:false},{id:"c2",label:"Enviar contrato ao cliente",done:false}],financeiro:[{id:"f1",label:"Receber PI",done:false},{id:"f2",label:"Faturar NF",done:false},{id:"f3",label:"Lançar planilha financeira",done:false}],marketing:[{id:"m1",label:"Post Instagram",done:false},{id:"m2",label:"Post LinkedIn",done:false},{id:"m3",label:"Contratar influencer",done:false}],base:[{id:"b1",label:"Confirmar base participante",done:true,doneAt:"02/05 09:00",doneBy:"Mariana Costa"},{id:"b2",label:"Enviar contrato de exclusividade",done:false}]},
+    tasks:{comercial:[{id:"c1",label:"Emitir PI",done:false},{id:"c2",label:"Enviar contrato ao cliente",done:false}],financeiro:[{id:"f1",label:"Receber PI",done:false},{id:"f2",label:"Faturar NF",done:false},{id:"f3",label:"Lancar planilha financeira",done:false}],marketing:[{id:"m1",label:"Post Instagram",done:false},{id:"m2",label:"Post LinkedIn",done:false},{id:"m3",label:"Contratar influencer",done:false}],base:[{id:"b1",label:"Confirmar base participante",done:true,doneAt:"02/05 09:00",doneBy:"Mariana Costa"},{id:"b2",label:"Enviar contrato de exclusividade",done:false}]},
     timeline:mkTimeline([
       {id:1,type:"stage",text:"Campanha criada - Etapa: Fechamento",user:"Rodrigo Bem",avatar:"RB",at:"01/05 10:00",color:T.info},
-      {id:2,type:"task",text:"Tarefa concluída: Confirmar base participante",user:"Mariana Costa",avatar:"MC",at:"02/05 09:00",color:T.green},
+      {id:2,type:"task",text:"Tarefa concluida: Confirmar base participante",user:"Mariana Costa",avatar:"MC",at:"02/05 09:00",color:T.green},
     ]),
     files:mkFiles([])},
 
-  {id:3,name:"Supergasbras - Abril 2025",client:"Supergasbras",stage:5,project:"Verão 2025",startDate:"01/04/2025",endDate:"30/04/2025",region:"Salvador · BA + Recife · PE",segments:["Açaí","Regional","Padaria"],graficaFornecedor:"Gráfica ColorMax",material:"Sacola biodegradável",graficaPrazo:"20/03/2025",logistica:"Correios",logisticaFornecedor:"ECT",logisticaPrazo:"28/03/2025",parceiros:123,sacolas:25000,sacolasDistribuidas:null,progress:100,
+  {id:3,name:"Supergasbras - Abril 2025",client:"Supergasbras",stage:5,project:"Verao 2025",startDate:"01/04/2025",endDate:"30/04/2025",region:"Salvador . BA + Recife . PE",segments:["Acai","Regional","Padaria"],graficaFornecedor:"Grafica ColorMax",material:"Sacola biodegradavel",graficaPrazo:"20/03/2025",logistica:"Correios",logisticaFornecedor:"ECT",logisticaPrazo:"28/03/2025",parceiros:123,sacolas:25000,sacolasDistribuidas:null,progress:100,
     parceirosIds:[4,6],
     impactos:{
-      stories:[{id:1,parceiro:"Açaí Raiz",impressoes:8400,at:"15/04 12:00"},{id:2,parceiro:"Tapioca Nordestina",impressoes:3200,at:"18/04 16:00"}],
+      stories:[{id:1,parceiro:"Acai Raiz",impressoes:8400,at:"15/04 12:00"},{id:2,parceiro:"Tapioca Nordestina",impressoes:3200,at:"18/04 16:00"}],
       influencer:[{id:1,nome:"@blogdochef_ssa",alcance:45000,at:"10/04"}],
       impulsionado:[{id:1,plataforma:"Instagram Ads",alcance:120000,at:"12/04"}],
-      galeria:[{id:1,url:"https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400",tipo:"foto",legenda:"Açaí Raiz com sacolas Ecodely",at:"05/04"},{id:2,url:"https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400",tipo:"foto",legenda:"Campanha em campo - Salvador",at:"10/04"},{id:3,url:"https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400",tipo:"foto",legenda:"Story parceiro Recife",at:"18/04"}]
+      galeria:[{id:1,url:"https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400",tipo:"foto",legenda:"Acai Raiz com sacolas Ecodely",at:"05/04"},{id:2,url:"https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400",tipo:"foto",legenda:"Campanha em campo - Salvador",at:"10/04"},{id:3,url:"https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400",tipo:"foto",legenda:"Story parceiro Recife",at:"18/04"}]
     },
-    tasks:{comercial:[{id:"c1",label:"Emitir PI",done:true,doneAt:"10/03 09:00",doneBy:"Ana Lima"},{id:"c2",label:"Enviar contrato ao cliente",done:true,doneAt:"10/03 11:00",doneBy:"Ana Lima"}],financeiro:[{id:"f1",label:"Receber PI",done:true,doneAt:"11/03 10:00",doneBy:"Paulo Neto"},{id:"f2",label:"Faturar NF",done:true,doneAt:"02/04 09:00",doneBy:"Paulo Neto"},{id:"f3",label:"Lançar planilha financeira",done:true,doneAt:"02/04 10:00",doneBy:"Paulo Neto"}],marketing:[{id:"m1",label:"Post Instagram",done:true,doneAt:"01/04 08:00",doneBy:"Juliana Faria"},{id:"m2",label:"Post LinkedIn",done:true,doneAt:"01/04 08:30",doneBy:"Juliana Faria"},{id:"m3",label:"Contratar influencer",done:true,doneAt:"15/03 14:00",doneBy:"Juliana Faria"}],base:[{id:"b1",label:"Confirmar base participante",done:true,doneAt:"08/03 16:00",doneBy:"Mariana Costa"},{id:"b2",label:"Enviar contrato de exclusividade",done:true,doneAt:"12/03 11:00",doneBy:"Mariana Costa"}]},
+    tasks:{comercial:[{id:"c1",label:"Emitir PI",done:true,doneAt:"10/03 09:00",doneBy:"Ana Lima"},{id:"c2",label:"Enviar contrato ao cliente",done:true,doneAt:"10/03 11:00",doneBy:"Ana Lima"}],financeiro:[{id:"f1",label:"Receber PI",done:true,doneAt:"11/03 10:00",doneBy:"Paulo Neto"},{id:"f2",label:"Faturar NF",done:true,doneAt:"02/04 09:00",doneBy:"Paulo Neto"},{id:"f3",label:"Lancar planilha financeira",done:true,doneAt:"02/04 10:00",doneBy:"Paulo Neto"}],marketing:[{id:"m1",label:"Post Instagram",done:true,doneAt:"01/04 08:00",doneBy:"Juliana Faria"},{id:"m2",label:"Post LinkedIn",done:true,doneAt:"01/04 08:30",doneBy:"Juliana Faria"},{id:"m3",label:"Contratar influencer",done:true,doneAt:"15/03 14:00",doneBy:"Juliana Faria"}],base:[{id:"b1",label:"Confirmar base participante",done:true,doneAt:"08/03 16:00",doneBy:"Mariana Costa"},{id:"b2",label:"Enviar contrato de exclusividade",done:true,doneAt:"12/03 11:00",doneBy:"Mariana Costa"}]},
     timeline:mkTimeline([
       {id:1,type:"stage",text:"Campanha criada",user:"Rodrigo Bem",avatar:"RB",at:"05/03 09:00",color:T.info},
       {id:2,type:"stage",text:"Campanha finalizada com sucesso",user:"Rodrigo Bem",avatar:"RB",at:"30/04 18:00",color:T.accent},
@@ -91,13 +177,13 @@ const CAMPS_INIT=[
       {id:2,name:"NF_Supergasbras_04_2025.pdf",type:"nf",size:"540 KB",uploadedBy:"Paulo Neto",at:"02/04 09:05",icon:"-"},
     ])},
 
-  {id:4,name:"T4F - Maio 2025",client:"T4F Entretenimento",stage:2,project:"Copa 2025",startDate:"15/05/2025",endDate:"15/06/2025",region:"São Paulo + Porto Alegre",segments:["Café","Sobremesa","Hamburguer"],graficaFornecedor:"Gráfica TopPrint",material:"Sacola papel offset",graficaPrazo:"08/05/2025",logistica:"",logisticaFornecedor:"",logisticaPrazo:"",parceiros:67,sacolas:14000,progress:30,
+  {id:4,name:"T4F - Maio 2025",client:"T4F Entretenimento",stage:2,project:"Copa 2025",startDate:"15/05/2025",endDate:"15/06/2025",region:"Sao Paulo + Porto Alegre",segments:["Cafe","Sobremesa","Hamburguer"],graficaFornecedor:"Grafica TopPrint",material:"Sacola papel offset",graficaPrazo:"08/05/2025",logistica:"",logisticaFornecedor:"",logisticaPrazo:"",parceiros:67,sacolas:14000,progress:30,
     parceirosIds:[1,5,7],impactos:mkImpactos(),
-    tasks:{comercial:[{id:"c1",label:"Emitir PI",done:true,doneAt:"25/04 10:00",doneBy:"Ana Lima"},{id:"c2",label:"Enviar contrato ao cliente",done:true,doneAt:"25/04 11:00",doneBy:"Ana Lima"}],financeiro:[{id:"f1",label:"Receber PI",done:true,doneAt:"26/04 09:00",doneBy:"Paulo Neto"},{id:"f2",label:"Faturar NF",done:false},{id:"f3",label:"Lançar planilha financeira",done:false}],marketing:[{id:"m1",label:"Post Instagram",done:true,doneAt:"28/04 10:00",doneBy:"Juliana Faria"},{id:"m2",label:"Post LinkedIn",done:true,doneAt:"28/04 10:30",doneBy:"Juliana Faria"},{id:"m3",label:"Contratar influencer",done:false}],base:[{id:"b1",label:"Confirmar base participante",done:true,doneAt:"27/04 15:00",doneBy:"Mariana Costa"},{id:"b2",label:"Enviar contrato de exclusividade",done:false}]},
+    tasks:{comercial:[{id:"c1",label:"Emitir PI",done:true,doneAt:"25/04 10:00",doneBy:"Ana Lima"},{id:"c2",label:"Enviar contrato ao cliente",done:true,doneAt:"25/04 11:00",doneBy:"Ana Lima"}],financeiro:[{id:"f1",label:"Receber PI",done:true,doneAt:"26/04 09:00",doneBy:"Paulo Neto"},{id:"f2",label:"Faturar NF",done:false},{id:"f3",label:"Lancar planilha financeira",done:false}],marketing:[{id:"m1",label:"Post Instagram",done:true,doneAt:"28/04 10:00",doneBy:"Juliana Faria"},{id:"m2",label:"Post LinkedIn",done:true,doneAt:"28/04 10:30",doneBy:"Juliana Faria"},{id:"m3",label:"Contratar influencer",done:false}],base:[{id:"b1",label:"Confirmar base participante",done:true,doneAt:"27/04 15:00",doneBy:"Mariana Costa"},{id:"b2",label:"Enviar contrato de exclusividade",done:false}]},
     timeline:mkTimeline([
       {id:1,type:"stage",text:"Campanha criada - Etapa: Fechamento",user:"Rodrigo Bem",avatar:"RB",at:"24/04 14:00",color:T.info},
-      {id:2,type:"stage",text:"Etapa avançada: Fechamento - Gráfica",user:"Carlos Mendes",avatar:"CM",at:"02/05 09:00",color:T.purple},
-      {id:3,type:"comment",text:"-- Prazo da gráfica é 08/05. Confirmar arte até 06/05.",user:"Carlos Mendes",avatar:"CM",at:"03/05 08:00",color:T.warn},
+      {id:2,type:"stage",text:"Etapa avancada: Fechamento - Grafica",user:"Carlos Mendes",avatar:"CM",at:"02/05 09:00",color:T.purple},
+      {id:3,type:"comment",text:"-- Prazo da grafica e 08/05. Confirmar arte ate 06/05.",user:"Carlos Mendes",avatar:"CM",at:"03/05 08:00",color:T.warn},
     ]),
     files:mkFiles([
       {id:1,name:"PI_T4F_Copa2025.pdf",type:"pi",size:"980 KB",uploadedBy:"Ana Lima",at:"25/04 10:00",icon:"-"},
@@ -105,24 +191,24 @@ const CAMPS_INIT=[
 ];
 
 // --- COMMERCIAL ---------------------------------------------------------------
-const PIPE_STAGES=[{id:"lead",label:"Lead",color:T.muted,prob:10},{id:"qualificado",label:"Qualificado",color:T.info,prob:30},{id:"proposta",label:"Proposta",color:T.purple,prob:60},{id:"negociacao",label:"Negociação",color:T.warn,prob:80},{id:"fechado",label:"Fechado",color:T.accent,prob:100}];
+const PIPE_STAGES=[{id:"lead",label:"Lead",color:T.muted,prob:10},{id:"qualificado",label:"Qualificado",color:T.info,prob:30},{id:"proposta",label:"Proposta",color:T.purple,prob:60},{id:"negociacao",label:"Negociacao",color:T.warn,prob:80},{id:"fechado",label:"Fechado",color:T.accent,prob:100}];
 const PROSPECTS_INIT=[
-  {id:1,name:"Natura",contact:"Paula Mendes",email:"paula@natura.com.br",segment:"Beleza",value:42000,stage:"lead",owner:"Ana Lima",notes:"Indicação O Boticário"},
-  {id:2,name:"Ambev",contact:"Ricardo Torres",email:"ricardo@ambev.com.br",segment:"Alimentação",value:85000,stage:"qualificado",owner:"Ana Lima",notes:"Interesse em 3 capitais"},
+  {id:1,name:"Natura",contact:"Paula Mendes",email:"paula@natura.com.br",segment:"Beleza",value:42000,stage:"lead",owner:"Ana Lima",notes:"Indicacao O Boticario"},
+  {id:2,name:"Ambev",contact:"Ricardo Torres",email:"ricardo@ambev.com.br",segment:"Alimentacao",value:85000,stage:"qualificado",owner:"Ana Lima",notes:"Interesse em 3 capitais"},
   {id:3,name:"Magazine Luiza",contact:"Fernanda Luz",email:"fernanda@magalu.com.br",segment:"Tecnologia",value:120000,stage:"proposta",owner:"Rodrigo Bem",notes:"Proposta enviada 05/04"},
-  {id:4,name:"iFood",contact:"Bruno Sá",email:"bruno@ifood.com.br",segment:"Tecnologia",value:200000,stage:"negociacao",owner:"Rodrigo Bem",notes:"Reunião marcada 20/04"},
-  {id:5,name:"Riachuelo",contact:"Carla Vaz",email:"carla@riachuelo.com.br",segment:"Moda",value:55000,stage:"proposta",owner:"Ana Lima",notes:"Aguardando aprovação interna"},
+  {id:4,name:"iFood",contact:"Bruno Sa",email:"bruno@ifood.com.br",segment:"Tecnologia",value:200000,stage:"negociacao",owner:"Rodrigo Bem",notes:"Reuniao marcada 20/04"},
+  {id:5,name:"Riachuelo",contact:"Carla Vaz",email:"carla@riachuelo.com.br",segment:"Moda",value:55000,stage:"proposta",owner:"Ana Lima",notes:"Aguardando aprovacao interna"},
 ];
-const CLIENTS_LIST=[{id:10,name:"O Boticário",contact:"Maria Silva",email:"maria@boticario.com.br",segment:"Beleza",campaigns:3,ltv:127000,owner:"Rodrigo Bem"},{id:11,name:"Pirelli Brasil",contact:"João Souza",email:"joao@pirelli.com",segment:"Automotivo",campaigns:1,ltv:38000,owner:"Ana Lima"},{id:12,name:"Supergasbras",contact:"Carla Moura",email:"carla@supergasbras.com.br",segment:"Energia",campaigns:2,ltv:74000,owner:"Rodrigo Bem"},{id:13,name:"T4F",contact:"Bruno Lima",email:"bruno@t4f.com.br",segment:"Entretenimento",campaigns:1,ltv:42000,owner:"Ana Lima"}];
-const CLIENT_BILLING=[{name:"O Boticário",segment:"Beleza",campanhas:3,faturado:127000,pendente:0,ultima:"Abr/25"},{name:"Pirelli Brasil",segment:"Automotivo",campanhas:1,faturado:38000,pendente:14000,ultima:"Jun/25"},{name:"Supergasbras",segment:"Energia",campanhas:2,faturado:74000,pendente:0,ultima:"Abr/25"},{name:"T4F",segment:"Entretenimento",campanhas:1,faturado:42000,pendente:22000,ultima:"Mai/25"}];
+const CLIENTS_LIST=[{id:10,name:"O Boticario",contact:"Maria Silva",email:"maria@boticario.com.br",segment:"Beleza",campaigns:3,ltv:127000,owner:"Rodrigo Bem"},{id:11,name:"Pirelli Brasil",contact:"Joao Souza",email:"joao@pirelli.com",segment:"Automotivo",campaigns:1,ltv:38000,owner:"Ana Lima"},{id:12,name:"Supergasbras",contact:"Carla Moura",email:"carla@supergasbras.com.br",segment:"Energia",campaigns:2,ltv:74000,owner:"Rodrigo Bem"},{id:13,name:"T4F",contact:"Bruno Lima",email:"bruno@t4f.com.br",segment:"Entretenimento",campaigns:1,ltv:42000,owner:"Ana Lima"}];
+const CLIENT_BILLING=[{name:"O Boticario",segment:"Beleza",campanhas:3,faturado:127000,pendente:0,ultima:"Abr/25"},{name:"Pirelli Brasil",segment:"Automotivo",campanhas:1,faturado:38000,pendente:14000,ultima:"Jun/25"},{name:"Supergasbras",segment:"Energia",campanhas:2,faturado:74000,pendente:0,ultima:"Abr/25"},{name:"T4F",segment:"Entretenimento",campanhas:1,faturado:42000,pendente:22000,ultima:"Mai/25"}];
 const MONTHLY_DATA=[{month:"Nov/24",receita:28400,previsao:30000},{month:"Dez/24",receita:31200,previsao:32000},{month:"Jan/25",receita:19800,previsao:22000},{month:"Fev/25",receita:35600,previsao:34000},{month:"Mar/25",receita:42100,previsao:40000},{month:"Abr/25",receita:38700,previsao:41000},{month:"Mai/25",receita:0,previsao:52000},{month:"Jun/25",receita:0,previsao:58000}];
 const USER_BILLING=[{user:"Rodrigo Bem",avatar:"RB",color:T.accent,faturado:127000,meta:150000,campanhas:4},{user:"Ana Lima",avatar:"AL",color:T.info,faturado:154000,meta:150000,campanhas:5}];
 
 // --- COMMISSIONS -------------------------------------------------------------
-const PROJECTS_INIT=[{id:1,name:"Copa 2025",active:true},{id:2,name:"Verão 2025",active:true},{id:3,name:"Dia das Mães 2025",active:true}];
-const PTYPES_INIT=[{id:1,name:"Restaurante"},{id:2,name:"Bar"},{id:3,name:"Padaria"},{id:4,name:"Açaí"},{id:5,name:"Café"},{id:6,name:"Hamburgueria"}];
-const COMM_TABLE_INIT=[{id:1,typeId:1,typeName:"Restaurante",projectId:1,projectName:"Copa 2025",value:80},{id:2,typeId:2,typeName:"Bar",projectId:1,projectName:"Copa 2025",value:120},{id:3,typeId:3,typeName:"Padaria",projectId:1,projectName:"Copa 2025",value:60},{id:4,typeId:1,typeName:"Restaurante",projectId:2,projectName:"Verão 2025",value:70},{id:5,typeId:4,typeName:"Açaí",projectId:2,projectName:"Verão 2025",value:90},{id:6,typeId:5,typeName:"Café",projectId:3,projectName:"Dia das Mães 2025",value:55}];
-const CLOSINGS_INIT=[{id:1,user:"Mariana Costa",userId:6,partner:"Churrascaria do Zé",type:"Restaurante",typeId:1,project:"Copa 2025",projectId:1,value:80,date:"02/04",status:"aprovado",pago:true},{id:2,user:"Mariana Costa",userId:6,partner:"Bar do Alemão",type:"Bar",typeId:2,project:"Copa 2025",projectId:1,value:120,date:"05/04",status:"aprovado",pago:false},{id:3,user:"Mariana Costa",userId:6,partner:"Padaria Estrela",type:"Padaria",typeId:3,project:"Copa 2025",projectId:1,value:60,date:"08/04",status:"pendente",pago:false},{id:4,user:"Carlos Mendes",userId:3,partner:"Café Central",type:"Café",typeId:5,project:"Dia das Mães 2025",projectId:3,value:55,date:"20/04",status:"pendente",pago:false}];
+const PROJECTS_INIT=[{id:1,name:"Copa 2025",active:true},{id:2,name:"Verao 2025",active:true},{id:3,name:"Dia das Maes 2025",active:true}];
+const PTYPES_INIT=[{id:1,name:"Restaurante"},{id:2,name:"Bar"},{id:3,name:"Padaria"},{id:4,name:"Acai"},{id:5,name:"Cafe"},{id:6,name:"Hamburgueria"}];
+const COMM_TABLE_INIT=[{id:1,typeId:1,typeName:"Restaurante",projectId:1,projectName:"Copa 2025",value:80},{id:2,typeId:2,typeName:"Bar",projectId:1,projectName:"Copa 2025",value:120},{id:3,typeId:3,typeName:"Padaria",projectId:1,projectName:"Copa 2025",value:60},{id:4,typeId:1,typeName:"Restaurante",projectId:2,projectName:"Verao 2025",value:70},{id:5,typeId:4,typeName:"Acai",projectId:2,projectName:"Verao 2025",value:90},{id:6,typeId:5,typeName:"Cafe",projectId:3,projectName:"Dia das Maes 2025",value:55}];
+const CLOSINGS_INIT=[{id:1,user:"Mariana Costa",userId:6,partner:"Churrascaria do Ze",type:"Restaurante",typeId:1,project:"Copa 2025",projectId:1,value:80,date:"02/04",status:"aprovado",pago:true},{id:2,user:"Mariana Costa",userId:6,partner:"Bar do Alemao",type:"Bar",typeId:2,project:"Copa 2025",projectId:1,value:120,date:"05/04",status:"aprovado",pago:false},{id:3,user:"Mariana Costa",userId:6,partner:"Padaria Estrela",type:"Padaria",typeId:3,project:"Copa 2025",projectId:1,value:60,date:"08/04",status:"pendente",pago:false},{id:4,user:"Carlos Mendes",userId:3,partner:"Cafe Central",type:"Cafe",typeId:5,project:"Dia das Maes 2025",projectId:3,value:55,date:"20/04",status:"pendente",pago:false}];
 
 // --- BASE PARTNERS ------------------------------------------------------------
 const calcScore=(p)=>{
@@ -134,44 +220,45 @@ const calcScore=(p)=>{
   return Math.min(Math.round(s1+s2+s3+s4+s5),100);
 };
 const BASE_PARTNERS_INIT=[
-  {id:1,name:"Burger Bros SP",handle:"@burgerbros_sp",city:"São Paulo",state:"SP",category:"Hamburguer",deliveries:312,status:"ativo",mesesNaBase:8,campanhas:3,engajamento:3,
-    endereco:{rua:"Rua Augusta",numero:"1204",bairro:"Consolação",cep:"01304-001",lat:-23.5542,lng:-46.6527},
+  {id:1,name:"Burger Bros SP",handle:"@burgerbros_sp",city:"Sao Paulo",state:"SP",category:"Hamburguer",deliveries:312,status:"ativo",mesesNaBase:8,campanhas:3,engajamento:3,
+    endereco:{rua:"Rua Augusta",numero:"1204",bairro:"Consolacao",cep:"01304-001",lat:-23.5542,lng:-46.6527},
     contrato:{status:"assinado",enviadoEm:"10/09/2024",assinadoEm:"12/09/2024",expiraEm:"12/09/2025"}},
   {id:2,name:"Pizza da Vila",handle:"@pizzadavila_rj",city:"Rio de Janeiro",state:"RJ",category:"Pizza",deliveries:187,status:"prospectado",mesesNaBase:1,campanhas:0,engajamento:2,
-    endereco:{rua:"Rua Voluntários da Pátria",numero:"340",bairro:"Botafogo",cep:"22270-010",lat:-22.9519,lng:-43.1823},
+    endereco:{rua:"Rua Voluntarios da Patria",numero:"340",bairro:"Botafogo",cep:"22270-010",lat:-22.9519,lng:-43.1823},
     contrato:{status:"pendente",enviadoEm:"01/05/2025",assinadoEm:null,expiraEm:null}},
-  {id:3,name:"Sushi Zen",handle:"@sushizen_bsb",city:"Brasília",state:"DF",category:"Japonesa",deliveries:445,status:"negociando",mesesNaBase:3,campanhas:1,engajamento:3,
+  {id:3,name:"Sushi Zen",handle:"@sushizen_bsb",city:"Brasilia",state:"DF",category:"Japonesa",deliveries:445,status:"negociando",mesesNaBase:3,campanhas:1,engajamento:3,
     endereco:{rua:"CLN 408 Bloco B",numero:"12",bairro:"Asa Norte",cep:"70855-520",lat:-15.7396,lng:-47.8826},
     contrato:{status:"pendente",enviadoEm:"15/03/2025",assinadoEm:null,expiraEm:null}},
-  {id:4,name:"Açaí Raiz",handle:"@acairaiz_ssa",city:"Salvador",state:"BA",category:"Açaí",deliveries:276,status:"ativo",mesesNaBase:6,campanhas:2,engajamento:3,
-    endereco:{rua:"Av. Oceânica",numero:"876",bairro:"Ondina",cep:"40170-010",lat:-13.0061,lng:-38.5147},
+  {id:4,name:"Acai Raiz",handle:"@acairaiz_ssa",city:"Salvador",state:"BA",category:"Acai",deliveries:276,status:"ativo",mesesNaBase:6,campanhas:2,engajamento:3,
+    endereco:{rua:"Av. Oceanica",numero:"876",bairro:"Ondina",cep:"40170-010",lat:-13.0061,lng:-38.5147},
     contrato:{status:"assinado",enviadoEm:"05/11/2024",assinadoEm:"06/11/2024",expiraEm:"06/11/2025"}},
-  {id:5,name:"Churrasco do Gaúcho",handle:"@churrascodogaucho",city:"Porto Alegre",state:"RS",category:"Churrascaria",deliveries:203,status:"ativo",mesesNaBase:5,campanhas:2,engajamento:2,
+  {id:5,name:"Churrasco do Gaucho",handle:"@churrascodogaucho",city:"Porto Alegre",state:"RS",category:"Churrascaria",deliveries:203,status:"ativo",mesesNaBase:5,campanhas:2,engajamento:2,
     endereco:{rua:"Av. Ipiranga",numero:"1681",bairro:"Azenha",cep:"90160-093",lat:-30.0453,lng:-51.2177},
     contrato:{status:"expirando",enviadoEm:"02/05/2024",assinadoEm:"04/05/2024",expiraEm:"04/06/2025"}},
   {id:6,name:"Tapioca Nordestina",handle:"@tapioca_nordestina",city:"Recife",state:"PE",category:"Regional",deliveries:98,status:"ativo",mesesNaBase:2,campanhas:1,engajamento:1,
     endereco:{rua:"Rua do Bom Jesus",numero:"197",bairro:"Recife Antigo",cep:"50030-170",lat:-8.0631,lng:-34.8711},
     contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null}},
-  {id:7,name:"Café Paulistano",handle:"@cafepaulistano",city:"São Paulo",state:"SP",category:"Café",deliveries:156,status:"ativo",mesesNaBase:4,campanhas:1,engajamento:2,
+  {id:7,name:"Cafe Paulistano",handle:"@cafepaulistano",city:"Sao Paulo",state:"SP",category:"Cafe",deliveries:156,status:"ativo",mesesNaBase:4,campanhas:1,engajamento:2,
     endereco:{rua:"Rua Oscar Freire",numero:"540",bairro:"Jardins",cep:"01426-000",lat:-23.5635,lng:-46.6711},
     contrato:{status:"assinado",enviadoEm:"10/01/2025",assinadoEm:"11/01/2025",expiraEm:"11/01/2026"}},
 ].map(p=>({...p,score:calcScore(p)}));
 const STATUS_PARTNER={ativo:T.accent,negociando:T.warn,prospectado:T.info,"sem resposta":T.muted};
 const CONTRATO_COLOR={"assinado":T.accent,"pendente":T.warn,"expirando":T.danger,"sem contrato":T.muted,"expirado":T.danger};
-const SUPPLIERS=[{id:1,name:"Gráfica TopPrint",type:"grafica",contact:"Roberto Alves",phone:"(11) 3333-0001",email:"roberto@topprint.com.br",leadTime:"7 dias",rating:5,campaigns:2},{id:2,name:"Gráfica ColorMax",type:"grafica",contact:"Sandra Reis",phone:"(11) 3333-0002",email:"sandra@colormax.com.br",leadTime:"10 dias",rating:4,campaigns:1},{id:3,name:"TransBrasil Cargo",type:"logistica",contact:"Fernando Dias",phone:"(11) 4444-0001",email:"fernando@transbrasil.com.br",leadTime:"3 dias",rating:4,campaigns:1},{id:4,name:"ECT Correios",type:"logistica",contact:"Agência SP",phone:"0800-725-0100",email:"",leadTime:"5-10 dias",rating:3,campaigns:1}];
+const SUPPLIERS=[{id:1,name:"Grafica TopPrint",type:"grafica",contact:"Roberto Alves",phone:"(11) 3333-0001",email:"roberto@topprint.com.br",leadTime:"7 dias",rating:5,campaigns:2},{id:2,name:"Grafica ColorMax",type:"grafica",contact:"Sandra Reis",phone:"(11) 3333-0002",email:"sandra@colormax.com.br",leadTime:"10 dias",rating:4,campaigns:1},{id:3,name:"TransBrasil Cargo",type:"logistica",contact:"Fernando Dias",phone:"(11) 4444-0001",email:"fernando@transbrasil.com.br",leadTime:"3 dias",rating:4,campaigns:1},{id:4,name:"ECT Correios",type:"logistica",contact:"Agencia SP",phone:"0800-725-0100",email:"",leadTime:"5-10 dias",rating:3,campaigns:1}];
 
 // --- NAV ---------------------------------------------------------------------
 const getNav=(role,queueCount,notifCount)=>[
   {id:"dashboard",label:"Dashboard",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base"]},
   {id:"minha-fila",label:"Minha Fila",icon:"-",roles:["comercial","operacional","marketing","financeiro","base","admin"],badge:queueCount||null},
   {id:"campanhas",label:"Campanhas",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro"]},
-  {id:"calendario",label:"Calendário",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro"]},
+  {id:"calendario",label:"Calendario",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro"]},
+  {id:"financeiro-modulo",label:"Financeiro",icon:"-",roles:["admin","financeiro"]},
   {id:"comercial",label:"Comercial",icon:"-",roles:["admin","comercial","financeiro"]},
-  {id:"comissoes",label:"Comissões",icon:"-",roles:["admin","base"]},
+  {id:"comissoes",label:"Comissoes",icon:"-",roles:["admin","base"]},
   {id:"parceiros",label:"Buscar Parceiros",icon:"-",roles:["admin","base"]},
   {id:"base",label:"Base",icon:"-",roles:["admin","base","comercial"]},
   {id:"cadastros",label:"Cadastros",icon:"-",roles:["admin","comercial","operacional"]},
-  {id:"usuarios",label:"Usuários",icon:"-",roles:["admin"]},
+  {id:"usuarios",label:"Usuarios",icon:"-",roles:["admin"]},
 ].filter(n=>n.roles.includes(role));
 
 // --- HELPERS -----------------------------------------------------------------
@@ -186,7 +273,7 @@ const tasksDone=(tasks)=>{const all=Object.values(tasks).flat();return{done:all.
 const FILE_COLOR={arte:T.pink,pi:T.info,contrato:T.purple,base:T.green,nf:T.warn,relatorio:T.accent,outro:T.soft};
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
-// CAMPAIGN MODAL - with Tarefas, Etapas, Histórico, Arquivos
+// CAMPAIGN MODAL - with Tarefas, Etapas, Historico, Arquivos
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddFile,onUpdateSacolas,onUpdateImpactos,onOpenClientPanel})=>{
   const[iTab,setITab]=useState("tarefas");
@@ -221,14 +308,14 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
               <Badge label={camp.client} color={T.info}/>
             </div>
             <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:17}}>{camp.name}</div>
-            <div style={{fontSize:10,color:T.muted,marginTop:2}}>{camp.startDate} - {camp.endDate} · {camp.region} · {camp.parceiros} parceiros</div>
+            <div style={{fontSize:10,color:T.muted,marginTop:2}}>{camp.startDate} - {camp.endDate} . {camp.region} . {camp.parceiros} parceiros</div>
           </div>
-          <div onClick={onClose} style={{cursor:"pointer",color:T.muted,fontSize:20,flexShrink:0}}>×</div>
+          <div onClick={onClose} style={{cursor:"pointer",color:T.muted,fontSize:20,flexShrink:0}}>x</div>
         </div>
 
         {/* Tabs */}
         <div style={{display:"flex",borderBottom:`1px solid ${T.border}`,flexShrink:0,overflowX:"auto"}}>
-          {[["tarefas","Tarefas"],["etapas","Etapas"],["historico",`Histórico (${camp.timeline.length})`],["arquivos",`Arquivos (${camp.files.length})`],["impactos","- Impactos"],["cliente","- Painel Cliente"]].map(([id,l])=>(
+          {[["tarefas","Tarefas"],["etapas","Etapas"],["historico",`Historico (${camp.timeline.length})`],["arquivos",`Arquivos (${camp.files.length})`],["impactos","- Impactos"],["cliente","- Painel Cliente"]].map(([id,l])=>(
             <div key={id} onClick={()=>setITab(id)} style={{padding:"10px 18px",fontSize:11,cursor:"pointer",color:iTab===id?(id==="cliente"?T.purple:T.accent):T.muted,borderBottom:`2px solid ${iTab===id?(id==="cliente"?T.purple:T.accent):"transparent"}`,transition:"all 0.15s",whiteSpace:"nowrap"}}>{l}</div>
           ))}
         </div>
@@ -263,7 +350,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                               <div style={{width:15,height:15,borderRadius:4,border:`2px solid ${t.done?SEC_COLOR[sec]||T.accent:T.border}`,background:t.done?(SEC_COLOR[sec]||T.accent)+"33":"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:SEC_COLOR[sec]||T.accent,flexShrink:0,marginTop:1}}>{t.done&&"-"}</div>
                               <div style={{flex:1}}>
                                 <div style={{fontSize:11,color:t.done?T.muted:T.text,textDecoration:t.done?"line-through":"none",fontFamily:"'JetBrains Mono',monospace"}}>{t.label}</div>
-                                {t.done&&t.doneAt&&<div style={{fontSize:8,color:T.muted,marginTop:2}}>{t.doneAt} · {t.doneBy}</div>}
+                                {t.done&&t.doneAt&&<div style={{fontSize:8,color:T.muted,marginTop:2}}>{t.doneAt} . {t.doneBy}</div>}
                               </div>
                             </div>
                           ))}
@@ -289,10 +376,10 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                         <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginBottom:4}}>
                           <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:isCur?s.color:isDone?T.soft:T.muted}}>{s.label}</span>
                           {isCur&&<Badge label="Em andamento" color={s.color}/>}
-                          {isDone&&<Badge label="Concluída" color={T.accent}/>}
+                          {isDone&&<Badge label="Concluida" color={T.accent}/>}
                         </div>
-                        {s.id===2&&(camp.graficaFornecedor||camp.material)&&<div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{camp.graficaFornecedor} · {camp.material}{camp.graficaPrazo&&` · Prazo: ${camp.graficaPrazo}`}</div>}
-                        {s.id===3&&(camp.logistica||camp.logisticaFornecedor)&&<div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{camp.logistica} · {camp.logisticaFornecedor}{camp.logisticaPrazo&&` · Prazo: ${camp.logisticaPrazo}`}</div>}
+                        {s.id===2&&(camp.graficaFornecedor||camp.material)&&<div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{camp.graficaFornecedor} . {camp.material}{camp.graficaPrazo&&` . Prazo: ${camp.graficaPrazo}`}</div>}
+                        {s.id===3&&(camp.logistica||camp.logisticaFornecedor)&&<div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{camp.logistica} . {camp.logisticaFornecedor}{camp.logisticaPrazo&&` . Prazo: ${camp.logisticaPrazo}`}</div>}
                       </div>
                     </div>
                   </div>
@@ -301,7 +388,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
             </div>
           )}
 
-          {/* -- HISTÓRICO (TIMELINE) -- */}
+          {/* -- HISTORICO (TIMELINE) -- */}
           {iTab==="historico"&&(
             <div>
               <div style={{display:"flex",flexDirection:"column",gap:0,position:"relative"}}>
@@ -315,10 +402,10 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                         <div style={{display:"flex",gap:6,alignItems:"center"}}>
                           <div style={{width:6,height:6,borderRadius:"50%",background:e.color,flexShrink:0}}/>
                           <span style={{fontSize:10,color:e.color,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:0.5}}>
-                            {e.type==="stage"?"Etapa":e.type==="task"?"Tarefa":e.type==="comment"?"Comentário":"Arquivo"}
+                            {e.type==="stage"?"Etapa":e.type==="task"?"Tarefa":e.type==="comment"?"Comentario":"Arquivo"}
                           </span>
                         </div>
-                        <span style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{e.at} · {e.user}</span>
+                        <span style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{e.at} . {e.user}</span>
                       </div>
                       <div style={{fontSize:12,color:e.type==="comment"?T.soft:T.text,fontStyle:e.type==="comment"?"italic":"normal"}}>{e.text}</div>
                     </div>
@@ -327,9 +414,9 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
               </div>
               {/* Add comment */}
               <div style={{marginTop:8,background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:14}}>
-                <div style={{fontSize:9,color:T.muted,marginBottom:8,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Adicionar comentário</div>
+                <div style={{fontSize:9,color:T.muted,marginBottom:8,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Adicionar comentario</div>
                 <div style={{display:"flex",gap:8}}>
-                  <input value={comment} onChange={e=>setComment(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleComment()} placeholder="Digite uma observação... (@menção)" style={{...inpS,flex:1}}/>
+                  <input value={comment} onChange={e=>setComment(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleComment()} placeholder="Digite uma observacao... (@mencao)" style={{...inpS,flex:1}}/>
                   <button onClick={handleComment} style={{padding:"8px 14px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,border:"none",cursor:"pointer"}}>Enviar</button>
                 </div>
               </div>
@@ -350,7 +437,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                   <div>
                     <div style={{fontSize:22,marginBottom:6}}>-</div>
                     <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,marginBottom:3,fontSize:13}}>Subir arquivo</div>
-                    <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>Arte · PI · Contrato · NF · Checklist · Qualquer doc</div>
+                    <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>Arte . PI . Contrato . NF . Checklist . Qualquer doc</div>
                   </div>
                 )}
               </div>
@@ -374,7 +461,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                       <div style={{fontSize:20,flexShrink:0}}>{f.icon}</div>
                       <div style={{flex:1}}>
                         <div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif",marginBottom:2}}>{f.name}</div>
-                        <div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{f.size} · por {f.uploadedBy} · {f.at}</div>
+                        <div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{f.size} . por {f.uploadedBy} . {f.at}</div>
                       </div>
                       <Badge label={f.type} color={FILE_COLOR[f.type]||T.soft}/>
                       <div style={{fontSize:10,color:T.accent,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}}>- Baixar</div>
@@ -398,14 +485,14 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                 <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.purple,marginBottom:10}}>- Controle do Administrador</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:10}}>
                   <div>
-                    <div style={{fontSize:9,color:T.muted,marginBottom:5,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Volume padrão (gráfica)</div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:5,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Volume padrao (grafica)</div>
                     <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:12,color:T.soft,fontFamily:"'JetBrains Mono',monospace"}}>{camp.sacolas.toLocaleString()} embalagens</div>
                   </div>
                   <div>
                     <div style={{fontSize:9,color:T.purple,marginBottom:5,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Override - exibido ao cliente</div>
                     <input
                       type="number"
-                      placeholder={`${camp.sacolas.toLocaleString()} (padrão)`}
+                      placeholder={`${camp.sacolas.toLocaleString()} (padrao)`}
                       value={camp.sacolasDistribuidas||""}
                       onChange={e=>onUpdateSacolas(camp.id,e.target.value?Number(e.target.value):null)}
                       style={{width:"100%",background:T.surface,border:`1px solid ${T.purple}66`,borderRadius:7,padding:"8px 12px",fontSize:12,color:T.text,fontFamily:"'JetBrains Mono',monospace",outline:"none"}}
@@ -414,8 +501,8 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                 </div>
                 <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>
                   {camp.sacolasDistribuidas
-                    ? <span style={{color:T.purple}}>Override ativo: cliente verá <strong style={{color:T.text}}>{Number(camp.sacolasDistribuidas).toLocaleString()}</strong> embalagens</span>
-                    : <span>Sem override - cliente verá o volume padrão: <strong style={{color:T.text}}>{camp.sacolas.toLocaleString()}</strong></span>
+                    ? <span style={{color:T.purple}}>Override ativo: cliente vera <strong style={{color:T.text}}>{Number(camp.sacolasDistribuidas).toLocaleString()}</strong> embalagens</span>
+                    : <span>Sem override - cliente vera o volume padrao: <strong style={{color:T.text}}>{camp.sacolas.toLocaleString()}</strong></span>
                   }
                 </div>
               </div>
@@ -465,7 +552,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                       <div style={{height:"100%",width:`${camp.progress}%`,background:`linear-gradient(90deg,${T.accent},${T.purple})`,borderRadius:4}}/>
                     </div>
                   </div>
-                  <div style={{fontSize:9,color:T.muted,textAlign:"center",marginTop:8,fontFamily:"'JetBrains Mono',monospace"}}>Preview do painel - dados visíveis ao cliente</div>
+                  <div style={{fontSize:9,color:T.muted,textAlign:"center",marginTop:8,fontFamily:"'JetBrains Mono',monospace"}}>Preview do painel - dados visiveis ao cliente</div>
                 </div>
               </div>
             </div>
@@ -835,7 +922,7 @@ const Toast=({notifs,onDismiss})=>{
             <div style={{width:6,height:6,borderRadius:"50%",background:n.color}}/>
             <span style={{fontSize:9,color:n.color,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{n.title}</span>
           </div>
-          <div onClick={onDismiss} style={{cursor:"pointer",color:T.muted,fontSize:14}}>×</div>
+          <div onClick={onDismiss} style={{cursor:"pointer",color:T.muted,fontSize:14}}>x</div>
         </div>
         <div style={{fontSize:12,color:T.text,lineHeight:1.5}}>{n.msg}</div>
         <div style={{fontSize:9,color:T.muted,marginTop:6,fontFamily:"'JetBrains Mono',monospace"}}>{n.at}</div>
@@ -858,15 +945,50 @@ export default function App(){
   const[calMonth,setCalMonth]=useState(4); // 0-indexed, 4=May
   const[calYear,setCalYear]=useState(2025);
   const[calHover,setCalHover]=useState(null);
+  const[dashTab,setDashTab]=useState("geral");
+  const[dashPeriod,setDashPeriod]=useState("mes");
+  // Financial module state
+  const[finTab,setFinTab]=useState("visao");
+  const[lancamentos,setLancamentos]=useState(LANCAMENTOS_INIT);
+  const[custosFix,setCustosFix]=useState(CUSTOS_FIXOS_INIT);
+  const[cartoes,setCartoes]=useState(CARTOES_INIT);
+  const[comprasCartao,setComprasCartao]=useState(COMPRAS_CARTAO_INIT);
+  const[contas,setContas]=useState(CONTAS_INIT);
+  const[fatMensais,setFatMensais]=useState(FAT_MENSAIS_INIT);
+  const[centrosCusto,setCentrosCusto]=useState(CENTROS_CUSTO_INIT);
+  const[reservaCaixaPct,setReservaCaixaPct]=useState(10);
+  const[socios,setSocios]=useState([{id:1,nome:"Rodrigo Bem",pct:50},{id:2,nome:"Pedro",pct:50}]);
+  const[dasAjuste,setDasAjuste]=useState(null);
+  const[finMesRef,setFinMesRef]=useState("04/2026");
+  // Fin form states (component level - no hooks in IIFEs)
+  const[showAdd,setShowAdd]=useState(false);
+  const[novoLanc,setNovoLanc]=useState({data:"",descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1});
+  const[showAddCartao,setShowAddCartao]=useState(false);
+  const[showAddCompra,setShowAddCompra]=useState(false);
+  const[novoCartao,setNovoCartao]=useState({nome:"",titular:"",vencimento:15,limite:0,banco:"",cor:T.accent});
+  const[novaCompra,setNovaCompra]=useState({cartaoId:1,projeto:"",descricao:"",valorTotal:0,parcelas:2,parcelaAtual:1,mesInicio:"04/2026"});
+  const[nfValor,setNfValor]=useState("");
+  const[dasManual,setDasManual]=useState("");
+  const[showAddFixo,setShowAddFixo]=useState(false);
+  const[showAddConta,setShowAddConta]=useState(false);
+  const[showAddCentro,setShowAddCentro]=useState(false);
+  const[novoCusto,setNovoCusto]=useState({descricao:"",valor:0,dia:5,categoria:"Outros",centrosCusto:"Administrativo",ativo:true});
+  const[novaConta,setNovaConta]=useState({banco:"",tipo:"Conta Corrente",agencia:"",conta:"",saldo:0,cor:T.accent});
+  const[novoCentro,setNovoCentro]=useState("");
+  const[editCustoId,setEditCustoId]=useState(null);
+  const[editCusto,setEditCusto]=useState({});
+  const[modoPrevisao,setModoPrevisao]=useState(false);
+  const[prevSelecionados,setPrevSelecionados]=useState([]);
+  const[saldoAnterior,setSaldoAnterior]=useState(48.13); // saldo mes anterior - Abril 2026 da planilha real
   const[clientPanelCamp,setClientPanelCamp]=useState(null);
   const[pdfCamp,setPdfCamp]=useState(null);
   // Notification center
   const[inboxOpen,setInboxOpen]=useState(false);
   const[inbox,setInbox]=useState([
-    {id:1,type:"tarefa",title:"Tarefa concluída",msg:"Ana Lima concluiu: Emitir PI — O Boticário",campanha:"O Boticário — Maio 2025",at:"02/05 10:20",read:false,color:T.info,via:["sistema","email"]},
-    {id:2,type:"etapa",title:"Campanha avançou",msg:"T4F — Maio 2025 entrou em Gráfica",campanha:"T4F — Maio 2025",at:"02/05 09:00",read:false,color:T.purple,via:["sistema","whatsapp"]},
-    {id:3,type:"contrato",title:"Contrato expirando",msg:"Churrasco do Gaúcho: contrato vence em 30 dias",campanha:null,at:"01/05 08:00",read:true,color:T.danger,via:["sistema","email","whatsapp"]},
-    {id:4,type:"comissao",title:"Comissão aprovada",msg:"Sua comissão de R$ 80 foi aprovada pelo admin",campanha:null,at:"30/04 17:30",read:true,color:T.accent,via:["sistema"]},
+    {id:1,type:"tarefa",title:"Tarefa concluida",msg:"Ana Lima concluiu: Emitir PI - O Boticario",campanha:"O Boticario - Maio 2025",at:"02/05 10:20",read:false,color:T.info,via:["sistema","email"]},
+    {id:2,type:"etapa",title:"Campanha avancou",msg:"T4F - Maio 2025 entrou em Grafica",campanha:"T4F - Maio 2025",at:"02/05 09:00",read:false,color:T.purple,via:["sistema","whatsapp"]},
+    {id:3,type:"contrato",title:"Contrato expirando",msg:"Churrasco do Gaucho: contrato vence em 30 dias",campanha:null,at:"01/05 08:00",read:true,color:T.danger,via:["sistema","email","whatsapp"]},
+    {id:4,type:"comissao",title:"Comissao aprovada",msg:"Sua comissao de R$ 80 foi aprovada pelo admin",campanha:null,at:"30/04 17:30",read:true,color:T.accent,via:["sistema"]},
   ]);
   const[prospects,setProspects]=useState(PROSPECTS_INIT);
   const[pipeView,setPipeView]=useState("kanban");
@@ -1067,7 +1189,7 @@ export default function App(){
     const entry={id:Date.now(),type:"comment",text,user:byUser.name,avatar:byUser.avatar,at:now(),color:T.soft};
     setCamps(prev=>prev.map(c=>c.id===campId?{...c,timeline:[...c.timeline,entry]}:c));
     setSelCamp(prev=>prev&&prev.id===campId?{...prev,timeline:[...prev.timeline,entry]}:prev);
-    pushNotif("Comentário adicionado",`${byUser.name}: "${text.slice(0,40)}..."`,T.soft);
+    pushNotif("Comentario adicionado",`${byUser.name}: "${text.slice(0,40)}..."`,T.soft);
   };
 
   const addFile=(campId,file)=>{
@@ -1103,7 +1225,7 @@ export default function App(){
     const comm=commTable.find(c=>c.typeId===Number(newClosing.typeId)&&c.projectId===Number(newClosing.projectId));
     setClosings(p=>[...p,{id:Date.now(),user:user.name,userId:user.id,partner:newClosing.partner,type:type?.name||"",typeId:Number(newClosing.typeId),project:proj?.name||"",projectId:Number(newClosing.projectId),value:comm?.value||0,date:now().slice(0,5),status:"pendente",pago:false}]);
     setNewClosing({partner:"",typeId:"",projectId:""});setShowNewClosing(false);
-    pushNotif("Fechamento registrado",`${newClosing.partner} · aguardando aprovação`,T.warn);
+    pushNotif("Fechamento registrado",`${newClosing.partner} . aguardando aprovacao`,T.warn);
   };
 
   const enviarContrato=(partnerId)=>{
@@ -1125,12 +1247,12 @@ export default function App(){
   };
   const addProspectToBase=(prosp)=>{
     const already=basePartners.find(p=>p.name===prosp.name);
-    if(already){pushNotif("Já na base",`${prosp.name} já está cadastrado`,T.warn);return;}
+    if(already){pushNotif("Ja na base",`${prosp.name} ja esta cadastrado`,T.warn);return;}
     const newP={id:Date.now(),name:prosp.name,handle:`@${prosp.name.toLowerCase().replace(/\s/g,"_")}`,city:"-",state:"-",category:prosp.segment,deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:1,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null}};
     const withScore={...newP,score:calcScore(newP)};
     setBasePartners(prev=>[...prev,withScore]);
     setProspects(prev=>prev.map(p=>p.id===prosp.id?{...p,stage:"fechado"}:p));
-    pushNotif("Adicionado à base!",prosp.name,T.accent);
+    pushNotif("Adicionado a base!",prosp.name,T.accent);
   };
 
   const addCommEntry=()=>{
@@ -1150,43 +1272,9 @@ export default function App(){
   };
 
   // -- LOGIN ------------------------------------------------------------------
-  if(!user)return(
-    <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'JetBrains Mono',monospace"}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;}input{outline:none;}input::placeholder{color:#2A2E45;}`}</style>
-      <div style={{width:"100%",maxWidth:400,padding:24}}>
-        <div style={{textAlign:"center",marginBottom:36}}>
-          <div style={{fontFamily:"'Syne',sans-serif",fontSize:36,fontWeight:800,color:T.accent,letterSpacing:-1}}>ECODELY</div>
-          <div style={{fontSize:9,color:T.muted,letterSpacing:3,marginTop:4}}>SISTEMA DE GESTÃO</div>
-        </div>
-        <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:16,padding:30}}>
-          {[["E-mail","email","text"],["Senha","pass","password"]].map(([l,k,t])=>(
-            <div key={k} style={{marginBottom:16}}>
-              <div style={{fontSize:9,color:T.muted,marginBottom:6,letterSpacing:1.5,textTransform:"uppercase"}}>{l}</div>
-              <input type={t} value={loginForm[k]} onChange={e=>setLoginForm(p=>({...p,[k]:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&handleLogin()}
-                placeholder={k==="email"?"seu@ecodely.com.br":"--------"}
-                style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"11px 14px",fontSize:13,color:T.text,fontFamily:"'JetBrains Mono',monospace",outline:"none"}}/>
-            </div>
-          ))}
-          {loginErr&&<div style={{fontSize:11,color:T.danger,marginBottom:10}}>{loginErr}</div>}
-          <button onClick={handleLogin} style={{width:"100%",padding:"13px",borderRadius:10,background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,border:"none",cursor:"pointer",marginTop:8}}>Entrar</button>
-          <div style={{marginTop:18,padding:"12px",background:T.card,borderRadius:8,fontSize:10,color:T.muted,lineHeight:2}}>
-            <div style={{color:T.accent,fontWeight:700,marginBottom:4}}>Login rápido:</div>
-            a · 1 (Admin Teste)<br/>
-            <div style={{color:T.soft,marginTop:4,marginBottom:2}}>Outras contas demo:</div>
-            rodrigo@ecodely.com.br · admin123<br/>
-            juliana@ecodely.com.br · user123 (Marketing)<br/>
-            paulo@ecodely.com.br · user123 (Financeiro)<br/>
-            mariana@ecodely.com.br · user123 (Base)
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
-  // -- MAIN ------------------------------------------------------------------
-  return(
-    <div style={{display:"flex",height:"100vh",background:T.bg,color:T.text,overflow:"hidden"}}>
-      <style>{`
+  // -- DASHBOARD SECTION COMPONENTS (defined outside render to avoid parser issues) --
+  const GLOBAL_CSS=`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
         *{box-sizing:border-box;}
         ::-webkit-scrollbar{width:3px;height:3px;}::-webkit-scrollbar-thumb{background:#1A1E30;border-radius:2px;}
@@ -1204,7 +1292,44 @@ export default function App(){
         .drag-card.dragging{opacity:0.35;transform:scale(0.97);}
         .drop-col{transition:background 0.15s,border-color 0.15s;}
         .drop-col.drag-over{background:#00E5A010!important;border:1px dashed #00E5A066!important;border-radius:10px;}
-      `}</style>
+  `;
+
+  const loginScreen=(
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'JetBrains Mono',monospace"}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;}input{outline:none;}input::placeholder{color:#2A2E45;}`}</style>
+      <div style={{width:"100%",maxWidth:400,padding:24}}>
+        <div style={{textAlign:"center",marginBottom:36}}>
+          <div style={{fontFamily:"'Syne',sans-serif",fontSize:36,fontWeight:800,color:T.accent,letterSpacing:-1}}>ECODELY</div>
+          <div style={{fontSize:9,color:T.muted,letterSpacing:3,marginTop:4}}>SISTEMA DE GESTAO</div>
+        </div>
+        <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:16,padding:30}}>
+          {[["E-mail","email","text"],["Senha","pass","password"]].map(([l,k,t])=>(
+            <div key={k} style={{marginBottom:16}}>
+              <div style={{fontSize:9,color:T.muted,marginBottom:6,letterSpacing:1.5,textTransform:"uppercase"}}>{l}</div>
+              <input type={t} value={loginForm[k]} onChange={e=>setLoginForm(p=>({...p,[k]:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&handleLogin()}
+                placeholder={k==="email"?"seu@ecodely.com.br":"--------"}
+                style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"11px 14px",fontSize:13,color:T.text,fontFamily:"'JetBrains Mono',monospace",outline:"none"}}/>
+            </div>
+          ))}
+          {loginErr&&<div style={{fontSize:11,color:T.danger,marginBottom:10}}>{loginErr}</div>}
+          <button onClick={handleLogin} style={{width:"100%",padding:"13px",borderRadius:10,background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,border:"none",cursor:"pointer",marginTop:8}}>Entrar</button>
+          <div style={{marginTop:18,padding:"12px",background:T.card,borderRadius:8,fontSize:10,color:T.muted,lineHeight:2}}>
+            <div style={{color:T.accent,fontWeight:700,marginBottom:4}}>Login rapido:</div>
+            a . 1 (Admin Teste)<br/>
+            <div style={{color:T.soft,marginTop:4,marginBottom:2}}>Outras contas demo:</div>
+            rodrigo@ecodely.com.br . admin123<br/>
+            juliana@ecodely.com.br . user123 (Marketing)<br/>
+            paulo@ecodely.com.br . user123 (Financeiro)<br/>
+            mariana@ecodely.com.br . user123 (Base)
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return !user ? loginScreen : (
+    <div style={{display:"flex",height:"100vh",background:T.bg,color:T.text,overflow:"hidden"}}>
+      <style>{GLOBAL_CSS}</style>
 
       {/* TOAST */}
       <Toast notifs={notifs} onDismiss={()=>setNotifs(p=>p.slice(1))}/>
@@ -1238,9 +1363,9 @@ export default function App(){
           <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:16,width:"100%",maxWidth:460,padding:24}} onClick={e=>e.stopPropagation()}>
             <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}>
               <div><div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,marginBottom:5}}>{selProsp.name}</div><div style={{display:"flex",gap:5}}><Badge label={selProsp.segment} color={T.purple}/><Badge label={PIPE_STAGES.find(s=>s.id===selProsp.stage)?.label||""} color={PIPE_STAGES.find(s=>s.id===selProsp.stage)?.color||T.muted}/></div></div>
-              <div onClick={()=>setSelProsp(null)} style={{cursor:"pointer",color:T.muted,fontSize:20}}>×</div>
+              <div onClick={()=>setSelProsp(null)} style={{cursor:"pointer",color:T.muted,fontSize:20}}>x</div>
             </div>
-            {[["Contato",selProsp.contact],["E-mail",selProsp.email||"-"],["Responsável",selProsp.owner],["Valor estimado",fmtK(selProsp.value||selProsp.ltv||0)]].map(([l,v])=>(
+            {[["Contato",selProsp.contact],["E-mail",selProsp.email||"-"],["Responsavel",selProsp.owner],["Valor estimado",fmtK(selProsp.value||selProsp.ltv||0)]].map(([l,v])=>(
               <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"9px 0",borderBottom:`1px solid ${T.border}`}}>
                 <span style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{l}</span>
                 <span style={{fontSize:11}}>{v}</span>
@@ -1248,7 +1373,7 @@ export default function App(){
             ))}
             {selProsp.notes&&<div style={{marginTop:12,padding:"10px",background:T.card,borderRadius:8,fontSize:11,color:T.soft,fontStyle:"italic"}}>"{selProsp.notes}"</div>}
             {["negociacao","fechado"].includes(selProsp.stage)&&(
-              <button className="btn" onClick={()=>{addProspectToBase(selProsp);setSelProsp(null);}} style={{width:"100%",marginTop:14,padding:"10px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12}}>- Adicionar à Base de Parceiros</button>
+              <button className="btn" onClick={()=>{addProspectToBase(selProsp);setSelProsp(null);}} style={{width:"100%",marginTop:14,padding:"10px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12}}>- Adicionar a Base de Parceiros</button>
             )}
           </div>
         </div>
@@ -1258,7 +1383,7 @@ export default function App(){
       <div style={{width:210,background:T.surface,borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",flexShrink:0}}>
         <div style={{padding:"20px 16px 14px",borderBottom:`1px solid ${T.border}`}}>
           <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:17,color:T.accent,letterSpacing:-0.5}}>ECODELY</div>
-          <div style={{fontSize:8,color:T.muted,letterSpacing:2.5,marginTop:2,fontFamily:"'JetBrains Mono',monospace"}}>SISTEMA DE GESTÃO</div>
+          <div style={{fontSize:8,color:T.muted,letterSpacing:2.5,marginTop:2,fontFamily:"'JetBrains Mono',monospace"}}>SISTEMA DE GESTAO</div>
         </div>
         <div style={{flex:1,padding:"10px 8px",overflowY:"auto"}}>
           {nav.map(n=>(
@@ -1298,7 +1423,7 @@ export default function App(){
             {/* Bell */}
             <div style={{position:"relative"}}>
               <div onClick={()=>setInboxOpen(p=>!p)} style={{width:34,height:34,borderRadius:"50%",background:inboxOpen?T.accentDim:T.card,border:`1px solid ${inboxOpen?T.accentBorder:T.border}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:14,transition:"all 0.15s"}}>
-                🔔
+                -
               </div>
               {inbox.filter(n=>!n.read).length>0&&(
                 <div style={{position:"absolute",top:-2,right:-2,width:16,height:16,borderRadius:"50%",background:T.danger,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:"#fff",fontWeight:800,border:`2px solid ${T.surface}`}}>
@@ -1359,83 +1484,80 @@ export default function App(){
         <div style={{flex:1,padding:24,overflow:"auto"}} className="fade" key={tab} onClick={()=>inboxOpen&&setInboxOpen(false)}>
 
           {/* --------------------------------------
-              DASHBOARD
+              DASHBOARD - ROLE BASED
           -------------------------------------- */}
-          {tab==="dashboard"&&(
-            <div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-                <KCard label="Campanhas ativas" value={camps.filter(c=>c.stage<5).length} sub="em andamento" color={T.accent} icon="-" onClick={()=>setTab("campanhas")} hint="Ver campanhas -"/>
-                <KCard label="Minhas tarefas" value={pendingQueue.length} sub="pendentes na sua fila" color={pendingQueue.length>0?T.danger:T.accent} icon="-" onClick={()=>setTab("minha-fila")} hint="Abrir minha fila -"/>
-                <KCard label="Pipeline comercial" value={fmtK(pipeTotal)} sub={`${prospects.length} prospects`} color={T.info} icon="-" onClick={()=>{setTab("comercial");setCommTab("pipeline");}} hint="Ver pipeline -"/>
-                <KCard label="Faturado total" value={fmtK(totalFat)} sub="clientes ativos" color={T.purple} icon="-" onClick={["admin","financeiro"].includes(user.role)?()=>{setTab("comercial");setCommTab("faturamento");}:undefined} hint="Ver faturamento -"/>
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:12}}>
-                <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
-                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Campanhas em andamento</div>
-                  {camps.filter(c=>c.stage<5).map(c=>{const td=tasksDone(c.tasks);const s=STAGES_CAMP.find(x=>x.id===c.stage);return(
-                    <div key={c.id} className="hr" onClick={()=>setSelCamp(c)} style={{padding:"10px 8px",borderRadius:8,marginBottom:4}}>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-                        <div><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.region} · {c.project}</div></div>
-                        <Badge label={s.label} color={s.color}/>
-                      </div>
-                      <div style={{display:"flex",gap:10,alignItems:"center"}}>
-                        <div style={{flex:1}}><PBar pct={c.progress} color={s.color}/></div>
-                        <span style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{td.done}/{td.total}</span>
-                      </div>
-                    </div>
-                  );})}
+          {tab==="dashboard"&&(()=>{
+            const campsAtivas=camps.filter(c=>c.stage<5);
+            const myProspects=prospects.filter(p=>p.owner===user.name||user.role==="admin");
+            const totalImpactos=camps.reduce((a,c)=>{
+              const imp=c.impactos||{};
+              const off=Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3);
+              return a+off+(imp.stories||[]).reduce((s,x)=>s+Number(x.impressoes),0)+(imp.influencer||[]).reduce((s,x)=>s+Number(x.alcance),0)+(imp.impulsionado||[]).reduce((s,x)=>s+Number(x.alcance),0);
+            },0);
+            return(
+              <div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
+                  <KCard label="Campanhas ativas" value={campsAtivas.length} sub="em andamento" color={T.accent} icon="-" onClick={()=>setTab("campanhas")} hint="Ver -"/>
+                  <KCard label="Minhas tarefas" value={pendingQueue.length} sub="pendentes" color={pendingQueue.length>0?T.danger:T.accent} icon="-" onClick={()=>setTab("minha-fila")} hint="Ver fila -"/>
+                  <KCard label="Pipeline" value={fmtK(pipeTotal)} sub={prospects.length+" prospects"} color={T.info} icon="-" onClick={()=>{setTab("comercial");setCommTab("pipeline");}} hint="Ver -"/>
+                  <KCard label="Impactos totais" value={totalImpactos.toLocaleString()} sub="todos os canais" color={T.purple} icon="-"/>
                 </div>
-                <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:12}}>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Pendências por setor</div>
-                    {Object.keys(SEC_LABEL).filter(s=>["comercial","financeiro","marketing","base"].includes(s)).map(s=>{
-                      const pend=camps.flatMap(c=>c.tasks[s]?.filter(t=>!t.done)||[]).length;
-                      return(
-                        <div key={s} onClick={()=>{setTab("minha-fila");setQueueFilter(pend>0?"pendentes":"todos");}} className="hr" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}`,cursor:"pointer",borderRadius:4}}>
-                          <span style={{fontSize:10,color:SEC_COLOR[s],fontFamily:"'JetBrains Mono',monospace"}}>{SEC_LABEL[s]}</span>
-                          <div style={{background:pend>0?T.danger+"22":T.accentDim,color:pend>0?T.danger:T.accent,border:`1px solid ${pend>0?T.danger+"44":T.accentBorder}`,borderRadius:7,padding:"2px 8px",fontSize:9,fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{pend>0?`${pend} pendente${pend>1?"s":""}` :"Em dia -"}</div>
+                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Campanhas em andamento</div>
+                    {campsAtivas.map(c=>{const td=tasksDone(c.tasks);const s=STAGES_CAMP.find(x=>x.id===c.stage);return(
+                      <div key={c.id} className="hr" onClick={()=>setSelCamp(c)} style={{padding:"10px 8px",borderRadius:8,marginBottom:4}}>
+                        <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+                          <div><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.region}</div></div>
+                          <Badge label={s.label} color={s.color}/>
                         </div>
-                      );
-                    })}
+                        <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                          <div style={{flex:1}}><PBar pct={c.progress} color={s.color}/></div>
+                          <span style={{fontSize:9,color:T.muted}}>{td.done}/{td.total}</span>
+                        </div>
+                      </div>
+                    );})}
                   </div>
-                  {/* Alertas de prazo */}
-                  <div style={{background:T.card,border:`1px solid ${T.warnDim}`,borderLeft:`3px solid ${T.warn}`,borderRadius:12,padding:16}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,color:T.warn,marginBottom:10}}>- Prazos próximos</div>
-                    {[{camp:"T4F - Maio 2025",prazo:"Gráfica: 08/05",dias:5,id:4},{camp:"O Boticário - Maio",prazo:"Logística: 02/05",dias:1,id:1}].map((a,i)=>(
-                      <div key={i} onClick={()=>{const c=camps.find(x=>x.id===a.id);if(c)setSelCamp(c);}} className="hr" style={{marginBottom:8,padding:"5px 4px",borderRadius:6,cursor:"pointer"}}>
-                        <div style={{fontSize:11,fontWeight:600}}>{a.camp}</div>
-                        <div style={{fontSize:9,color:T.warn,fontFamily:"'JetBrains Mono',monospace"}}>{a.prazo} · {a.dias}d restante{a.dias>1?"s":""} · <span style={{textDecoration:"underline"}}>abrir -</span></div>
-                      </div>
-                    ))}
-                    {/* Contract expiry alerts */}
-                    {basePartners.filter(p=>p.contrato.status==="expirando").map((p,i)=>(
-                      <div key={`c${i}`} onClick={()=>{setTab("base");setBaseTab("contratos");}} className="hr" style={{marginBottom:8,padding:"5px 4px",borderRadius:6,cursor:"pointer"}}>
-                        <div style={{fontSize:11,fontWeight:600}}>{p.name}</div>
-                        <div style={{fontSize:9,color:T.danger,fontFamily:"'JetBrains Mono',monospace"}}>Contrato expira {p.contrato.expiraEm} · <span style={{textDecoration:"underline"}}>renovar -</span></div>
-                      </div>
-                    ))}
-                    {basePartners.filter(p=>p.contrato.status==="sem contrato"&&p.status==="ativo").length>0&&(
-                      <div onClick={()=>{setTab("base");setBaseTab("contratos");}} className="hr" style={{padding:"5px 4px",borderRadius:6,cursor:"pointer"}}>
-                        <div style={{fontSize:11,fontWeight:600,color:T.danger}}>{basePartners.filter(p=>p.contrato.status==="sem contrato"&&p.status==="ativo").length} parceiro(s) sem contrato</div>
-                        <div style={{fontSize:9,color:T.danger,fontFamily:"'JetBrains Mono',monospace"}}><span style={{textDecoration:"underline"}}>Enviar contratos -</span></div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Receita mensal</div>
-                <div style={{display:"flex",gap:4,alignItems:"flex-end",height:70}}>
-                  {MONTHLY_DATA.map((d,i)=>(
-                    <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                      <div style={{width:"65%",background:d.receita>0?`linear-gradient(180deg,${T.accent},${T.accent}88)`:T.border,borderRadius:"3px 3px 0 0",height:`${d.receita>0?(d.receita/42100)*55:4}px`,transition:"height 0.4s"}}/>
-                      <div style={{fontSize:7,color:T.muted,fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap"}}>{d.month}</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
+                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Pendencias por setor</div>
+                      {Object.keys(SEC_LABEL).filter(s=>["comercial","financeiro","marketing","base"].includes(s)).map(s=>{
+                        const pend=camps.flatMap(c=>c.tasks[s]?.filter(t=>!t.done)||[]).length;
+                        return(
+                          <div key={s} onClick={()=>setTab("minha-fila")} className="hr" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${T.border}`}}>
+                            <span style={{fontSize:10,color:SEC_COLOR[s]}}>{SEC_LABEL[s]}</span>
+                            <div style={{background:pend>0?T.danger+"22":T.accentDim,color:pend>0?T.danger:T.accent,border:`1px solid ${pend>0?T.danger+"44":T.accentBorder}`,borderRadius:6,padding:"2px 8px",fontSize:9,fontWeight:700}}>{pend>0?pend+" pendentes":"Em dia"}</div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
+                    <div style={{background:T.card,border:`1px solid ${T.warnDim}`,borderLeft:`3px solid ${T.warn}`,borderRadius:12,padding:16}}>
+                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,color:T.warn,marginBottom:8}}>Prazos proximos</div>
+                      {[{camp:"T4F - Maio 2025",prazo:"Grafica: 08/05",id:4},{camp:"O Boticario - Maio",prazo:"Logistica: 02/05",id:1}].map((a,i)=>(
+                        <div key={i} onClick={()=>{const c=camps.find(x=>x.id===a.id);if(c)setSelCamp(c);}} className="hr" style={{marginBottom:6,padding:"4px",borderRadius:5,cursor:"pointer"}}>
+                          <div style={{fontSize:11,fontWeight:600}}>{a.camp}</div>
+                          <div style={{fontSize:9,color:T.warn}}>{a.prazo}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
+                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Receita mensal</div>
+                  <div style={{display:"flex",gap:4,alignItems:"flex-end",height:80}}>
+                    {MONTHLY_DATA.map((d,i)=>{const maxV=Math.max(...MONTHLY_DATA.map(x=>x.receita),1);const h=d.receita>0?Math.round((d.receita/maxV)*65):4;return(
+                      <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                        {d.receita>0&&<div style={{fontSize:7,color:T.accent}}>{fmtK(d.receita)}</div>}
+                        <div style={{width:"70%",background:d.receita>0?T.accent:T.border,borderRadius:"3px 3px 0 0",height:h+"px"}}/>
+                        <div style={{fontSize:7,color:T.muted,whiteSpace:"nowrap"}}>{d.month}</div>
+                      </div>
+                    );})}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
+
 
           {/* --------------------------------------
               SPRINT 02 - MINHA FILA
@@ -1445,12 +1567,12 @@ export default function App(){
               {/* Summary header */}
               <div style={{background:`linear-gradient(135deg,${SEC_COLOR[sec]||T.accent}15,${SEC_COLOR[sec]||T.accent}08)`,border:`1px solid ${(SEC_COLOR[sec]||T.accent)}40`,borderRadius:14,padding:"20px 24px",marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:14}}>
                 <div>
-                  <div style={{fontSize:10,color:SEC_COLOR[sec]||T.accent,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>{ROLE_LABELS[user.role]} · Fila de hoje</div>
+                  <div style={{fontSize:10,color:SEC_COLOR[sec]||T.accent,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>{ROLE_LABELS[user.role]} . Fila de hoje</div>
                   <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:28,color:SEC_COLOR[sec]||T.accent,marginBottom:2}}>{pendingQueue.length} tarefa{pendingQueue.length!==1?"s":""} pendente{pendingQueue.length!==1?"s":""}</div>
-                  <div style={{fontSize:11,color:T.soft}}>{doneQueue.length} concluída{doneQueue.length!==1?"s":""} hoje · {myQueue.length} total</div>
+                  <div style={{fontSize:11,color:T.soft}}>{doneQueue.length} concluida{doneQueue.length!==1?"s":""} hoje . {myQueue.length} total</div>
                 </div>
                 <div style={{display:"flex",gap:16}}>
-                  {[{l:"Pendentes",v:pendingQueue.length,c:pendingQueue.length>0?T.danger:T.accent},{l:"Concluídas",v:doneQueue.length,c:T.accent},{l:"Campanhas",v:new Set(myQueue.map(t=>t.campId)).size,c:T.info}].map((k,i)=>(
+                  {[{l:"Pendentes",v:pendingQueue.length,c:pendingQueue.length>0?T.danger:T.accent},{l:"Concluidas",v:doneQueue.length,c:T.accent},{l:"Campanhas",v:new Set(myQueue.map(t=>t.campId)).size,c:T.info}].map((k,i)=>(
                     <div key={i} style={{textAlign:"center"}}>
                       <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:k.c}}>{k.v}</div>
                       <div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{k.l}</div>
@@ -1461,7 +1583,7 @@ export default function App(){
 
               {/* Filters */}
               <div style={{display:"flex",gap:6,marginBottom:16,alignItems:"center",flexWrap:"wrap"}}>
-                {[["todos","Todas"],["pendentes","Pendentes"],["concluidas","Concluídas"]].map(([v,l])=>(
+                {[["todos","Todas"],["pendentes","Pendentes"],["concluidas","Concluidas"]].map(([v,l])=>(
                   <div key={v} onClick={()=>setQueueFilter(v)} className="tb" style={{padding:"6px 12px",borderRadius:6,fontSize:10,background:queueFilter===v?(SEC_COLOR[sec]||T.accent)+"22":T.card,border:`1px solid ${queueFilter===v?(SEC_COLOR[sec]||T.accent)+"55":T.border}`,color:queueFilter===v?SEC_COLOR[sec]||T.accent:T.muted}}>{l}</div>
                 ))}
                 <div style={{marginLeft:"auto",fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{visibleQueue.length} tarefa{visibleQueue.length!==1?"s":""}</div>
@@ -1472,7 +1594,7 @@ export default function App(){
                 <div style={{textAlign:"center",padding:"60px 20px",background:T.card,border:`1px solid ${T.border}`,borderRadius:12}}>
                   <div style={{fontSize:40,marginBottom:12}}>-</div>
                   <div style={{fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800,color:T.accent,marginBottom:6}}>Fila limpa!</div>
-                  <div style={{fontSize:11,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>Todas as suas tarefas estão concluídas.</div>
+                  <div style={{fontSize:11,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>Todas as suas tarefas estao concluidas.</div>
                 </div>
               ):(
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -1490,7 +1612,7 @@ export default function App(){
                             <Badge label={t.campName} color={campColor}/>
                             <Badge label={t.project} color={T.purple}/>
                           </div>
-                          {t.done&&t.doneAt&&<div style={{fontSize:9,color:T.muted,marginTop:4,fontFamily:"'JetBrains Mono',monospace"}}>Concluído em {t.doneAt}</div>}
+                          {t.done&&t.doneAt&&<div style={{fontSize:9,color:T.muted,marginTop:4,fontFamily:"'JetBrains Mono',monospace"}}>Concluido em {t.doneAt}</div>}
                         </div>
                         <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
                           {!t.done&&(
@@ -1582,7 +1704,7 @@ export default function App(){
               {campView==="lista"&&(
                 <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                   <div style={{display:"grid",gridTemplateColumns:"2fr 0.8fr 1fr 1fr 0.8fr 0.7fr 0.6fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:8}}>
-                    {["Campanha","Projeto","Região","Etapa","Progresso","Tarefas","Arquivos"].map(h=>(
+                    {["Campanha","Projeto","Regiao","Etapa","Progresso","Tarefas","Arquivos"].map(h=>(
                       <div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"'JetBrains Mono',monospace"}}>{h}</div>
                     ))}
                   </div>
@@ -1606,8 +1728,8 @@ export default function App(){
               CALENDARIO DE CAMPANHAS
           -------------------------------------- */}
           {tab==="calendario"&&(()=>{
-            const MONTHS_PT=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-            const DAYS_PT=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+            const MONTHS_PT=["Janeiro","Fevereiro","Marco","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+            const DAYS_PT=["Dom","Seg","Ter","Qua","Qui","Sex","Sab"];
             const firstDay=new Date(calYear,calMonth,1).getDay();
             const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
             const daysInPrev=new Date(calYear,calMonth,0).getDate();
@@ -1664,7 +1786,7 @@ export default function App(){
                 {/* KPIs */}
                 <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:20}}>
                   {[
-                    {l:"Campanhas no mês",v:camps.filter(c=>{const s=parseDate(c.startDate),e=parseDate(c.endDate);const ms=new Date(calYear,calMonth,1),me=new Date(calYear,calMonth+1,0);return s&&e&&s<=me&&e>=ms;}).length,c:T.accent},
+                    {l:"Campanhas no mes",v:camps.filter(c=>{const s=parseDate(c.startDate),e=parseDate(c.endDate);const ms=new Date(calYear,calMonth,1),me=new Date(calYear,calMonth+1,0);return s&&e&&s<=me&&e>=ms;}).length,c:T.accent},
                     {l:"Em andamento",v:camps.filter(c=>c.stage<5).length,c:T.info},
                     {l:"Finalizadas",v:camps.filter(c=>c.stage===5).length,c:T.purple},
                     {l:"Conflitos de prazo",v:conflicts.length,c:conflicts.length>0?T.danger:T.accent},
@@ -1736,7 +1858,7 @@ export default function App(){
                   </div>
                 </div>
 
-                {/* List view — all campaigns */}
+                {/* List view - all campaigns */}
                 <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,overflow:"hidden"}}>
                   <div style={{padding:"14px 18px",borderBottom:`1px solid ${T.border}`,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Todas as campanhas</div>
                   {sortedCamps.map(c=>{
@@ -1754,7 +1876,7 @@ export default function App(){
                             <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12}}>{c.name}</div>
                             {hasConflict&&<span style={{fontSize:8,padding:"1px 6px",borderRadius:4,background:T.danger+"22",color:T.danger,border:`1px solid ${T.danger}44`}}>Conflito de prazo</span>}
                           </div>
-                          <div style={{fontSize:10,color:T.muted}}>{c.startDate} - {c.endDate} · {dur} dias · {c.region}</div>
+                          <div style={{fontSize:10,color:T.muted}}>{c.startDate} - {c.endDate} . {dur} dias . {c.region}</div>
                         </div>
                         <div style={{display:"flex",gap:10,alignItems:"center",flexShrink:0}}>
                           {/* Timeline bar */}
@@ -1781,6 +1903,931 @@ export default function App(){
           })()}
 
           {/* --------------------------------------
+              MODULO FINANCEIRO COMPLETO
+          -------------------------------------- */}
+          {tab==="financeiro-modulo"&&(()=>{
+            // Computed values
+            const mesLanc=lancamentos.filter(l=>l.data.endsWith(finMesRef.replace("/","/2026").slice(-7))||l.data.slice(3).startsWith(finMesRef.split("/").reverse().join("/")));
+            const lancMes=lancamentos.filter(l=>{ const parts=l.data.split("/"); return parts[1]+"/"+parts[2]===finMesRef.split("/")[0]+"/"+finMesRef.split("/")[1]||l.data.slice(3,10)===finMesRef.split("/").reverse().join("/"); });
+            // simpler: filter by MM/YYYY in data field
+            const filterByMes=(arr)=>arr.filter(l=>{ const d=l.data; const mm=d.slice(3,5); const yy=d.slice(6,10); return mm+"/"+yy===finMesRef; });
+            const lancMesFilt=filterByMes(lancamentos);
+            const totalEntradas=lancMesFilt.reduce((a,l)=>a+l.entrada,0);
+            const totalSaidas=lancMesFilt.reduce((a,l)=>a+l.saida,0);
+            const lucroMes=totalEntradas-totalSaidas;
+            const saldoTotal=contas.reduce((a,c)=>a+c.saldo,0);
+            // RBT12 calc
+            const rbt12=fatMensais.slice(-12).reduce((a,f)=>a+f.fat,0);
+            const{faixa,aliquotaEfetiva}=calcAliquotaEfetiva(rbt12);
+            const aliqDisplay=(dasAjuste!==null?dasAjuste:aliquotaEfetiva*100).toFixed(2);
+            const aliqVal=dasAjuste!==null?dasAjuste/100:aliquotaEfetiva;
+            // Reserva e distribuicao
+            const reserva=lucroMes*(reservaCaixaPct/100);
+            const paraDividir=Math.max(0,lucroMes-reserva);
+            // Cartao totals
+            const totalCartao=comprasCartao.reduce((a,c)=>a+(c.valorParcela*(c.parcelas-c.parcelaAtual+1)),0);
+            const proximoMesCartao=comprasCartao.filter(c=>c.parcelaAtual<=c.parcelas).reduce((a,c)=>a+c.valorParcela,0);
+
+            const FIN_TABS=[["visao","Visao Geral"],["fluxo","Fluxo de Caixa"],["cartoes","Cartoes"],["das","DAS / Simples"],["distribuicao","Distribuicao"],["config","Configuracoes"]];
+
+            return(
+              <div>
+                {/* Sub-tabs */}
+                <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid ${T.border}`,overflowX:"auto"}}>
+                  {FIN_TABS.map(([id,l])=>(
+                    <div key={id} onClick={()=>setFinTab(id)} style={{padding:"9px 16px",fontSize:11,cursor:"pointer",color:finTab===id?T.accent:T.muted,borderBottom:`2px solid ${finTab===id?T.accent:"transparent"}`,transition:"all 0.15s",whiteSpace:"nowrap"}}>{l}</div>
+                  ))}
+                </div>
+
+                {/* MES SELECTOR */}
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
+                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14}}>Referencia: {finMesRef}</div>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {["01","02","03","04","05","06","07","08","09","10","11","12"].map(m=>{
+                      const yr=finMesRef.split("/")[1]||"2026";
+                      const key=m+"/"+yr;
+                      return <button key={key} onClick={()=>setFinMesRef(key)} className="btn" style={{padding:"4px 10px",fontSize:10,borderRadius:6,background:finMesRef===key?T.accentDim:"transparent",border:`1px solid ${finMesRef===key?T.accentBorder:T.border}`,color:finMesRef===key?T.accent:T.muted,cursor:"pointer"}}>{["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][Number(m)-1]}</button>;
+                    })}
+                    {["2025","2026"].map(yr=>(
+                      <button key={yr} onClick={()=>setFinMesRef(finMesRef.split("/")[0]+"/"+yr)} className="btn" style={{padding:"4px 10px",fontSize:10,borderRadius:6,background:finMesRef.endsWith(yr)?T.purpleDim:"transparent",border:`1px solid ${finMesRef.endsWith(yr)?T.purple+"55":T.border}`,color:finMesRef.endsWith(yr)?T.purple:T.muted,cursor:"pointer"}}>{yr}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* VISAO GERAL */}
+                {finTab==="visao"&&(
+                  <div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:16}}>
+                      <KCard label="Total entradas" value={fmt(totalEntradas)} sub={finMesRef} color={T.accent} icon="-"/>
+                      <KCard label="Total saidas" value={fmt(totalSaidas)} sub={finMesRef} color={T.danger} icon="-"/>
+                      <KCard label="Resultado do mes" value={fmt(lucroMes)} sub="entradas - saidas" color={lucroMes>=0?T.accent:T.danger} icon="-"/>
+                      <KCard label="Saldo em caixa" value={fmt(saldoTotal)} sub="todas as contas" color={T.info} icon="-"/>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:16}}>
+                      {/* Contas bancarias */}
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
+                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Contas Bancarias</div>
+                        {contas.map(c=>(
+                          <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}>
+                            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                              <div style={{width:8,height:8,borderRadius:"50%",background:c.cor||T.accent}}/>
+                              <div>
+                                <div style={{fontSize:11,fontWeight:600}}>{c.banco}</div>
+                                <div style={{fontSize:8,color:T.muted}}>{c.tipo}</div>
+                              </div>
+                            </div>
+                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,color:c.saldo>=0?T.accent:T.danger}}>{fmt(c.saldo)}</div>
+                          </div>
+                        ))}
+                        <div style={{display:"flex",justifyContent:"space-between",paddingTop:8}}>
+                          <span style={{fontSize:10,color:T.muted,fontWeight:600}}>TOTAL</span>
+                          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,color:T.accent}}>{fmt(saldoTotal)}</span>
+                        </div>
+                      </div>
+                      {/* Custos fixos do mes */}
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
+                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Custos Fixos do Mes</div>
+                        <div style={{maxHeight:200,overflowY:"auto"}}>
+                          {custosFix.filter(c=>c.ativo).map(c=>(
+                            <div key={c.id} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
+                              <div style={{fontSize:10,color:T.soft,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.descricao}</div>
+                              <div style={{fontSize:10,color:T.danger,fontFamily:"'JetBrains Mono',monospace",flexShrink:0}}>{fmt(c.valor)}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:`1px solid ${T.border}`,marginTop:4}}>
+                          <span style={{fontSize:10,color:T.muted,fontWeight:600}}>TOTAL FIXO</span>
+                          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,color:T.danger}}>{fmt(custosFix.filter(c=>c.ativo).reduce((a,c)=>a+c.valor,0))}</span>
+                        </div>
+                      </div>
+                      {/* Cartoes resumo */}
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
+                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Cartoes</div>
+                        {cartoes.map(c=>{
+                          const parcMes=comprasCartao.filter(p=>p.cartaoId===c.id&&p.parcelaAtual<=p.parcelas);
+                          const totalMes=parcMes.reduce((a,p)=>a+p.valorParcela,0);
+                          const totalDev=comprasCartao.filter(p=>p.cartaoId===c.id).reduce((a,p)=>a+(p.valorParcela*(p.parcelas-p.parcelaAtual+1)),0);
+                          if(totalDev===0)return null;
+                          return(
+                            <div key={c.id} style={{padding:"7px 0",borderBottom:`1px solid ${T.border}`}}>
+                              <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
+                                <span style={{fontSize:10,color:c.cor||T.warn}}>{c.nome}</span>
+                                <span style={{fontSize:10,color:T.danger,fontFamily:"'JetBrains Mono',monospace"}}>{fmt(totalMes)}/mes</span>
+                              </div>
+                              <div style={{fontSize:8,color:T.muted}}>Saldo devedor: {fmt(totalDev)}</div>
+                            </div>
+                          );
+                        })}
+                        <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:`1px solid ${T.border}`,marginTop:4}}>
+                          <span style={{fontSize:10,color:T.muted}}>Proximo mes</span>
+                          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,color:T.warn}}>{fmt(proximoMesCartao)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {/* DAS preview */}
+                    <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18,marginBottom:16}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+                        <div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:4}}>DAS estimado - {finMesRef}</div>
+                          <div style={{fontSize:10,color:T.muted}}>RBT12: {fmt(rbt12)} - {faixa.label} - Aliquota efetiva: {aliqDisplay}%</div>
+                        </div>
+                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:24,color:T.accent}}>{fmt(totalEntradas*aliqVal)}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* FLUXO DE CAIXA */}
+                {finTab==="fluxo"&&(()=>{
+                  // Group lancamentos by date, sorted
+                  const lancOrdenados=[...lancMesFilt].sort((a,b)=>{
+                    const pa=a.data.split("/").reverse().join(""); // YYYYMMDD
+                    const pb=b.data.split("/").reverse().join("");
+                    return pa-pb;
+                  });
+                  // Group by date
+                  const grupos={};
+                  lancOrdenados.forEach(l=>{ if(!grupos[l.data])grupos[l.data]=[]; grupos[l.data].push(l); });
+                  const datasOrdenadas=Object.keys(grupos).sort((a,b)=>a.split("/").reverse().join("")-b.split("/").reverse().join(""));
+
+                  // Running totals
+                  let saldoAcum=saldoAnterior;
+                  let totalEntGeral=0;
+                  let totalSaiGeral=0;
+
+                  // Previsao comercial
+                  const previsaoComercial=prospects.filter(p=>["proposta","negociacao","fechado"].includes(p.stage));
+                  const entradasPrev=previsaoComercial.filter(p=>prevSelecionados.includes(p.id)).reduce((a,p)=>a+(p.value||0),0);
+                  const custosRestantes=custosFix.filter(c=>c.ativo&&c.dia>new Date().getDate());
+                  const totalCustosRestantes=custosRestantes.reduce((a,c)=>a+c.valor,0);
+                  const saldoProjetado=saldoAcum+totalEntradas-totalSaidas-totalCustosRestantes+(modoPrevisao?entradasPrev:0);
+                  const minimoSaudavel=15000;
+
+                  const iS={background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"4px 8px",fontSize:11,color:T.text,outline:"none",fontFamily:"'JetBrains Mono',monospace"};
+
+                  return(
+                    <div>
+                      {/* Cabecalho: saldo anterior + botoes */}
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:10}}>
+                        <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
+                          <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 16px",display:"flex",gap:10,alignItems:"center"}}>
+                            <span style={{fontSize:10,color:T.muted}}>MES ANTERIOR</span>
+                            <input type="number" value={saldoAnterior} onChange={e=>setSaldoAnterior(Number(e.target.value))} style={{...iS,width:110,textAlign:"right",background:"transparent",border:"none",fontWeight:700,fontSize:14,color:T.accent}}/>
+                          </div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,color:T.text}}>{finMesRef}</div>
+                        </div>
+                        <div style={{display:"flex",gap:8}}>
+                          <button onClick={()=>setShowAdd(p=>!p)} className="btn" style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:10,fontWeight:700}}>+ Lancamento</button>
+                          <button onClick={()=>setModoPrevisao(p=>!p)} className="btn" style={{padding:"7px 14px",background:modoPrevisao?T.infoDim:"transparent",border:`1px solid ${modoPrevisao?T.info+"66":T.border}`,color:modoPrevisao?T.info:T.muted,borderRadius:8,fontSize:10,fontWeight:modoPrevisao?700:400}}>
+                            {modoPrevisao?"Previsao LIGADA":"Modo Previsao"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Selecao previsao comercial */}
+                      {modoPrevisao&&(
+                        <div style={{background:T.infoDim,border:`1px solid ${T.info}33`,borderRadius:10,padding:"12px 16px",marginBottom:14}}>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,color:T.info,marginBottom:8}}>Selecione receitas previstas para simular:</div>
+                          <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                            {previsaoComercial.map(p=>{
+                              const sel=prevSelecionados.includes(p.id);
+                              return(
+                                <div key={p.id} onClick={()=>setPrevSelecionados(prev=>sel?prev.filter(x=>x!==p.id):[...prev,p.id])}
+                                  style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:sel?T.info+"22":T.card,borderRadius:7,border:`1px solid ${sel?T.info+"55":T.border}`,cursor:"pointer"}}>
+                                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                                    <div style={{width:14,height:14,borderRadius:3,background:sel?T.info:"transparent",border:`2px solid ${sel?T.info:T.border}`,fontSize:9,color:"#000",display:"flex",alignItems:"center",justifyContent:"center"}}>{sel?"v":""}</div>
+                                    <span style={{fontSize:11}}>{p.name}</span>
+                                    <span style={{fontSize:8,color:T.muted}}>{p.stage}</span>
+                                  </div>
+                                  <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.accent,fontSize:12}}>{fmtK(p.value||0)}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {prevSelecionados.length>0&&<div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.info}33`,display:"flex",justifyContent:"space-between"}}><span style={{fontSize:10,color:T.info}}>Total previsto selecionado</span><span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,color:T.accent}}>{fmt(entradasPrev)}</span></div>}
+                        </div>
+                      )}
+
+                      {/* Formulario novo lancamento */}
+                      {showAdd&&(
+                        <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16,marginBottom:16}}>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:12}}>Novo Lancamento</div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                            {[["data","Data","date"],["descricao","Descricao","text"],["projeto","Projeto/NF","text"]].map(([k,ph,tp])=>(
+                              <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:3}}>{ph}</div><input type={tp} value={novoLanc[k]} onChange={e=>setNovoLanc(p=>({...p,[k]:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                            ))}
+                            {[["entrada","Entrada (R$)"],["saida","Saida (R$)"]].map(([k,ph])=>(
+                              <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:3}}>{ph}</div><input type="number" value={novoLanc[k]||""} onChange={e=>setNovoLanc(p=>({...p,[k]:Number(e.target.value)}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                            ))}
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Tipo</div><select value={novoLanc.tipo} onChange={e=>setNovoLanc(p=>({...p,tipo:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}><option>Receita</option><option>Despesa</option></select></div>
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Categoria</div><select value={novoLanc.categoria} onChange={e=>setNovoLanc(p=>({...p,categoria:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}>{(novoLanc.tipo==="Receita"?CAT_RECEITA:CAT_DESPESA).map(c=><option key={c}>{c}</option>)}</select></div>
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Centro de Custo</div><select value={novoLanc.centrosCusto} onChange={e=>setNovoLanc(p=>({...p,centrosCusto:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}>{centrosCusto.map(c=><option key={c}>{c}</option>)}</select></div>
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Forma</div><select value={novoLanc.forma} onChange={e=>setNovoLanc(p=>({...p,forma:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}>{FORMAS_PAG.map(f=><option key={f}>{f}</option>)}</select></div>
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Conta</div><select value={novoLanc.contaBancoId} onChange={e=>setNovoLanc(p=>({...p,contaBancoId:Number(e.target.value)}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}>{contas.map(c=><option key={c.id} value={c.id}>{c.banco}</option>)}</select></div>
+                          </div>
+                          <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                            <button onClick={()=>setShowAdd(false)} className="btn" style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10}}>Cancelar</button>
+                            <button onClick={()=>{if(!novoLanc.data||!novoLanc.descricao)return;const dateFmt=novoLanc.data.split("-").reverse().join("/");setLancamentos(p=>[...p,{...novoLanc,id:Date.now(),data:dateFmt}]);setShowAdd(false);setNovoLanc({data:"",descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1});}} className="btn" style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700}}>Salvar</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* TABELA ESTILO PLANILHA */}
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
+                        {/* Header */}
+                        <div style={{display:"grid",gridTemplateColumns:"90px 1fr 110px 110px 120px",background:T.surface,padding:"8px 14px",gap:8,borderBottom:`1px solid ${T.border}`}}>
+                          {["DATA","DESCRICAO","ENTRADA","SAIDA","SALDO EM CAIXA"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.2,fontWeight:700}}>{h}</div>)}
+                        </div>
+
+                        {/* Saldo anterior */}
+                        <div style={{display:"grid",gridTemplateColumns:"90px 1fr 110px 110px 120px",padding:"8px 14px",gap:8,borderBottom:`1px solid ${T.border}`,background:T.surface+"88"}}>
+                          <div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}></div>
+                          <div style={{fontSize:10,color:T.muted,fontWeight:600}}>SALDO MES ANTERIOR</div>
+                          <div></div>
+                          <div></div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,color:T.accent}}>{fmt(saldoAnterior)}</div>
+                        </div>
+
+                        {datasOrdenadas.length===0&&(
+                          <div style={{padding:32,textAlign:"center",color:T.muted,fontSize:11}}>Nenhum lancamento em {finMesRef}. Clique em + Lancamento para comecar.</div>
+                        )}
+
+                        {/* Grupos por data */}
+                        {datasOrdenadas.map(data=>{
+                          const itens=grupos[data];
+                          const entDia=itens.reduce((a,l)=>a+l.entrada,0);
+                          const saiDia=itens.reduce((a,l)=>a+l.saida,0);
+                          saldoAcum+=entDia-saiDia;
+                          totalEntGeral+=entDia;
+                          totalSaiGeral+=saiDia;
+                          return(
+                            <div key={data}>
+                              {/* Lancamentos do dia */}
+                              {itens.map((l,i)=>(
+                                <div key={l.id} style={{display:"grid",gridTemplateColumns:"90px 1fr 110px 110px 120px",padding:"7px 14px",gap:8,borderBottom:`1px solid ${T.border}22`,background:i%2===0?"transparent":T.surface+"33"}}>
+                                  <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{i===0?data.slice(0,5):""}</div>
+                                  <div>
+                                    <div style={{fontSize:11}}>{l.descricao}</div>
+                                    <div style={{display:"flex",gap:5,marginTop:2,flexWrap:"wrap"}}>
+                                      {l.categoria&&<span style={{fontSize:7,padding:"1px 5px",borderRadius:3,background:l.tipo==="Receita"?T.accentDim:T.dangerDim,color:l.tipo==="Receita"?T.accent:T.danger}}>{l.categoria}</span>}
+                                      {l.forma&&<span style={{fontSize:7,color:T.muted}}>{l.forma}</span>}
+                                      {l.projeto&&<span style={{fontSize:7,color:T.info}}>{l.projeto}</span>}
+                                    </div>
+                                  </div>
+                                  <div style={{fontSize:11,color:T.accent,fontFamily:"'JetBrains Mono',monospace",fontWeight:l.entrada>0?700:400}}>{l.entrada>0?fmt(l.entrada):""}</div>
+                                  <div style={{fontSize:11,color:T.danger,fontFamily:"'JetBrains Mono',monospace",fontWeight:l.saida>0?700:400}}>{l.saida>0?fmt(l.saida):""}</div>
+                                  <div></div>
+                                </div>
+                              ))}
+                              {/* Fechamento do dia - SALDO */}
+                              <div style={{display:"grid",gridTemplateColumns:"90px 1fr 110px 110px 120px",padding:"6px 14px",gap:8,borderBottom:`2px solid ${T.border}`,background:T.surface}}>
+                                <div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>SALDO</div>
+                                <div></div>
+                                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,color:T.accent}}>{entDia>0?fmt(entDia):""}</div>
+                                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,color:T.danger}}>{saiDia>0?fmt(saiDia):""}</div>
+                                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,color:saldoAcum>=0?T.accent:T.danger}}>{fmt(saldoAcum)}</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Linhas de previsao */}
+                        {modoPrevisao&&(()=>{
+                          const linhasPrev=[
+                            ...custosRestantes.map(c=>({id:"fix_"+c.id,descricao:"[Prev] "+c.descricao,entrada:0,saida:c.valor,data:`${String(c.dia).padStart(2,"0")}/${finMesRef.split("/")[0]}/${finMesRef.split("/")[1]}`})),
+                            ...previsaoComercial.filter(p=>prevSelecionados.includes(p.id)).map(p=>({id:"prev_"+p.id,descricao:"[Prev] "+p.name,entrada:p.value||0,saida:0,data:`15/${finMesRef.split("/")[0]}/${finMesRef.split("/")[1]}`})),
+                          ];
+                          if(!linhasPrev.length)return null;
+                          let saldoPrev=saldoAcum;
+                          return(
+                            <div>
+                              <div style={{padding:"6px 14px",background:T.info+"11",borderTop:`2px dashed ${T.info}44`}}>
+                                <span style={{fontSize:8,color:T.info,letterSpacing:2,textTransform:"uppercase",fontWeight:700}}>Simulacao - valores previstos</span>
+                              </div>
+                              {linhasPrev.map(l=>{
+                                saldoPrev+=l.entrada-l.saida;
+                                return(
+                                  <div key={l.id} style={{display:"grid",gridTemplateColumns:"90px 1fr 110px 110px 120px",padding:"7px 14px",gap:8,borderBottom:`1px dashed ${T.info}22`,background:T.info+"08"}}>
+                                    <div style={{fontSize:9,color:T.info,fontFamily:"'JetBrains Mono',monospace"}}>{l.data.slice(0,5)}</div>
+                                    <div style={{fontSize:11,color:T.info}}>{l.descricao}</div>
+                                    <div style={{fontSize:11,color:T.accent,fontFamily:"'JetBrains Mono',monospace",opacity:0.7}}>{l.entrada>0?fmt(l.entrada):""}</div>
+                                    <div style={{fontSize:11,color:T.danger,fontFamily:"'JetBrains Mono',monospace",opacity:0.7}}>{l.saida>0?fmt(l.saida):""}</div>
+                                    <div style={{fontSize:11,color:saldoPrev>=0?T.info:T.danger,fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{fmt(saldoPrev)}</div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+
+                        {/* TOTAL GERAL */}
+                        <div style={{display:"grid",gridTemplateColumns:"90px 1fr 110px 110px 120px",padding:"10px 14px",gap:8,background:T.surface,borderTop:`3px solid ${T.border}`}}>
+                          <div style={{fontSize:9,color:T.muted,fontWeight:700}}>TOTAL</div>
+                          <div></div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,color:T.accent}}>{fmt(totalEntGeral)}</div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,color:T.danger}}>{fmt(totalSaiGeral)}</div>
+                          <div></div>
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"90px 1fr 110px 110px 120px",padding:"8px 14px",gap:8,background:T.surface}}>
+                          <div style={{fontSize:9,color:lucroMes>=0?T.accent:T.danger,fontWeight:700}}>LUCRO</div>
+                          <div style={{fontSize:10,color:T.muted}}>Entradas - Saidas do mes</div>
+                          <div></div>
+                          <div></div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,color:lucroMes>=0?T.accent:T.danger}}>{fmt(lucroMes)}</div>
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"90px 1fr 110px 110px 120px",padding:"10px 14px",gap:8,background:`linear-gradient(135deg,${T.accentDim},${T.accent}08)`,borderTop:`1px solid ${T.accentBorder}`}}>
+                          <div style={{fontSize:9,color:T.accent,fontWeight:700}}>CAIXA FINAL</div>
+                          <div style={{fontSize:10,color:T.muted}}>Saldo anterior + resultado do mes</div>
+                          <div></div>
+                          <div></div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:saldoAcum>=0?T.accent:T.danger}}>{fmt(saldoAcum)}</div>
+                        </div>
+                        {modoPrevisao&&(
+                          <div style={{display:"grid",gridTemplateColumns:"90px 1fr 110px 110px 120px",padding:"8px 14px",gap:8,background:T.info+"11",borderTop:`1px dashed ${T.info}44`}}>
+                            <div style={{fontSize:9,color:T.info,fontWeight:700}}>PROJETADO</div>
+                            <div style={{fontSize:10,color:T.muted}}>Com simulacao ativada</div>
+                            <div></div>
+                            <div></div>
+                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,color:saldoProjetado>=0?T.info:T.danger}}>{fmt(saldoProjetado)}</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                  // Running balance
+                  let saldoAcum=saldoInicial;
+                  const lancComSaldo=lancOrdenados.map(l=>{ saldoAcum+=l.entrada-l.saida; return{...l,saldoAcum}; });
+                  const saldoReal=lancComSaldo.length>0?lancComSaldo[lancComSaldo.length-1].saldoAcum:saldoInicial;
+
+                  // Custos fixos restantes no mes (ainda nao lancados)
+                  const hoje=new Date();
+                  const diaHoje=hoje.getDate();
+                  const custosRestantes=custosFix.filter(c=>c.ativo&&c.dia>diaHoje);
+                  const totalCustosRestantes=custosRestantes.reduce((a,c)=>a+c.valor,0);
+
+                  // Previsao comercial - prospects em proposta/negociacao/fechado
+                  const previsaoComercial=prospects.filter(p=>["proposta","negociacao","fechado"].includes(p.stage));
+
+                  // Itens de previsao selecionados
+                  const entradasPrev=previsaoComercial.filter(p=>prevSelecionados.includes(p.id)).reduce((a,p)=>a+(p.value||0),0);
+                  const saldoProjetado=saldoReal-totalCustosRestantes+(modoPrevisao?entradasPrev:0);
+
+                  // Linhas de previsao para exibir
+                  const linhasPrevisao=modoPrevisao?[
+                    ...custosRestantes.map(c=>({id:"fix_"+c.id,data:`${String(c.dia).padStart(2,"0")}/${finMesRef.split("/")[0]}/${finMesRef.split("/")[1]}`,descricao:c.descricao,entrada:0,saida:c.valor,previsto:true,tipoPrev:"custo",categoria:c.categoria})),
+                    ...previsaoComercial.filter(p=>prevSelecionados.includes(p.id)).map(p=>({id:"prev_"+p.id,data:`15/${finMesRef.split("/")[0]}/${finMesRef.split("/")[1]}`,descricao:"[Prev] "+p.name,entrada:p.value||0,saida:0,previsto:true,tipoPrev:"receita",categoria:"Projeto"})),
+                  ].sort((a,b)=>Number(a.data.slice(0,2))-Number(b.data.slice(0,2))):[];
+
+                  // Alert: aporte necessario?
+                  const minimoSaudavel=15000;
+                  const alertaAporte=saldoProjetado<minimoSaudavel;
+
+                  return(
+                    <div>
+                      {/* Header com 3 saldos principais */}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
+                        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"16px 18px"}}>
+                          <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1.2,marginBottom:6}}>Saldo inicial do mes</div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:T.soft}}>{fmt(saldoInicial)}</div>
+                        </div>
+                        <div style={{background:T.card,border:`1px solid ${T.accent}44`,borderRadius:12,padding:"16px 18px"}}>
+                          <div style={{fontSize:9,color:T.accent,textTransform:"uppercase",letterSpacing:1.2,marginBottom:6}}>Saldo atual (real)</div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:saldoReal>=0?T.accent:T.danger}}>{fmt(saldoReal)}</div>
+                          <div style={{fontSize:9,color:T.muted,marginTop:4}}>{fmt(totalEntradas)} entradas - {fmt(totalSaidas)} saidas</div>
+                        </div>
+                        <div style={{background:T.card,border:`1px solid ${saldoProjetado>=minimoSaudavel?T.info+"44":T.danger+"44"}`,borderRadius:12,padding:"16px 18px"}}>
+                          <div style={{fontSize:9,color:saldoProjetado>=minimoSaudavel?T.info:T.danger,textTransform:"uppercase",letterSpacing:1.2,marginBottom:6}}>Projetado fim do mes</div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:saldoProjetado>=minimoSaudavel?T.info:T.danger}}>{fmt(saldoProjetado)}</div>
+                          <div style={{fontSize:9,color:T.muted,marginTop:4}}>Custos fixos restantes: {fmt(totalCustosRestantes)}</div>
+                        </div>
+                      </div>
+
+                      {/* Alerta de aporte */}
+                      {alertaAporte&&(
+                        <div style={{background:T.dangerDim,border:`1px solid ${T.danger}44`,borderRadius:10,padding:"12px 16px",marginBottom:14,display:"flex",gap:12,alignItems:"center"}}>
+                          <div style={{fontSize:18}}>!</div>
+                          <div>
+                            <div style={{fontSize:12,fontWeight:700,color:T.danger}}>Atencao: caixa projetado abaixo do minimo saudavel</div>
+                            <div style={{fontSize:10,color:T.muted,marginTop:2}}>Saldo projetado de {fmt(saldoProjetado)} esta abaixo de {fmt(minimoSaudavel)}. Considere verificar necessidade de aporte.</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Barra modo previsao + acoes */}
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:10}}>
+                        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                          <button onClick={()=>setShowAdd(p=>!p)} className="btn" style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:10,fontWeight:700}}>+ Lancamento</button>
+                          <div style={{width:1,height:20,background:T.border}}/>
+                          <button onClick={()=>{setModoPrevisao(p=>!p);}} className="btn" style={{padding:"7px 14px",background:modoPrevisao?T.infoDim:"transparent",border:`1px solid ${modoPrevisao?T.info+"66":T.border}`,color:modoPrevisao?T.info:T.muted,borderRadius:8,fontSize:10,fontWeight:modoPrevisao?700:400,transition:"all 0.2s"}}>
+                            {modoPrevisao?"Modo Previsao LIGADO":"Modo Previsao"}
+                          </button>
+                          {modoPrevisao&&<div style={{fontSize:9,color:T.info}}>Simulacao para reuniao - nao afeta valores reais</div>}
+                        </div>
+                        <div style={{fontSize:10,color:T.muted}}>{lancComSaldo.length} lancamentos em {finMesRef}</div>
+                      </div>
+
+                      {/* Selecao de previsao comercial */}
+                      {modoPrevisao&&previsaoComercial.length>0&&(
+                        <div style={{background:T.infoDim,border:`1px solid ${T.info}44`,borderRadius:10,padding:"12px 16px",marginBottom:14}}>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,color:T.info,marginBottom:10}}>Selecione receitas previstas para incluir na simulacao:</div>
+                          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                            {previsaoComercial.map(p=>{
+                              const sel=prevSelecionados.includes(p.id);
+                              return(
+                                <div key={p.id} onClick={()=>setPrevSelecionados(prev=>sel?prev.filter(x=>x!==p.id):[...prev,p.id])}
+                                  style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:sel?T.info+"22":T.card,borderRadius:8,border:`1px solid ${sel?T.info+"55":T.border}`,cursor:"pointer",transition:"all 0.15s"}}>
+                                  <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                                    <div style={{width:16,height:16,borderRadius:4,background:sel?T.info:"transparent",border:`2px solid ${sel?T.info:T.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#000"}}>{sel?"v":""}</div>
+                                    <div>
+                                      <div style={{fontSize:11,fontWeight:sel?700:400}}>{p.name}</div>
+                                      <div style={{fontSize:8,color:T.muted}}>{p.stage} - {p.segment}</div>
+                                    </div>
+                                  </div>
+                                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmtK(p.value||0)}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {prevSelecionados.length>0&&(
+                            <div style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${T.info}33`,display:"flex",justifyContent:"space-between"}}>
+                              <span style={{fontSize:10,color:T.info}}>Total de receitas selecionadas</span>
+                              <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,color:T.accent}}>{fmt(entradasPrev)}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Formulario novo lancamento */}
+                      {showAdd&&(
+                        <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16,marginBottom:16}}>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:12}}>Novo Lancamento</div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                            {[["data","Data","date"],["descricao","Descricao","text"],["projeto","Projeto/NF","text"]].map(([k,ph,tp])=>(
+                              <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:3}}>{ph}</div><input type={tp} value={novoLanc[k]} onChange={e=>setNovoLanc(p=>({...p,[k]:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                            ))}
+                            {[["entrada","Entrada (R$)"],["saida","Saida (R$)"]].map(([k,ph])=>(
+                              <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:3}}>{ph}</div><input type="number" value={novoLanc[k]||""} onChange={e=>setNovoLanc(p=>({...p,[k]:Number(e.target.value)}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                            ))}
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Tipo</div><select value={novoLanc.tipo} onChange={e=>setNovoLanc(p=>({...p,tipo:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}><option>Receita</option><option>Despesa</option></select></div>
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Categoria</div><select value={novoLanc.categoria} onChange={e=>setNovoLanc(p=>({...p,categoria:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}>{(novoLanc.tipo==="Receita"?CAT_RECEITA:CAT_DESPESA).map(c=><option key={c}>{c}</option>)}</select></div>
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Centro de Custo</div><select value={novoLanc.centrosCusto} onChange={e=>setNovoLanc(p=>({...p,centrosCusto:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}>{centrosCusto.map(c=><option key={c}>{c}</option>)}</select></div>
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Forma Pagamento</div><select value={novoLanc.forma} onChange={e=>setNovoLanc(p=>({...p,forma:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}>{FORMAS_PAG.map(f=><option key={f}>{f}</option>)}</select></div>
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Conta</div><select value={novoLanc.contaBancoId} onChange={e=>setNovoLanc(p=>({...p,contaBancoId:Number(e.target.value)}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}>{contas.map(c=><option key={c.id} value={c.id}>{c.banco}</option>)}</select></div>
+                          </div>
+                          <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                            <button onClick={()=>setShowAdd(false)} className="btn" style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10}}>Cancelar</button>
+                            <button onClick={()=>{if(!novoLanc.data||!novoLanc.descricao)return;const dateFmt=novoLanc.data.split("-").reverse().join("/");setLancamentos(p=>[...p,{...novoLanc,id:Date.now(),data:dateFmt}]);setContas(p=>p.map(c=>c.id===novoLanc.contaBancoId?{...c,saldo:c.saldo+novoLanc.entrada-novoLanc.saida}:c));setShowAdd(false);setNovoLanc({data:"",descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1});}} className="btn" style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700}}>Salvar</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tabela de lancamentos */}
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
+                        <div style={{display:"grid",gridTemplateColumns:"80px 1fr 100px 100px 110px",background:T.surface,padding:"8px 14px",gap:8}}>
+                          {["Data","Descricao","Entrada","Saida","Saldo"].map(h=><div key={h} style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>{h}</div>)}
+                        </div>
+                        {lancComSaldo.length===0&&!modoPrevisao&&<div style={{padding:24,textAlign:"center",color:T.muted,fontSize:11}}>Nenhum lancamento em {finMesRef}</div>}
+
+                        {/* Lancamentos reais */}
+                        {lancComSaldo.map((l,i)=>(
+                          <div key={l.id} style={{display:"grid",gridTemplateColumns:"80px 1fr 100px 100px 110px",padding:"9px 14px",gap:8,borderBottom:`1px solid ${T.border}`,background:i%2===0?"transparent":T.surface+"55"}}>
+                            <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{l.data.slice(0,5)}</div>
+                            <div>
+                              <div style={{fontSize:11,fontWeight:500}}>{l.descricao}</div>
+                              <div style={{display:"flex",gap:5,marginTop:2,flexWrap:"wrap"}}>
+                                <span style={{fontSize:7,padding:"1px 5px",borderRadius:3,background:l.tipo==="Receita"?T.accentDim:T.dangerDim,color:l.tipo==="Receita"?T.accent:T.danger}}>{l.categoria}</span>
+                                <span style={{fontSize:7,color:T.muted}}>{l.centrosCusto}</span>
+                                {l.forma&&<span style={{fontSize:7,color:T.muted}}>{l.forma}</span>}
+                                {l.projeto&&<span style={{fontSize:7,color:T.info}}>{l.projeto}</span>}
+                              </div>
+                            </div>
+                            <div style={{fontSize:11,color:T.accent,fontFamily:"'JetBrains Mono',monospace",fontWeight:l.entrada>0?700:400}}>{l.entrada>0?fmt(l.entrada):"-"}</div>
+                            <div style={{fontSize:11,color:T.danger,fontFamily:"'JetBrains Mono',monospace",fontWeight:l.saida>0?700:400}}>{l.saida>0?fmt(l.saida):"-"}</div>
+                            <div style={{fontSize:11,color:l.saldoAcum>=0?T.accent:T.danger,fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{fmt(l.saldoAcum)}</div>
+                          </div>
+                        ))}
+
+                        {/* Separador modo previsao */}
+                        {modoPrevisao&&linhasPrevisao.length>0&&(
+                          <div style={{background:T.info+"11",borderTop:`2px dashed ${T.info}44`,borderBottom:`1px solid ${T.info}33`}}>
+                            <div style={{padding:"6px 14px",display:"flex",gap:8,alignItems:"center"}}>
+                              <div style={{fontSize:8,color:T.info,letterSpacing:2,textTransform:"uppercase",fontWeight:700}}>Simulacao - valores previstos (nao realizados)</div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Linhas previstas */}
+                        {modoPrevisao&&(()=>{
+                          let saldoPrev=saldoReal;
+                          return linhasPrevisao.map((l,i)=>{
+                            saldoPrev+=l.entrada-l.saida;
+                            return(
+                              <div key={l.id} style={{display:"grid",gridTemplateColumns:"80px 1fr 100px 100px 110px",padding:"9px 14px",gap:8,borderBottom:`1px dashed ${T.info}22`,background:T.info+"08",opacity:0.85}}>
+                                <div style={{fontSize:10,color:T.info,fontFamily:"'JetBrains Mono',monospace"}}>{l.data.slice(0,5)}</div>
+                                <div>
+                                  <div style={{fontSize:11,color:T.info}}>{l.descricao}</div>
+                                  <div style={{fontSize:7,color:T.info,opacity:0.7}}>{l.tipoPrev==="custo"?"Custo fixo previsto":"Receita prevista"} - {l.categoria}</div>
+                                </div>
+                                <div style={{fontSize:11,color:T.accent,fontFamily:"'JetBrains Mono',monospace",opacity:0.7}}>{l.entrada>0?fmt(l.entrada):"-"}</div>
+                                <div style={{fontSize:11,color:T.danger,fontFamily:"'JetBrains Mono',monospace",opacity:0.7}}>{l.saida>0?fmt(l.saida):"-"}</div>
+                                <div style={{fontSize:11,color:saldoPrev>=0?T.info:T.danger,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,opacity:0.9}}>{fmt(saldoPrev)}</div>
+                              </div>
+                            );
+                          });
+                        })()}
+
+                        {/* Totais */}
+                        <div style={{display:"grid",gridTemplateColumns:"80px 1fr 100px 100px 110px",padding:"10px 14px",gap:8,background:T.surface,borderTop:`2px solid ${T.border}`}}>
+                          <div style={{fontSize:9,color:T.muted,gridColumn:"1/3",fontWeight:700}}>TOTAL REAL DO MES</div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,color:T.accent}}>{fmt(totalEntradas)}</div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,color:T.danger}}>{fmt(totalSaidas)}</div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,color:lucroMes>=0?T.accent:T.danger}}>{fmt(lucroMes)}</div>
+                        </div>
+                        {modoPrevisao&&(
+                          <div style={{display:"grid",gridTemplateColumns:"80px 1fr 100px 100px 110px",padding:"10px 14px",gap:8,background:T.info+"11",borderTop:`1px dashed ${T.info}44`}}>
+                            <div style={{fontSize:9,color:T.info,gridColumn:"1/5",fontWeight:700}}>SALDO PROJETADO FIM DO MES</div>
+                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,color:saldoProjetado>=0?T.info:T.danger}}>{fmt(saldoProjetado)}</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* CARTOES */}
+                {finTab==="cartoes"&&(()=>{
+                  return(
+                    <div>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}>
+                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14}}>Controle de Cartoes</div>
+                        <div style={{display:"flex",gap:8}}>
+                          <button onClick={()=>setShowAddCompra(p=>!p)} className="btn" style={{padding:"7px 14px",background:T.warnDim,border:`1px solid ${T.warn}44`,color:T.warn,borderRadius:8,fontSize:10,fontWeight:700}}>+ Compra Parcelada</button>
+                          <button onClick={()=>setShowAddCartao(p=>!p)} className="btn" style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:10,fontWeight:700}}>+ Novo Cartao</button>
+                        </div>
+                      </div>
+                      {/* Add cartao form */}
+                      {showAddCartao&&(
+                        <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:14,marginBottom:14}}>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:10}}>Novo Cartao</div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                            {[["nome","Nome do cartao"],["titular","Titular"],["banco","Banco"]].map(([k,ph])=>(
+                              <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:2}}>{ph}</div>
+                              <input value={novoCartao[k]} onChange={e=>setNovoCartao(p=>({...p,[k]:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                            ))}
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:2}}>Vencimento (dia)</div>
+                            <input type="number" min="1" max="31" value={novoCartao.vencimento} onChange={e=>setNovoCartao(p=>({...p,vencimento:Number(e.target.value)}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:2}}>Limite</div>
+                            <input type="number" value={novoCartao.limite} onChange={e=>setNovoCartao(p=>({...p,limite:Number(e.target.value)}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:2}}>Cor</div>
+                            <input type="color" value={novoCartao.cor} onChange={e=>setNovoCartao(p=>({...p,cor:e.target.value}))} style={{width:"100%",height:32,background:"transparent",border:`1px solid ${T.border}`,borderRadius:6,cursor:"pointer"}}/></div>
+                          </div>
+                          <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                            <button onClick={()=>setShowAddCartao(false)} className="btn" style={{padding:"6px 12px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10}}>Cancelar</button>
+                            <button onClick={()=>{if(!novoCartao.nome)return;setCartoes(p=>[...p,{...novoCartao,id:Date.now()}]);setShowAddCartao(false);}} className="btn" style={{padding:"6px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700}}>Salvar</button>
+                          </div>
+                        </div>
+                      )}
+                      {/* Add compra form */}
+                      {showAddCompra&&(
+                        <div style={{background:T.card,border:`1px solid ${T.warn}44`,borderRadius:12,padding:14,marginBottom:14}}>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.warn,marginBottom:10}}>Nova Compra Parcelada</div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:2}}>Cartao</div>
+                            <select value={novaCompra.cartaoId} onChange={e=>setNovaCompra(p=>({...p,cartaoId:Number(e.target.value)}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}>
+                              {cartoes.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}
+                            </select></div>
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:2}}>Projeto vinculado</div>
+                            <input value={novaCompra.projeto} onChange={e=>setNovaCompra(p=>({...p,projeto:e.target.value}))} placeholder="Ex: PP 131 Grafica EVO" style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:2}}>Descricao</div>
+                            <input value={novaCompra.descricao} onChange={e=>setNovaCompra(p=>({...p,descricao:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:2}}>Valor total</div>
+                            <input type="number" value={novaCompra.valorTotal||""} onChange={e=>setNovaCompra(p=>({...p,valorTotal:Number(e.target.value),valorParcela:p.parcelas>0?Number(e.target.value)/p.parcelas:0}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:2}}>Parcelas</div>
+                            <input type="number" min="1" value={novaCompra.parcelas} onChange={e=>setNovaCompra(p=>({...p,parcelas:Number(e.target.value),valorParcela:p.valorTotal>0?p.valorTotal/Number(e.target.value):0}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                            <div><div style={{fontSize:9,color:T.muted,marginBottom:2}}>Parcela atual</div>
+                            <input type="number" min="1" value={novaCompra.parcelaAtual} onChange={e=>setNovaCompra(p=>({...p,parcelaAtual:Number(e.target.value)}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                          </div>
+                          {novaCompra.valorTotal>0&&novaCompra.parcelas>0&&(
+                            <div style={{background:T.surface,borderRadius:8,padding:"8px 12px",marginBottom:8,fontSize:10,color:T.warn}}>
+                              Valor por parcela: {fmt(novaCompra.valorTotal/novaCompra.parcelas)} | Restante: {fmt((novaCompra.parcelas-novaCompra.parcelaAtual+1)*(novaCompra.valorTotal/novaCompra.parcelas))}
+                            </div>
+                          )}
+                          <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                            <button onClick={()=>setShowAddCompra(false)} className="btn" style={{padding:"6px 12px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10}}>Cancelar</button>
+                            <button onClick={()=>{if(!novaCompra.projeto||!novaCompra.valorTotal)return;setComprasCartao(p=>[...p,{...novaCompra,id:Date.now(),valorParcela:novaCompra.valorTotal/novaCompra.parcelas}]);setShowAddCompra(false);}} className="btn" style={{padding:"6px 12px",background:T.warnDim,border:`1px solid ${T.warn}44`,color:T.warn,borderRadius:7,fontSize:10,fontWeight:700}}>Salvar</button>
+                          </div>
+                        </div>
+                      )}
+                      {/* Cards list */}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                        {cartoes.map(c=>{
+                          const compras=comprasCartao.filter(p=>p.cartaoId===c.id);
+                          const totalDevedor=compras.reduce((a,p)=>a+(p.valorParcela*(p.parcelas-p.parcelaAtual+1)),0);
+                          const parcelaMes=compras.filter(p=>p.parcelaAtual<=p.parcelas).reduce((a,p)=>a+p.valorParcela,0);
+                          const utilizadoPct=c.limite>0?(totalDevedor/c.limite)*100:0;
+                          return(
+                            <div key={c.id} style={{background:T.card,border:`1px solid ${c.cor}44`,borderRadius:14,padding:18}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+                                <div>
+                                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:c.cor}}>{c.nome}</div>
+                                  <div style={{fontSize:9,color:T.muted,marginTop:2}}>{c.titular} - Vencimento dia {c.vencimento} - {c.banco}</div>
+                                </div>
+                                <div style={{textAlign:"right"}}>
+                                  <div style={{fontSize:9,color:T.muted}}>Limite</div>
+                                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:c.cor}}>{fmt(c.limite)}</div>
+                                </div>
+                              </div>
+                              <div style={{marginBottom:8}}>
+                                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                                  <span style={{fontSize:9,color:T.muted}}>Utilizado</span>
+                                  <span style={{fontSize:9,color:utilizadoPct>80?T.danger:T.warn}}>{utilizadoPct.toFixed(0)}%</span>
+                                </div>
+                                <div style={{height:6,background:T.border,borderRadius:3}}>
+                                  <div style={{height:"100%",width:Math.min(100,utilizadoPct)+"%",background:utilizadoPct>80?T.danger:c.cor,borderRadius:3}}/>
+                                </div>
+                              </div>
+                              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+                                <div style={{background:T.surface,borderRadius:8,padding:"8px 10px"}}>
+                                  <div style={{fontSize:8,color:T.muted,marginBottom:2}}>Saldo devedor</div>
+                                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:T.danger}}>{fmt(totalDevedor)}</div>
+                                </div>
+                                <div style={{background:T.surface,borderRadius:8,padding:"8px 10px"}}>
+                                  <div style={{fontSize:8,color:T.muted,marginBottom:2}}>Parcela do mes</div>
+                                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:T.warn}}>{fmt(parcelaMes)}</div>
+                                </div>
+                              </div>
+                              {compras.length>0&&(
+                                <div>
+                                  <div style={{fontSize:9,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Compras parceladas</div>
+                                  {compras.map((cp,i)=>(
+                                    <div key={i} style={{padding:"6px 0",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                                      <div>
+                                        <div style={{fontSize:10,fontWeight:600}}>{cp.projeto}</div>
+                                        <div style={{fontSize:8,color:T.muted}}>{cp.parcelaAtual}/{cp.parcelas} parcelas - {fmt(cp.valorParcela)}/mes</div>
+                                      </div>
+                                      <div style={{fontSize:10,color:T.warn,fontFamily:"'JetBrains Mono',monospace"}}>{fmt(cp.valorParcela*(cp.parcelas-cp.parcelaAtual+1))}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* DAS / SIMPLES NACIONAL */}
+                {finTab==="das"&&(()=>{
+                  const dasCalcNf=Number(nfValor)*(Number(dasManual||aliqDisplay)/100);
+                  return(
+                    <div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
+                        {/* RBT12 */}
+                        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Faturamento dos ultimos 12 meses (RBT12)</div>
+                          <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:280,overflowY:"auto",marginBottom:12}}>
+                            {fatMensais.map((f,i)=>(
+                              <div key={i} style={{display:"flex",gap:8,alignItems:"center"}}>
+                                <span style={{fontSize:9,color:T.muted,width:60,flexShrink:0}}>{f.mes}</span>
+                                <input type="number" value={f.fat} onChange={e=>setFatMensais(p=>p.map((x,j)=>j===i?{...x,fat:Number(e.target.value)}:x))} style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"4px 8px",fontSize:11,color:T.text,outline:"none"}}/>
+                                <span style={{fontSize:9,color:T.accent,fontFamily:"'JetBrains Mono',monospace",width:80,textAlign:"right",flexShrink:0}}>{fmt(f.fat)}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderTop:`1px solid ${T.border}`}}>
+                            <span style={{fontWeight:700,fontSize:11}}>RBT12 Total</span>
+                            <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:T.accent}}>{fmt(rbt12)}</span>
+                          </div>
+                        </div>
+                        {/* Simples */}
+                        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                          <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18}}>
+                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:10}}>Faixa atual - Simples Nacional Anexo III</div>
+                            {SIMPLES_ANEXO_III.map(f=>{
+                              const isAtual=rbt12>=f.min&&rbt12<f.max;
+                              return(
+                                <div key={f.faixa} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",borderRadius:8,marginBottom:4,background:isAtual?T.accentDim:"transparent",border:`1px solid ${isAtual?T.accentBorder:"transparent"}`}}>
+                                  <span style={{fontSize:10,color:isAtual?T.accent:T.soft}}>{f.label}: ate {fmt(f.max)}</span>
+                                  <span style={{fontSize:10,color:isAtual?T.accent:T.muted,fontWeight:isAtual?700:400}}>{(f.aliquota*100).toFixed(1)}%</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
+                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:10}}>Aliquota efetiva calculada</div>
+                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:32,color:T.accent,marginBottom:4}}>{aliqDisplay}%</div>
+                            <div style={{fontSize:9,color:T.muted,marginBottom:12}}>{faixa.label} - ({fmt(rbt12)} x {(faixa.aliquota*100).toFixed(1)}% - {fmt(faixa.deducao)}) / {fmt(rbt12)}</div>
+                            <div style={{fontSize:10,color:T.warn,marginBottom:6}}>Ajuste manual (se contador informar diferente):</div>
+                            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                              <input type="number" step="0.01" value={dasManual} onChange={e=>{setDasManual(e.target.value);setDasAjuste(Number(e.target.value));}} style={{flex:1,background:T.surface,border:`1px solid ${T.warn}44`,borderRadius:6,padding:"6px 8px",fontSize:13,color:T.text,outline:"none",fontWeight:700}}/>
+                              <span style={{fontSize:11,color:T.muted}}>%</span>
+                              <button onClick={()=>{setDasAjuste(null);setDasManual(aliquotaEfetiva.toFixed(4)*100+"");}} className="btn" style={{padding:"6px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:9}}>Resetar</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      {/* DAS calculator */}
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:14}}>
+                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Calculadora DAS</div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,alignItems:"center"}}>
+                          <div>
+                            <div style={{fontSize:9,color:T.muted,marginBottom:4}}>Valor da NF</div>
+                            <input type="number" placeholder="0,00" value={nfValor} onChange={e=>setNfValor(e.target.value)} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:14,color:T.text,outline:"none",fontWeight:700}}/>
+                          </div>
+                          <div>
+                            <div style={{fontSize:9,color:T.muted,marginBottom:4}}>Aliquota efetiva</div>
+                            <div style={{background:T.surface,border:`1px solid ${T.accentBorder}`,borderRadius:7,padding:"8px 12px",fontSize:14,color:T.accent,fontWeight:800}}>{dasManual}%</div>
+                          </div>
+                          <div>
+                            <div style={{fontSize:9,color:T.muted,marginBottom:4}}>DAS a pagar</div>
+                            <div style={{background:dasCalcNf>0?T.accentDim:T.surface,border:`1px solid ${T.accentBorder}`,borderRadius:7,padding:"8px 12px",fontSize:18,color:T.accent,fontWeight:800,fontFamily:"'Syne',sans-serif"}}>{fmt(dasCalcNf)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* DISTRIBUICAO DE SOCIOS */}
+                {finTab==="distribuicao"&&(
+                  <div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
+                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Resultado de {finMesRef}</div>
+                        {[{l:"Total entradas",v:totalEntradas,c:T.accent},{l:"Total saidas",v:totalSaidas,c:T.danger},{l:"Resultado bruto",v:lucroMes,c:lucroMes>=0?T.accent:T.danger}].map((k,i)=>(
+                          <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}>
+                            <span style={{fontSize:11,color:T.soft}}>{k.l}</span>
+                            <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:k.c}}>{fmt(k.v)}</span>
+                          </div>
+                        ))}
+                        <div style={{marginTop:14}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                            <span style={{fontSize:11,color:T.warn}}>Reserva de caixa</span>
+                            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                              <input type="number" min="0" max="100" value={reservaCaixaPct} onChange={e=>setReservaCaixaPct(Number(e.target.value))} style={{width:50,background:T.surface,border:`1px solid ${T.warn}44`,borderRadius:5,padding:"3px 6px",fontSize:12,color:T.text,outline:"none",textAlign:"center"}}/>
+                              <span style={{fontSize:11,color:T.muted}}>%</span>
+                              <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.warn,fontSize:13}}>{fmt(reserva)}</span>
+                            </div>
+                          </div>
+                          <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderTop:`1px solid ${T.border}`}}>
+                            <span style={{fontWeight:700,fontSize:12}}>Para distribuir</span>
+                            <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:T.accent}}>{fmt(paraDividir)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
+                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Distribuicao por socio</div>
+                        {socios.map((s,i)=>{
+                          const valor=paraDividir*(s.pct/100);
+                          return(
+                            <div key={s.id} style={{background:T.surface,borderRadius:10,padding:14,marginBottom:10}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                                <span style={{fontWeight:700,fontSize:12}}>{s.nome}</span>
+                                <div style={{display:"flex",gap:5,alignItems:"center"}}>
+                                  <input type="number" min="0" max="100" value={s.pct} onChange={e=>setSocios(p=>p.map((x,j)=>j===i?{...x,pct:Number(e.target.value)}:x))} style={{width:45,background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"2px 5px",fontSize:11,color:T.text,outline:"none",textAlign:"center"}}/>
+                                  <span style={{fontSize:10,color:T.muted}}>%</span>
+                                </div>
+                              </div>
+                              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:28,color:T.accent}}>{fmt(valor)}</div>
+                              <div style={{fontSize:9,color:T.muted,marginTop:2}}>Pro-labore ja incluido no total de saidas</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* CONFIGURACOES */}
+                {finTab==="config"&&(()=>{
+                  return(
+                    <div>
+                      {/* Custos fixos */}
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:14}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Custos Fixos Mensais</div>
+                          <button onClick={()=>setShowAddFixo(p=>!p)} className="btn" style={{padding:"6px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700}}>+ Adicionar</button>
+                        </div>
+                        {showAddFixo&&(
+                          <div style={{background:T.surface,borderRadius:9,padding:12,marginBottom:12}}>
+                            <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                              <div><div style={{fontSize:8,color:T.muted,marginBottom:2}}>Descricao</div><input value={novoCusto.descricao} onChange={e=>setNovoCusto(p=>({...p,descricao:e.target.value}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 7px",fontSize:10,color:T.text,outline:"none"}}/></div>
+                              <div><div style={{fontSize:8,color:T.muted,marginBottom:2}}>Valor</div><input type="number" value={novoCusto.valor||""} onChange={e=>setNovoCusto(p=>({...p,valor:Number(e.target.value)}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 7px",fontSize:10,color:T.text,outline:"none"}}/></div>
+                              <div><div style={{fontSize:8,color:T.muted,marginBottom:2}}>Dia venc.</div><input type="number" min="1" max="31" value={novoCusto.dia} onChange={e=>setNovoCusto(p=>({...p,dia:Number(e.target.value)}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 7px",fontSize:10,color:T.text,outline:"none"}}/></div>
+                              <div><div style={{fontSize:8,color:T.muted,marginBottom:2}}>Centro Custo</div><select value={novoCusto.centrosCusto} onChange={e=>setNovoCusto(p=>({...p,centrosCusto:e.target.value}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 7px",fontSize:10,color:T.text,outline:"none"}}>{centrosCusto.map(c=><option key={c}>{c}</option>)}</select></div>
+                            </div>
+                            <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
+                              <button onClick={()=>setShowAddFixo(false)} className="btn" style={{padding:"5px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:9}}>Cancelar</button>
+                              <button onClick={()=>{if(!novoCusto.descricao)return;setCustosFix(p=>[...p,{...novoCusto,id:Date.now()}]);setShowAddFixo(false);}} className="btn" style={{padding:"5px 10px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,fontSize:9,fontWeight:700}}>Salvar</button>
+                            </div>
+                          </div>
+                        )}
+                        {[...custosFix].sort((a,b)=>a.dia-b.dia).map(c=>(
+                          <div key={c.id}>
+                            {editCustoId===c.id?(
+                              // EDIT MODE
+                              <div style={{background:T.surface,borderRadius:9,padding:12,margin:"6px 0",border:`1px solid ${T.accentBorder}`}}>
+                                <div style={{fontSize:9,color:T.accent,marginBottom:8,fontWeight:700}}>Editando: {c.descricao}</div>
+                                <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                                  <div><div style={{fontSize:8,color:T.muted,marginBottom:2}}>Descricao</div><input value={editCusto.descricao||""} onChange={e=>setEditCusto(p=>({...p,descricao:e.target.value}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 7px",fontSize:10,color:T.text,outline:"none"}}/></div>
+                                  <div><div style={{fontSize:8,color:T.muted,marginBottom:2}}>Valor</div><input type="number" value={editCusto.valor||""} onChange={e=>setEditCusto(p=>({...p,valor:Number(e.target.value)}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 7px",fontSize:10,color:T.text,outline:"none"}}/></div>
+                                  <div><div style={{fontSize:8,color:T.muted,marginBottom:2}}>Dia venc.</div><input type="number" min="1" max="31" value={editCusto.dia||5} onChange={e=>setEditCusto(p=>({...p,dia:Number(e.target.value)}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 7px",fontSize:10,color:T.text,outline:"none"}}/></div>
+                                  <div><div style={{fontSize:8,color:T.muted,marginBottom:2}}>Centro Custo</div><select value={editCusto.centrosCusto||"Administrativo"} onChange={e=>setEditCusto(p=>({...p,centrosCusto:e.target.value}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 7px",fontSize:10,color:T.text,outline:"none"}}>{centrosCusto.map(cc=><option key={cc}>{cc}</option>)}</select></div>
+                                </div>
+                                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                                  <div><div style={{fontSize:8,color:T.muted,marginBottom:2}}>Categoria</div><select value={editCusto.categoria||"Outros"} onChange={e=>setEditCusto(p=>({...p,categoria:e.target.value}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 7px",fontSize:10,color:T.text,outline:"none"}}>{CAT_DESPESA.map(cat=><option key={cat}>{cat}</option>)}</select></div>
+                                </div>
+                                <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
+                                  <button onClick={()=>setEditCustoId(null)} className="btn" style={{padding:"5px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:9}}>Cancelar</button>
+                                  <button onClick={()=>{setCustosFix(p=>p.map(x=>x.id===c.id?{...x,...editCusto}:x));setEditCustoId(null);}} className="btn" style={{padding:"5px 10px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,fontSize:9,fontWeight:700}}>Salvar alteracoes</button>
+                                </div>
+                              </div>
+                            ):(
+                              // VIEW MODE
+                              <div style={{display:"grid",gridTemplateColumns:"28px 1fr 90px 70px 90px",gap:8,alignItems:"center",padding:"8px 4px",borderBottom:`1px solid ${T.border}`,opacity:c.ativo?1:0.5}}>
+                                <div style={{textAlign:"center",fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{c.dia}</div>
+                                <div>
+                                  <div style={{fontSize:11,color:c.ativo?T.text:T.muted}}>{c.descricao}</div>
+                                  <div style={{fontSize:8,color:T.muted}}>{c.categoria} - {c.centrosCusto}</div>
+                                </div>
+                                <span style={{fontSize:11,color:c.ativo?T.danger:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{fmt(c.valor)}</span>
+                                <Badge label={c.ativo?"Ativo":"Inativo"} color={c.ativo?T.accent:T.muted}/>
+                                <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
+                                  <button onClick={()=>{setEditCustoId(c.id);setEditCusto({...c});}} className="btn" style={{padding:"3px 8px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:5,fontSize:8,cursor:"pointer"}}>Editar</button>
+                                  <button onClick={()=>setCustosFix(p=>p.map(x=>x.id===c.id?{...x,ativo:!x.ativo}:x))} className="btn" style={{padding:"3px 8px",background:c.ativo?T.dangerDim:T.accentDim,border:`1px solid ${c.ativo?T.danger+"44":T.accentBorder}`,color:c.ativo?T.danger:T.accent,borderRadius:5,fontSize:8,cursor:"pointer"}}>{c.ativo?"Inativar":"Ativar"}</button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {/* Contas bancarias */}
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:14}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Contas Bancarias</div>
+                          <button onClick={()=>setShowAddConta(p=>!p)} className="btn" style={{padding:"6px 12px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:7,fontSize:10,fontWeight:700}}>+ Adicionar Conta</button>
+                        </div>
+                        {showAddConta&&(
+                          <div style={{background:T.surface,borderRadius:9,padding:12,marginBottom:12}}>
+                            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                              {[["banco","Banco"],["tipo","Tipo"],["agencia","Agencia"],["conta","Conta"]].map(([k,ph])=>(
+                                <div key={k}><div style={{fontSize:8,color:T.muted,marginBottom:2}}>{ph}</div><input value={novaConta[k]} onChange={e=>setNovaConta(p=>({...p,[k]:e.target.value}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 7px",fontSize:10,color:T.text,outline:"none"}}/></div>
+                              ))}
+                              <div><div style={{fontSize:8,color:T.muted,marginBottom:2}}>Saldo inicial</div><input type="number" value={novaConta.saldo||""} onChange={e=>setNovaConta(p=>({...p,saldo:Number(e.target.value)}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 7px",fontSize:10,color:T.text,outline:"none"}}/></div>
+                              <div><div style={{fontSize:8,color:T.muted,marginBottom:2}}>Cor</div><input type="color" value={novaConta.cor} onChange={e=>setNovaConta(p=>({...p,cor:e.target.value}))} style={{width:"100%",height:30,background:"transparent",border:`1px solid ${T.border}`,borderRadius:5,cursor:"pointer"}}/></div>
+                            </div>
+                            <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
+                              <button onClick={()=>setShowAddConta(false)} className="btn" style={{padding:"5px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:9}}>Cancelar</button>
+                              <button onClick={()=>{if(!novaConta.banco)return;setContas(p=>[...p,{...novaConta,id:Date.now()}]);setShowAddConta(false);}} className="btn" style={{padding:"5px 10px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,fontSize:9,fontWeight:700}}>Salvar</button>
+                            </div>
+                          </div>
+                        )}
+                        {contas.map(c=>(
+                          <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}>
+                            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                              <div style={{width:10,height:10,borderRadius:"50%",background:c.cor}}/>
+                              <div>
+                                <div style={{fontSize:11,fontWeight:600}}>{c.banco}</div>
+                                <div style={{fontSize:8,color:T.muted}}>{c.tipo}{c.agencia?" - Ag. "+c.agencia:""}{c.conta?" - Cc. "+c.conta:""}</div>
+                              </div>
+                            </div>
+                            <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                              <input type="number" value={c.saldo} onChange={e=>setContas(p=>p.map(x=>x.id===c.id?{...x,saldo:Number(e.target.value)}:x))} style={{width:100,background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"4px 7px",fontSize:11,color:T.text,outline:"none",textAlign:"right"}}/>
+                              <div onClick={()=>setContas(p=>p.filter(x=>x.id!==c.id))} style={{fontSize:9,color:T.danger,cursor:"pointer"}}>x</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Centros de custo */}
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Centros de Custo</div>
+                        </div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
+                          {centrosCusto.map(c=>(
+                            <div key={c} style={{display:"flex",gap:5,alignItems:"center",padding:"5px 12px",background:T.surface,border:`1px solid ${T.border}`,borderRadius:20}}>
+                              <span style={{fontSize:11}}>{c}</span>
+                              <div onClick={()=>setCentrosCusto(p=>p.filter(x=>x!==c))} style={{fontSize:9,color:T.danger,cursor:"pointer",marginLeft:4}}>x</div>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{display:"flex",gap:8}}>
+                          <input value={novoCentro} onChange={e=>setNovoCentro(e.target.value)} placeholder="Novo centro de custo..." style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"7px 10px",fontSize:11,color:T.text,outline:"none"}}/>
+                          <button onClick={()=>{if(!novoCentro.trim())return;setCentrosCusto(p=>[...p,novoCentro.trim()]);setNovoCentro("");}} className="btn" style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700}}>+ Adicionar</button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            );
+          })()}
+
+          {/* --------------------------------------
               COMERCIAL
           -------------------------------------- */}
           {tab==="comercial"&&(
@@ -1794,7 +2841,7 @@ export default function App(){
                 <div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
                     <KCard label="Pipeline total" value={fmtK(pipeTotal)} sub={`${prospects.length} prospects`} color={T.info} icon="-" onClick={()=>setPipeView("lista")} hint="Ver lista -"/>
-                    <KCard label="Previsão ponderada" value={fmtK(Math.round(forecastTotal))} sub="por probabilidade" color={T.warn} icon="-"/>
+                    <KCard label="Previsao ponderada" value={fmtK(Math.round(forecastTotal))} sub="por probabilidade" color={T.warn} icon="-"/>
                     <KCard label="Faturado total" value={fmtK(totalFat)} sub="clientes ativos" color={T.accent} icon="-" onClick={["admin","financeiro"].includes(user.role)?()=>setCommTab("faturamento"):undefined} hint="Ver faturamento -"/>
                     <KCard label="Pendente receber" value={fmtK(totalPend)} sub="NFs em aberto" color={T.danger} icon="-" onClick={["admin","financeiro"].includes(user.role)?()=>setCommTab("faturamento"):undefined} hint="Ver pendentes -"/>
                   </div>
@@ -1804,7 +2851,7 @@ export default function App(){
                     ))}
                     <select value={filterSeg} onChange={e=>setFilterSeg(e.target.value)} style={{...selS,width:"auto"}}>
                       <option value="todos">Todos segmentos</option>
-                      {["Beleza","Automotivo","Energia","Entretenimento","Alimentação","Tecnologia","Moda"].map(s=><option key={s}>{s}</option>)}
+                      {["Beleza","Automotivo","Energia","Entretenimento","Alimentacao","Tecnologia","Moda"].map(s=><option key={s}>{s}</option>)}
                     </select>
                     <button className="btn" onClick={()=>setShowNewProsp(true)} style={{marginLeft:"auto",padding:"7px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10}}>+ Prospect</button>
                   </div>
@@ -1818,7 +2865,7 @@ export default function App(){
                         ))}
                         <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Etapa</div>
                         <select value={newProsp.stage} onChange={e=>setNewProsp(p=>({...p,stage:e.target.value}))} style={selS}>{PIPE_STAGES.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select></div>
-                        <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Responsável</div>
+                        <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Responsavel</div>
                         <select value={newProsp.owner} onChange={e=>setNewProsp(p=>({...p,owner:e.target.value}))} style={selS}><option>Rodrigo Bem</option><option>Ana Lima</option></select></div>
                       </div>
                       <div style={{display:"flex",gap:8}}>
@@ -1863,7 +2910,7 @@ export default function App(){
                                     <div style={{fontSize:9,color:T.muted,opacity:0.5}}>-</div>
                                   </div>
                                   <div style={{fontSize:10,fontWeight:700,color:stage.color,fontFamily:"'Syne',sans-serif",marginBottom:3}}>{fmtK(p.value)}</div>
-                                  <div style={{fontSize:9,color:T.muted,marginBottom:4}}>{p.segment} · {p.owner}</div>
+                                  <div style={{fontSize:9,color:T.muted,marginBottom:4}}>{p.segment} . {p.owner}</div>
                                   {p.notes&&<div style={{fontSize:9,color:T.soft,fontStyle:"italic",lineHeight:1.4}}>"{p.notes}"</div>}
                                 </div>
                               );
@@ -1879,7 +2926,7 @@ export default function App(){
                   {pipeView==="lista"&&(
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                       <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
-                        {["Empresa","Segmento","Valor","Etapa","Responsável"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
+                        {["Empresa","Segmento","Valor","Etapa","Responsavel"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
                       </div>
                       {(filterSeg==="todos"?prospects:prospects.filter(p=>p.segment===filterSeg)).map((p,i)=>{const s=PIPE_STAGES.find(x=>x.id===p.stage);return(
                         <div key={i} className="hr" onClick={()=>setSelProsp(p)} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
@@ -1897,7 +2944,7 @@ export default function App(){
               {commTab==="faturamento"&&(
                 <div>
                   <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap",alignItems:"flex-end"}}>
-                    {[["De",filterFrom,setFilterFrom],["Até",filterTo,setFilterTo]].map(([l,val,fn])=>(
+                    {[["De",filterFrom,setFilterFrom],["Ate",filterTo,setFilterTo]].map(([l,val,fn])=>(
                       <div key={l}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
                       <input type="month" value={val} onChange={e=>fn(e.target.value)} style={{...inpS,width:"auto"}}/></div>
                     ))}
@@ -1905,10 +2952,10 @@ export default function App(){
                     <select value={filterSeg} onChange={e=>setFilterSeg(e.target.value)} style={{...selS,width:"auto"}}><option value="todos">Todos</option>{["Beleza","Automotivo","Energia","Entretenimento"].map(s=><option key={s}>{s}</option>)}</select></div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
-                    <KCard label="Total faturado" value={fmtK(totalFat)} sub="no período" color={T.accent} icon="-"/>
+                    <KCard label="Total faturado" value={fmtK(totalFat)} sub="no periodo" color={T.accent} icon="-"/>
                     <KCard label="Pendente receber" value={fmtK(totalPend)} sub="NFs em aberto" color={T.danger} icon="-"/>
-                    <KCard label="Previsão mai-jun" value={fmtK(110000)} sub="campanhas ativas" color={T.warn} icon="-"/>
-                    <KCard label="Ticket médio" value={fmtK(Math.round(totalFat/7))} sub="por campanha" color={T.purple} icon="-"/>
+                    <KCard label="Previsao mai-jun" value={fmtK(110000)} sub="campanhas ativas" color={T.warn} icon="-"/>
+                    <KCard label="Ticket medio" value={fmtK(Math.round(totalFat/7))} sub="por campanha" color={T.purple} icon="-"/>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
@@ -1946,7 +2993,7 @@ export default function App(){
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                     <div style={{padding:"12px 18px",borderBottom:`1px solid ${T.border}`,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Faturamento por cliente</div>
                     <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 0.8fr 1fr 1fr 1fr",padding:"10px 18px",borderBottom:`1px solid ${T.border}`,gap:8}}>
-                      {["Cliente","Segmento","Camps.","Faturado","Pendente","Última"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
+                      {["Cliente","Segmento","Camps.","Faturado","Pendente","Ultima"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
                     </div>
                     {(filterSeg==="todos"?CLIENT_BILLING:CLIENT_BILLING.filter(c=>c.segment===filterSeg)).map((c,i)=>(
                       <div key={i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1fr 0.8fr 1fr 1fr 1fr",padding:"12px 18px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
@@ -1967,7 +3014,7 @@ export default function App(){
                     <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Clientes Ativos</div>
                     {CLIENTS_LIST.map((c,i)=>(
                       <div key={i} className="hr" style={{padding:"10px 8px",borderRadius:8,display:"flex",gap:12,alignItems:"center",marginBottom:4}}>
-                        <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.segment} · {c.owner}</div></div>
+                        <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.segment} . {c.owner}</div></div>
                         <div style={{textAlign:"right"}}><div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,color:T.accent}}>{fmtK(c.ltv)}</div><div style={{fontSize:9,color:T.muted}}>{c.campaigns} camps.</div></div>
                       </div>
                     ))}
@@ -1987,24 +3034,24 @@ export default function App(){
           )}
 
           {/* --------------------------------------
-              COMISSÕES
+              COMISSOES
           -------------------------------------- */}
           {tab==="comissoes"&&(
             <div>
               {user.role==="admin"&&(
                 <div>
                   <div style={{display:"flex",gap:0,marginBottom:18,borderBottom:`1px solid ${T.border}`}}>
-                    {[["visao","Visão Geral"],["aprovacoes",`Aprovações${allPendingComm.length>0?` (${allPendingComm.length})`:""}`],["config","Configurar"],["historico","Histórico"]].map(([id,l])=>(
+                    {[["visao","Visao Geral"],["aprovacoes",`Aprovacoes${allPendingComm.length>0?` (${allPendingComm.length})`:""}`],["config","Configurar"],["historico","Historico"]].map(([id,l])=>(
                       <div key={id} onClick={()=>setCommAdminTab(id)} style={{padding:"10px 16px",fontSize:11,cursor:"pointer",color:commAdminTab===id?T.accent:T.muted,borderBottom:`2px solid ${commAdminTab===id?T.accent:"transparent"}`,transition:"all 0.15s"}}>{l}</div>
                     ))}
                   </div>
                   {commAdminTab==="visao"&&(
                     <div>
                       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:18}}>
-                        <KCard label="Total aprovado" value={fmt(closings.filter(c=>c.status==="aprovado").reduce((a,c)=>a+c.value,0))} sub="este mês" color={T.accent} icon="-" onClick={()=>setCommAdminTab("historico")} hint="Ver histórico -"/>
-                        <KCard label="Pendente aprovação" value={allPendingComm.length} sub="aguardando" color={T.warn} icon="-" onClick={()=>setCommAdminTab("aprovacoes")} hint="Aprovar agora -"/>
-                        <KCard label="A pagar" value={fmt(closings.filter(c=>c.status==="aprovado"&&!c.pago).reduce((a,c)=>a+c.value,0))} sub="aprovados não pagos" color={T.danger} icon="-" onClick={()=>setCommAdminTab("historico")} hint="Ver a pagar -"/>
-                        <KCard label="Fechamentos" value={closings.length} sub="total do mês" color={T.info} icon="-" onClick={()=>setCommAdminTab("historico")} hint="Ver todos -"/>
+                        <KCard label="Total aprovado" value={fmt(closings.filter(c=>c.status==="aprovado").reduce((a,c)=>a+c.value,0))} sub="este mes" color={T.accent} icon="-" onClick={()=>setCommAdminTab("historico")} hint="Ver historico -"/>
+                        <KCard label="Pendente aprovacao" value={allPendingComm.length} sub="aguardando" color={T.warn} icon="-" onClick={()=>setCommAdminTab("aprovacoes")} hint="Aprovar agora -"/>
+                        <KCard label="A pagar" value={fmt(closings.filter(c=>c.status==="aprovado"&&!c.pago).reduce((a,c)=>a+c.value,0))} sub="aprovados nao pagos" color={T.danger} icon="-" onClick={()=>setCommAdminTab("historico")} hint="Ver a pagar -"/>
+                        <KCard label="Fechamentos" value={closings.length} sub="total do mes" color={T.info} icon="-" onClick={()=>setCommAdminTab("historico")} hint="Ver todos -"/>
                       </div>
                       {["Mariana Costa","Carlos Mendes"].map((name,i)=>{
                         const uc=closings.filter(c=>c.user===name);
@@ -2014,7 +3061,7 @@ export default function App(){
                         return(
                           <div key={i} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16,marginBottom:10,display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
                             <div style={{width:34,height:34,borderRadius:"50%",background:colors[i]+"22",border:`1px solid ${colors[i]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:colors[i],fontWeight:700,flexShrink:0}}>{avs[i]}</div>
-                            <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{name}</div><div style={{fontSize:9,color:T.muted}}>{uc.length} fechamentos · {uc.filter(c=>c.status==="pendente").length} aguardando</div></div>
+                            <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{name}</div><div style={{fontSize:9,color:T.muted}}>{uc.length} fechamentos . {uc.filter(c=>c.status==="pendente").length} aguardando</div></div>
                             {[["aprovado",uA,T.accent],["pago",uP,T.green],["a pagar",uA-uP,T.danger]].map(([l,v,c])=>(
                               <div key={l} style={{textAlign:"center"}}><div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:c}}>{fmt(v)}</div><div style={{fontSize:8,color:T.muted}}>{l}</div></div>
                             ))}
@@ -2029,10 +3076,10 @@ export default function App(){
                         <div style={{display:"flex",flexDirection:"column",gap:10}}>
                           {allPendingComm.map((c,i)=>(
                             <div key={i} style={{background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${T.warn}`,borderRadius:10,padding:"16px 20px",display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
-                              <div style={{flex:1}}><div style={{display:"flex",gap:5,marginBottom:5}}><Badge label={c.type} color={T.purple}/><Badge label={c.project} color={T.info}/></div><div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14}}>{c.partner}</div><div style={{fontSize:10,color:T.muted}}>por {c.user} · {c.date}</div></div>
+                              <div style={{flex:1}}><div style={{display:"flex",gap:5,marginBottom:5}}><Badge label={c.type} color={T.purple}/><Badge label={c.project} color={T.info}/></div><div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14}}>{c.partner}</div><div style={{fontSize:10,color:T.muted}}>por {c.user} . {c.date}</div></div>
                               <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:T.warn}}>{fmt(c.value)}</div>
                               <div style={{display:"flex",gap:8}}>
-                                <button className="btn" onClick={()=>{setClosings(p=>p.map(x=>x.id===c.id?{...x,status:"aprovado"}:x));pushNotif("Comissão aprovada",`${c.partner} · ${fmt(c.value)}`,T.accent);}} style={{padding:"8px 14px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>- Aprovar</button>
+                                <button className="btn" onClick={()=>{setClosings(p=>p.map(x=>x.id===c.id?{...x,status:"aprovado"}:x));pushNotif("Comissao aprovada",`${c.partner} . ${fmt(c.value)}`,T.accent);}} style={{padding:"8px 14px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>- Aprovar</button>
                                 <button className="btn" onClick={()=>setClosings(p=>p.map(x=>x.id===c.id?{...x,status:"reprovado"}:x))} style={{padding:"8px 12px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:7,fontSize:11}}>-</button>
                               </div>
                             </div>
@@ -2063,7 +3110,7 @@ export default function App(){
                         <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{ptypes.map(t=><div key={t.id} style={{padding:"5px 11px",background:T.purpleDim,border:`1px solid ${T.purple}44`,borderRadius:6,fontSize:11,color:T.purple}}>{t.name}</div>)}</div>
                       </div>
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,gridColumn:"1 / -1"}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Tabela de Comissões · Tipo × Projeto</div>
+                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Tabela de Comissoes . Tipo x Projeto</div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,marginBottom:12,padding:"12px",background:T.surface,borderRadius:10,border:`1px solid ${T.border}`}}>
                           {[["Tipo","typeId",ptypes],["Projeto","projectId",projects]].map(([l,k,opts])=>(
                             <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
@@ -2089,7 +3136,7 @@ export default function App(){
                   {commAdminTab==="historico"&&(
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                       <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:8}}>
-                        {["Parceiro","Usuário","Tipo","Projeto","Valor","Status","Pagamento"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
+                        {["Parceiro","Usuario","Tipo","Projeto","Valor","Status","Pagamento"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
                       </div>
                       {closings.map((c,i)=>(
                         <div key={i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1fr 1fr",padding:"11px 16px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
@@ -2110,19 +3157,19 @@ export default function App(){
                 <div>
                   <div style={{background:`linear-gradient(135deg,${T.green}15,${T.green}08)`,border:`1px solid ${T.green}40`,borderRadius:14,padding:"22px 24px",marginBottom:18}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:16}}>
-                      <div><div style={{fontSize:10,color:T.green,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1.5,textTransform:"uppercase",marginBottom:5}}>Abril 2025 · Sua comissão</div><div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:38,color:T.green,lineHeight:1,marginBottom:3}}>{fmt(myTotal)}</div><div style={{fontSize:11,color:T.soft}}>{myApproved.length} fechamentos aprovados</div></div>
-                      <div style={{textAlign:"right"}}><div style={{fontSize:10,color:T.muted,marginBottom:3}}>Meta do mês</div><div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:myTotal>=META_COMM?T.accent:T.warn}}>{fmt(META_COMM)}</div><div style={{fontSize:10,color:myTotal>=META_COMM?T.accent:T.muted,marginTop:3}}>{myTotal>=META_COMM?"- Meta atingida!":`faltam ${fmt(META_COMM-myTotal)}`}</div></div>
+                      <div><div style={{fontSize:10,color:T.green,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1.5,textTransform:"uppercase",marginBottom:5}}>Abril 2025 . Sua comissao</div><div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:38,color:T.green,lineHeight:1,marginBottom:3}}>{fmt(myTotal)}</div><div style={{fontSize:11,color:T.soft}}>{myApproved.length} fechamentos aprovados</div></div>
+                      <div style={{textAlign:"right"}}><div style={{fontSize:10,color:T.muted,marginBottom:3}}>Meta do mes</div><div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:myTotal>=META_COMM?T.accent:T.warn}}>{fmt(META_COMM)}</div><div style={{fontSize:10,color:myTotal>=META_COMM?T.accent:T.muted,marginTop:3}}>{myTotal>=META_COMM?"- Meta atingida!":`faltam ${fmt(META_COMM-myTotal)}`}</div></div>
                     </div>
                     <PBar pct={(myTotal/META_COMM)*100} color={myTotal>=META_COMM?T.accent:T.warn} h={10}/>
                     <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}><span style={{fontSize:9,color:T.muted}}>{fmt(0)}</span><span style={{fontSize:9,color:T.soft}}>{Math.round((myTotal/META_COMM)*100)}%</span><span style={{fontSize:9,color:T.muted}}>{fmt(META_COMM)}</span></div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:16}}>
-                    <KCard label="Fechamentos" value={myClosings.length} sub="este mês" color={T.info} icon="-"/>
+                    <KCard label="Fechamentos" value={myClosings.length} sub="este mes" color={T.info} icon="-"/>
                     <KCard label="A receber" value={fmt(myPendingPay)} sub="aprovados" color={T.accent} icon="-"/>
-                    <KCard label="Já recebido" value={fmt(myPago)} sub="pago" color={T.green} icon="-"/>
+                    <KCard label="Ja recebido" value={fmt(myPago)} sub="pago" color={T.green} icon="-"/>
                   </div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:14}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:10}}>Comissões vigentes</div>
+                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:10}}>Comissoes vigentes</div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
                       {commTable.filter(c=>projects.find(p=>p.id===c.projectId)?.active).map((c,i)=>(
                         <div key={i} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -2140,13 +3187,13 @@ export default function App(){
                     {showNewClosing&&(
                       <div className="fade">
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
-                          <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Nome do parceiro</div><input value={newClosing.partner} onChange={e=>setNewClosing(p=>({...p,partner:e.target.value}))} placeholder="Ex: Bar do Alemão" style={inpS}/></div>
+                          <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Nome do parceiro</div><input value={newClosing.partner} onChange={e=>setNewClosing(p=>({...p,partner:e.target.value}))} placeholder="Ex: Bar do Alemao" style={inpS}/></div>
                           <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Tipo</div><select value={newClosing.typeId} onChange={e=>setNewClosing(p=>({...p,typeId:e.target.value}))} style={selS}><option value="">Selecione...</option>{ptypes.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
                           <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Projeto</div><select value={newClosing.projectId} onChange={e=>setNewClosing(p=>({...p,projectId:e.target.value}))} style={selS}><option value="">Selecione...</option>{projects.filter(p=>p.active).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
                         </div>
-                        {newClosing.typeId&&newClosing.projectId&&(()=>{const comm=commTable.find(c=>c.typeId===Number(newClosing.typeId)&&c.projectId===Number(newClosing.projectId));return comm?(<div style={{padding:"10px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,borderRadius:8,marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:11,color:T.soft}}>Comissão por este fechamento:</span><span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:17,color:T.accent}}>{fmt(comm.value)}</span></div>):(<div style={{padding:"10px 14px",background:T.warnDim,border:`1px solid ${T.warn}44`,borderRadius:8,marginBottom:10,fontSize:11,color:T.warn}}>-- Sem comissão configurada.</div>);})()}
+                        {newClosing.typeId&&newClosing.projectId&&(()=>{const comm=commTable.find(c=>c.typeId===Number(newClosing.typeId)&&c.projectId===Number(newClosing.projectId));return comm?(<div style={{padding:"10px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,borderRadius:8,marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:11,color:T.soft}}>Comissao por este fechamento:</span><span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:17,color:T.accent}}>{fmt(comm.value)}</span></div>):(<div style={{padding:"10px 14px",background:T.warnDim,border:`1px solid ${T.warn}44`,borderRadius:8,marginBottom:10,fontSize:11,color:T.warn}}>-- Sem comissao configurada.</div>);})()}
                         <div style={{display:"flex",gap:8}}>
-                          <button className="btn" onClick={submitClosing} style={{padding:"9px 16px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>Enviar para aprovação</button>
+                          <button className="btn" onClick={submitClosing} style={{padding:"9px 16px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>Enviar para aprovacao</button>
                           <button className="btn" onClick={()=>setShowNewClosing(false)} style={{padding:"9px 12px",background:T.card,border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:11}}>Cancelar</button>
                         </div>
                       </div>
@@ -2156,7 +3203,7 @@ export default function App(){
                         <div style={{fontSize:9,color:T.muted,marginBottom:6,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Meus fechamentos</div>
                         {myClosings.map((c,i)=>(
                           <div key={i} style={{display:"flex",gap:10,alignItems:"center",padding:"9px 0",borderBottom:`1px solid ${T.border}`,flexWrap:"wrap"}}>
-                            <div style={{flex:1}}><div style={{fontSize:11,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{c.partner}</div><div style={{fontSize:9,color:T.muted}}>{c.type} · {c.project}</div></div>
+                            <div style={{flex:1}}><div style={{fontSize:11,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{c.partner}</div><div style={{fontSize:9,color:T.muted}}>{c.type} . {c.project}</div></div>
                             <Badge label={c.status} color={c.status==="aprovado"?T.accent:c.status==="pendente"?T.warn:T.danger}/>
                             <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmt(c.value)}</div>
                             <div style={{fontSize:9,color:c.pago?T.green:T.muted}}>{c.pago?"- Pago":"-"}</div>
@@ -2176,13 +3223,13 @@ export default function App(){
           {tab==="parceiros"&&(
             <div style={{maxWidth:620}}>
               <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18,marginBottom:16}}>
-                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,marginBottom:5}}>Automação de Prospecção</div>
-                <div style={{fontSize:11,color:T.muted,lineHeight:1.7,fontFamily:"'JetBrains Mono',monospace"}}>IA gera CSV com @perfis - suba aqui - disparo automático DM + WhatsApp.</div>
+                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,marginBottom:5}}>Automacao de Prospeccao</div>
+                <div style={{fontSize:11,color:T.muted,lineHeight:1.7,fontFamily:"'JetBrains Mono',monospace"}}>IA gera CSV com @perfis - suba aqui - disparo automatico DM + WhatsApp.</div>
               </div>
               <div style={{border:`2px dashed ${T.border}`,borderRadius:12,padding:"32px",textAlign:"center",cursor:"pointer",marginBottom:16}}>
                 <div style={{fontSize:26,marginBottom:7}}>-</div>
                 <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,marginBottom:3}}>Subir CSV de leads</div>
-                <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>instagram_handle · nome · cidade</div>
+                <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>instagram_handle . nome . cidade</div>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                 {[
@@ -2221,7 +3268,7 @@ export default function App(){
                           <Badge label={`Score ${selPartner.score}`} color={selPartner.score>80?T.accent:selPartner.score>60?T.warn:T.danger}/>
                         </div>
                       </div>
-                      <div onClick={()=>setSelPartner(null)} style={{cursor:"pointer",color:T.muted,fontSize:20}}>×</div>
+                      <div onClick={()=>setSelPartner(null)} style={{cursor:"pointer",color:T.muted,fontSize:20}}>x</div>
                     </div>
                     <div style={{padding:"18px 22px"}}>
                       {/* Score breakdown */}
@@ -2229,16 +3276,16 @@ export default function App(){
                         <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Score Detalhado</div>
                         <div style={{display:"flex",flexDirection:"column",gap:8}}>
                           {[
-                            {l:"Volume de entregas",v:Math.min(Math.round(selPartner.deliveries/500*30),30),max:30,hint:`${selPartner.deliveries} entregas/mês`},
+                            {l:"Volume de entregas",v:Math.min(Math.round(selPartner.deliveries/500*30),30),max:30,hint:`${selPartner.deliveries} entregas/mes`},
                             {l:"Campanhas participadas",v:selPartner.campanhas*15,max:45,hint:`${selPartner.campanhas} campanha${selPartner.campanhas!==1?"s":""}`},
                             {l:"Tempo na base",v:selPartner.mesesNaBase*2,max:24,hint:`${selPartner.mesesNaBase} meses`},
                             {l:"Contrato assinado",v:selPartner.contrato.status==="assinado"?20:0,max:20,hint:selPartner.contrato.status==="assinado"?"- Assinado":"Sem contrato"},
-                            {l:"Engajamento",v:selPartner.engajamento*5,max:15,hint:`Nível ${selPartner.engajamento}/3`},
+                            {l:"Engajamento",v:selPartner.engajamento*5,max:15,hint:`Nivel ${selPartner.engajamento}/3`},
                           ].map((s,i)=>(
                             <div key={i}>
                               <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                                 <span style={{fontSize:11,color:T.soft}}>{s.l}</span>
-                                <span style={{fontSize:11,color:T.text,fontFamily:"'JetBrains Mono',monospace"}}>{s.v}/{s.max} · <span style={{color:T.muted,fontSize:9}}>{s.hint}</span></span>
+                                <span style={{fontSize:11,color:T.text,fontFamily:"'JetBrains Mono',monospace"}}>{s.v}/{s.max} . <span style={{color:T.muted,fontSize:9}}>{s.hint}</span></span>
                               </div>
                               <PBar pct={(s.v/s.max)*100} color={s.v===s.max?T.accent:T.info} h={5}/>
                             </div>
@@ -2249,10 +3296,10 @@ export default function App(){
                           <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:selPartner.score>80?T.accent:selPartner.score>60?T.warn:T.danger}}>{selPartner.score}/100</span>
                         </div>
                       </div>
-                      {/* Endereço */}
+                      {/* Endereco */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:16,marginBottom:14}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Endereço</div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Endereco</div>
                           <button className="btn" onClick={()=>{
                             if(!selPartner.endereco?.rua)return;
                             const addr=`${selPartner.endereco.rua} ${selPartner.endereco.numero}, ${selPartner.endereco.bairro}, ${selPartner.city}`;
@@ -2276,7 +3323,7 @@ export default function App(){
                             <input value={selPartner.endereco?.rua||""} onChange={e=>setSelPartner(p=>({...p,endereco:{...p.endereco,rua:e.target.value}}))} placeholder="Ex: Rua Augusta" style={inpS}/>
                           </div>
                           <div>
-                            <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Nº</div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>No</div>
                             <input value={selPartner.endereco?.numero||""} onChange={e=>setSelPartner(p=>({...p,endereco:{...p.endereco,numero:e.target.value}}))} placeholder="123" style={inpS}/>
                           </div>
                         </div>
@@ -2295,7 +3342,7 @@ export default function App(){
                             - Coordenadas: {selPartner.endereco.lat.toFixed(4)}, {selPartner.endereco.lng.toFixed(4)}
                           </div>
                         )}
-                        <button className="btn" onClick={()=>setBasePartners(prev=>prev.map(p=>p.id===selPartner.id?{...p,endereco:selPartner.endereco}:p))} style={{width:"100%",marginTop:10,padding:"8px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>- Salvar endereço</button>
+                        <button className="btn" onClick={()=>setBasePartners(prev=>prev.map(p=>p.id===selPartner.id?{...p,endereco:selPartner.endereco}:p))} style={{width:"100%",marginTop:10,padding:"8px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>- Salvar endereco</button>
                       </div>
 
                       {/* Contract */}
@@ -2335,9 +3382,9 @@ export default function App(){
               {/* KPIs */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:18}}>
                 <KCard label="Total na base" value={basePartners.length} sub="parceiros cadastrados" color={T.accent} icon="-" onClick={()=>setBaseTab("parceiros")} hint="Ver todos -"/>
-                <KCard label="Score médio" value={Math.round(basePartners.reduce((a,p)=>a+p.score,0)/basePartners.length)} sub="da base ativa" color={T.purple} icon="-" onClick={()=>setBaseTab("score")} hint="Ver ranking -"/>
+                <KCard label="Score medio" value={Math.round(basePartners.reduce((a,p)=>a+p.score,0)/basePartners.length)} sub="da base ativa" color={T.purple} icon="-" onClick={()=>setBaseTab("score")} hint="Ver ranking -"/>
                 <KCard label="Contratos pendentes" value={basePartners.filter(p=>["pendente","sem contrato"].includes(p.contrato.status)).length} sub="aguardando assinatura" color={T.warn} icon="-" onClick={()=>setBaseTab("contratos")} hint="Ver contratos -"/>
-                <KCard label="Expirando em breve" value={basePartners.filter(p=>p.contrato.status==="expirando").length} sub="renovar até 30 dias" color={T.danger} icon="-" onClick={()=>setBaseTab("contratos")} hint="Renovar -"/>
+                <KCard label="Expirando em breve" value={basePartners.filter(p=>p.contrato.status==="expirando").length} sub="renovar ate 30 dias" color={T.danger} icon="-" onClick={()=>setBaseTab("contratos")} hint="Renovar -"/>
               </div>
 
               {/* Sub tabs */}
@@ -2365,7 +3412,7 @@ export default function App(){
                   </div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                     <div style={{display:"grid",gridTemplateColumns:"2fr 1.1fr 0.9fr 0.7fr 0.7fr 0.9fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:8}}>
-                      {["Estabelecimento","Cidade","Categoria","Entrega/mês","Score","Contrato","Status"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"'JetBrains Mono',monospace"}}>{h}</div>)}
+                      {["Estabelecimento","Cidade","Categoria","Entrega/mes","Score","Contrato","Status"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"'JetBrains Mono',monospace"}}>{h}</div>)}
                     </div>
                     {basePartners.filter(p=>{
                       const ms=baseFilter==="todos"||p.status===baseFilter;
@@ -2379,7 +3426,7 @@ export default function App(){
                           <div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{p.name}</div>
                           <div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{p.handle}</div>
                         </div>
-                        <div style={{fontSize:10,color:T.soft}}>{p.city} · {p.state}</div>
+                        <div style={{fontSize:10,color:T.soft}}>{p.city} . {p.state}</div>
                         <div style={{fontSize:10,color:T.soft}}>{p.category}</div>
                         <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14}}>{p.deliveries}</div>
                         <div>
@@ -2398,9 +3445,9 @@ export default function App(){
               {baseTab==="score"&&(
                 <div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20,marginBottom:14}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:6}}>Como o score é calculado</div>
+                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:6}}>Como o score e calculado</div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8,marginTop:12}}>
-                      {[{l:"Entregas/mês",pts:"até 30pts",icon:"--"},{l:"Campanhas",pts:"15pts cada",icon:"-"},{l:"Tempo na base",pts:"2pts/mês",icon:"-"},{l:"Contrato assinado",pts:"+20pts",icon:"-"},{l:"Engajamento",pts:"até 15pts",icon:"-"}].map((s,i)=>(
+                      {[{l:"Entregas/mes",pts:"ate 30pts",icon:"--"},{l:"Campanhas",pts:"15pts cada",icon:"-"},{l:"Tempo na base",pts:"2pts/mes",icon:"-"},{l:"Contrato assinado",pts:"+20pts",icon:"-"},{l:"Engajamento",pts:"ate 15pts",icon:"-"}].map((s,i)=>(
                         <div key={i} style={{background:T.surface,borderRadius:8,padding:"10px 12px",textAlign:"center",border:`1px solid ${T.border}`}}>
                           <div style={{fontSize:18,marginBottom:4}}>{s.icon}</div>
                           <div style={{fontSize:10,fontWeight:600,marginBottom:2}}>{s.l}</div>
@@ -2437,7 +3484,7 @@ export default function App(){
               {/* -- CONTRATOS -- */}
               {baseTab==="contratos"&&(
                 <div>
-                  {/* Summary cards - clicáveis para filtrar */}
+                  {/* Summary cards - clicaveis para filtrar */}
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
                     {[
                       {l:"Assinados",k:"assinado",v:basePartners.filter(p=>p.contrato.status==="assinado").length,c:T.accent},
@@ -2452,7 +3499,7 @@ export default function App(){
                           style={{background:isActive?k.c+"22":T.card,border:`2px solid ${isActive?k.c:k.c+"33"}`,borderRadius:10,padding:"14px 16px",cursor:"pointer",transition:"all 0.15s"}}>
                           <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:k.c}}>{k.v}</div>
                           <div style={{fontSize:10,color:isActive?k.c:T.muted,fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>{k.l}</div>
-                          {isActive&&<div style={{fontSize:8,color:k.c,marginTop:4,fontFamily:"'JetBrains Mono',monospace"}}>Filtrando - · clique para limpar</div>}
+                          {isActive&&<div style={{fontSize:8,color:k.c,marginTop:4,fontFamily:"'JetBrains Mono',monospace"}}>Filtrando - . clique para limpar</div>}
                         </div>
                       );
                     })}
@@ -2461,12 +3508,12 @@ export default function App(){
                   {/* Priority: needs action */}
                   {basePartners.filter(p=>["expirando","sem contrato"].includes(p.contrato.status)&&p.status==="ativo").length>0&&(
                     <div style={{background:T.card,border:`1px solid ${T.danger}44`,borderLeft:`3px solid ${T.danger}`,borderRadius:12,padding:16,marginBottom:14}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.danger,marginBottom:10}}>- Ação necessária</div>
+                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.danger,marginBottom:10}}>- Acao necessaria</div>
                       {basePartners.filter(p=>["expirando","sem contrato"].includes(p.contrato.status)&&p.status==="ativo").map((p,i)=>(
                         <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}`,gap:10,flexWrap:"wrap"}}>
                           <div>
                             <div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{p.name}</div>
-                            <div style={{fontSize:9,color:T.muted}}>{p.category} · {p.city}</div>
+                            <div style={{fontSize:9,color:T.muted}}>{p.category} . {p.city}</div>
                           </div>
                           <Badge label={p.contrato.status} color={CONTRATO_COLOR[p.contrato.status]||T.muted}/>
                           <button className="btn" onClick={()=>enviarContrato(p.id)} style={{padding:"6px 12px",background:`linear-gradient(135deg,${T.warn},${T.warn}AA)`,color:"#000",borderRadius:6,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10}}>- Enviar</button>
@@ -2497,7 +3544,7 @@ export default function App(){
                       )}
                     </div>
                     <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:8}}>
-                      {["Parceiro","Status","Enviado em","Assinado em","Expira em","Ação"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"'JetBrains Mono',monospace"}}>{h}</div>)}
+                      {["Parceiro","Status","Enviado em","Assinado em","Expira em","Acao"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"'JetBrains Mono',monospace"}}>{h}</div>)}
                     </div>
                     {basePartners.filter(p=>contratoTableFilter==="todos"||p.contrato.status===contratoTableFilter).map((p,i)=>(
                       <div key={i} className="hr" onClick={()=>setSelPartner(p)} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
@@ -2554,7 +3601,7 @@ export default function App(){
                   </div>
                   {SUPPLIERS.map((s,i)=>(<div key={i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 0.8fr 0.6fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
                     <div><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{s.name}</div><div style={{fontSize:9,color:T.muted}}>{s.email}</div></div>
-                    <Badge label={s.type==="grafica"?"Gráfica":"Logística"} color={s.type==="grafica"?T.purple:T.warn}/>
+                    <Badge label={s.type==="grafica"?"Grafica":"Logistica"} color={s.type==="grafica"?T.purple:T.warn}/>
                     <div style={{fontSize:11,color:T.soft}}>{s.contact}</div>
                     <div style={{fontSize:10,color:T.soft,fontFamily:"'JetBrains Mono',monospace"}}>{s.leadTime}</div>
                     <div style={{fontSize:11}}>{"-".repeat(s.rating)}<span style={{color:T.border}}>{"-".repeat(5-s.rating)}</span></div>
@@ -2565,16 +3612,16 @@ export default function App(){
           )}
 
           {/* --------------------------------------
-              USUÁRIOS
+              USUARIOS
           -------------------------------------- */}
           {tab==="usuarios"&&user.role==="admin"&&(
             <div>
               <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
-                <button className="btn" onClick={()=>setShowNewUser(true)} style={{padding:"8px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>+ Novo Usuário</button>
+                <button className="btn" onClick={()=>setShowNewUser(true)} style={{padding:"8px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>+ Novo Usuario</button>
               </div>
               {showNewUser&&(
                 <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18,marginBottom:12}} className="fade">
-                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.accent,marginBottom:12}}>Novo Usuário</div>
+                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.accent,marginBottom:12}}>Novo Usuario</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
                     {[["Nome","name","text"],["E-mail","email","email"]].map(([l,k,t])=>(<div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{l}</div><input type={t} value={newUser[k]} onChange={e=>setNewUser(p=>({...p,[k]:e.target.value}))} style={inpS}/></div>))}
                     <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Perfil</div><select value={newUser.role} onChange={e=>setNewUser(p=>({...p,role:e.target.value}))} style={selS}>{Object.entries(ROLE_LABELS).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
@@ -2584,7 +3631,7 @@ export default function App(){
               )}
               <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                 <div style={{display:"grid",gridTemplateColumns:"2fr 2fr 1fr 1fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
-                  {["Usuário","E-mail","Perfil","Último acesso","Status"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
+                  {["Usuario","E-mail","Perfil","Ultimo acesso","Status"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
                 </div>
                 {users.map((u,i)=>(
                   <div key={i} style={{display:"grid",gridTemplateColumns:"2fr 2fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center",opacity:u.active?1:0.5}}>
