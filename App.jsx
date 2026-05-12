@@ -1196,6 +1196,8 @@ export default function App(){
   const[relSelecionados,setRelSelecionados]=useState([]);
   const[relTitulo,setRelTitulo]=useState("Relatório Ecodely");
   const[relPeriodo,setRelPeriodo]=useState(new Date().toLocaleDateString("pt-BR",{month:"long",year:"numeric"}));
+  const[relDateStart,setRelDateStart]=useState("");
+  const[relDateEnd,setRelDateEnd]=useState("");
   const[lancamentos,setLancamentos]=useState(LANCAMENTOS_INIT);
   const[custosFix,setCustosFix]=useState(CUSTOS_FIXOS_INIT);
   const[cartoes,setCartoes]=useState(CARTOES_INIT);
@@ -4409,7 +4411,56 @@ export default function App(){
           -------------------------------------- */}
           {tab==="relatorios"&&(()=>{
             const isAdmin=user.role==="admin";
-            // Blocos disponíveis por setor
+
+            // --- FILTRO DE PERÍODO ---
+            const parseDataLanc=s=>{if(!s)return null;const[d,m,y]=s.split("/");return y?new Date(Number(y),Number(m)-1,Number(d)):null;};
+            const hj=new Date();
+            const aplicarFiltro=(tipo)=>{
+              const m=hj.getMonth(),y=hj.getFullYear();
+              if(tipo==="mes"){const s=new Date(y,m,1),e=new Date(y,m+1,0);setRelDateStart(s.toISOString().slice(0,10));setRelDateEnd(e.toISOString().slice(0,10));setRelPeriodo(s.toLocaleDateString("pt-BR",{month:"long",year:"numeric"}));}
+              else if(tipo==="mes_ant"){const s=new Date(y,m-1,1),e=new Date(y,m,0);setRelDateStart(s.toISOString().slice(0,10));setRelDateEnd(e.toISOString().slice(0,10));setRelPeriodo(s.toLocaleDateString("pt-BR",{month:"long",year:"numeric"}));}
+              else if(tipo==="trim"){const s=new Date(y,Math.floor(m/3)*3,1),e=new Date(y,Math.floor(m/3)*3+3,0);setRelDateStart(s.toISOString().slice(0,10));setRelDateEnd(e.toISOString().slice(0,10));setRelPeriodo(`Q${Math.floor(m/3)+1} ${y}`);}
+              else if(tipo==="ano"){setRelDateStart(`${y}-01-01`);setRelDateEnd(`${y}-12-31`);setRelPeriodo(`Ano ${y}`);}
+              else{setRelDateStart("");setRelDateEnd("");setRelPeriodo("Todo o período");}
+            };
+            const dStart=relDateStart?new Date(relDateStart):null;
+            const dEnd=relDateEnd?new Date(relDateEnd+"T23:59:59"):null;
+            const lancFilt=lancamentos.filter(l=>{if(!dStart&&!dEnd)return true;const d=parseDataLanc(l.data);if(!d)return true;return(!dStart||d>=dStart)&&(!dEnd||d<=dEnd);});
+
+            // --- GERADOR PDF ---
+            const gerarPDF=()=>{
+              const w=window.open("","_blank");
+              if(!w)return;
+              const blocos=relSelecionados.map(id=>BLOCOS.find(b=>b.id===id)).filter(Boolean);
+              const fmt=v=>v?.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})||"R$0";
+              const receitaTotal=lancFilt.reduce((a,l)=>a+(l.entrada||0),0);
+              const despesaTotal=lancFilt.reduce((a,l)=>a+(l.saida||0),0);
+              const resultado=receitaTotal-despesaTotal;
+              const CORES={accent:"#00E5A0",danger:"#FF4D6A",info:"#3D9EFF",warn:"#F5A623",purple:"#9B7FFF",pink:"#F472B6"};
+              const barH=(label,value,max,color)=>`<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:11px">${label}</span><span style="font-size:11px;font-weight:700;color:${color}">${value}</span></div><div style="height:6px;background:#f0f0f0;border-radius:3px"><div style="height:100%;width:${max>0?Math.min(100,Math.round((typeof value==="number"?value:0)/max*100)):0}%;background:${color};border-radius:3px"></div></div></div>`;
+              const kpiH=(label,value,color)=>`<div style="background:#f8fafb;border-radius:10px;padding:12px;text-align:center;border:1px solid #eee"><div style="font-size:20px;font-weight:800;color:${color};font-family:sans-serif">${value}</div><div style="font-size:9px;color:#888;margin-top:2px">${label}</div></div>`;
+              const renderB=(b)=>{
+                if(b.id==="fat_mensal")return`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${fatMensais.slice(-8).map(f=>`<div style="text-align:center;background:#f8fafb;border-radius:6px;padding:8px"><div style="font-size:13px;font-weight:800;color:#00E5A0">${(f.fat/1000).toFixed(0)}k</div><div style="font-size:8px;color:#999">${f.mes}</div></div>`).join("")}</div>`;
+                if(b.id==="dre")return`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">${kpiH("Receita",fmt(receitaTotal),"#00E5A0")}${kpiH("Despesas",fmt(despesaTotal),"#FF4D6A")}${kpiH("Resultado",fmt(resultado),resultado>=0?"#00E5A0":"#FF4D6A")}</div>`;
+                if(b.id==="saldos")return`<div>${contas.map(c=>barH(c.banco,fmt(c.saldo),contas.reduce((a,x)=>a+x.saldo,0),c.cor||"#3D9EFF")).join("")}<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid #eee"><strong>Total</strong><strong style="color:#00E5A0">${fmt(contas.reduce((a,c)=>a+c.saldo,0))}</strong></div></div>`;
+                if(b.id==="custo_pessoal"){const itens=custosFix.filter(c=>c.categoria==="Salario"||c.categoria==="Pro-Labore");const tot=itens.reduce((a,c)=>a+c.valor,0);return`<div>${itens.map(c=>barH(c.descricao,fmt(c.valor),tot,c.categoria==="Pro-Labore"?"#00E5A0":"#F472B6")).join("")}<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid #eee"><strong>Total pessoal</strong><strong style="color:#FF4D6A">${fmt(tot)}</strong></div></div>`;}
+                if(b.id==="desp_categoria"){const cats=Object.entries(lancFilt.filter(l=>l.saida>0).reduce((acc,l)=>{const cat=l.categoria||"Outros";acc[cat]=(acc[cat]||0)+(l.saida||0);return acc;},{})).sort((a,b)=>b[1]-a[1]).slice(0,6);const tot=cats.reduce((a,[,v])=>a+v,0);const cores=["#F5A623","#FF4D6A","#9B7FFF","#3D9EFF","#F472B6","#00E5A0"];return`<div>${cats.map(([cat,v],i)=>barH(cat,fmt(v),tot,cores[i])).join("")}</div>`;}
+                if(b.id==="pipeline_etapas")return`<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px">${PIPE_STAGES.map(s=>{const v=prospects.filter(p=>p.stage===s.id).reduce((a,p)=>a+(p.value||0),0);return`<div style="text-align:center;background:#f8fafb;border-radius:6px;padding:8px"><div style="font-size:12px;font-weight:800;color:${s.color}">${(v/1000).toFixed(0)}k</div><div style="font-size:8px;color:#999">${s.label}</div></div>`;}).join("")}</div>`;
+                if(b.id==="meta_vs_realizado")return`<div>${users.filter(u=>["comercial","admin"].includes(u.role)&&u.active).map(u=>{const r=prospects.filter(p=>p.owner===u.name).reduce((a,p)=>a+(p.value||0),0);const m=u.meta||0;const pct=m>0?Math.min(Math.round(r/m*100),100):0;return barH(u.name+" ("+pct+"%)",fmt(r),m||r,pct>=100?"#00E5A0":"#3D9EFF");}).join("")}</div>`;
+                if(b.id==="camps_grafica"){const data=Object.entries(camps.reduce((acc,c)=>{const g=c.graficaFornecedor||"Não definido";acc[g]=(acc[g]||0)+1;return acc;},{}));const tot=data.reduce((a,[,v])=>a+v,0);return`<div>${data.map(([g,n])=>barH(g,n+" camp.",tot,"#9B7FFF")).join("")}</div>`;}
+                if(b.id==="parceiros_status")return`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${Object.entries(basePartners.reduce((acc,p)=>{acc[p.status]=(acc[p.status]||0)+1;return acc;},{})).map(([s,n])=>`<div style="background:#f8fafb;border-radius:6px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:#00E5A0">${n}</div><div style="font-size:9px;color:#888">${s}</div></div>`).join("")}</div>`;
+                if(b.id==="top_parceiros")return`<div>${[...basePartners].sort((a,c)=>c.score-a.score).slice(0,8).map((p,i)=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0f0f0"><div><strong style="font-size:11px">${i+1}. ${p.name}</strong><span style="font-size:9px;color:#999"> · ${p.category}</span></div><span style="font-size:12px;font-weight:700;color:${p.score>=80?"#00E5A0":"#F5A623"}">${p.score}</span></div>`).join("")}</div>`;
+                if(b.id==="prazos"){const pr=camps.filter(c=>c.stage<5).flatMap(c=>[c.graficaPrazo?{camp:c.name,tipo:"Gráfica",prazo:c.graficaPrazo,dias:Math.ceil((new Date(c.graficaPrazo.includes("-")?c.graficaPrazo:c.graficaPrazo.split("/").reverse().join("-"))-hj)/86400000)}:null,c.logisticaPrazo?{camp:c.name,tipo:"Logística",prazo:c.logisticaPrazo,dias:Math.ceil((new Date(c.logisticaPrazo.includes("-")?c.logisticaPrazo:c.logisticaPrazo.split("/").reverse().join("-"))-hj)/86400000)}:null]).filter(Boolean).sort((a,b)=>a.dias-b.dias);return pr.length===0?"<p style=\'color:#999;font-size:11px\'>Nenhum prazo cadastrado</p>":`<div>${pr.map(p=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0"><div><strong style="font-size:11px">${p.camp}</strong><span style="font-size:9px;color:#999"> · ${p.tipo}</span></div><span style="font-size:11px;font-weight:700;color:${p.dias<=0?"#FF4D6A":p.dias<=7?"#F5A623":"#888"}">${p.dias<=0?"VENCIDO":p.dias+"d"}</span></div>`).join("")}</div>`;}
+                if(b.id==="impactos_canal"){const d=[{l:"Offline",v:camps.reduce((a,c)=>a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3),0)},{l:"Stories",v:camps.flatMap(c=>c.impactos?.stories||[]).reduce((a,s)=>a+Number(s.impressoes),0)},{l:"Influencer",v:camps.flatMap(c=>c.impactos?.influencer||[]).reduce((a,s)=>a+Number(s.alcance),0)}];const tot=d.reduce((a,x)=>a+x.v,0);const cores=["#00E5A0","#E1306C","#F5A623"];return`<div>${d.map((x,i)=>barH(x.l,x.v.toLocaleString("pt-BR"),tot,cores[i])).join("")}</div>`;}
+                if(b.id==="perf_campanhas")return`<div>${camps.filter(c=>c.sacolas>0).slice(0,6).map(c=>{const imp=c.impactos||{};const total=Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3)+(imp.stories||[]).reduce((a,s)=>a+Number(s.impressoes),0)+(imp.influencer||[]).reduce((a,s)=>a+Number(s.alcance),0);return barH(c.name.slice(0,30),total.toLocaleString("pt-BR"),camps.reduce((mx,x)=>{const t=Math.round((x.sacolasDistribuidas||x.sacolas||0)*3.3);return t>mx?t:mx;},0),"#3D9EFF");}).join("")}</div>`;
+                if(b.id==="conversao")return`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${users.filter(u=>["comercial","admin"].includes(u.role)&&u.active).map(u=>{const meus=prospects.filter(p=>p.owner===u.name);const conv=meus.length>0?Math.round(meus.filter(p=>p.stage==="fechado").length/meus.length*100):0;return kpiH(u.name.split(" ")[0],conv+"%",conv>=60?"#00E5A0":conv>=30?"#3D9EFF":"#FF4D6A");}).join("")}</div>`;
+                return`<p style="color:#999;font-size:11px">Dados do período selecionado</p>`;
+              };
+              const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${relTitulo}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif;background:#fff;color:#1a1a2e}@page{margin:15mm;size:A4}@media print{.no-print{display:none!important};body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}.page{max-width:840px;margin:0 auto;padding:24px}.header{background:linear-gradient(135deg,#00E5A0 0%,#00B87A 100%);border-radius:16px;padding:28px 32px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start}.logo-area .brand{font-size:9px;letter-spacing:4px;text-transform:uppercase;color:rgba(0,0,0,0.5);margin-bottom:6px}.logo-area .title{font-size:28px;font-weight:900;color:#000;margin-bottom:4px;letter-spacing:-0.5px}.logo-area .sub{font-size:12px;color:rgba(0,0,0,0.6)}.meta-area{text-align:right}.meta-area .user{font-size:13px;font-weight:700;color:#000}.meta-area .role{font-size:10px;color:rgba(0,0,0,0.55)}.meta-area .badge{display:inline-block;margin-top:8px;font-size:9px;background:rgba(0,0,0,0.12);color:#000;border-radius:20px;padding:3px 12px;font-weight:600}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}.card{background:#fff;border:1.5px solid #f0f0f0;border-radius:12px;padding:18px 20px;break-inside:avoid;box-shadow:0 1px 4px rgba(0,0,0,0.04)}.card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#555;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #f5f5f5}.footer{text-align:center;margin-top:28px;padding-top:16px;border-top:1px solid #f0f0f0;font-size:9px;color:#bbb;letter-spacing:0.5px}.divider{display:flex;align-items:center;gap:8px;margin-bottom:14px}.divider-line{flex:1;height:1px;background:#f0f0f0}.divider-text{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:2px}</style></head><body><div class="page"><div class="header"><div class="logo-area"><div class="brand">Ecodely · Mídia In-Home · Sistema de Gestão</div><div class="title">${relTitulo}</div><div class="sub">${relPeriodo} · Gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</div></div><div class="meta-area"><div class="user">${user.name}</div><div class="role">${ROLE_LABELS[user.role]||user.role}</div><div class="badge">${blocos.length} bloco${blocos.length!==1?"s":""} selecionado${blocos.length!==1?"s":""}</div></div></div><div class="grid">${blocos.map(b=>`<div class="card"><div class="card-title">${b.label}</div>${renderB(b)}</div>`).join("")}</div><div class="footer">ECODELY MÍDIA IN-HOME &nbsp;·&nbsp; ecodely.com.br &nbsp;·&nbsp; Relatório gerado automaticamente &nbsp;·&nbsp; ${new Date().getFullYear()}</div></div><script>setTimeout(()=>window.print(),600);</script></body></html>`;
+              w.document.write(html);w.document.close();
+            };
+
+                        // Blocos disponíveis por setor
             const BLOCOS=[
               // FINANCEIRO
               {id:"fat_mensal",cat:"Financeiro",label:"Faturamento mensal",icon:"-",color:T.accent,roles:["admin","financeiro"],
@@ -4660,14 +4711,33 @@ export default function App(){
                   <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,marginBottom:4}}>Construtor</div>
                   <div style={{fontSize:9,color:T.muted,marginBottom:14}}>Escolha os blocos do relatório</div>
 
-                  {/* Título e período */}
-                  <div style={{marginBottom:12}}>
+                  {/* Título */}
+                  <div style={{marginBottom:10}}>
                     <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Título</div>
                     <input value={relTitulo} onChange={e=>setRelTitulo(e.target.value)} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/>
                   </div>
-                  <div style={{marginBottom:16}}>
-                    <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Período</div>
-                    <input value={relPeriodo} onChange={e=>setRelPeriodo(e.target.value)} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/>
+
+                  {/* Período — seletores rápidos */}
+                  <div style={{marginBottom:14}}>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Período</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}}>
+                      {[["mes","Este mês"],["mes_ant","Mês ant."],["trim","Trimestre"],["ano","Este ano"],["tudo","Tudo"]].map(([tipo,label])=>(
+                        <div key={tipo} onClick={()=>aplicarFiltro(tipo)} style={{padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:9,background:T.surface,border:`1px solid ${T.border}`,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>
+                          {label}
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+                      <div>
+                        <div style={{fontSize:8,color:T.muted,marginBottom:2}}>De</div>
+                        <input type="date" value={relDateStart} onChange={e=>{setRelDateStart(e.target.value);setRelPeriodo("Personalizado");}} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 6px",fontSize:10,color:T.text,outline:"none"}}/>
+                      </div>
+                      <div>
+                        <div style={{fontSize:8,color:T.muted,marginBottom:2}}>Até</div>
+                        <input type="date" value={relDateEnd} onChange={e=>{setRelDateEnd(e.target.value);setRelPeriodo("Personalizado");}} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 6px",fontSize:10,color:T.text,outline:"none"}}/>
+                      </div>
+                    </div>
+                    {relPeriodo&&<div style={{fontSize:9,color:T.accent,marginTop:5,fontFamily:"'JetBrains Mono',monospace"}}>↳ {relPeriodo}</div>}
                   </div>
 
                   {/* Blocos por categoria */}
@@ -4688,7 +4758,7 @@ export default function App(){
 
                   {relSelecionados.length>0&&(
                     <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:6}}>
-                      <button onClick={()=>window.print()} style={{width:"100%",padding:"9px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:11,border:"none"}}>
+                      <button onClick={()=>gerarPDF()} style={{width:"100%",padding:"9px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:11,border:"none"}}>
                         Exportar PDF
                       </button>
                       <button onClick={()=>setRelSelecionados([])} style={{width:"100%",padding:"7px",background:"transparent",color:T.muted,borderRadius:8,cursor:"pointer",fontSize:10,border:`1px solid ${T.border}`}}>
