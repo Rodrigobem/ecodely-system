@@ -283,325 +283,303 @@ const toEmbedUrl=(url)=>{
 
 
 // ── PLAN TAB COMPONENT ────────────────────────────────────────────────────
-const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,showPlanWizard,setShowPlanWizard,planejamentos,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,user,basePartners,projects})=>{
-  const parceiros=planAtivo?.parceiros||[];
-  const outrasMidias=planAtivo?.outrasMidias||[];
+// ── WIZ STEP 1 ────────────────────────────────────────────────────────────
+const WizStep1=({visible,planAtivo,setPlanAtivo,planGeoLoading,setPlanGeoLoading,geocodeEndereco,projects})=>{
+  if(!visible)return null;
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.accent,fontSize:12,marginBottom:4}}>Etapa 1 — Cliente e Objetivo</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+        {[["Nome do cliente","clienteNome"],["Segmento","clienteSegmento"],["Público-alvo","publicoAlvo"],["Faixa etária","faixaEtaria"],["Renda estimada","rendaEstimada"],["Prazo da campanha","prazo"]].map(([l,k])=>(
+          <div key={k}>
+            <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+            <input value={planAtivo[k]||""} onChange={e=>setPlanAtivo(p=>({...p,[k]:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+          </div>
+        ))}
+      </div>
+      <div>
+        <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Objetivo da campanha</div>
+        <textarea value={planAtivo.objetivo||""} onChange={e=>setPlanAtivo(p=>({...p,objetivo:e.target.value}))} rows={2} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none",resize:"vertical"}}/>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:8}}>
+        <div>
+          <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Endereço / Região</div>
+          <input value={planAtivo.regiao||""} onChange={e=>setPlanAtivo(p=>({...p,regiao:e.target.value,clienteEndereco:e.target.value}))} placeholder="Ex: Vila Madalena, São Paulo · SP" style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+        </div>
+        <div style={{display:"flex",alignItems:"flex-end"}}>
+          <button onClick={async()=>{setPlanGeoLoading(true);const geo=await geocodeEndereco(planAtivo.regiao||planAtivo.clienteEndereco);if(geo)setPlanAtivo(p=>({...p,clienteLat:geo.lat,clienteLng:geo.lng}));setPlanGeoLoading(false);}} style={{padding:"8px 14px",background:T.purpleDim,border:`1px solid ${T.purple}44`,color:T.purple,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>
+            {planGeoLoading?"Buscando...":"📍 Geocodificar"}
+          </button>
+        </div>
+      </div>
+      {planAtivo.clienteLat&&<div style={{fontSize:9,color:T.accent,fontFamily:"'JetBrains Mono',monospace"}}>✓ {planAtivo.clienteLat.toFixed(4)}, {planAtivo.clienteLng.toFixed(4)}</div>}
+      <div>
+        <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Verba disponível (R$)</div>
+        <input type="number" value={planAtivo.verba||""} onChange={e=>setPlanAtivo(p=>({...p,verba:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+      </div>
+      <div>
+        <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Projeto vinculado</div>
+        <select value={planAtivo.projectId||""} onChange={e=>setPlanAtivo(p=>({...p,projectId:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}>
+          <option value="">Selecione...</option>
+          {(projects||[]).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+      </div>
+    </div>
+  );
+};
 
-  // Step 4 computed values
-  const totalEmb=parceiros.reduce((a,p)=>a+Number(p.embalagens||0),0);
+// ── WIZ STEP 2 ────────────────────────────────────────────────────────────
+const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
+  if(!visible)return null;
+  return(
+    <div>
+      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.purple,fontSize:12,marginBottom:14}}>Etapa 2 — Análise da Região com IA</div>
+      {!planAnalise&&!planLoading&&(
+        <div style={{textAlign:"center",padding:"40px 20px",background:T.surface,borderRadius:12,marginBottom:16}}>
+          <div style={{fontSize:32,marginBottom:12}}>🤖</div>
+          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,marginBottom:8}}>Análise demográfica por IA</div>
+          <div style={{fontSize:11,color:T.muted,marginBottom:20}}>Com base na região e perfil do cliente, a IA gera dados demográficos, perfil de delivery e análise estratégica.</div>
+          <button onClick={()=>gerarAnaliseIA(planAtivo)} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.purple},#7B5FE0)`,color:"#fff",borderRadius:9,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,border:"none"}}>
+            Analisar: {planAtivo.regiao||"(preencha a região)"}
+          </button>
+        </div>
+      )}
+      {planLoading&&<div style={{textAlign:"center",padding:"40px",background:T.surface,borderRadius:12}}><div style={{fontSize:24,marginBottom:10}}>⏳</div><div style={{fontSize:12,color:T.muted}}>Analisando com IA...</div></div>}
+      {planAnalise&&!planLoading&&(
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+            {[["População",planAnalise.populacao,T.accent],["Renda média",planAnalise.rendaMedia,T.info],["Usuários delivery",planAnalise.usuariosDelivery,T.purple],["Ticket médio",planAnalise.ticketMedioDelivery,T.warn],["Classes sociais",planAnalise.classesSociais,T.pink],["Apps líderes",(planAnalise.appsLideres||[]).join(", "),T.soft]].map(([l,v,c])=>(
+              <div key={l} style={{background:T.surface,borderRadius:10,padding:"12px 14px",borderLeft:`3px solid ${c}`}}>
+                <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{l}</div>
+                <div style={{fontSize:12,fontWeight:700,color:c}}>{v||"—"}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{background:T.surface,borderRadius:10,padding:16,borderLeft:`3px solid ${T.purple}`}}>
+            <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Análise estratégica</div>
+            <div style={{fontSize:11,color:T.soft,lineHeight:1.7}}>{planAnalise.analise}</div>
+          </div>
+          <div style={{background:T.surface,borderRadius:10,padding:16,borderLeft:`3px solid ${T.warn}`}}>
+            <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Oportunidade</div>
+            <div style={{fontSize:11,color:T.soft,lineHeight:1.7}}>{planAnalise.oportunidade}</div>
+          </div>
+          <button onClick={()=>gerarAnaliseIA(planAtivo)} style={{alignSelf:"flex-start",padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,cursor:"pointer",fontSize:9}}>Regenerar</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── WIZ STEP 3 ────────────────────────────────────────────────────────────
+const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEndereco})=>{
+  if(!visible)return null;
+  return(
+    <div>
+      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.info,fontSize:12,marginBottom:14}}>Etapa 3 — Parceiros e Mapa de Calor</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+        <div>
+          <div style={{fontSize:10,color:T.muted,marginBottom:8,fontWeight:700}}>Parceiros da base</div>
+          <div style={{maxHeight:180,overflowY:"auto",marginBottom:10}}>
+            {(basePartners||[]).filter(p=>p.status==="ativo").map(p=>{
+              const sel=parc.find(x=>x.id===p.id);
+              return(
+                <div key={p.id} onClick={()=>{if(sel){setPlanAtivo(x=>({...x,parceiros:x.parceiros.filter(y=>y.id!==p.id)}));}else{setPlanAtivo(x=>({...x,parceiros:[...x.parceiros,{id:p.id,nome:p.name,segmento:p.category,endereco:p.address||"",lat:p.lat||null,lng:p.lng||null,embalagens:500,tabela:6,desconto:0,manual:false}]}))}}} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",borderRadius:7,cursor:"pointer",marginBottom:4,background:sel?T.accentDim:T.surface,border:`1px solid ${sel?T.accentBorder:T.border}`}}>
+                  <div><div style={{fontSize:10,fontWeight:sel?700:400,color:sel?T.accent:T.text}}>{p.name}</div><div style={{fontSize:8,color:T.muted}}>{p.category} · {p.city}</div></div>
+                  <div style={{fontSize:10,color:sel?T.accent:T.muted}}>{sel?"✓":"+"}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{borderTop:`1px solid ${T.border}`,paddingTop:10,marginBottom:10}}>
+            <div style={{fontSize:9,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Parceiro manual</div>
+            <div style={{display:"flex",gap:6}}>
+              <input id="plan-pm" placeholder="Nome do estabelecimento" style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:10,color:T.text,outline:"none"}}/>
+              <button onClick={async()=>{const el=document.getElementById("plan-pm");const nm=el?.value?.trim();if(!nm)return;const geo=await geocodeEndereco(nm+", "+(planAtivo.regiao||"Brasil"));setPlanAtivo(p=>({...p,parceiros:[...p.parceiros,{id:Date.now(),nome:nm,segmento:"",endereco:nm,lat:geo?.lat||null,lng:geo?.lng||null,embalagens:500,tabela:6,desconto:0,manual:true}]}));el.value="";}} style={{padding:"6px 10px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,cursor:"pointer",fontSize:9,fontWeight:700}}>+ Add</button>
+            </div>
+          </div>
+          {parc.map((p,i)=>(
+            <div key={p.id||i} style={{background:T.surface,borderRadius:8,padding:"8px 10px",marginBottom:6,border:`1px solid ${T.border}`}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                <span style={{fontSize:10,fontWeight:700}}>{p.nome}</span>
+                <div onClick={()=>setPlanAtivo(x=>({...x,parceiros:x.parceiros.filter((_,j)=>j!==i)}))} style={{cursor:"pointer",color:T.muted,fontSize:14}}>×</div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+                {[["Embalagens","embalagens"],["R$/un","tabela"],["Desc %","desconto"]].map(([l,k])=>(
+                  <div key={k}><div style={{fontSize:7,color:T.muted,marginBottom:2}}>{l}</div>
+                  <input type="number" value={p[k]||""} onChange={e=>setPlanAtivo(x=>({...x,parceiros:x.parceiros.map((q,j)=>j===i?{...q,[k]:e.target.value}:q)}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"4px 6px",fontSize:10,color:T.text,outline:"none"}}/></div>
+                ))}
+              </div>
+            </div>
+          ))}
+          <div style={{marginTop:12,borderTop:`1px solid ${T.border}`,paddingTop:10}}>
+            <div style={{fontSize:9,color:T.purple,marginBottom:6,textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Outras mídias</div>
+            {(planAtivo.outrasMidias||[]).map((m,i)=>(
+              <div key={i} style={{background:T.surface,borderRadius:8,padding:"8px 10px",marginBottom:6,border:`1px solid ${T.border}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                  <input value={m.tipo||""} onChange={e=>setPlanAtivo(p=>({...p,outrasMidias:p.outrasMidias.map((x,j)=>j===i?{...x,tipo:e.target.value}:x)}))} placeholder="Tipo (ex: Push Notification)" style={{flex:1,background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"4px 8px",fontSize:10,color:T.text,outline:"none"}}/>
+                  <div onClick={()=>setPlanAtivo(p=>({...p,outrasMidias:p.outrasMidias.filter((_,j)=>j!==i)}))} style={{cursor:"pointer",color:T.muted,fontSize:14,paddingLeft:8}}>×</div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:4}}>
+                  {[["Descrição","descricao"],["Qtd","qtd"],["Tabela R$","tabela"],["Desc %","desconto"]].map(([l,k])=>(
+                    <div key={k}><div style={{fontSize:7,color:T.muted,marginBottom:2}}>{l}</div>
+                    <input value={m[k]||""} onChange={e=>setPlanAtivo(p=>({...p,outrasMidias:p.outrasMidias.map((x,j)=>j===i?{...x,[k]:e.target.value}:x)}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"4px 6px",fontSize:10,color:T.text,outline:"none"}}/></div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <button onClick={()=>setPlanAtivo(p=>({...p,outrasMidias:[...(p.outrasMidias||[]),{tipo:"",descricao:"",qtd:1,tabela:"",desconto:0}]}))} style={{padding:"6px 12px",background:"transparent",border:`1px solid ${T.purple}44`,color:T.purple,borderRadius:6,cursor:"pointer",fontSize:9,fontWeight:700}}>+ Adicionar mídia</button>
+          </div>
+        </div>
+        <div>
+          <div style={{fontSize:10,color:T.muted,marginBottom:8,fontWeight:700}}>Mapa de cobertura (raio 5km)</div>
+          <MapaPlano clienteLat={planAtivo.clienteLat} clienteLng={planAtivo.clienteLng} clienteNome={planAtivo.clienteNome} parceiros={parc}/>
+          <div style={{display:"flex",gap:12,marginTop:8}}>
+            <div style={{display:"flex",gap:5,alignItems:"center"}}><div style={{width:10,height:10,borderRadius:"50%",background:"#00E5A0"}}/><span style={{fontSize:9,color:T.muted}}>Cliente</span></div>
+            <div style={{display:"flex",gap:5,alignItems:"center"}}><div style={{width:10,height:10,borderRadius:"50%",background:"#3D9EFF"}}/><span style={{fontSize:9,color:T.muted}}>Parceiro</span></div>
+            <div style={{display:"flex",gap:5,alignItems:"center"}}><div style={{width:10,height:10,borderRadius:2,background:"#FF4D6A33",border:"1px dashed #FF4D6A"}}/><span style={{fontSize:9,color:T.muted}}>Raio 5km</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── WIZ STEP 4 ────────────────────────────────────────────────────────────
+const WizStep4=({visible,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCur,planAtivo,planAnalise,salvarPlano,gerarPropostaPDF,setPlanAtivo})=>{
+  if(!visible)return null;
+  return(
+    <div>
+      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.warn,fontSize:12,marginBottom:14}}>Etapa 4 — Resumo e Proposta</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
+        {[["Investimento",fmtCur(total),T.accent],["Embalagens",totalEmb.toLocaleString("pt-BR"),T.purple],["Impactos",totalImpactos.toLocaleString("pt-BR"),T.info],["Custo/impacto",`R$ ${custoImp}`,T.warn]].map(([l,v,c])=>(
+          <div key={l} style={{background:T.surface,borderRadius:10,padding:14,textAlign:"center",border:`1px solid ${c}33`}}>
+            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:c,marginBottom:3}}>{v}</div>
+            <div style={{fontSize:9,color:T.muted}}>{l}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{background:T.surface,borderRadius:10,overflow:"hidden",marginBottom:16}}>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr style={{background:T.card}}>{["Item","Qtd","Tabela (R$)","Desconto","Valor Bruto"].map(h=><th key={h} style={{padding:"8px 12px",fontSize:8,color:T.muted,textAlign:["Qtd","Tabela (R$)","Desconto","Valor Bruto"].includes(h)?"right":"left",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>{h}</th>)}</tr></thead>
+          <tbody>
+            {parc.map((p,i)=>{const t=Number(p.tabela||6),q=Number(p.embalagens||0),d=Number(p.desconto||0),bruto=q*t*(1-d/100);return(
+              <tr key={i} style={{borderBottom:`1px solid ${T.border}`,background:i%2===0?"transparent":T.bg}}>
+                <td style={{padding:"7px 12px",fontSize:10,fontWeight:600}}>Embalagem — {p.nome}</td>
+                <td style={{padding:"7px 12px",fontSize:10,textAlign:"right"}}>{q.toLocaleString("pt-BR")} un</td>
+                <td style={{padding:"7px 12px",fontSize:10,textAlign:"right"}}>{t.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}/un</td>
+                <td style={{padding:"7px 12px",fontSize:10,textAlign:"right",color:d>0?T.warn:T.muted}}>{d>0?d+"%":"—"}</td>
+                <td style={{padding:"7px 12px",fontSize:11,textAlign:"right",fontWeight:700,color:T.accent}}>{bruto.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
+              </tr>
+            );})}
+            {outras.map((m,i)=>{const t=Number(m.tabela||0),d=Number(m.desconto||0),bruto=t*(1-d/100);return(
+              <tr key={"m"+i} style={{borderBottom:`1px solid ${T.border}`}}>
+                <td style={{padding:"7px 12px",fontSize:10,fontWeight:600}}>{m.tipo}{m.descricao?` — ${m.descricao}`:""}</td>
+                <td style={{padding:"7px 12px",fontSize:10,textAlign:"right"}}>{m.qtd||1}</td>
+                <td style={{padding:"7px 12px",fontSize:10,textAlign:"right"}}>{t.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
+                <td style={{padding:"7px 12px",fontSize:10,textAlign:"right",color:d>0?T.warn:T.muted}}>{d>0?d+"%":"—"}</td>
+                <td style={{padding:"7px 12px",fontSize:11,textAlign:"right",fontWeight:700,color:T.accent}}>{bruto.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
+              </tr>
+            );})}
+            <tr style={{background:T.accentDim}}>
+              <td colSpan={4} style={{padding:"10px 12px",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12}}>TOTAL</td>
+              <td style={{padding:"10px 12px",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,color:T.accent,textAlign:"right"}}>{fmtCur(total)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style={{display:"flex",gap:10}}>
+        <button onClick={async()=>{const s=await salvarPlano({...planAtivo,analise:planAnalise||planAtivo.analise});setPlanAtivo(s);}} style={{padding:"10px 20px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:9,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>💾 Salvar plano</button>
+        <button onClick={async()=>{const s=await salvarPlano({...planAtivo,analise:planAnalise||planAtivo.analise});gerarPropostaPDF(s,s.analise);}} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:9,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,border:"none"}}>📄 Gerar Proposta PDF</button>
+      </div>
+    </div>
+  );
+};
+
+// ── PLAN WIZARD ───────────────────────────────────────────────────────────
+const PlanWizard=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,setShowPlanWizard,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCur,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,user,basePartners,projects})=>(
+  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden"}}>
+    <div style={{padding:"16px 24px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15}}>{planAtivo.clienteNome||"Novo Planejamento"}</div>
+      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+        {["Cliente","Região","Parceiros","Proposta"].map((s,i)=>(
+          <div key={i} onClick={()=>setPlanStep(i+1)} style={{width:24,height:24,borderRadius:"50%",background:planStep===i+1?T.accent:planStep>i+1?T.accentDim:T.surface,border:`2px solid ${planStep>=i+1?T.accent:T.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:planStep===i+1?"#000":planStep>i+1?T.accent:T.muted,cursor:"pointer"}}>{i+1}</div>
+        ))}
+        <button onClick={()=>setShowPlanWizard(false)} style={{marginLeft:8,background:"transparent",border:"none",color:T.muted,fontSize:18,cursor:"pointer"}}>×</button>
+      </div>
+    </div>
+    <div style={{padding:24}}>
+      <WizStep1 visible={planStep===1} planAtivo={planAtivo} setPlanAtivo={setPlanAtivo} planGeoLoading={planGeoLoading} setPlanGeoLoading={setPlanGeoLoading} geocodeEndereco={geocodeEndereco} projects={projects}/>
+      <WizStep2 visible={planStep===2} planAtivo={planAtivo} planAnalise={planAnalise} planLoading={planLoading} gerarAnaliseIA={gerarAnaliseIA}/>
+      <WizStep3 visible={planStep===3} planAtivo={planAtivo} setPlanAtivo={setPlanAtivo} parc={parc} basePartners={basePartners} geocodeEndereco={geocodeEndereco}/>
+      <WizStep4 visible={planStep===4} parc={parc} outras={outras} total={total} totalEmb={totalEmb} totalImpactos={totalImpactos} custoImp={custoImp} fmtCur={fmtCur} planAtivo={planAtivo} planAnalise={planAnalise} salvarPlano={salvarPlano} gerarPropostaPDF={gerarPropostaPDF} setPlanAtivo={setPlanAtivo}/>
+    </div>
+    <div style={{padding:"14px 24px",borderTop:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between"}}>
+      <button onClick={()=>planStep>1?setPlanStep(s=>s-1):setShowPlanWizard(false)} style={{padding:"8px 16px",background:T.surface,border:`1px solid ${T.border}`,color:T.muted,borderRadius:8,cursor:"pointer",fontSize:11}}>{planStep>1?"← Voltar":"Cancelar"}</button>
+      {planStep<4&&<button onClick={()=>setPlanStep(s=>s+1)} style={{padding:"8px 20px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,border:"none"}}>Próximo →</button>}
+    </div>
+  </div>
+);
+
+
+const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,showPlanWizard,setShowPlanWizard,planejamentos,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,user,basePartners,projects})=>{
+  const parc=planAtivo?.parceiros||[];
+  const outras=planAtivo?.outrasMidias||[];
+  const totalEmb=parc.reduce((a,p)=>a+Number(p.embalagens||0),0);
   const totalImpactos=Math.round(totalEmb*3.3);
-  const totalValor=parceiros.reduce((a,p)=>a+Number(p.embalagens||0)*Number(p.tabela||6)*(1-Number(p.desconto||0)/100),0);
-  const totalMidia=outrasMidias.reduce((a,m)=>a+Number(m.tabela||0)*(1-Number(m.desconto||0)/100),0);
-  const total=totalValor+totalMidia;
-  const custoImpacto=totalImpactos>0?(total/totalImpactos).toFixed(2):0;
+  const totalVal=parc.reduce((a,p)=>a+Number(p.embalagens||0)*Number(p.tabela||6)*(1-Number(p.desconto||0)/100),0);
+  const totalMidia=outras.reduce((a,m)=>a+Number(m.tabela||0)*(1-Number(m.desconto||0)/100),0);
+  const total=totalVal+totalMidia;
+  const custoImp=totalImpactos>0?(total/totalImpactos).toFixed(2):0;
   const fmtCur=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0});
+  const newPlan=()=>{setPlanAtivo({...EMPTY_PLAN,id:Date.now(),createdBy:user?.name||"",createdAt:new Date().toISOString()});setPlanStep(1);setPlanAnalise(null);setShowPlanWizard(true);};
 
   return(
-                <div>
-                  {/* Header */}
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-                    <div>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16}}>Planejamento de Mídia</div>
-                      <div style={{fontSize:10,color:T.muted,marginTop:2}}>Pense como planejador. Monte o plano antes de gerar a proposta.</div>
-                    </div>
-                    <button onClick={()=>{setPlanAtivo({...EMPTY_PLAN,id:Date.now(),createdBy:user.name,createdAt:new Date().toISOString()});setPlanStep(1);setPlanAnalise(null);setShowPlanWizard(true);}} style={{padding:"9px 18px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:9,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:11,border:"none"}}>
-                      + Novo Planejamento
-                    </button>
-                  </div>
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <div>
+          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16}}>Planejamento de Mídia</div>
+          <div style={{fontSize:10,color:T.muted,marginTop:2}}>Pense como planejador. Monte o plano antes de gerar a proposta.</div>
+        </div>
+        <button onClick={newPlan} style={{padding:"9px 18px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:9,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:11,border:"none"}}>+ Novo Planejamento</button>
+      </div>
 
-                  {/* Lista de planos salvos */}
-                  {planejamentos.length===0&&!showPlanWizard&&(
-                    <div style={{textAlign:"center",padding:"60px 20px",color:T.muted}}>
-                      <div style={{fontSize:40,marginBottom:12}}>📋</div>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:16,color:T.soft,marginBottom:6}}>Nenhum planejamento ainda</div>
-                      <div style={{fontSize:11}}>Crie um plano de mídia antes de gerar sua proposta</div>
-                    </div>
-                  )}
-                  {!showPlanWizard&&planejamentos.map(p=>(
-                    <div key={p.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <div>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,marginBottom:3}}>{p.clienteNome||"Sem nome"}</div>
-                        <div style={{fontSize:10,color:T.muted}}>{p.regiao||p.clienteEndereco||"—"} · {p.parceiros?.length||0} parceiros · {(p.parceiros||[]).reduce((a,x)=>a+Number(x.embalagens||0),0).toLocaleString("pt-BR")} emb.</div>
-                        <div style={{fontSize:9,color:T.muted,marginTop:2}}>{p.createdBy} · {p.createdAt?new Date(p.createdAt).toLocaleDateString("pt-BR"):""}</div>
-                      </div>
-                      <div style={{display:"flex",gap:8}}>
-                        <button onClick={()=>{setPlanAtivo(p);setPlanAnalise(p.analise||null);setPlanStep(1);setShowPlanWizard(true);}} style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>Editar</button>
-                        <button onClick={()=>gerarPropostaPDF(p,p.analise)} style={{padding:"7px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,border:"none",color:"#000",borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>📄 Proposta</button>
-                      </div>
-                    </div>
-                  ))}
+      {planejamentos.length===0&&!showPlanWizard&&(
+        <div style={{textAlign:"center",padding:"60px 20px",color:T.muted}}>
+          <div style={{fontSize:40,marginBottom:12}}>📋</div>
+          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:16,color:T.soft,marginBottom:6}}>Nenhum planejamento ainda</div>
+          <div style={{fontSize:11}}>Crie um plano de mídia antes de gerar sua proposta</div>
+        </div>
+      )}
 
-                  {/* WIZARD */}
-                  {showPlanWizard&&(
-                    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden"}}>
-                      {/* Wizard Header */}
-                      <div style={{padding:"16px 24px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15}}>{planAtivo.clienteNome||"Novo Planejamento"}</div>
-                        <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                          {["Cliente","Região","Parceiros","Proposta"].map((s,i)=>(
-                            <div key={i} onClick={()=>setPlanStep(i+1)} style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}>
-                              <div style={{width:24,height:24,borderRadius:"50%",background:planStep===i+1?T.accent:planStep>i+1?T.accentDim:T.surface,border:`2px solid ${planStep>=i+1?T.accent:T.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:planStep===i+1?"#000":planStep>i+1?T.accent:T.muted}}>{i+1}</div>
-                              <span style={{fontSize:9,color:planStep===i+1?T.accent:T.muted,display:"none"}}>{s}</span>
-                            </div>
-                          ))}
-                          <button onClick={()=>setShowPlanWizard(false)} style={{marginLeft:8,background:"transparent",border:"none",color:T.muted,fontSize:18,cursor:"pointer"}}>×</button>
-                        </div>
-                      </div>
+      {!showPlanWizard&&planejamentos.map(p=>(
+        <div key={p.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,marginBottom:3}}>{p.clienteNome||"Sem nome"}</div>
+            <div style={{fontSize:10,color:T.muted}}>{p.regiao||p.clienteEndereco||"—"} · {(p.parceiros||[]).length} parceiros</div>
+            <div style={{fontSize:9,color:T.muted,marginTop:2}}>{p.createdBy} · {p.createdAt?new Date(p.createdAt).toLocaleDateString("pt-BR"):""}</div>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>{setPlanAtivo(p);setPlanAnalise(p.analise||null);setPlanStep(1);setShowPlanWizard(true);}} style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>Editar</button>
+            <button onClick={()=>gerarPropostaPDF(p,p.analise)} style={{padding:"7px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,border:"none",color:"#000",borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>📄 Proposta</button>
+          </div>
+        </div>
+      ))}
 
-                      <div style={{padding:"24px"}}>
-
-                        {/* ETAPA 1 — CLIENTE */}
-                        {planStep===1&&(
-                          <div style={{display:"flex",flexDirection:"column",gap:14}}>
-                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.accent,fontSize:12,marginBottom:4}}>Etapa 1 — Cliente e Objetivo</div>
-                            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                              {[["Nome do cliente","clienteNome"],["Segmento","clienteSegmento"],["Público-alvo","publicoAlvo"],["Faixa etária","faixaEtaria"],["Renda estimada","rendaEstimada"],["Prazo da campanha","prazo"]].map(([l,k])=>(
-                                <div key={k}>
-                                  <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
-                                  <input value={planAtivo[k]||""} onChange={e=>setPlanAtivo(p=>({...p,[k]:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
-                                </div>
-                              ))}
-                            </div>
-                            <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Objetivo da campanha</div>
-                              <textarea value={planAtivo.objetivo||""} onChange={e=>setPlanAtivo(p=>({...p,objetivo:e.target.value}))} rows={2} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none",resize:"vertical"}}/>
-                            </div>
-                            <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:8}}>
-                              <div>
-                                <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Endereço / Região de interesse</div>
-                                <input value={planAtivo.regiao||""} onChange={e=>setPlanAtivo(p=>({...p,regiao:e.target.value,clienteEndereco:e.target.value}))} placeholder="Ex: Vila Madalena, São Paulo · SP" style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
-                              </div>
-                              <div style={{display:"flex",alignItems:"flex-end"}}>
-                                <button onClick={async()=>{setPlanGeoLoading(true);const geo=await geocodeEndereco(planAtivo.regiao||planAtivo.clienteEndereco);if(geo)setPlanAtivo(p=>({...p,clienteLat:geo.lat,clienteLng:geo.lng}));setPlanGeoLoading(false);}} style={{padding:"8px 14px",background:T.purpleDim,border:`1px solid ${T.purple}44`,color:T.purple,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>
-                                  {planGeoLoading?"Buscando...":"📍 Geocodificar"}
-                                </button>
-                              </div>
-                            </div>
-                            {planAtivo.clienteLat&&<div style={{fontSize:9,color:T.accent,fontFamily:"'JetBrains Mono',monospace"}}>✓ Localização: {planAtivo.clienteLat.toFixed(4)}, {planAtivo.clienteLng.toFixed(4)}</div>}
-                            <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Verba disponível (R$)</div>
-                              <input type="number" value={planAtivo.verba||""} onChange={e=>setPlanAtivo(p=>({...p,verba:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
-                            </div>
-                            <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Projeto vinculado</div>
-                              <select value={planAtivo.projectId||""} onChange={e=>setPlanAtivo(p=>({...p,projectId:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}>
-                                <option value="">Selecione um projeto...</option>
-                                {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-                              </select>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* ETAPA 2 — ANÁLISE DA REGIÃO */}
-                        {planStep===2&&(
-                          <div>
-                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.purple,fontSize:12,marginBottom:14}}>Etapa 2 — Análise da Região com IA</div>
-                            {!planAnalise&&!planLoading&&(
-                              <div style={{textAlign:"center",padding:"40px 20px",background:T.surface,borderRadius:12,marginBottom:16}}>
-                                <div style={{fontSize:32,marginBottom:12}}>🤖</div>
-                                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,marginBottom:8}}>Análise demográfica por IA</div>
-                                <div style={{fontSize:11,color:T.muted,marginBottom:20}}>Com base na região e perfil do cliente, a IA vai gerar dados demográficos, perfil de delivery e análise estratégica para embasar sua proposta.</div>
-                                <button onClick={()=>gerarAnaliseIA(planAtivo)} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.purple},#7B5FE0)`,color:"#fff",borderRadius:9,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,border:"none"}}>
-                                  Analisar região: {planAtivo.regiao||"(preencha a região na etapa 1)"}
-                                </button>
-                              </div>
-                            )}
-                            {planLoading&&(
-                              <div style={{textAlign:"center",padding:"40px",background:T.surface,borderRadius:12}}>
-                                <div style={{fontSize:24,marginBottom:10}}>⏳</div>
-                                <div style={{fontSize:12,color:T.muted}}>Analisando a região com IA...</div>
-                              </div>
-                            )}
-                            {planAnalise&&!planLoading&&(
-                              <div style={{display:"flex",flexDirection:"column",gap:12}}>
-                                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
-                                  {[["População",planAnalise.populacao,T.accent],["Renda média",planAnalise.rendaMedia,T.info],["Usuários delivery",planAnalise.usuariosDelivery,T.purple],["Ticket médio",planAnalise.ticketMedioDelivery,T.warn],["Classes sociais",planAnalise.classesSociais,T.pink],["Apps líderes",(planAnalise.appsLideres||[]).join(", "),T.soft]].map(([l,v,c])=>(
-                                    <div key={l} style={{background:T.surface,borderRadius:10,padding:"12px 14px",borderLeft:`3px solid ${c}`}}>
-                                      <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{l}</div>
-                                      <div style={{fontSize:12,fontWeight:700,color:c}}>{v||"—"}</div>
-                                    </div>
-                                  ))}
-                                </div>
-                                <div style={{background:T.surface,borderRadius:10,padding:16,borderLeft:`3px solid ${T.purple}`}}>
-                                  <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Análise estratégica</div>
-                                  <div style={{fontSize:11,color:T.soft,lineHeight:1.7}}>{planAnalise.analise}</div>
-                                </div>
-                                <div style={{background:T.surface,borderRadius:10,padding:16,borderLeft:`3px solid ${T.warn}`}}>
-                                  <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Oportunidade identificada</div>
-                                  <div style={{fontSize:11,color:T.soft,lineHeight:1.7}}>{planAnalise.oportunidade}</div>
-                                </div>
-                                <button onClick={()=>gerarAnaliseIA(planAtivo)} style={{alignSelf:"flex-start",padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,cursor:"pointer",fontSize:9}}>Regenerar análise</button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* ETAPA 3 — PARCEIROS E MAPA */}
-                        {planStep===3&&(
-                          <div>
-                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.info,fontSize:12,marginBottom:14}}>Etapa 3 — Parceiros e Mapa de Calor</div>
-                            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-                              {/* Seleção de parceiros */}
-                              <div>
-                                <div style={{fontSize:10,color:T.muted,marginBottom:10,fontWeight:700}}>Parceiros da base</div>
-                                <div style={{maxHeight:200,overflowY:"auto",marginBottom:10}}>
-                                  {basePartners.filter(p=>p.status==="ativo").map(p=>{
-                                    const sel=planAtivo.parceiros.find(x=>x.id===p.id);
-                                    return(
-                                      <div key={p.id} onClick={()=>{
-                                        if(sel){setPlanAtivo(x=>({...x,parceiros:x.parceiros.filter(y=>y.id!==p.id)}));}
-                                        else{setPlanAtivo(x=>({...x,parceiros:[...x.parceiros,{id:p.id,nome:p.name,segmento:p.category,endereco:p.address||"",lat:p.lat||null,lng:p.lng||null,embalagens:500,tabela:6,desconto:0,manual:false}]}));}
-                                      }} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",borderRadius:7,cursor:"pointer",marginBottom:4,background:sel?T.accentDim:T.surface,border:`1px solid ${sel?T.accentBorder:T.border}`}}>
-                                        <div>
-                                          <div style={{fontSize:10,fontWeight:sel?700:400,color:sel?T.accent:T.text}}>{p.name}</div>
-                                          <div style={{fontSize:8,color:T.muted}}>{p.category} · {p.city}</div>
-                                        </div>
-                                        <div style={{fontSize:10,color:sel?T.accent:T.muted}}>{sel?"✓":"+"}  </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                                {/* Parceiro manual */}
-                                <div style={{borderTop:`1px solid ${T.border}`,paddingTop:10}}>
-                                  <div style={{fontSize:9,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Adicionar parceiro manual (região sem cobertura)</div>
-                                  <div style={{display:"flex",gap:6}}>
-                                    <input id="plan-pmanual" placeholder="Nome do estabelecimento" style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:10,color:T.text,outline:"none"}}/>
-                                    <button onClick={async()=>{const nm=document.getElementById("plan-pmanual")?.value?.trim();if(!nm)return;const geo=await geocodeEndereco(nm+", "+planAtivo.regiao);setPlanAtivo(p=>({...p,parceiros:[...p.parceiros,{id:Date.now(),nome:nm,segmento:"",endereco:nm,lat:geo?.lat||null,lng:geo?.lng||null,embalagens:500,tabela:6,desconto:0,manual:true}]}));document.getElementById("plan-pmanual").value="";}} style={{padding:"6px 12px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,cursor:"pointer",fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>+ Add</button>
-                                  </div>
-                                </div>
-                                {/* Parceiros selecionados com qtd e valor */}
-                                {planAtivo.parceiros.length>0&&(
-                                  <div style={{marginTop:12}}>
-                                    <div style={{fontSize:9,color:T.accent,marginBottom:6,textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>{planAtivo.parceiros.length} selecionado{planAtivo.parceiros.length!==1?"s":""}</div>
-                                    {planAtivo.parceiros.map((p,i)=>(
-                                      <div key={p.id} style={{background:T.surface,borderRadius:8,padding:"8px 10px",marginBottom:6,border:`1px solid ${T.border}`}}>
-                                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                                          <span style={{fontSize:10,fontWeight:700}}>{p.nome}</span>
-                                          <div onClick={()=>setPlanAtivo(x=>({...x,parceiros:x.parceiros.filter((_,j)=>j!==i)}))} style={{cursor:"pointer",color:T.muted,fontSize:14}}>×</div>
-                                        </div>
-                                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
-                                          {[["Embalagens","embalagens","number"],["Tabela R$/un","tabela","number"],["Desconto %","desconto","number"]].map(([l,k,t])=>(
-                                            <div key={k}>
-                                              <div style={{fontSize:7,color:T.muted,marginBottom:2}}>{l}</div>
-                                              <input type={t} value={p[k]||""} onChange={e=>setPlanAtivo(x=>({...x,parceiros:x.parceiros.map((q,j)=>j===i?{...q,[k]:e.target.value}:q)}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"4px 6px",fontSize:10,color:T.text,outline:"none"}}/>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                                {/* Outras mídias */}
-                                <div style={{marginTop:12,borderTop:`1px solid ${T.border}`,paddingTop:10}}>
-                                  <div style={{fontSize:9,color:T.purple,marginBottom:6,textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Outras mídias</div>
-                                  {planAtivo.outrasMidias.map((m,i)=>(
-                                    <div key={i} style={{background:T.surface,borderRadius:8,padding:"8px 10px",marginBottom:6,border:`1px solid ${T.border}`}}>
-                                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-                                        <input value={m.tipo||""} onChange={e=>setPlanAtivo(p=>({...p,outrasMidias:p.outrasMidias.map((x,j)=>j===i?{...x,tipo:e.target.value}:x)}))} placeholder="Tipo (ex: Push Notification)" style={{flex:1,background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"4px 8px",fontSize:10,color:T.text,outline:"none"}}/>
-                                        <div onClick={()=>setPlanAtivo(p=>({...p,outrasMidias:p.outrasMidias.filter((_,j)=>j!==i)}))} style={{cursor:"pointer",color:T.muted,fontSize:14,paddingLeft:8}}>×</div>
-                                      </div>
-                                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:4}}>
-                                        {[["Descrição","descricao","text"],["Qtd","qtd","number"],["Tabela R$","tabela","number"],["Desconto %","desconto","number"]].map(([l,k,t])=>(
-                                          <div key={k}>
-                                            <div style={{fontSize:7,color:T.muted,marginBottom:2}}>{l}</div>
-                                            <input type={t} value={m[k]||""} onChange={e=>setPlanAtivo(p=>({...p,outrasMidias:p.outrasMidias.map((x,j)=>j===i?{...x,[k]:e.target.value}:x)}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"4px 6px",fontSize:10,color:T.text,outline:"none"}}/>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  ))}
-                                  <button onClick={()=>setPlanAtivo(p=>({...p,outrasMidias:[...p.outrasMidias,{tipo:"",descricao:"",qtd:1,tabela:"",desconto:0}]}))} style={{padding:"6px 12px",background:"transparent",border:`1px solid ${T.purple}44`,color:T.purple,borderRadius:6,cursor:"pointer",fontSize:9,fontWeight:700}}>+ Adicionar mídia</button>
-                                </div>
-                              </div>
-                              {/* Mapa */}
-                              <div>
-                                <div style={{fontSize:10,color:T.muted,marginBottom:8,fontWeight:700}}>Mapa de cobertura (raio 5km por parceiro)</div>
-                                <MapaPlano clienteLat={planAtivo.clienteLat} clienteLng={planAtivo.clienteLng} clienteNome={planAtivo.clienteNome} parceiros={planAtivo.parceiros}/>
-                                <div style={{display:"flex",gap:12,marginTop:8}}>
-                                  <div style={{display:"flex",gap:5,alignItems:"center"}}><div style={{width:10,height:10,borderRadius:"50%",background:"#00E5A0"}}/><span style={{fontSize:9,color:T.muted}}>Cliente</span></div>
-                                  <div style={{display:"flex",gap:5,alignItems:"center"}}><div style={{width:10,height:10,borderRadius:"50%",background:"#3D9EFF"}}/><span style={{fontSize:9,color:T.muted}}>Parceiro</span></div>
-                                  <div style={{display:"flex",gap:5,alignItems:"center"}}><div style={{width:10,height:10,borderRadius:2,background:"#FF4D6A33",border:"1px dashed #FF4D6A"}}/><span style={{fontSize:9,color:T.muted}}>Raio 5km</span></div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* ETAPA 4 — RESUMO E PROPOSTA */}
-                        {planStep===4&&(()=>{
-                          const totalEmb=planAtivo.parceiros.reduce((a,p)=>a+Number(p.embalagens||0),0);
-                          const totalImpactos=Math.round(totalEmb*3.3);
-                          const totalValor=planAtivo.parceiros.reduce((a,p)=>a+Number(p.embalagens||0)*Number(p.tabela||6)*(1-Number(p.desconto||0)/100),0);
-                          const totalMidia=planAtivo.outrasMidias.reduce((a,m)=>a+Number(m.tabela||0)*(1-Number(m.desconto||0)/100),0);
-                          const total=totalValor+totalMidia;
-                          const custoImpacto=totalImpactos>0?(total/totalImpactos).toFixed(2):0;
-                          const fmt=v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0});
-                          return(
-                            <div>
-                              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.warn,fontSize:12,marginBottom:14}}>Etapa 4 — Resumo e Geração da Proposta</div>
-                              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
-                                {[["Investimento total",fmt(total),T.accent],["Total embalagens",totalEmb.toLocaleString("pt-BR"),T.purple],["Impactos estimados",totalImpactos.toLocaleString("pt-BR"),T.info],["Custo/impacto",`R$ ${custoImpacto}`,T.warn]].map(([l,v,c])=>(
-                                  <div key={l} style={{background:T.surface,borderRadius:10,padding:"14px",textAlign:"center",border:`1px solid ${c}33`}}>
-                                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:c,marginBottom:3}}>{v}</div>
-                                    <div style={{fontSize:9,color:T.muted}}>{l}</div>
-                                  </div>
-                                ))}
-                              </div>
-                              {/* Tabela financeira */}
-                              <div style={{background:T.surface,borderRadius:10,overflow:"hidden",marginBottom:16}}>
-                                <table style={{width:"100%",borderCollapse:"collapse"}}>
-                                  <thead><tr style={{background:T.card}}>{["Item","Qtd","Tabela (R$)","Desconto","Valor Bruto"].map(h=><th key={h} style={{padding:"8px 12px",fontSize:8,color:T.muted,textAlign:["Qtd","Tabela (R$)","Desconto","Valor Bruto"].includes(h)?"right":"left",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>{h}</th>)}</tr></thead>
-                                  <tbody>
-                                    {planAtivo.parceiros.map((p,i)=>{const t=Number(p.tabela||6);const q=Number(p.embalagens||0);const d=Number(p.desconto||0);const bruto=q*t*(1-d/100);return(
-                                      <tr key={i} style={{borderBottom:`1px solid ${T.border}`,background:i%2===0?"transparent":T.bg}}>
-                                        <td style={{padding:"7px 12px",fontSize:10,fontWeight:600}}>Embalagem Branded — {p.nome}</td>
-                                        <td style={{padding:"7px 12px",fontSize:10,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{q.toLocaleString("pt-BR")} un</td>
-                                        <td style={{padding:"7px 12px",fontSize:10,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{t.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}/un</td>
-                                        <td style={{padding:"7px 12px",fontSize:10,textAlign:"right",color:d>0?T.warn:T.muted}}>{d>0?d+"%":"—"}</td>
-                                        <td style={{padding:"7px 12px",fontSize:11,textAlign:"right",fontWeight:700,color:T.accent,fontFamily:"'JetBrains Mono',monospace"}}>{bruto.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
-                                      </tr>
-                                    );})}
-                                    {planAtivo.outrasMidias.map((m,i)=>{const t=Number(m.tabela||0);const d=Number(m.desconto||0);const bruto=t*(1-d/100);return(
-                                      <tr key={"m"+i} style={{borderBottom:`1px solid ${T.border}`}}>
-                                        <td style={{padding:"7px 12px",fontSize:10,fontWeight:600}}>{m.tipo}{m.descricao?` — ${m.descricao}`:""}</td>
-                                        <td style={{padding:"7px 12px",fontSize:10,textAlign:"right"}}>{m.qtd||1}</td>
-                                        <td style={{padding:"7px 12px",fontSize:10,textAlign:"right"}}>{t.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
-                                        <td style={{padding:"7px 12px",fontSize:10,textAlign:"right",color:d>0?T.warn:T.muted}}>{d>0?d+"%":"—"}</td>
-                                        <td style={{padding:"7px 12px",fontSize:11,textAlign:"right",fontWeight:700,color:T.accent}}>{bruto.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
-                                      </tr>
-                                    );})}
-                                    <tr style={{background:T.accentDim}}>
-                                      <td colSpan={4} style={{padding:"10px 12px",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12}}>TOTAL</td>
-                                      <td style={{padding:"10px 12px",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,color:T.accent,textAlign:"right"}}>{fmt(total)}</td>
-                                    </tr>
-                                  </tbody>
-                                </table>
-                              </div>
-                              <div style={{display:"flex",gap:10}}>
-                                <button onClick={async()=>{const saved=await salvarPlano({...planAtivo,analise:planAnalise||planAtivo.analise});setPlanAtivo(saved);}} style={{padding:"10px 20px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:9,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>
-                                  💾 Salvar plano
-                                </button>
-                                <button onClick={async()=>{const saved=await salvarPlano({...planAtivo,analise:planAnalise||planAtivo.analise});gerarPropostaPDF(saved,saved.analise);}} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:9,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,border:"none"}}>
-                                  📄 Gerar Proposta PDF
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-
-                      {/* Wizard Footer */}
-                      <div style={{padding:"14px 24px",borderTop:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between"}}>
-                        <button onClick={()=>planStep>1?setPlanStep(s=>s-1):setShowPlanWizard(false)} style={{padding:"8px 16px",background:T.surface,border:`1px solid ${T.border}`,color:T.muted,borderRadius:8,cursor:"pointer",fontSize:11}}>
-                          {planStep>1?"← Voltar":"Cancelar"}
-                        </button>
-                        {planStep<4&&<button onClick={()=>setPlanStep(s=>s+1)} style={{padding:"8px 20px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,border:"none"}}>
-                          Próximo →
-                        </button>}
-                      </div>
-                    </div>
-                  )}
-                </div>
+      {showPlanWizard&&(
+        <PlanWizard
+          planAtivo={planAtivo} setPlanAtivo={setPlanAtivo}
+          planStep={planStep} setPlanStep={setPlanStep}
+          planAnalise={planAnalise} setPlanAnalise={setPlanAnalise}
+          planLoading={planLoading} planGeoLoading={planGeoLoading} setPlanGeoLoading={setPlanGeoLoading}
+          setShowPlanWizard={setShowPlanWizard}
+          parc={parc} outras={outras}
+          total={total} totalEmb={totalEmb} totalImpactos={totalImpactos} custoImp={custoImp} fmtCur={fmtCur}
+          salvarPlano={salvarPlano} gerarPropostaPDF={gerarPropostaPDF}
+          geocodeEndereco={geocodeEndereco} gerarAnaliseIA={gerarAnaliseIA}
+          user={user} basePartners={basePartners} projects={projects}
+        />
+      )}
+    </div>
   );
 };
 
