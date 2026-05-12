@@ -4402,419 +4402,341 @@ export default function App(){
           )}
 
           {/* --------------------------------------
-              RELATÓRIOS
+              RELATÓRIOS — CONSTRUTOR
           -------------------------------------- */}
           {tab==="relatorios"&&(()=>{
-            // Acesso: admin vê todos, outros veem só o do seu setor
             const isAdmin=user.role==="admin";
-            const setorMap={comercial:"comercial",operacional:"operacional",marketing:"marketing",financeiro:"financeiro",base:"base"};
-            const meuSetor=setorMap[user.role]||"gerencial";
-            const tabsDisponiveis=isAdmin
-              ?[["gerencial","Gerencial"],["comercial","Comercial"],["operacional","Operacional"],["base","Base"],["financeiro","Financeiro"],["marketing","Marketing"]]
-              :[[meuSetor,meuSetor.charAt(0).toUpperCase()+meuSetor.slice(1)]];
+            // Blocos disponíveis por setor
+            const BLOCOS=[
+              // FINANCEIRO
+              {id:"fat_mensal",cat:"Financeiro",label:"Faturamento mensal",icon:"-",color:T.accent,roles:["admin","financeiro"],
+               render:()=>{
+                 const data=fatMensais.slice(-8).map(f=>({name:f.mes,value:f.fat}));
+                 return(<div>
+                   <ResponsiveContainer width="100%" height={180}>
+                     <BarChart data={data} margin={{top:0,right:0,left:-10,bottom:20}}>
+                       <XAxis dataKey="name" tick={{fontSize:8,fill:T.muted}} angle={-35} textAnchor="end"/>
+                       <YAxis tick={{fontSize:8,fill:T.muted}} tickFormatter={v=>v>=1000?`${(v/1000).toFixed(0)}k`:v}/>
+                       <Tooltip formatter={v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})} contentStyle={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,fontSize:10}}/>
+                       <Bar dataKey="value" fill={T.accent} radius={[4,4,0,0]}/>
+                     </BarChart>
+                   </ResponsiveContainer>
+                 </div>);
+               }},
+              {id:"dre",cat:"Financeiro",label:"DRE — Resultado",icon:"-",color:T.info,roles:["admin","financeiro"],
+               render:()=>{
+                 const rec=lancamentos.reduce((a,l)=>a+(l.entrada||0),0);
+                 const desp=lancamentos.reduce((a,l)=>a+(l.saida||0),0);
+                 const res=rec-desp;
+                 const data=[{name:"Receita",value:rec,fill:T.accent},{name:"Despesas",value:desp,fill:T.danger},{name:"Resultado",value:res,fill:res>=0?T.info:T.danger}];
+                 return(<div>
+                   <ResponsiveContainer width="100%" height={160}>
+                     <BarChart data={data} margin={{top:0,right:0,left:-10,bottom:0}}>
+                       <XAxis dataKey="name" tick={{fontSize:10,fill:T.muted}}/>
+                       <YAxis tick={{fontSize:8,fill:T.muted}} tickFormatter={v=>`${(v/1000).toFixed(0)}k`}/>
+                       <Tooltip formatter={v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})} contentStyle={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,fontSize:10}}/>
+                       <Bar dataKey="value" radius={[4,4,0,0]}>{data.map((d,i)=><Cell key={i} fill={d.fill}/>)}</Bar>
+                     </BarChart>
+                   </ResponsiveContainer>
+                 </div>);
+               }},
+              {id:"desp_categoria",cat:"Financeiro",label:"Despesas por categoria",icon:"-",color:T.warn,roles:["admin","financeiro"],
+               render:()=>{
+                 const cats=Object.entries(lancamentos.filter(l=>l.saida>0).reduce((acc,l)=>{const cat=l.categoria||"Outros";acc[cat]=(acc[cat]||0)+(l.saida||0);return acc;},{})).sort((a,b)=>b[1]-a[1]).slice(0,6);
+                 const COLORS=[T.warn,T.danger,T.purple,T.info,T.pink,T.accent];
+                 const data=cats.map(([name,value])=>({name,value}));
+                 return(<div style={{display:"flex",gap:12,alignItems:"center"}}>
+                   <ResponsiveContainer width={140} height={140}>
+                     <PieChart><Pie data={data} cx="50%" cy="50%" innerRadius={35} outerRadius={60} dataKey="value">{data.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie></PieChart>
+                   </ResponsiveContainer>
+                   <div style={{flex:1}}>
+                     {data.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:`1px solid ${T.border}`}}>
+                       <div style={{display:"flex",gap:6,alignItems:"center"}}><div style={{width:8,height:8,borderRadius:"50%",background:COLORS[i%COLORS.length]}}/><span style={{fontSize:10}}>{d.name}</span></div>
+                       <span style={{fontSize:10,fontWeight:700,color:COLORS[i%COLORS.length]}}>{d.value.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</span>
+                     </div>)}
+                   </div>
+                 </div>);
+               }},
+              {id:"custo_pessoal",cat:"Financeiro",label:"Custo pessoal",icon:"-",color:T.pink,roles:["admin","financeiro"],
+               render:()=>{
+                 const itens=custosFix.filter(c=>c.categoria==="Salario"||c.categoria==="Pro-Labore").sort((a,b)=>b.valor-a.valor);
+                 const total=itens.reduce((a,c)=>a+c.valor,0);
+                 return(<div>
+                   {itens.map((c,i)=><div key={i} style={{marginBottom:8}}>
+                     <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                       <span style={{fontSize:11}}>{c.descricao}</span>
+                       <span style={{fontSize:11,fontWeight:700,color:c.categoria==="Pro-Labore"?T.accent:T.pink}}>{c.valor.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</span>
+                     </div>
+                     <div style={{height:5,background:T.surface,borderRadius:3}}><div style={{height:"100%",width:`${Math.round(c.valor/total*100)}%`,background:c.categoria==="Pro-Labore"?T.accent:T.pink,borderRadius:3}}/></div>
+                   </div>)}
+                   <div style={{display:"flex",justifyContent:"space-between",marginTop:10,paddingTop:10,borderTop:`1px solid ${T.border}`}}>
+                     <span style={{fontSize:11,fontWeight:700}}>Total pessoal</span>
+                     <span style={{fontSize:13,fontWeight:800,color:T.danger,fontFamily:"'Syne',sans-serif"}}>{total.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</span>
+                   </div>
+                 </div>);
+               }},
+              {id:"saldos",cat:"Financeiro",label:"Saldos bancários",icon:"-",color:T.info,roles:["admin","financeiro"],
+               render:()=>{
+                 const total=contas.reduce((a,c)=>a+c.saldo,0);
+                 return(<div>
+                   {contas.map((c,i)=><div key={i} style={{marginBottom:8}}>
+                     <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                       <div style={{display:"flex",gap:6,alignItems:"center"}}><div style={{width:10,height:10,borderRadius:"50%",background:c.cor||T.info}}/><span style={{fontSize:11}}>{c.banco}</span></div>
+                       <span style={{fontSize:12,fontWeight:700,color:T.info}}>{c.saldo.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</span>
+                     </div>
+                     <div style={{height:5,background:T.surface,borderRadius:3}}><div style={{height:"100%",width:`${total>0?Math.round(c.saldo/total*100):0}%`,background:c.cor||T.info,borderRadius:3}}/></div>
+                   </div>)}
+                   <div style={{display:"flex",justifyContent:"space-between",marginTop:10,paddingTop:10,borderTop:`1px solid ${T.border}`}}>
+                     <span style={{fontSize:11,fontWeight:700}}>Total</span>
+                     <span style={{fontSize:14,fontWeight:800,color:T.accent,fontFamily:"'Syne',sans-serif"}}>{total.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</span>
+                   </div>
+                 </div>);
+               }},
+              // COMERCIAL
+              {id:"pipeline_etapas",cat:"Comercial",label:"Pipeline por etapa",icon:"-",color:T.info,roles:["admin","comercial"],
+               render:()=>{
+                 const data=PIPE_STAGES.map(s=>({name:s.label,value:prospects.filter(p=>p.stage===s.id).reduce((a,p)=>a+(p.value||0),0),fill:s.color}));
+                 return(<div>
+                   <ResponsiveContainer width="100%" height={180}>
+                     <BarChart data={data} margin={{top:0,right:0,left:-10,bottom:20}}>
+                       <XAxis dataKey="name" tick={{fontSize:8,fill:T.muted}} angle={-20} textAnchor="end"/>
+                       <YAxis tick={{fontSize:8,fill:T.muted}} tickFormatter={v=>`${(v/1000).toFixed(0)}k`}/>
+                       <Tooltip formatter={v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})} contentStyle={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,fontSize:10}}/>
+                       <Bar dataKey="value" radius={[4,4,0,0]}>{data.map((d,i)=><Cell key={i} fill={d.fill}/>)}</Bar>
+                     </BarChart>
+                   </ResponsiveContainer>
+                 </div>);
+               }},
+              {id:"meta_vs_realizado",cat:"Comercial",label:"Meta vs Realizado",icon:"-",color:T.accent,roles:["admin","comercial"],
+               render:()=>{
+                 const data=users.filter(u=>["comercial","admin"].includes(u.role)&&u.active).map(u=>({
+                   name:u.name.split(" ")[0],
+                   realizado:prospects.filter(p=>p.owner===u.name).reduce((a,p)=>a+(p.value||0),0),
+                   meta:u.meta||0
+                 })).filter(d=>d.meta>0||d.realizado>0);
+                 return(<div>
+                   <ResponsiveContainer width="100%" height={180}>
+                     <BarChart data={data} margin={{top:0,right:0,left:-10,bottom:0}}>
+                       <XAxis dataKey="name" tick={{fontSize:10,fill:T.muted}}/>
+                       <YAxis tick={{fontSize:8,fill:T.muted}} tickFormatter={v=>`${(v/1000).toFixed(0)}k`}/>
+                       <Tooltip formatter={v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})} contentStyle={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,fontSize:10}}/>
+                       <Legend wrapperStyle={{fontSize:10}}/>
+                       <Bar dataKey="meta" name="Meta" fill={T.muted} radius={[4,4,0,0]}/>
+                       <Bar dataKey="realizado" name="Realizado" fill={T.accent} radius={[4,4,0,0]}/>
+                     </BarChart>
+                   </ResponsiveContainer>
+                 </div>);
+               }},
+              {id:"conversao",cat:"Comercial",label:"Conversão por usuário",icon:"-",color:T.purple,roles:["admin","comercial"],
+               render:()=>{
+                 const data=users.filter(u=>["comercial","admin"].includes(u.role)&&u.active).map(u=>{
+                   const meus=prospects.filter(p=>p.owner===u.name);
+                   const fech=meus.filter(p=>p.stage==="fechado").length;
+                   return{name:u.name.split(" ")[0],conv:meus.length>0?Math.round(fech/meus.length*100):0,total:meus.length,fech};
+                 }).filter(d=>d.total>0);
+                 return(<div>
+                   <ResponsiveContainer width="100%" height={180}>
+                     <BarChart data={data} margin={{top:0,right:0,left:-10,bottom:0}}>
+                       <XAxis dataKey="name" tick={{fontSize:10,fill:T.muted}}/>
+                       <YAxis tick={{fontSize:8,fill:T.muted}} unit="%"/>
+                       <Tooltip formatter={v=>`${v}%`} contentStyle={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,fontSize:10}}/>
+                       <Bar dataKey="conv" name="Conversão" fill={T.purple} radius={[4,4,0,0]}>{data.map((_,i)=><Cell key={i} fill={_.conv>=60?T.accent:_.conv>=30?T.info:T.danger}/>)}</Bar>
+                     </BarChart>
+                   </ResponsiveContainer>
+                 </div>);
+               }},
+              // OPERACIONAL
+              {id:"camps_grafica",cat:"Operacional",label:"Campanhas por gráfica",icon:"-",color:T.purple,roles:["admin","operacional"],
+               render:()=>{
+                 const data=Object.entries(camps.reduce((acc,c)=>{const g=c.graficaFornecedor||"Não definido";acc[g]=(acc[g]||0)+1;return acc;},{})).map(([name,value])=>({name,value}));
+                 const COLORS=[T.purple,T.info,T.accent,T.warn,T.pink];
+                 return(<div style={{display:"flex",gap:12,alignItems:"center"}}>
+                   <ResponsiveContainer width={140} height={140}>
+                     <PieChart><Pie data={data} cx="50%" cy="50%" innerRadius={30} outerRadius={60} dataKey="value">{data.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie></PieChart>
+                   </ResponsiveContainer>
+                   <div style={{flex:1}}>
+                     {data.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
+                       <div style={{display:"flex",gap:6,alignItems:"center"}}><div style={{width:8,height:8,borderRadius:"50%",background:COLORS[i%COLORS.length]}}/><span style={{fontSize:10}}>{d.name}</span></div>
+                       <span style={{fontSize:11,fontWeight:700,color:COLORS[i%COLORS.length]}}>{d.value} camp.</span>
+                     </div>)}
+                   </div>
+                 </div>);
+               }},
+              {id:"prazos",cat:"Operacional",label:"Prazos críticos",icon:"-",color:T.danger,roles:["admin","operacional"],
+               render:()=>{
+                 const hoje=new Date();
+                 const parse=s=>{if(!s)return null;const d=s.includes("-")?new Date(s):new Date(s.split("/").reverse().join("-"));return isNaN(d)?null:d;};
+                 const itens=camps.filter(c=>c.stage<5).flatMap(c=>[
+                   c.graficaPrazo?{camp:c.name,tipo:"Gráfica",prazo:c.graficaPrazo,dias:Math.ceil((parse(c.graficaPrazo)-hoje)/86400000)}:null,
+                   c.logisticaPrazo?{camp:c.name,tipo:"Logística",prazo:c.logisticaPrazo,dias:Math.ceil((parse(c.logisticaPrazo)-hoje)/86400000)}:null
+                 ]).filter(Boolean).filter(p=>p.dias!==null).sort((a,b)=>a.dias-b.dias);
+                 return itens.length===0?<div style={{fontSize:11,color:T.accent}}>Nenhum prazo cadastrado</div>:(
+                   <div>{itens.map((p,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}>
+                     <div><div style={{fontSize:11,fontWeight:600}}>{p.camp}</div><div style={{fontSize:9,color:T.muted}}>{p.tipo} · {p.prazo}</div></div>
+                     <div style={{padding:"3px 10px",borderRadius:6,background:p.dias<=0?T.danger:p.dias<=7?T.warn+"33":T.accentDim,color:p.dias<=0?T.danger:p.dias<=7?T.warn:T.accent,fontSize:10,fontWeight:700,alignSelf:"center"}}>
+                       {p.dias<=0?"VENCIDO":p.dias===1?"amanhã":`${p.dias}d`}
+                     </div>
+                   </div>)}</div>
+                 );
+               }},
+              // BASE
+              {id:"parceiros_status",cat:"Base",label:"Parceiros por status",icon:"-",color:T.green,roles:["admin","base"],
+               render:()=>{
+                 const data=Object.entries(basePartners.reduce((acc,p)=>{acc[p.status]=(acc[p.status]||0)+1;return acc;},{})).map(([name,value])=>({name:name.charAt(0).toUpperCase()+name.slice(1),value}));
+                 const COLORS=[T.accent,T.info,T.warn,T.muted,T.danger];
+                 return(<div style={{display:"flex",gap:12,alignItems:"center"}}>
+                   <ResponsiveContainer width={130} height={130}>
+                     <PieChart><Pie data={data} cx="50%" cy="50%" innerRadius={28} outerRadius={55} dataKey="value">{data.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie></PieChart>
+                   </ResponsiveContainer>
+                   <div style={{flex:1}}>
+                     {data.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
+                       <div style={{display:"flex",gap:6,alignItems:"center"}}><div style={{width:8,height:8,borderRadius:"50%",background:COLORS[i%COLORS.length]}}/><span style={{fontSize:10}}>{d.name}</span></div>
+                       <span style={{fontSize:11,fontWeight:700,color:COLORS[i%COLORS.length]}}>{d.value}</span>
+                     </div>)}
+                   </div>
+                 </div>);
+               }},
+              {id:"top_parceiros",cat:"Base",label:"Top parceiros por score",icon:"-",color:T.warn,roles:["admin","base"],
+               render:()=>(
+                 <div>{[...basePartners].sort((a,b)=>b.score-a.score).slice(0,8).map((p,i)=><div key={i} style={{display:"flex",gap:8,alignItems:"center",padding:"6px 0",borderBottom:`1px solid ${T.border}`}}>
+                   <div style={{width:20,height:20,borderRadius:"50%",background:i<3?T.warn+"33":T.surface,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:700,color:T.muted,flexShrink:0}}>{i+1}</div>
+                   <div style={{flex:1}}><div style={{fontSize:11,fontWeight:600}}>{p.name}</div><div style={{fontSize:8,color:T.muted}}>{p.category} · {p.city}</div></div>
+                   <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                     <div style={{height:5,width:50,background:T.surface,borderRadius:3}}><div style={{height:"100%",width:`${p.score}%`,background:p.score>=80?T.accent:T.warn,borderRadius:3}}/></div>
+                     <span style={{fontSize:11,fontWeight:700,color:p.score>=80?T.accent:T.warn,width:24,textAlign:"right"}}>{p.score}</span>
+                   </div>
+                 </div>)}</div>
+               )},
+              // MARKETING
+              {id:"impactos_canal",cat:"Marketing",label:"Impactos por canal",icon:"-",color:T.pink,roles:["admin","marketing"],
+               render:()=>{
+                 const data=[
+                   {name:"Offline",value:camps.reduce((a,c)=>a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3),0),fill:T.accent},
+                   {name:"Stories",value:camps.flatMap(c=>c.impactos?.stories||[]).reduce((a,s)=>a+Number(s.impressoes),0),fill:"#E1306C"},
+                   {name:"Influencer",value:camps.flatMap(c=>c.impactos?.influencer||[]).reduce((a,s)=>a+Number(s.alcance),0),fill:T.warn},
+                   {name:"Impulsionado",value:camps.flatMap(c=>c.impactos?.impulsionado||[]).reduce((a,s)=>a+Number(s.alcance),0),fill:T.info},
+                 ].filter(d=>d.value>0);
+                 return(<div>
+                   <ResponsiveContainer width="100%" height={160}>
+                     <BarChart data={data} margin={{top:0,right:0,left:-10,bottom:0}}>
+                       <XAxis dataKey="name" tick={{fontSize:9,fill:T.muted}}/>
+                       <YAxis tick={{fontSize:8,fill:T.muted}} tickFormatter={v=>v>=1000?`${(v/1000).toFixed(0)}k`:v}/>
+                       <Tooltip formatter={v=>v.toLocaleString("pt-BR")} contentStyle={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,fontSize:10}}/>
+                       <Bar dataKey="value" radius={[4,4,0,0]}>{data.map((d,i)=><Cell key={i} fill={d.fill}/>)}</Bar>
+                     </BarChart>
+                   </ResponsiveContainer>
+                 </div>);
+               }},
+              {id:"perf_campanhas",cat:"Marketing",label:"Performance campanhas",icon:"-",color:T.info,roles:["admin","marketing"],
+               render:()=>{
+                 const data=camps.filter(c=>c.sacolas>0).map(c=>{const imp=c.impactos||{};return{name:c.name.split(" ").slice(0,2).join(" "),impactos:Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3)+(imp.stories||[]).reduce((a,s)=>a+Number(s.impressoes),0)+(imp.influencer||[]).reduce((a,s)=>a+Number(s.alcance),0)};}).sort((a,b)=>b.impactos-a.impactos).slice(0,6);
+                 return(<div>
+                   <ResponsiveContainer width="100%" height={180}>
+                     <BarChart data={data} layout="vertical" margin={{top:0,right:10,left:60,bottom:0}}>
+                       <XAxis type="number" tick={{fontSize:8,fill:T.muted}} tickFormatter={v=>v>=1000?`${(v/1000).toFixed(0)}k`:v}/>
+                       <YAxis type="category" dataKey="name" tick={{fontSize:9,fill:T.muted}} width={60}/>
+                       <Tooltip formatter={v=>v.toLocaleString("pt-BR")} contentStyle={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,fontSize:10}}/>
+                       <Bar dataKey="impactos" fill={T.info} radius={[0,4,4,0]}/>
+                     </BarChart>
+                   </ResponsiveContainer>
+                 </div>);
+               }},
+            ];
 
-            // Helpers
-            const fmt=v=>v?.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0,maximumFractionDigits:0})||"R$0";
-            const fmtK=v=>v>=1000?`R$${(v/1000).toFixed(0)}k`:`R$${v||0}`;
-            const hoje=new Date();
-            const parsePrazo=s=>{if(!s)return null;const p=s.includes("-")?new Date(s):new Date(s.split("/").reverse().join("-"));return isNaN(p)?null:p;};
-            const diasAte=s=>{const d=parsePrazo(s);return d?Math.ceil((d-hoje)/(86400000)):null;};
+            const cats=[...new Set(BLOCOS.filter(b=>isAdmin||b.roles.includes(user.role)).map(b=>b.cat))];
+            const [selecionados,setSelecionados]=useState([]);
+            const [titulo,setTitulo]=useState("Relatório Ecodely");
+            const [periodo,setPeriodo]=useState(new Date().toLocaleDateString("pt-BR",{month:"long",year:"numeric"}));
 
-            // Seção reutilizável
-            const Sec=({title,color,children})=>(
-              <div style={{background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${color||T.accent}`,borderRadius:12,padding:"16px 20px",marginBottom:12}}>
-                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:color||T.accent,marginBottom:14}}>{title}</div>
-                {children}
-              </div>
-            );
-            const Row=({label,value,color,sub})=>(
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${T.border}`}}>
-                <span style={{fontSize:11,color:T.soft}}>{label}</span>
-                <div style={{textAlign:"right"}}>
-                  <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:color||T.text,fontSize:13}}>{value}</span>
-                  {sub&&<div style={{fontSize:9,color:T.muted}}>{sub}</div>}
-                </div>
-              </div>
-            );
-            const KPI=({label,value,color,sub})=>(
-              <div style={{background:T.surface,borderRadius:10,padding:"12px 14px",textAlign:"center"}}>
-                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:color||T.accent}}>{value}</div>
-                <div style={{fontSize:9,color:T.muted,marginTop:2}}>{label}</div>
-                {sub&&<div style={{fontSize:8,color:T.muted,marginTop:1}}>{sub}</div>}
-              </div>
-            );
+            const toggle=id=>setSelecionados(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
+            const blocosSel=selecionados.map(id=>BLOCOS.find(b=>b.id===id)).filter(Boolean);
+            const disponiveis=BLOCOS.filter(b=>isAdmin||b.roles.includes(user.role));
 
             return(
-              <div>
-                {/* Header */}
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
-                  <div>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18}}>Relatórios</div>
-                    <div style={{fontSize:10,color:T.muted,marginTop:2}}>Dados em tempo real · {hoje.toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"})}</div>
-                  </div>
-                  <button onClick={()=>window.print()} style={{padding:"8px 16px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>
-                    Imprimir / PDF
-                  </button>
-                </div>
+              <div style={{display:"grid",gridTemplateColumns:"260px 1fr",gap:16,minHeight:"calc(100vh - 120px)"}}>
 
-                {/* Tabs */}
-                <div style={{display:"flex",gap:4,marginBottom:20,flexWrap:"wrap"}}>
-                  {tabsDisponiveis.map(([id,l])=>(
-                    <div key={id} onClick={()=>setRelTab(id)} style={{padding:"8px 16px",borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:600,background:relTab===id?T.accentDim:T.card,border:`1px solid ${relTab===id?T.accentBorder:T.border}`,color:relTab===id?T.accent:T.muted,transition:"all 0.15s"}}>{l}</div>
+                {/* ── PAINEL ESQUERDO — Seletor de blocos ── */}
+                <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16,height:"fit-content",position:"sticky",top:0}}>
+                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,marginBottom:4}}>Construtor</div>
+                  <div style={{fontSize:9,color:T.muted,marginBottom:14}}>Escolha os blocos do relatório</div>
+
+                  {/* Título e período */}
+                  <div style={{marginBottom:12}}>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Título</div>
+                    <input value={titulo} onChange={e=>setTitulo(e.target.value)} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/>
+                  </div>
+                  <div style={{marginBottom:16}}>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Período</div>
+                    <input value={periodo} onChange={e=>setPeriodo(e.target.value)} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/>
+                  </div>
+
+                  {/* Blocos por categoria */}
+                  {cats.map(cat=>(
+                    <div key={cat} style={{marginBottom:14}}>
+                      <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6,fontFamily:"'JetBrains Mono',monospace"}}>{cat}</div>
+                      {disponiveis.filter(b=>b.cat===cat).map(b=>{
+                        const sel=selecionados.includes(b.id);
+                        return(
+                          <div key={b.id} onClick={()=>toggle(b.id)} style={{display:"flex",gap:8,alignItems:"center",padding:"7px 8px",borderRadius:7,cursor:"pointer",marginBottom:4,background:sel?b.color+"15":T.surface,border:`1px solid ${sel?b.color+"55":T.border}`,transition:"all 0.15s"}}>
+                            <div style={{width:12,height:12,borderRadius:3,border:`2px solid ${sel?b.color:T.border}`,background:sel?b.color:"transparent",flexShrink:0}}/>
+                            <span style={{fontSize:10,color:sel?b.color:T.soft,fontWeight:sel?700:400}}>{b.label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   ))}
+
+                  {selecionados.length>0&&(
+                    <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:6}}>
+                      <button onClick={()=>window.print()} style={{width:"100%",padding:"9px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:11,border:"none"}}>
+                        Exportar PDF
+                      </button>
+                      <button onClick={()=>setSelecionados([])} style={{width:"100%",padding:"7px",background:"transparent",color:T.muted,borderRadius:8,cursor:"pointer",fontSize:10,border:`1px solid ${T.border}`}}>
+                        Limpar seleção
+                      </button>
+                    </div>
+                  )}
                 </div>
 
-                {/* ── GERENCIAL ── */}
-                {relTab==="gerencial"&&(
-                  <div>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
-                      <KPI label="Receita total" value={fmtK(lancamentos.reduce((a,l)=>a+(l.entrada||0),0))} color={T.accent}/>
-                      <KPI label="Despesas totais" value={fmtK(lancamentos.reduce((a,l)=>a+(l.saida||0),0))} color={T.danger}/>
-                      <KPI label="Resultado líquido" value={fmtK(lancamentos.reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0))} color={lancamentos.reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0)>=0?T.accent:T.danger}/>
-                      <KPI label="Campanhas ativas" value={camps.filter(c=>c.stage<5).length} color={T.info} sub={`${camps.filter(c=>c.stage===5).length} finalizadas`}/>
+                {/* ── PAINEL DIREITO — Preview do relatório ── */}
+                <div>
+                  {blocosSel.length===0?(
+                    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"60vh",gap:12,color:T.muted}}>
+                      <div style={{fontSize:40}}>📊</div>
+                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:16,color:T.soft}}>Seu relatório aparece aqui</div>
+                      <div style={{fontSize:11,color:T.muted}}>Selecione os blocos no painel ao lado</div>
                     </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-                      <Sec title="Resultado financeiro" color={T.accent}>
-                        <Row label="Receita bruta" value={fmt(lancamentos.reduce((a,l)=>a+(l.entrada||0),0))} color={T.accent}/>
-                        <Row label="Despesas totais" value={fmt(lancamentos.reduce((a,l)=>a+(l.saida||0),0))} color={T.danger}/>
-                        <Row label="Resultado líquido" value={fmt(lancamentos.reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0))} color={T.accent}/>
-                        <Row label="Saldo em caixa" value={fmt(contas.reduce((a,c)=>a+c.saldo,0))} color={T.info}/>
-                        <Row label="Reserva de caixa ({reservaCaixaPct}%)" value={fmt(lancamentos.reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0)*(reservaCaixaPct/100))} color={T.warn}/>
-                      </Sec>
-                      <Sec title="Pipeline comercial" color={T.info}>
-                        <Row label="Total pipeline" value={fmt(prospects.reduce((a,p)=>a+(p.value||0),0))} color={T.info}/>
-                        <Row label="Prospects ativos" value={prospects.filter(p=>p.stage!=="fechado").length} sub="em aberto"/>
-                        <Row label="Fechados" value={prospects.filter(p=>p.stage==="fechado").length} color={T.accent}/>
-                        <Row label="Taxa de conversão" value={prospects.length>0?Math.round(prospects.filter(p=>p.stage==="fechado").length/prospects.length*100)+"%":"0%"} color={T.accent}/>
-                        <Row label="Ticket médio" value={prospects.filter(p=>p.stage==="fechado").length>0?fmt(prospects.filter(p=>p.stage==="fechado").reduce((a,p)=>a+(p.value||0),0)/prospects.filter(p=>p.stage==="fechado").length):"—"}/>
-                      </Sec>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-                      <Sec title="Campanhas" color={T.purple}>
-                        {STAGES_CAMP.map(s=>{const n=camps.filter(c=>c.stage===s.id).length;return n>0&&<Row key={s.id} label={s.label} value={n} color={s.color} sub={`R$${camps.filter(c=>c.stage===s.id).reduce((a,c)=>a+(c.valorLiquido||0),0).toLocaleString("pt-BR")}`}/>;})
-                        }
-                        <Row label="Valor total em produção" value={fmt(camps.filter(c=>c.stage<5).reduce((a,c)=>a+(c.valorLiquido||0),0))} color={T.accent}/>
-                      </Sec>
-                      <Sec title="Distribuição de sócios" color={T.warn}>
-                        {socios.map((s,i)=>{
-                          const lucro=lancamentos.reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0);
-                          const reserva=lucro*(reservaCaixaPct/100);
-                          const distribuivel=Math.max(0,lucro-reserva);
-                          return <Row key={i} label={s.nome} value={fmt(distribuivel*(s.pct/100))} color={T.warn} sub={`${s.pct}% · ${fmt(distribuivel)} distribuível`}/>;
-                        })}
-                        <Row label="Reserva de caixa" value={fmt(Math.max(0,lancamentos.reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0))*(reservaCaixaPct/100))} color={T.info}/>
-                      </Sec>
-                    </div>
-                    <Sec title="Top clientes por valor" color={T.pink}>
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr)",gap:8}}>
-                        {Object.values(camps.reduce((acc,c)=>{if(!c.client)return acc;if(!acc[c.client])acc[c.client]={name:c.client,val:0,camps:0};acc[c.client].val+=(c.valorLiquido||0);acc[c.client].camps++;return acc;},{})).sort((a,b)=>b.val-a.val).slice(0,6).map((c,i)=>(
-                          <div key={i} style={{background:T.surface,borderRadius:8,padding:"10px 12px"}}>
-                            <div style={{fontSize:11,fontWeight:700,marginBottom:2}}>{c.name}</div>
-                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15,color:T.accent}}>{fmtK(c.val)}</div>
-                            <div style={{fontSize:9,color:T.muted}}>{c.camps} campanha{c.camps!==1?"s":""}</div>
+                  ):(
+                    <div className="print-area">
+                      {/* Cabeçalho do relatório */}
+                      <div style={{background:`linear-gradient(135deg,${T.accent}22,${T.purple}11)`,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:"20px 24px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <div>
+                          <div style={{fontSize:8,color:T.accent,fontFamily:"'JetBrains Mono',monospace",letterSpacing:3,textTransform:"uppercase",marginBottom:4}}>ECODELY · MÍDIA IN-HOME</div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,marginBottom:2}}>{titulo}</div>
+                          <div style={{fontSize:10,color:T.muted}}>{periodo} · Gerado em {new Date().toLocaleDateString("pt-BR")}</div>
+                        </div>
+                        <div style={{textAlign:"right"}}>
+                          <div style={{fontSize:9,color:T.muted,marginBottom:4}}>{blocosSel.length} bloco{blocosSel.length!==1?"s":""} selecionado{blocosSel.length!==1?"s":""}</div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.accent}}>{user.name}</div>
+                          <div style={{fontSize:9,color:T.muted}}>{ROLE_LABELS[user.role]}</div>
+                        </div>
+                      </div>
+
+                      {/* Blocos em grid */}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                        {blocosSel.map(b=>(
+                          <div key={b.id} style={{background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${b.color}`,borderRadius:12,padding:"16px 18px",position:"relative"}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:b.color}}>{b.label}</div>
+                              <div onClick={()=>toggle(b.id)} style={{cursor:"pointer",color:T.muted,fontSize:14,lineHeight:1}}>×</div>
+                            </div>
+                            {b.render()}
                           </div>
                         ))}
                       </div>
-                    </Sec>
-                  </div>
-                )}
-
-                {/* ── COMERCIAL ── */}
-                {relTab==="comercial"&&(
-                  <div>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
-                      <KPI label="Total pipeline" value={fmtK(prospects.reduce((a,p)=>a+(p.value||0),0))} color={T.info}/>
-                      <KPI label="Propostas enviadas" value={prospects.filter(p=>["proposta","negociacao","fechado"].includes(p.stage)).length} color={T.purple}/>
-                      <KPI label="Fechados" value={prospects.filter(p=>p.stage==="fechado").length} color={T.accent}/>
-                      <KPI label="Conversão geral" value={prospects.length>0?Math.round(prospects.filter(p=>p.stage==="fechado").length/prospects.length*100)+"%":"0%"} color={T.accent}/>
                     </div>
-                    <Sec title="Propostas por usuário × conversão" color={T.info}>
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8,marginBottom:10,padding:"6px 0",borderBottom:`1px solid ${T.border}`}}>
-                        {["Usuário","Prospects","Propostas","Fechados","Conversão"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>{h}</div>)}
-                      </div>
-                      {users.filter(u=>["comercial","admin"].includes(u.role)&&u.active).map(u=>{
-                        const meus=prospects.filter(p=>p.owner===u.name);
-                        const props=meus.filter(p=>["proposta","negociacao","fechado"].includes(p.stage));
-                        const fech=meus.filter(p=>p.stage==="fechado");
-                        const conv=meus.length>0?Math.round(fech.length/meus.length*100):0;
-                        const meta=u.meta||0;
-                        const realizado=meus.reduce((a,p)=>a+(p.value||0),0);
-                        return(
-                          <div key={u.id} style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8,padding:"8px 0",borderBottom:`1px solid ${T.border}`,alignItems:"center"}}>
-                            <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                              <div style={{width:20,height:20,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:ROLE_COLOR[u.role],fontWeight:700}}>{u.avatar}</div>
-                              <span style={{fontSize:11,fontWeight:600}}>{u.name}</span>
-                            </div>
-                            <span style={{fontSize:12,fontFamily:"'Syne',sans-serif",fontWeight:700}}>{meus.length}</span>
-                            <span style={{fontSize:12,fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.purple}}>{props.length}</span>
-                            <span style={{fontSize:12,fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.accent}}>{fech.length}</span>
-                            <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                              <div style={{width:36,height:18,borderRadius:9,background:conv>=70?T.accent:conv>=40?T.info:T.danger,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                                <span style={{fontSize:9,color:"#000",fontWeight:700}}>{conv}%</span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </Sec>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                      <Sec title="Meta vs Realizado" color={T.accent}>
-                        {users.filter(u=>["comercial","admin"].includes(u.role)&&u.active).map(u=>{
-                          const realizado=prospects.filter(p=>p.owner===u.name).reduce((a,p)=>a+(p.value||0),0);
-                          const meta=u.meta||0;
-                          const pct=meta>0?Math.min(Math.round(realizado/meta*100),100):0;
-                          return(
-                            <div key={u.id} style={{marginBottom:10}}>
-                              <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                                <span style={{fontSize:11}}>{u.name}</span>
-                                <span style={{fontSize:11,color:T.accent,fontWeight:700}}>{fmtK(realizado)}{meta>0?` / ${fmtK(meta)}`:""}</span>
-                              </div>
-                              {meta>0&&<><div style={{height:6,background:T.surface,borderRadius:3,overflow:"hidden"}}>
-                                <div style={{height:"100%",width:`${pct}%`,background:pct>=100?T.accent:T.info,borderRadius:3}}/>
-                              </div>
-                              <div style={{fontSize:8,color:T.muted,marginTop:2}}>{pct}% da meta</div></>}
-                              {!meta&&<div style={{fontSize:8,color:T.warn}}>Sem meta definida</div>}
-                            </div>
-                          );
-                        })}
-                      </Sec>
-                      <Sec title="Forecast (pipeline × probabilidade)" color={T.purple}>
-                        {PIPE_STAGES.map(s=>{
-                          const v=prospects.filter(p=>p.stage===s.id).reduce((a,p)=>a+(p.value||0),0);
-                          const forecast=v*(s.prob/100);
-                          return v>0&&<Row key={s.id} label={`${s.label} (${s.prob}%)`} value={fmt(forecast)} color={s.color} sub={`${fmt(v)} em pipeline`}/>;
-                        })}
-                        <Row label="Total forecast" value={fmt(prospects.reduce((a,p)=>{const s=PIPE_STAGES.find(x=>x.id===p.stage);return a+(p.value||0)*(s?.prob||0)/100;},0))} color={T.accent}/>
-                      </Sec>
-                    </div>
-                  </div>
-                )}
-
-                {/* ── OPERACIONAL ── */}
-                {relTab==="operacional"&&(
-                  <div>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
-                      <KPI label="Campanhas ativas" value={camps.filter(c=>c.stage<5).length} color={T.accent}/>
-                      <KPI label="Em gráfica" value={camps.filter(c=>c.stage===2).length} color={T.purple}/>
-                      <KPI label="Em logística" value={camps.filter(c=>c.stage===3).length} color={T.warn}/>
-                      <KPI label="Embalagens em prod." value={(camps.filter(c=>c.stage<5).reduce((a,c)=>a+(c.sacolas||0),0)).toLocaleString("pt-BR")} color={T.info}/>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-                      <Sec title="Campanhas por gráfica" color={T.purple}>
-                        {Object.entries(camps.reduce((acc,c)=>{const g=c.graficaFornecedor||"Não definido";if(!acc[g])acc[g]={camps:0,embalagens:0,valor:0};acc[g].camps++;acc[g].embalagens+=(c.sacolas||0);acc[g].valor+=(c.valorLiquido||0);return acc;},{})).sort((a,b)=>b[1].camps-a[1].camps).map(([g,d])=>(
-                          <Row key={g} label={g} value={`${d.camps} camp.`} color={g==="Não definido"?T.muted:T.purple} sub={`${d.embalagens.toLocaleString("pt-BR")} emb. · ${fmtK(d.valor)}`}/>
-                        ))}
-                      </Sec>
-                      <Sec title="Campanhas por logística" color={T.info}>
-                        {Object.entries(camps.reduce((acc,c)=>{const l=c.logistica||"Não definido";if(!acc[l])acc[l]={camps:0,embalagens:0};acc[l].camps++;acc[l].embalagens+=(c.sacolas||0);return acc;},{})).sort((a,b)=>b[1].camps-a[1].camps).map(([l,d])=>(
-                          <Row key={l} label={l} value={`${d.camps} camp.`} color={l==="Não definido"?T.muted:T.info} sub={`${d.embalagens.toLocaleString("pt-BR")} embalagens`}/>
-                        ))}
-                      </Sec>
-                    </div>
-                    <Sec title="Status das tasks por campanha ativa" color={T.warn}>
-                      {camps.filter(c=>c.stage<5).map(c=>{
-                        const td=tasksDone(c.tasks||{});
-                        const pct=td.total>0?Math.round(td.done/td.total*100):0;
-                        const s=STAGES_CAMP.find(x=>x.id===c.stage);
-                        return(
-                          <div key={c.id} style={{marginBottom:10}}>
-                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                              <div><span style={{fontSize:11,fontWeight:700}}>{c.name}</span><span style={{fontSize:9,color:T.muted,marginLeft:8}}>{c.client}</span></div>
-                              <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                                <Badge label={s?.label||""} color={s?.color||T.muted}/>
-                                <span style={{fontSize:11,color:T.accent,fontWeight:700}}>{td.done}/{td.total}</span>
-                              </div>
-                            </div>
-                            <div style={{height:5,background:T.surface,borderRadius:3,overflow:"hidden"}}>
-                              <div style={{height:"100%",width:`${pct}%`,background:pct===100?T.accent:s?.color||T.info,borderRadius:3}}/>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </Sec>
-                    <Sec title="Prazos críticos" color={T.danger}>
-                      {camps.filter(c=>c.stage<5).flatMap(c=>[
-                        c.graficaPrazo?{camp:c.name,tipo:"Gráfica",prazo:c.graficaPrazo,dias:diasAte(c.graficaPrazo)}:null,
-                        c.logisticaPrazo?{camp:c.name,tipo:"Logística",prazo:c.logisticaPrazo,dias:diasAte(c.logisticaPrazo)}:null
-                      ]).filter(Boolean).filter(p=>p.dias!==null).sort((a,b)=>a.dias-b.dias).map((p,i)=>(
-                        <Row key={i} label={`${p.camp} · ${p.tipo}`} value={p.dias<=0?"VENCIDO":p.dias===1?"amanhã":`${p.dias}d`} color={p.dias<=0?T.danger:p.dias<=7?T.warn:T.muted} sub={p.prazo}/>
-                      ))}
-                    </Sec>
-                  </div>
-                )}
-
-                {/* ── BASE ── */}
-                {relTab==="base"&&(
-                  <div>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
-                      <KPI label="Total parceiros" value={basePartners.length} color={T.accent}/>
-                      <KPI label="Ativos" value={basePartners.filter(p=>p.status==="ativo").length} color={T.green}/>
-                      <KPI label="Contratos assinados" value={basePartners.filter(p=>p.contrato?.status==="assinado").length} color={T.info}/>
-                      <KPI label="Score médio" value={basePartners.length>0?Math.round(basePartners.reduce((a,p)=>a+(p.score||0),0)/basePartners.length):0} color={T.warn} sub="de 100"/>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-                      <Sec title="Parceiros por status" color={T.accent}>
-                        {Object.entries(basePartners.reduce((acc,p)=>{acc[p.status]=(acc[p.status]||0)+1;return acc;},{})).map(([s,n])=>(
-                          <Row key={s} label={s.charAt(0).toUpperCase()+s.slice(1)} value={n} color={STATUS_PARTNER[s]||T.muted} sub={`${Math.round(n/basePartners.length*100)}% da base`}/>
-                        ))}
-                      </Sec>
-                      <Sec title="Parceiros por categoria" color={T.info}>
-                        {Object.entries(basePartners.reduce((acc,p)=>{acc[p.category]=(acc[p.category]||0)+1;return acc;},{})).sort((a,b)=>b[1]-a[1]).map(([cat,n])=>(
-                          <Row key={cat} label={cat} value={n} sub={`${Math.round(n/basePartners.length*100)}%`}/>
-                        ))}
-                      </Sec>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-                      <Sec title="Contratos" color={T.warn}>
-                        {[["assinado","Assinados",T.accent],["pendente","Pendentes",T.warn],["expirando","Expirando",T.danger],["sem contrato","Sem contrato",T.muted]].map(([s,l,c])=>(
-                          <Row key={s} label={l} value={basePartners.filter(p=>p.contrato?.status===s).length} color={c}/>
-                        ))}
-                      </Sec>
-                      <Sec title="Parceiros por estado" color={T.purple}>
-                        {Object.entries(basePartners.reduce((acc,p)=>{const e=p.state||"N/A";acc[e]=(acc[e]||0)+1;return acc;},{})).sort((a,b)=>b[1]-a[1]).map(([e,n])=>(
-                          <Row key={e} label={e} value={n}/>
-                        ))}
-                      </Sec>
-                    </div>
-                    <Sec title="Top 10 parceiros por score" color={T.accent}>
-                      <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                        {[...basePartners].sort((a,b)=>b.score-a.score).slice(0,10).map((p,i)=>(
-                          <div key={i} style={{display:"flex",gap:10,alignItems:"center",padding:"6px 8px",background:T.surface,borderRadius:7}}>
-                            <div style={{width:22,height:22,borderRadius:"50%",background:i<3?T.warn+"33":T.border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:700,color:T.soft,flexShrink:0}}>{i+1}</div>
-                            <div style={{flex:1}}><div style={{fontSize:11,fontWeight:600}}>{p.name}</div><div style={{fontSize:9,color:T.muted}}>{p.category} · {p.city}/{p.state}</div></div>
-                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:p.score>=80?T.accent:p.score>=50?T.info:T.warn}}>{p.score}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </Sec>
-                  </div>
-                )}
-
-                {/* ── FINANCEIRO ── */}
-                {relTab==="financeiro"&&(
-                  <div>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
-                      <KPI label="Receita total" value={fmtK(lancamentos.reduce((a,l)=>a+(l.entrada||0),0))} color={T.accent}/>
-                      <KPI label="Despesas totais" value={fmtK(lancamentos.reduce((a,l)=>a+(l.saida||0),0))} color={T.danger}/>
-                      <KPI label="Resultado" value={fmtK(lancamentos.reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0))} color={T.info}/>
-                      <KPI label="Saldo em caixa" value={fmtK(contas.reduce((a,c)=>a+c.saldo,0))} color={T.purple}/>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-                      <Sec title="Balanço Patrimonial" color={T.accent}>
-                        <div style={{fontSize:10,color:T.info,fontWeight:700,marginBottom:6}}>ATIVOS</div>
-                        {contas.map(c=><Row key={c.id} label={c.banco} value={fmt(c.saldo)} color={T.info}/>)}
-                        <Row label="Total ativos" value={fmt(contas.reduce((a,c)=>a+c.saldo,0))} color={T.accent}/>
-                        <div style={{fontSize:10,color:T.danger,fontWeight:700,marginTop:10,marginBottom:6}}>PASSIVOS</div>
-                        {cartoes.map(cart=>{const total=comprasCartao.filter(c=>c.cartaoId===cart.id).reduce((a,c)=>a+(c.valorParcela||0),0);return total>0&&<Row key={cart.id} label={cart.nome} value={fmt(total)} color={T.danger} sub="parcela mensal"/>;}).filter(Boolean)}
-                        <Row label="Total passivos" value={fmt(comprasCartao.reduce((a,c)=>a+(c.valorParcela||0),0))} color={T.danger}/>
-                        <div style={{height:1,background:T.border,margin:"10px 0"}}/>
-                        <Row label="Patrimônio líquido" value={fmt(contas.reduce((a,c)=>a+c.saldo,0)-comprasCartao.reduce((a,c)=>a+(c.valorParcela||0),0))} color={T.accent}/>
-                      </Sec>
-                      <Sec title="DRE" color={T.info}>
-                        <Row label="Receita bruta" value={fmt(lancamentos.reduce((a,l)=>a+(l.entrada||0),0))} color={T.accent}/>
-                        <Row label="Despesas operacionais" value={fmt(lancamentos.reduce((a,l)=>a+(l.saida||0),0))} color={T.danger}/>
-                        <Row label="EBITDA" value={fmt(lancamentos.reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0))} color={T.info}/>
-                        <Row label="Impostos (DAS)" value={fmt(lancamentos.filter(l=>l.categoria==="Imposto").reduce((a,l)=>a+(l.saida||0),0))} color={T.danger}/>
-                        <Row label="Resultado líquido" value={fmt(lancamentos.reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0))} color={T.accent}/>
-                        <Row label="Margem líquida" value={lancamentos.reduce((a,l)=>a+(l.entrada||0),0)>0?Math.round(lancamentos.reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0)/lancamentos.reduce((a,l)=>a+(l.entrada||0),0)*100)+"%":"0%"} color={T.accent}/>
-                      </Sec>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
-                      <Sec title="Despesas por categoria" color={T.warn}>
-                        {Object.entries(lancamentos.filter(l=>l.saida>0).reduce((acc,l)=>{const cat=l.categoria||"Outros";acc[cat]=(acc[cat]||0)+(l.saida||0);return acc;},{})).sort((a,b)=>b[1]-a[1]).map(([cat,v])=>(
-                          <Row key={cat} label={cat} value={fmt(v)} color={T.warn} sub={`${Math.round(v/lancamentos.reduce((a,l)=>a+(l.saida||0),0)*100)}%`}/>
-                        ))}
-                      </Sec>
-                      <Sec title="Despesas por centro de custo" color={T.purple}>
-                        {Object.entries(lancamentos.filter(l=>l.saida>0).reduce((acc,l)=>{const cc=l.centrosCusto||"Outros";acc[cc]=(acc[cc]||0)+(l.saida||0);return acc;},{})).sort((a,b)=>b[1]-a[1]).map(([cc,v])=>(
-                          <Row key={cc} label={cc} value={fmt(v)} color={T.purple} sub={`${Math.round(v/lancamentos.reduce((a,l)=>a+(l.saida||0),0)*100)}%`}/>
-                        ))}
-                      </Sec>
-                      <Sec title="Custo pessoal" color={T.pink}>
-                        {custosFix.filter(c=>c.categoria==="Salario"||c.categoria==="Pro-Labore").map(c=>(
-                          <Row key={c.id} label={c.descricao} value={fmt(c.valor)} color={c.categoria==="Pro-Labore"?T.accent:T.pink} sub={c.categoria}/>
-                        ))}
-                        <Row label="Total pessoal" value={fmt(custosFix.filter(c=>c.categoria==="Salario"||c.categoria==="Pro-Labore").reduce((a,c)=>a+c.valor,0))} color={T.danger}/>
-                      </Sec>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                      <Sec title="Custos fixos por fornecedor/serviço" color={T.info}>
-                        {custosFix.filter(c=>c.ativo).sort((a,b)=>b.valor-a.valor).map(c=>(
-                          <Row key={c.id} label={c.descricao} value={fmt(c.valor)} sub={`Dia ${c.dia} · ${c.categoria}`}/>
-                        ))}
-                      </Sec>
-                      <Sec title="Parcelamentos em cartão" color={T.warn}>
-                        {cartoes.map(cart=>{
-                          const compras=comprasCartao.filter(c=>c.cartaoId===cart.id);
-                          if(!compras.length)return null;
-                          return(<div key={cart.id} style={{marginBottom:10}}>
-                            <div style={{fontSize:10,color:T.warn,fontWeight:700,marginBottom:4}}>{cart.nome}</div>
-                            {compras.map(c=><Row key={c.id} label={c.descricao||c.projeto} value={fmt(c.valorParcela)} sub={`Parcela ${c.parcelaAtual}/${c.parcelas}`}/>)}
-                          </div>);
-                        }).filter(Boolean)}
-                      </Sec>
-                    </div>
-                  </div>
-                )}
-
-                {/* ── MARKETING ── */}
-                {relTab==="marketing"&&(
-                  <div>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
-                      <KPI label="Impactos totais" value={(camps.reduce((a,c)=>{const imp=c.impactos||{};return a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3)+(imp.stories||[]).reduce((s,x)=>s+Number(x.impressoes),0)+(imp.influencer||[]).reduce((s,x)=>s+Number(x.alcance),0)+(imp.impulsionado||[]).reduce((s,x)=>s+Number(x.alcance),0);},0)).toLocaleString("pt-BR")} color={T.accent}/>
-                      <KPI label="Campanhas com mídia" value={camps.filter(c=>(c.impactos?.galeria||[]).length>0||(c.impactos?.stories||[]).length>0).length} color={T.info}/>
-                      <KPI label="Influenciadores" value={camps.flatMap(c=>c.impactos?.influencer||[]).length} color={T.purple}/>
-                      <KPI label="Stories registrados" value={camps.flatMap(c=>c.impactos?.stories||[]).length} color={T.pink}/>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-                      <Sec title="Impactos por canal" color={T.accent}>
-                        {[
-                          {l:"Offline (embalagens×3.3)",v:camps.reduce((a,c)=>a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3),0),c:T.accent},
-                          {l:"Stories de parceiros",v:camps.flatMap(c=>c.impactos?.stories||[]).reduce((a,s)=>a+Number(s.impressoes),0),c:"#E1306C"},
-                          {l:"Influenciadores",v:camps.flatMap(c=>c.impactos?.influencer||[]).reduce((a,s)=>a+Number(s.alcance),0),c:T.warn},
-                          {l:"Mídia paga",v:camps.flatMap(c=>c.impactos?.impulsionado||[]).reduce((a,s)=>a+Number(s.alcance),0),c:T.info},
-                        ].map(k=><Row key={k.l} label={k.l} value={k.v.toLocaleString("pt-BR")} color={k.c} sub={camps.reduce((a,c)=>{const imp=c.impactos||{};return a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3)+(imp.stories||[]).reduce((s,x)=>s+Number(x.impressoes),0)+(imp.influencer||[]).reduce((s,x)=>s+Number(x.alcance),0)+(imp.impulsionado||[]).reduce((s,x)=>s+Number(x.alcance),0);},0)>0?Math.round(k.v/camps.reduce((a,c)=>{const imp=c.impactos||{};return a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3)+(imp.stories||[]).reduce((s,x)=>s+Number(x.impressoes),0)+(imp.influencer||[]).reduce((s,x)=>s+Number(x.alcance),0)+(imp.impulsionado||[]).reduce((s,x)=>s+Number(x.alcance),0);},0)*100)+"%":"0%"}/>)}
-                      </Sec>
-                      <Sec title="Performance por campanha" color={T.info}>
-                        {camps.filter(c=>(c.sacolas||0)>0).sort((a,b)=>{
-                          const imp=x=>{const i=x.impactos||{};return Math.round((x.sacolasDistribuidas||x.sacolas||0)*3.3)+(i.stories||[]).reduce((s,y)=>s+Number(y.impressoes),0)+(i.influencer||[]).reduce((s,y)=>s+Number(y.alcance),0);};
-                          return imp(b)-imp(a);
-                        }).slice(0,6).map(c=>{
-                          const imp=c.impactos||{};
-                          const total=Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3)+(imp.stories||[]).reduce((a,s)=>a+Number(s.impressoes),0)+(imp.influencer||[]).reduce((a,s)=>a+Number(s.alcance),0);
-                          return <Row key={c.id} label={c.name} value={total.toLocaleString("pt-BR")} color={T.info} sub={`${(c.sacolas||0).toLocaleString("pt-BR")} emb. · ${c.client}`}/>;
-                        })}
-                      </Sec>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                      <Sec title="Posts por campanha ativa" color={T.pink}>
-                        {camps.filter(c=>c.stage<5).map(c=>{
-                          const mkt=c.tasks?.marketing||[];
-                          const posts=mkt.filter(t=>t.label.toLowerCase().includes("post"));
-                          const feitos=posts.filter(t=>t.done).length;
-                          return(
-                            <div key={c.id} style={{marginBottom:8}}>
-                              <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                                <span style={{fontSize:11,fontWeight:600}}>{c.name}</span>
-                                <span style={{fontSize:11,color:feitos===posts.length&&posts.length>0?T.accent:T.muted}}>{feitos}/{posts.length}</span>
-                              </div>
-                              <div style={{height:4,background:T.surface,borderRadius:2,overflow:"hidden"}}>
-                                <div style={{height:"100%",width:posts.length>0?`${Math.round(feitos/posts.length*100)}%`:"0%",background:T.pink,borderRadius:2}}/>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </Sec>
-                      <Sec title="Ranking de parceiros por engajamento" color={T.warn}>
-                        {Object.entries(camps.flatMap(c=>c.impactos?.stories||[]).reduce((acc,s)=>{acc[s.parceiro]=(acc[s.parceiro]||0)+Number(s.impressoes);return acc;},{})).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([p,v],i)=>(
-                          <Row key={i} label={p} value={v.toLocaleString("pt-BR")} color={T.warn} sub="impressões"/>
-                        ))}
-                        {camps.flatMap(c=>c.impactos?.stories||[]).length===0&&<div style={{fontSize:11,color:T.muted}}>Nenhum story registrado ainda</div>}
-                      </Sec>
-                    </div>
-                  </div>
-                )}
-
+                  )}
+                </div>
               </div>
             );
           })()}
