@@ -1214,12 +1214,7 @@ export default function App(){
   const[pdfCamp,setPdfCamp]=useState(null);
   // Notification center
   const[inboxOpen,setInboxOpen]=useState(false);
-  const[inbox,setInbox]=useState([
-    {id:1,type:"tarefa",title:"Tarefa concluída",msg:"Ana Lima concluiu: Emitir PI - O Boticário",campanha:"O Boticário - Maio 2025",at:"02/05 10:20",read:false,color:T.info,via:["sistema","email"]},
-    {id:2,type:"etapa",title:"Campanha avançou",msg:"T4F - Maio 2025 entrou em Gráfica",campanha:"T4F - Maio 2025",at:"02/05 09:00",read:false,color:T.purple,via:["sistema","whatsapp"]},
-    {id:3,type:"contrato",title:"Contrato expirando",msg:"Churrasco do Gaúcho: contrato vence em 30 dias",campanha:null,at:"01/05 08:00",read:true,color:T.danger,via:["sistema","email","whatsapp"]},
-    {id:4,type:"comissao",title:"Comissão aprovada",msg:"Sua comissão de R$ 80 foi aprovada pelo admin",campanha:null,at:"30/04 17:30",read:true,color:T.accent,via:["sistema"]},
-  ]);
+  const[inbox,setInbox]=useState([]);
   const[prospects,setProspects]=useState(PROSPECTS_INIT);
   const[pipeView,setPipeView]=useState("kanban");
   const[commTab,setCommTab]=useState("pipeline");
@@ -1326,6 +1321,54 @@ export default function App(){
     load();
   },[]);
 
+  // Gera notificações automáticas sempre que os dados principais carregam
+  useEffect(()=>{
+    if(!user||!camps.length&&!prospects.length&&!closings.length&&!basePartners.length)return;
+    const hoje=new Date();
+    const geradas=[];
+    const parse=s=>{if(!s)return null;const d=s.includes("-")?new Date(s):new Date(s.split("/").reverse().join("-"));return isNaN(d)?null:d;};
+    const diasAte=s=>{const d=parse(s);return d?Math.ceil((d-hoje)/86400000):null;};
+    const now=()=>hoje.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})+" "+hoje.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+
+    // Prazos de gráfica e logística
+    if(["admin","operacional"].includes(user.role)){
+      camps.filter(c=>c.stage<5).forEach(c=>{
+        if(c.graficaPrazo){const d=diasAte(c.graficaPrazo);if(d!==null&&d<=7){geradas.push({id:Date.now()+Math.random(),type:"prazo",title:d<=0?"Prazo de gráfica VENCIDO":`Gráfica vence em ${d}d`,msg:`${c.name} · ${c.graficaFornecedor||"Gráfica não definida"}`,tab:"campanhas",at:now(),read:false,color:d<=0?T.danger:d<=3?T.warn:T.info});}}
+        if(c.logisticaPrazo){const d=diasAte(c.logisticaPrazo);if(d!==null&&d<=7){geradas.push({id:Date.now()+Math.random(),type:"prazo",title:d<=0?"Prazo de logística VENCIDO":`Logística vence em ${d}d`,msg:`${c.name} · ${c.logistica||"Logística não definida"}`,tab:"campanhas",at:now(),read:false,color:d<=0?T.danger:d<=3?T.warn:T.purple});}}
+        if(!c.graficaFornecedor&&c.stage>=1){geradas.push({id:Date.now()+Math.random(),type:"operacional",title:"Operacional pendente",msg:`${c.name} ainda não tem gráfica ou logística definida`,tab:"campanhas",at:now(),read:false,color:T.warn});}
+      });
+    }
+
+    // Comissões pendentes (admin e financeiro)
+    if(["admin","financeiro"].includes(user.role)){
+      const pend=closings.filter(c=>c.status==="pendente");
+      if(pend.length>0){geradas.push({id:Date.now()+Math.random(),type:"comissao",title:`${pend.length} comissão${pend.length>1?"ões":""} pendente${pend.length>1?"s":""}`,msg:`Aguardando aprovação: ${pend.map(c=>c.partner).slice(0,3).join(", ")}${pend.length>3?` +${pend.length-3}`:""}`,tab:"comissoes",at:now(),read:false,color:T.warn});}
+    }
+
+    // Contratos expirando (admin e base)
+    if(["admin","base"].includes(user.role)){
+      basePartners.filter(p=>p.contrato?.expiraEm).forEach(p=>{
+        const d=diasAte(p.contrato.expiraEm);
+        if(d!==null&&d<=30&&d>=0){geradas.push({id:Date.now()+Math.random(),type:"contrato",title:`Contrato expirando em ${d}d`,msg:`${p.name} · ${p.category}`,tab:"base",at:now(),read:false,color:d<=7?T.danger:T.warn});}
+      });
+    }
+
+    // Metas comerciais (comercial vê a sua própria)
+    if(["admin","comercial"].includes(user.role)){
+      const myProspects=prospects.filter(p=>p.owner===user.name||user.role==="admin");
+      const myPipe=myProspects.reduce((a,p)=>a+(p.value||0),0);
+      const myMeta=user.meta||0;
+      if(myMeta>0&&myPipe>=myMeta){geradas.push({id:Date.now()+Math.random(),type:"meta",title:"Meta batida! 🎉",msg:`Pipeline de ${myPipe.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})} superou a meta de ${myMeta.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}`,tab:"comercial",at:now(),read:false,color:T.accent});}
+    }
+
+    if(geradas.length>0)setInbox(prev=>{
+      // Evita duplicar: filtra tipos que não existem ainda
+      const tipos=prev.filter(n=>n.auto).map(n=>n.type+n.title);
+      const novas=geradas.filter(n=>!tipos.includes(n.type+n.title)).map(n=>({...n,auto:true}));
+      return[...novas,...prev.filter(n=>!n.auto)];
+    });
+  },[user,camps,closings,basePartners,prospects]);
+
   // --- DERIVED -------------------------------------------------------------
   const sec=user?ROLE_TO_SEC[user.role]:null;
   // Build queue: all pending tasks for the logged user's sector
@@ -1364,11 +1407,13 @@ export default function App(){
     setTimeout(()=>setNotifs(p=>p.filter(x=>x.id!==n.id)),5000);
   };
 
-  const addNotif=(type,title,msg,campanha,color,via)=>{
-    const entry={id:Date.now(),type,title,msg,campanha:campanha||null,at:now(),read:false,color,via:via||["sistema"]};
+  const addNotif=async(type,title,msg,campanha,color,via,tab)=>{
+    const entry={id:Date.now(),type,title,msg,campanha:campanha||null,at:now(),read:false,color,via:via||["sistema"],tab:tab||null};
     setInbox(p=>[entry,...p]);
     pushNotif(title,msg,color);
-    // Simulate WhatsApp/email log
+    if(user?.id){
+      await supabase.from("notificacoes").insert({id:entry.id,user_id:user.id,tipo:type,titulo:title,mensagem:msg,link_tab:tab||null,lida:false});
+    }
   };
 
   // -- DRAG HANDLERS - CAMPAIGNS --
@@ -1484,7 +1529,7 @@ export default function App(){
         return{...prev,tasks:newTasks,timeline:newTl};
       });
     }
-    if(!wasDone) addNotif("tarefa","Tarefa concluida",byUser?.name+" concluiu: "+taskLabel,camps.find(c=>c.id===campId)?.name,SEC_COLOR[sec]||T.accent,["sistema","email"]);
+    if(!wasDone) addNotif("tarefa","Tarefa concluída",`${byUser?.name||user?.name} concluiu: ${taskLabel}`,camps.find(c=>c.id===campId)?.name,SEC_COLOR[sec]||T.accent,["sistema"],"campanhas");
     else pushNotif("Tarefa reaberta",taskLabel,T.muted);
   };
 
@@ -1805,49 +1850,54 @@ export default function App(){
               )}
               {/* Inbox dropdown */}
               {inboxOpen&&(
-                <div style={{position:"absolute",top:42,right:0,width:340,background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,boxShadow:"0 8px 32px #00000060",zIndex:500,overflow:"hidden"}} onClick={e=>e.stopPropagation()}>
+                <div style={{position:"absolute",top:42,right:0,width:360,background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,boxShadow:"0 8px 32px #00000060",zIndex:500,overflow:"hidden"}} onClick={e=>e.stopPropagation()}>
                   <div style={{padding:"14px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Notificacoes</div>
+                    <div>
+                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Notificações</div>
+                      {inbox.filter(n=>!n.read).length>0&&<div style={{fontSize:9,color:T.muted,marginTop:1}}>{inbox.filter(n=>!n.read).length} não lida{inbox.filter(n=>!n.read).length>1?"s":""}</div>}
+                    </div>
                     <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                      <div onClick={()=>setInbox(p=>p.map(n=>({...n,read:true})))} style={{fontSize:9,color:T.accent,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}}>Marcar todas lidas</div>
-                      <div onClick={()=>setInboxOpen(false)} style={{fontSize:14,color:T.muted,cursor:"pointer"}}>x</div>
+                      <div onClick={async()=>{setInbox(p=>p.map(n=>({...n,read:true})));if(user?.id)await supabase.from("notificacoes").update({lida:true}).eq("user_id",user.id);}} style={{fontSize:9,color:T.accent,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}}>Marcar todas lidas</div>
+                      <div onClick={()=>setInboxOpen(false)} style={{fontSize:18,color:T.muted,cursor:"pointer",lineHeight:1}}>×</div>
                     </div>
                   </div>
-                  <div style={{maxHeight:380,overflowY:"auto"}}>
+                  <div style={{maxHeight:420,overflowY:"auto"}}>
                     {inbox.length===0?(
-                      <div style={{padding:"32px",textAlign:"center",color:T.muted,fontSize:12}}>Nenhuma notificacao</div>
-                    ):inbox.map((n,i)=>(
-                      <div key={n.id} onClick={()=>setInbox(p=>p.map(x=>x.id===n.id?{...x,read:true}:x))}
-                        style={{padding:"12px 16px",borderBottom:`1px solid ${T.border}`,background:n.read?"transparent":n.color+"08",cursor:"pointer",transition:"background 0.15s"}}>
-                        <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
-                          <div style={{width:8,height:8,borderRadius:"50%",background:n.read?T.muted:n.color,marginTop:4,flexShrink:0}}/>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{display:"flex",justifyContent:"space-between",gap:8,marginBottom:3}}>
-                              <div style={{fontSize:11,fontWeight:n.read?400:700,color:n.read?T.soft:T.text}}>{n.title}</div>
-                              <div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",flexShrink:0}}>{n.at}</div>
+                      <div style={{padding:"32px",textAlign:"center",color:T.muted}}>
+                        <div style={{fontSize:28,marginBottom:8}}>🔔</div>
+                        <div style={{fontSize:12}}>Tudo em dia!</div>
+                      </div>
+                    ):inbox.map((n,i)=>{
+                      const ICONS={prazo:"⏰",comissao:"💰",tarefa:"✅",etapa:"🚀",contrato:"📄",meta:"🎯",operacional:"⚙️",sistema:"📢"};
+                      return(
+                        <div key={n.id}
+                          onClick={async()=>{
+                            setInbox(p=>p.map(x=>x.id===n.id?{...x,read:true}:x));
+                            if(user?.id&&!n.auto)await supabase.from("notificacoes").update({lida:true}).eq("id",n.id);
+                            if(n.tab){setTab(n.tab);setInboxOpen(false);}
+                          }}
+                          style={{padding:"12px 16px",borderBottom:`1px solid ${T.border}`,background:n.read?"transparent":n.color+"12",cursor:"pointer",transition:"background 0.15s"}}>
+                          <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                            <div style={{width:34,height:34,borderRadius:10,background:n.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>
+                              {ICONS[n.type]||"📢"}
                             </div>
-                            <div style={{fontSize:10,color:T.muted,marginBottom:6,lineHeight:1.4}}>{n.msg}</div>
-                            {n.campanha&&<div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>Campanha: {n.campanha}</div>}
-                            <div style={{display:"flex",gap:5,marginTop:5}}>
-                              {(n.via||["sistema"]).map(v=>(
-                                <span key={v} style={{fontSize:7,padding:"1px 6px",borderRadius:4,background:v==="whatsapp"?"#25D36622":v==="email"?T.infoDim:T.accentDim,color:v==="whatsapp"?"#25D366":v==="email"?T.info:T.accent,border:`1px solid ${v==="whatsapp"?"#25D36633":v==="email"?T.info+"33":T.accentBorder}`}}>
-                                  {v==="whatsapp"?"WhatsApp":v==="email"?"E-mail":"Sistema"}
-                                </span>
-                              ))}
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{display:"flex",justifyContent:"space-between",gap:8,marginBottom:2}}>
+                                <div style={{fontSize:11,fontWeight:n.read?500:700,color:n.read?T.soft:T.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.title}</div>
+                                <div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",flexShrink:0}}>{n.at}</div>
+                              </div>
+                              <div style={{fontSize:10,color:T.muted,lineHeight:1.4,marginBottom:n.tab?3:0}}>{n.msg}</div>
+                              {n.tab&&<div style={{fontSize:8,color:n.color,fontFamily:"'JetBrains Mono',monospace"}}>→ Ir para {n.tab}</div>}
                             </div>
+                            {!n.read&&<div style={{width:7,height:7,borderRadius:"50%",background:n.color,flexShrink:0,marginTop:5}}/>}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
-                  <div style={{padding:"10px 16px",borderTop:`1px solid ${T.border}`,display:"flex",gap:8,justifyContent:"center"}}>
-                    {["sistema","email","whatsapp"].map(canal=>(
-                      <div key={canal} style={{display:"flex",gap:4,alignItems:"center"}}>
-                        <div style={{width:6,height:6,borderRadius:"50%",background:canal==="whatsapp"?"#25D366":canal==="email"?T.info:T.accent}}/>
-                        <span style={{fontSize:9,color:T.muted}}>{canal==="whatsapp"?"WhatsApp":canal==="email"?"E-mail":"Sistema"}</span>
-                      </div>
-                    ))}
-                  </div>
+                  {inbox.length>0&&<div style={{padding:"8px 16px",borderTop:`1px solid ${T.border}`,textAlign:"center"}}>
+                    <div onClick={()=>setInbox(p=>p.filter(n=>!n.auto))} style={{fontSize:9,color:T.muted,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}}>Limpar automáticas</div>
+                  </div>}
                 </div>
               )}
             </div>
