@@ -262,6 +262,7 @@ const getNav=(role,queueCount,notifCount,extraRoles=[])=>[
   {id:"comissoes",label:"Comissões",icon:"-",roles:["admin","base"]},
   {id:"parceiros",label:"Buscar Parceiros",icon:"-",roles:["admin","base"]},
   {id:"base",label:"Base",icon:"-",roles:["admin","base","comercial"]},
+  {id:"planejamento-midia",label:"Planejamento de Mídia",icon:"-",roles:["admin","comercial"]},
   {id:"relatorios",label:"Relatórios",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base"]},
   {id:"cadastros",label:"Cadastros",icon:"-",roles:["admin","comercial","operacional"]},
   {id:"usuarios",label:"Usuários",icon:"-",roles:["admin"]},
@@ -4286,7 +4287,7 @@ export default function App(){
           {tab==="comercial"&&(
             <div>
               <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid ${T.border}`}}>
-                {[["pipeline","Pipeline"],...(["admin","financeiro"].includes(user.role)?[["faturamento","Faturamento"]]:[[]]),...(["admin","comercial","financeiro"].includes(user.role)?[["clientes","Clientes"]]:[[]]),...(["admin","comercial"].includes(user.role)?[["metas","Metas"],["planejamento","Planejamento de Mídia"]]:[[]])].map(([id,l])=>(
+                {[["pipeline","Pipeline"],...(["admin","financeiro"].includes(user.role)?[["faturamento","Faturamento"]]:[[]]),...(["admin","comercial","financeiro"].includes(user.role)?[["clientes","Clientes"]]:[[]]),...(["admin","comercial"].includes(user.role)?[["metas","Metas"]]:[[]])].map(([id,l])=>(
                   <div key={id} onClick={()=>setCommTab(id)} style={{padding:"10px 18px",fontSize:11,cursor:"pointer",color:commTab===id?T.accent:T.muted,borderBottom:`2px solid ${commTab===id?T.accent:"transparent"}`,transition:"all 0.15s"}}>{l}</div>
                 ))}
               </div>
@@ -5074,21 +5075,25 @@ export default function App(){
                 </div>
               )}
 
-              {/* PLANEJAMENTO DE MÍDIA */}
-              {commTab==="planejamento"&&(
-                <PlanTab
-                  planAtivo={planAtivo} setPlanAtivo={setPlanAtivo}
-                  planStep={planStep} setPlanStep={setPlanStep}
-                  planAnalise={planAnalise} setPlanAnalise={setPlanAnalise}
-                  planLoading={planLoading} planGeoLoading={planGeoLoading} setPlanGeoLoading={setPlanGeoLoading}
-                  showPlanWizard={showPlanWizard} setShowPlanWizard={setShowPlanWizard}
-                  planejamentos={planejamentos}
-                  salvarPlano={salvarPlano} gerarPropostaPDF={gerarPropostaPDF}
-                  geocodeEndereco={geocodeEndereco} gerarAnaliseIA={gerarAnaliseIA}
-                  user={user} basePartners={basePartners} projects={projects}
-                />
-              )}
+
             </div>
+          )}
+
+          {/* --------------------------------------
+              PLANEJAMENTO DE MÍDIA
+          -------------------------------------- */}
+          {tab==="planejamento-midia"&&(
+            <PlanTab
+              planAtivo={planAtivo} setPlanAtivo={setPlanAtivo}
+              planStep={planStep} setPlanStep={setPlanStep}
+              planAnalise={planAnalise} setPlanAnalise={setPlanAnalise}
+              planLoading={planLoading} planGeoLoading={planGeoLoading} setPlanGeoLoading={setPlanGeoLoading}
+              showPlanWizard={showPlanWizard} setShowPlanWizard={setShowPlanWizard}
+              planejamentos={planejamentos}
+              salvarPlano={salvarPlano} gerarPropostaPDF={gerarPropostaPDF}
+              geocodeEndereco={geocodeEndereco} gerarAnaliseIA={gerarAnaliseIA}
+              user={user} basePartners={basePartners} projects={projects}
+            />
           )}
 
           {/* --------------------------------------
