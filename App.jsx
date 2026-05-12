@@ -1992,12 +1992,10 @@ export default function App(){
   const gerarAnaliseIA=async(plano)=>{
     setPlanLoading(true);
     try{
-      const r=await fetch("https://api.anthropic.com/v1/messages",{
+      const r=await fetch("/api/analyze",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",
-          max_tokens:1200,
           messages:[{role:"user",content:`Você é especialista em planejamento de mídia e dados demográficos do Brasil. Analise a região "${plano.regiao||plano.clienteEndereco}" para campanha de mídia in-home (embalagens de delivery branded) para o cliente "${plano.clienteNome}" do segmento "${plano.clienteSegmento}". Público-alvo: ${plano.publicoAlvo||"geral"}, faixa etária: ${plano.faixaEtaria||"18-45 anos"}, renda: ${plano.rendaEstimada||"classes B/C"}. Objetivo: ${plano.objetivo||"awareness de marca"}. Retorne APENAS JSON válido sem markdown: {"populacao":"X mil habitantes","rendaMedia":"R$ X.XXX/mês","classesSociais":"Classe B/C representa X%","usuariosDelivery":"X% usam apps de delivery","ticketMedioDelivery":"R$ XX por pedido","appsLideres":["iFood","Rappi","Mercado Pago"],"perfilConsumidor":"descrição do perfil","analise":"análise estratégica detalhada em 2 parágrafos sobre oportunidade de mídia nessa região para este cliente","oportunidade":"por que essa região é ideal para esta campanha","potencialImpacto":"estimativa de alcance e impacto"}`}]
         })
       });
@@ -2006,8 +2004,9 @@ export default function App(){
       const result=JSON.parse(txt.replace(/```json|```/g,"").trim());
       setPlanAnalise(result);
       setPlanAtivo(p=>({...p,analise:result}));
-    }catch(e){setPlanAnalise({analise:"Não foi possível gerar a análise. Verifique a conexão.",populacao:"—",rendaMedia:"—",usuariosDelivery:"—",appsLideres:[],perfilConsumidor:"—",oportunidade:"—",potencialImpacto:"—"});}
-    finally{setPlanLoading(false);}
+    }catch(e){
+      setPlanAnalise({analise:"Não foi possível gerar a análise. Configure a variável ANTHROPIC_API_KEY no Vercel.",populacao:"—",rendaMedia:"—",usuariosDelivery:"—",appsLideres:[],perfilConsumidor:"—",oportunidade:"—",potencialImpacto:"—"});
+    }finally{setPlanLoading(false);}
   };
 
   const salvarPlano=async(plano)=>{
