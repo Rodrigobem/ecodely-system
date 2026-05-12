@@ -522,16 +522,71 @@ const PlanWizard=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPl
 
 
 const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,showPlanWizard,setShowPlanWizard,planejamentos,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,user,basePartners,projects})=>{
-  const parc=planAtivo?.parceiros||[];
-  const outras=planAtivo?.outrasMidias||[];
-  const totalEmb=parc.reduce((a,p)=>a+Number(p.embalagens||0),0);
-  const totalImpactos=Math.round(totalEmb*3.3);
-  const totalVal=parc.reduce((a,p)=>a+Number(p.embalagens||0)*Number(p.tabela||6)*(1-Number(p.desconto||0)/100),0);
-  const totalMidia=outras.reduce((a,m)=>a+Number(m.tabela||0)*(1-Number(m.desconto||0)/100),0);
-  const total=totalVal+totalMidia;
-  const custoImp=totalImpactos>0?(total/totalImpactos).toFixed(2):0;
-  const fmtCur=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0});
-  const newPlan=()=>{setPlanAtivo({...EMPTY_PLAN,id:Date.now(),createdBy:user?.name||"",createdAt:new Date().toISOString()});setPlanStep(1);setPlanAnalise(null);setShowPlanWizard(true);};
+  try{
+    const parc=(planAtivo&&planAtivo.parceiros)||[];
+    const outras=(planAtivo&&planAtivo.outrasMidias)||[];
+    const totalEmb=parc.reduce((a,p)=>a+Number(p.embalagens||0),0);
+    const totalImpactos=Math.round(totalEmb*3.3);
+    const totalVal=parc.reduce((a,p)=>a+Number(p.embalagens||0)*Number(p.tabela||6)*(1-Number(p.desconto||0)/100),0);
+    const totalMidia=outras.reduce((a,m)=>a+Number(m.tabela||0)*(1-Number(m.desconto||0)/100),0);
+    const total=totalVal+totalMidia;
+    const custoImp=totalImpactos>0?(total/totalImpactos).toFixed(2):0;
+    const fmtCur=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0});
+    const pl=planejamentos||[];
+    const doNewPlan=()=>{setPlanAtivo({...EMPTY_PLAN,id:Date.now(),createdBy:(user&&user.name)||"",createdAt:new Date().toISOString()});setPlanStep(1);setPlanAnalise(null);setShowPlanWizard(true);};
+
+    return(
+      <div style={{color:T.text,minHeight:200}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div>
+            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:T.text}}>Planejamento de Mídia</div>
+            <div style={{fontSize:10,color:T.muted,marginTop:2}}>Pense como planejador. Monte o plano antes de gerar a proposta.</div>
+          </div>
+          <button onClick={doNewPlan} style={{padding:"9px 18px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:9,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:11,border:"none"}}>+ Novo Planejamento</button>
+        </div>
+
+        {pl.length===0&&!showPlanWizard&&(
+          <div style={{textAlign:"center",padding:"60px 20px",color:T.muted}}>
+            <div style={{fontSize:40,marginBottom:12}}>📋</div>
+            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:16,color:T.soft,marginBottom:6}}>Nenhum planejamento ainda</div>
+            <div style={{fontSize:11,color:T.muted}}>Crie um plano de mídia antes de gerar sua proposta</div>
+          </div>
+        )}
+
+        {!showPlanWizard&&pl.map(p=>(
+          <div key={p.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,marginBottom:3,color:T.text}}>{p.clienteNome||"Sem nome"}</div>
+              <div style={{fontSize:10,color:T.muted}}>{p.regiao||"—"} · {(p.parceiros||[]).length} parceiros</div>
+              <div style={{fontSize:9,color:T.muted,marginTop:2}}>{p.createdBy}</div>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{setPlanAtivo(p);setPlanAnalise(p.analise||null);setPlanStep(1);setShowPlanWizard(true);}} style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>Editar</button>
+              <button onClick={()=>gerarPropostaPDF(p,p.analise)} style={{padding:"7px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,border:"none",color:"#000",borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>📄 Proposta</button>
+            </div>
+          </div>
+        ))}
+
+        {showPlanWizard&&(
+          <PlanWizard
+            planAtivo={planAtivo} setPlanAtivo={setPlanAtivo}
+            planStep={planStep} setPlanStep={setPlanStep}
+            planAnalise={planAnalise} setPlanAnalise={setPlanAnalise}
+            planLoading={planLoading} planGeoLoading={planGeoLoading} setPlanGeoLoading={setPlanGeoLoading}
+            setShowPlanWizard={setShowPlanWizard}
+            parc={parc} outras={outras}
+            total={total} totalEmb={totalEmb} totalImpactos={totalImpactos} custoImp={custoImp} fmtCur={fmtCur}
+            salvarPlano={salvarPlano} gerarPropostaPDF={gerarPropostaPDF}
+            geocodeEndereco={geocodeEndereco} gerarAnaliseIA={gerarAnaliseIA}
+            user={user} basePartners={basePartners} projects={projects}
+          />
+        )}
+      </div>
+    );
+  }catch(err){
+    return <div style={{padding:20,color:T.danger,background:T.dangerDim,borderRadius:12}}>Erro: {String(err)}</div>;
+  }
+};
 
   return(
     <div>
