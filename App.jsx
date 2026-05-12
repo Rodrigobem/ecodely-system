@@ -1193,6 +1193,9 @@ export default function App(){
   // Financial module state
   const[finTab,setFinTab]=useState("visao");
   const[relTab,setRelTab]=useState("gerencial");
+  const[relSelecionados,setRelSelecionados]=useState([]);
+  const[relTitulo,setRelTitulo]=useState("Relatório Ecodely");
+  const[relPeriodo,setRelPeriodo]=useState(new Date().toLocaleDateString("pt-BR",{month:"long",year:"numeric"}));
   const[lancamentos,setLancamentos]=useState(LANCAMENTOS_INIT);
   const[custosFix,setCustosFix]=useState(CUSTOS_FIXOS_INIT);
   const[cartoes,setCartoes]=useState(CARTOES_INIT);
@@ -4644,12 +4647,9 @@ export default function App(){
             ];
 
             const cats=[...new Set(BLOCOS.filter(b=>isAdmin||b.roles.includes(user.role)).map(b=>b.cat))];
-            const [selecionados,setSelecionados]=useState([]);
-            const [titulo,setTitulo]=useState("Relatório Ecodely");
-            const [periodo,setPeriodo]=useState(new Date().toLocaleDateString("pt-BR",{month:"long",year:"numeric"}));
-
-            const toggle=id=>setSelecionados(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
-            const blocosSel=selecionados.map(id=>BLOCOS.find(b=>b.id===id)).filter(Boolean);
+            // relSelecionados, relTitulo, relPeriodo declarados no nível do componente
+            const toggle=id=>setRelSelecionados(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
+            const blocosSel=relSelecionados.map(id=>BLOCOS.find(b=>b.id===id)).filter(Boolean);
             const disponiveis=BLOCOS.filter(b=>isAdmin||b.roles.includes(user.role));
 
             return(
@@ -4663,11 +4663,11 @@ export default function App(){
                   {/* Título e período */}
                   <div style={{marginBottom:12}}>
                     <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Título</div>
-                    <input value={titulo} onChange={e=>setTitulo(e.target.value)} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/>
+                    <input value={relTitulo} onChange={e=>setRelTitulo(e.target.value)} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/>
                   </div>
                   <div style={{marginBottom:16}}>
                     <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Período</div>
-                    <input value={periodo} onChange={e=>setPeriodo(e.target.value)} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/>
+                    <input value={relPeriodo} onChange={e=>setRelPeriodo(e.target.value)} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/>
                   </div>
 
                   {/* Blocos por categoria */}
@@ -4675,7 +4675,7 @@ export default function App(){
                     <div key={cat} style={{marginBottom:14}}>
                       <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6,fontFamily:"'JetBrains Mono',monospace"}}>{cat}</div>
                       {disponiveis.filter(b=>b.cat===cat).map(b=>{
-                        const sel=selecionados.includes(b.id);
+                        const sel=relSelecionados.includes(b.id);
                         return(
                           <div key={b.id} onClick={()=>toggle(b.id)} style={{display:"flex",gap:8,alignItems:"center",padding:"7px 8px",borderRadius:7,cursor:"pointer",marginBottom:4,background:sel?b.color+"15":T.surface,border:`1px solid ${sel?b.color+"55":T.border}`,transition:"all 0.15s"}}>
                             <div style={{width:12,height:12,borderRadius:3,border:`2px solid ${sel?b.color:T.border}`,background:sel?b.color:"transparent",flexShrink:0}}/>
@@ -4686,12 +4686,12 @@ export default function App(){
                     </div>
                   ))}
 
-                  {selecionados.length>0&&(
+                  {relSelecionados.length>0&&(
                     <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:6}}>
                       <button onClick={()=>window.print()} style={{width:"100%",padding:"9px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:11,border:"none"}}>
                         Exportar PDF
                       </button>
-                      <button onClick={()=>setSelecionados([])} style={{width:"100%",padding:"7px",background:"transparent",color:T.muted,borderRadius:8,cursor:"pointer",fontSize:10,border:`1px solid ${T.border}`}}>
+                      <button onClick={()=>setRelSelecionados([])} style={{width:"100%",padding:"7px",background:"transparent",color:T.muted,borderRadius:8,cursor:"pointer",fontSize:10,border:`1px solid ${T.border}`}}>
                         Limpar seleção
                       </button>
                     </div>
@@ -4712,8 +4712,8 @@ export default function App(){
                       <div style={{background:`linear-gradient(135deg,${T.accent}22,${T.purple}11)`,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:"20px 24px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                         <div>
                           <div style={{fontSize:8,color:T.accent,fontFamily:"'JetBrains Mono',monospace",letterSpacing:3,textTransform:"uppercase",marginBottom:4}}>ECODELY · MÍDIA IN-HOME</div>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,marginBottom:2}}>{titulo}</div>
-                          <div style={{fontSize:10,color:T.muted}}>{periodo} · Gerado em {new Date().toLocaleDateString("pt-BR")}</div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,marginBottom:2}}>{relTitulo}</div>
+                          <div style={{fontSize:10,color:T.muted}}>{relPeriodo} · Gerado em {new Date().toLocaleDateString("pt-BR")}</div>
                         </div>
                         <div style={{textAlign:"right"}}>
                           <div style={{fontSize:9,color:T.muted,marginBottom:4}}>{blocosSel.length} bloco{blocosSel.length!==1?"s":""} selecionado{blocosSel.length!==1?"s":""}</div>
