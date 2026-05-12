@@ -4695,6 +4695,447 @@ export default function App(){
                    </ResponsiveContainer>
                  </div>);
                }},
+
+              // ═══════════════════════════════════════════════
+              // FINANCEIRO — NÍVEL CONTÁBIL
+              // ═══════════════════════════════════════════════
+
+              {id:"livro_caixa",cat:"Financeiro",label:"Livro Caixa completo",icon:"-",color:T.accent,roles:["admin","financeiro"],
+               render:()=>{
+                 const rows=lancFilt.sort((a,b)=>{const pa=a.data?.split("/").reverse().join("-"),pb=b.data?.split("/").reverse().join("-");return pa<pb?-1:1;});
+                 let saldo=0;
+                 const TH=s=><th style={{padding:"6px 10px",fontSize:8,color:T.muted,fontWeight:700,textAlign:"left",borderBottom:`1px solid ${T.border}`,textTransform:"uppercase",letterSpacing:1,whiteSpace:"nowrap"}}>{s}</th>;
+                 const TD=(s,opts={})=><td style={{padding:"5px 10px",fontSize:9,fontFamily:"'JetBrains Mono',monospace",color:opts.color||T.text,textAlign:opts.right?"right":"left",fontWeight:opts.bold?"700":"400"}}>{s}</td>;
+                 return(<div style={{overflowX:"auto",maxHeight:400,overflowY:"auto"}}>
+                   <table style={{width:"100%",borderCollapse:"collapse"}}>
+                     <thead style={{position:"sticky",top:0,background:T.card}}>
+                       <tr>{[TH("Data"),TH("Descrição"),TH("Categoria"),TH("Entrada"),TH("Saída"),TH("Saldo"),TH("Forma")]}</tr>
+                     </thead>
+                     <tbody>
+                       {rows.map((l,i)=>{saldo+=(l.entrada||0)-(l.saida||0);return(
+                         <tr key={i} style={{background:i%2===0?T.surface:"transparent"}}>
+                           {TD(l.data)}{TD(l.descricao,{color:T.soft})}
+                           {TD(l.categoria||"—",{color:T.muted})}
+                           {TD(l.entrada>0?l.entrada.toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"—",{right:true,color:T.accent,bold:l.entrada>0})}
+                           {TD(l.saida>0?l.saida.toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"—",{right:true,color:T.danger,bold:l.saida>0})}
+                           {TD(saldo.toLocaleString("pt-BR",{style:"currency",currency:"BRL"}),{right:true,color:saldo>=0?T.info:T.danger,bold:true})}
+                           {TD(l.forma||"—",{color:T.muted})}
+                         </tr>
+                       );})}
+                     </tbody>
+                     <tfoot>
+                       <tr style={{borderTop:`2px solid ${T.border}`,background:T.card}}>
+                         <td colSpan={3} style={{padding:"7px 10px",fontSize:9,fontWeight:700}}>TOTAL</td>
+                         <td style={{padding:"7px 10px",fontSize:10,fontWeight:800,color:T.accent,textAlign:"right",fontFamily:"'Syne',sans-serif"}}>{lancFilt.reduce((a,l)=>a+(l.entrada||0),0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                         <td style={{padding:"7px 10px",fontSize:10,fontWeight:800,color:T.danger,textAlign:"right",fontFamily:"'Syne',sans-serif"}}>{lancFilt.reduce((a,l)=>a+(l.saida||0),0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                         <td style={{padding:"7px 10px",fontSize:10,fontWeight:800,color:T.info,textAlign:"right",fontFamily:"'Syne',sans-serif"}}>{lancFilt.reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                         <td/>
+                       </tr>
+                     </tfoot>
+                   </table>
+                 </div>);
+               }},
+
+              {id:"dre_completo",cat:"Financeiro",label:"DRE Completo",icon:"-",color:T.info,roles:["admin","financeiro"],
+               render:()=>{
+                 const rec=lancFilt.reduce((a,l)=>a+(l.entrada||0),0);
+                 const impostos=lancFilt.filter(l=>l.categoria==="Imposto"||l.categoria==="DAS"||l.categoria==="DARF").reduce((a,l)=>a+(l.saida||0),0);
+                 const recLiq=rec-impostos;
+                 const custosDiretos=lancFilt.filter(l=>["Gráfica","Logística","Material","Operacional"].some(k=>l.categoria?.includes(k)||l.centrosCusto?.includes("Operacional"))).reduce((a,l)=>a+(l.saida||0),0);
+                 const lucroBruto=recLiq-custosDiretos;
+                 const salarios=lancFilt.filter(l=>l.categoria==="Salario"||l.categoria==="Pro-Labore").reduce((a,l)=>a+(l.saida||0),0);
+                 const saas=lancFilt.filter(l=>l.categoria==="SaaS"||l.categoria==="Infraestrutura").reduce((a,l)=>a+(l.saida||0),0);
+                 const desp=lancFilt.filter(l=>!["Imposto","DAS","DARF","Salario","Pro-Labore","SaaS","Infraestrutura"].includes(l.categoria||"")&&!["Gráfica","Logística","Material"].some(k=>l.categoria?.includes(k))).reduce((a,l)=>a+(l.saida||0),0);
+                 const fin=lancFilt.filter(l=>l.categoria==="Financiamento"||l.categoria==="Juros"||l.categoria==="Banco").reduce((a,l)=>a+(l.saida||0),0);
+                 const ebitda=lucroBruto-salarios-saas-desp;
+                 const res=ebitda-fin;
+                 const pct=v=>rec>0?`${Math.round(v/rec*100)}%`:"—";
+                 const Row=({label,v,color,bold,indent,separador})=>(
+                   <tr style={{borderBottom:separador?`2px solid ${T.border}`:`1px solid ${T.border}22`,background:separador?T.surface:"transparent"}}>
+                     <td style={{padding:"7px 12px",fontSize:indent?10:11,fontWeight:bold?"800":"400",fontFamily:"'JetBrains Mono',monospace",color:color||T.text,paddingLeft:indent?24:12}}>{label}</td>
+                     <td style={{padding:"7px 12px",fontSize:11,fontWeight:bold?"800":"400",color:color||(v>=0?T.text:T.danger),textAlign:"right",fontFamily:"'Syne',sans-serif"}}>{v<0?"-":""}{Math.abs(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
+                     <td style={{padding:"7px 12px",fontSize:9,color:T.muted,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{pct(Math.abs(v))}</td>
+                   </tr>
+                 );
+                 return(<table style={{width:"100%",borderCollapse:"collapse"}}>
+                   <thead><tr>{["Linha contábil","Valor","% Receita"].map(h=><th key={h} style={{padding:"7px 12px",fontSize:8,color:T.muted,textAlign:h==="Linha contábil"?"left":"right",textTransform:"uppercase",letterSpacing:1,borderBottom:`2px solid ${T.border}`}}>{h}</th>)}</tr></thead>
+                   <tbody>
+                     <Row label="(+) Receita bruta" v={rec} color={T.accent} bold/>
+                     <Row label="(-) Impostos e deduções" v={-impostos} color={T.danger} indent/>
+                     <Row label="(=) Receita líquida" v={recLiq} color={T.info} bold separador/>
+                     <Row label="(-) Custos diretos (produção)" v={-custosDiretos} color={T.warn} indent/>
+                     <Row label="(=) Lucro bruto" v={lucroBruto} color={T.info} bold separador/>
+                     <Row label="(-) Pessoal (salários + pró-labore)" v={-salarios} indent/>
+                     <Row label="(-) Tecnologia e infraestrutura" v={-saas} indent/>
+                     <Row label="(-) Outras despesas operacionais" v={-desp} indent/>
+                     <Row label="(=) EBITDA" v={ebitda} color={ebitda>=0?T.accent:T.danger} bold separador/>
+                     <Row label="(-) Despesas financeiras (juros, banco)" v={-fin} color={T.danger} indent/>
+                     <Row label="(=) Resultado líquido" v={res} color={res>=0?T.accent:T.danger} bold/>
+                   </tbody>
+                 </table>);
+               }},
+
+              {id:"impostos_taxas",cat:"Financeiro",label:"Impostos e taxas pagos",icon:"-",color:T.warn,roles:["admin","financeiro"],
+               render:()=>{
+                 const rows=lancFilt.filter(l=>["Imposto","DAS","DARF","ISS","IOF","Banco","Taxa","Financiamento","Juros"].some(k=>(l.categoria||"").includes(k)));
+                 const porTipo=Object.entries(rows.reduce((acc,l)=>{const k=l.categoria||"Outros";if(!acc[k])acc[k]={total:0,itens:[]};acc[k].total+=(l.saida||0);acc[k].itens.push(l);return acc;},{})).sort((a,b)=>b[1].total-a[1].total);
+                 return(<div>
+                   <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:12}}>
+                     {porTipo.slice(0,6).map(([tipo,d],i)=>(
+                       <div key={i} style={{background:T.surface,borderRadius:8,padding:"10px 12px",borderLeft:`3px solid ${T.warn}`}}>
+                         <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>{tipo}</div>
+                         <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15,color:T.warn}}>{d.total.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</div>
+                         <div style={{fontSize:8,color:T.muted,marginTop:2}}>{d.itens.length} lançamento{d.itens.length!==1?"s":""}</div>
+                       </div>
+                     ))}
+                   </div>
+                   <table style={{width:"100%",borderCollapse:"collapse"}}>
+                     <thead><tr>{["Data","Descrição","Tipo","Valor"].map(h=><th key={h} style={{padding:"5px 8px",fontSize:8,color:T.muted,textAlign:h==="Valor"?"right":"left",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>{h}</th>)}</tr></thead>
+                     <tbody>
+                       {rows.sort((a,b)=>a.data<b.data?-1:1).map((l,i)=>(
+                         <tr key={i} style={{background:i%2===0?T.surface:"transparent"}}>
+                           <td style={{padding:"5px 8px",fontSize:9,fontFamily:"'JetBrains Mono',monospace"}}>{l.data}</td>
+                           <td style={{padding:"5px 8px",fontSize:9,color:T.soft}}>{l.descricao}</td>
+                           <td style={{padding:"5px 8px"}}><span style={{fontSize:8,padding:"2px 6px",borderRadius:3,background:T.warnDim,color:T.warn}}>{l.categoria}</span></td>
+                           <td style={{padding:"5px 8px",fontSize:10,fontWeight:700,color:T.danger,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{(l.saida||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                         </tr>
+                       ))}
+                     </tbody>
+                     <tfoot><tr style={{borderTop:`2px solid ${T.border}`}}>
+                       <td colSpan={3} style={{padding:"6px 8px",fontSize:9,fontWeight:700}}>TOTAL IMPOSTOS E TAXAS</td>
+                       <td style={{padding:"6px 8px",fontSize:11,fontWeight:800,color:T.danger,textAlign:"right",fontFamily:"'Syne',sans-serif"}}>{rows.reduce((a,l)=>a+(l.saida||0),0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                     </tr></tfoot>
+                   </table>
+                 </div>);
+               }},
+
+              {id:"custo_fornecedor",cat:"Financeiro",label:"Custo por fornecedor (gráfica/logística)",icon:"-",color:T.purple,roles:["admin","financeiro","operacional"],
+               render:()=>{
+                 // Agrupa campanhas por fornecedor com valores e meses
+                 const fornMap={};
+                 camps.forEach(c=>{
+                   const g=c.graficaFornecedor;const l=c.logistica;
+                   if(g){if(!fornMap[g])fornMap[g]={tipo:"Gráfica",camps:[],total:0};fornMap[g].camps.push({nome:c.name,cliente:c.client,emb:c.sacolas||0,valor:c.valorLiquido||0,prazo:c.graficaPrazo,stage:c.stage});fornMap[g].total+=c.valorLiquido||0;}
+                   if(l&&l!==g){if(!fornMap[l])fornMap[l]={tipo:"Logística",camps:[],total:0};fornMap[l].camps.push({nome:c.name,cliente:c.client,emb:c.sacolas||0,valor:0,prazo:c.logisticaPrazo,stage:c.stage});}
+                 });
+                 // Também pega lancamentos relacionados
+                 const lancForn=lancamentos.filter(l=>l.categoria==="Projeto"||l.descricao?.toLowerCase().includes("grafic")||l.descricao?.toLowerCase().includes("logist"));
+                 return(<div style={{display:"flex",flexDirection:"column",gap:12}}>
+                   {Object.entries(fornMap).sort((a,b)=>b[1].camps.length-a[1].camps.length).map(([forn,d])=>(
+                     <div key={forn} style={{background:T.surface,borderRadius:10,overflow:"hidden"}}>
+                       <div style={{padding:"10px 14px",background:d.tipo==="Gráfica"?T.purple+"22":T.info+"22",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                         <div>
+                           <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12}}>{forn}</div>
+                           <div style={{fontSize:9,color:T.muted,marginTop:1}}>{d.camps.length} campanha{d.camps.length!==1?"s":" "} · {d.tipo}</div>
+                         </div>
+                         <div style={{textAlign:"right"}}>
+                           <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:d.tipo==="Gráfica"?T.purple:T.info}}>{d.camps.reduce((a,c)=>a+(c.emb||0),0).toLocaleString("pt-BR")} emb.</div>
+                         </div>
+                       </div>
+                       <table style={{width:"100%",borderCollapse:"collapse"}}>
+                         <thead><tr>{["Campanha","Cliente","Embalagens","Prazo","Status"].map(h=><th key={h} style={{padding:"5px 10px",fontSize:8,color:T.muted,textAlign:h==="Embalagens"?"right":"left",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>{h}</th>)}</tr></thead>
+                         <tbody>{d.camps.map((camp,i)=>{const s=STAGES_CAMP.find(x=>x.id===camp.stage);return(
+                           <tr key={i} style={{background:i%2===0?"transparent":T.bg}}>
+                             <td style={{padding:"5px 10px",fontSize:10,fontWeight:600}}>{camp.nome}</td>
+                             <td style={{padding:"5px 10px",fontSize:9,color:T.muted}}>{camp.cliente}</td>
+                             <td style={{padding:"5px 10px",fontSize:10,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{(camp.emb||0).toLocaleString("pt-BR")}</td>
+                             <td style={{padding:"5px 10px",fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{camp.prazo||"—"}</td>
+                             <td style={{padding:"5px 10px"}}>{s?<span style={{fontSize:8,padding:"2px 6px",borderRadius:3,background:s.color+"22",color:s.color}}>{s.label}</span>:"—"}</td>
+                           </tr>
+                         );})}
+                         </tbody>
+                       </table>
+                     </div>
+                   ))}
+                   {Object.keys(fornMap).length===0&&<div style={{fontSize:11,color:T.muted,textAlign:"center",padding:20}}>Nenhum fornecedor cadastrado nas campanhas</div>}
+                 </div>);
+               }},
+
+              {id:"custo_campanha_margem",cat:"Financeiro",label:"Custo e margem por campanha",icon:"-",color:T.accent,roles:["admin","financeiro"],
+               render:()=>{
+                 const rows=camps.map(c=>{
+                   // Parcelas do cartão relacionadas a esta campanha
+                   const cartCost=comprasCartao.filter(cc=>(cc.projeto||"").toLowerCase().includes((c.name||"").split(" ").slice(0,2).join(" ").toLowerCase())).reduce((a,cc)=>a+(cc.valorTotal||0),0);
+                   const receita=c.valorLiquido||0;
+                   const custo=cartCost;
+                   const margem=receita-custo;
+                   const pct=receita>0?Math.round(margem/receita*100):0;
+                   const s=STAGES_CAMP.find(x=>x.id===c.stage);
+                   return{...c,custo,margem,pct,stageName:s?.label,stageColor:s?.color};
+                 }).sort((a,b)=>b.margem-a.margem);
+                 const totalRec=rows.reduce((a,r)=>a+(r.valorLiquido||0),0);
+                 const totalCusto=rows.reduce((a,r)=>a+r.custo,0);
+                 const totalMargem=totalRec-totalCusto;
+                 return(<div style={{overflowX:"auto"}}>
+                   <table style={{width:"100%",borderCollapse:"collapse"}}>
+                     <thead><tr>{["Campanha","Cliente","Etapa","Receita","Custo","Margem","Margem %"].map(h=><th key={h} style={{padding:"6px 10px",fontSize:8,color:T.muted,textAlign:["Receita","Custo","Margem","Margem %"].includes(h)?"right":"left",textTransform:"uppercase",letterSpacing:1,borderBottom:`2px solid ${T.border}`}}>{h}</th>)}</tr></thead>
+                     <tbody>{rows.map((r,i)=>(
+                       <tr key={i} style={{background:i%2===0?T.surface:"transparent"}}>
+                         <td style={{padding:"6px 10px",fontSize:10,fontWeight:600}}>{r.name}</td>
+                         <td style={{padding:"6px 10px",fontSize:9,color:T.muted}}>{r.client}</td>
+                         <td style={{padding:"6px 10px"}}>{r.stageColor&&<span style={{fontSize:8,padding:"2px 6px",borderRadius:3,background:r.stageColor+"22",color:r.stageColor}}>{r.stageName}</span>}</td>
+                         <td style={{padding:"6px 10px",fontSize:10,color:T.accent,textAlign:"right",fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{r.valorLiquido>0?r.valorLiquido.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0}):"—"}</td>
+                         <td style={{padding:"6px 10px",fontSize:10,color:T.danger,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{r.custo>0?r.custo.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0}):"—"}</td>
+                         <td style={{padding:"6px 10px",fontSize:10,fontWeight:700,color:r.margem>=0?T.info:T.danger,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{r.valorLiquido>0?r.margem.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0}):"—"}</td>
+                         <td style={{padding:"6px 10px",textAlign:"right"}}>{r.valorLiquido>0?<span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:4,background:r.pct>=60?T.accentDim:r.pct>=30?T.infoDim:T.dangerDim,color:r.pct>=60?T.accent:r.pct>=30?T.info:T.danger}}>{r.pct}%</span>:"—"}</td>
+                       </tr>
+                     ))}</tbody>
+                     <tfoot><tr style={{borderTop:`2px solid ${T.border}`,background:T.card}}>
+                       <td colSpan={3} style={{padding:"7px 10px",fontSize:9,fontWeight:700}}>TOTAIS</td>
+                       <td style={{padding:"7px 10px",fontSize:11,fontWeight:800,color:T.accent,textAlign:"right"}}>{totalRec.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
+                       <td style={{padding:"7px 10px",fontSize:11,fontWeight:800,color:T.danger,textAlign:"right"}}>{totalCusto.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
+                       <td style={{padding:"7px 10px",fontSize:11,fontWeight:800,color:totalMargem>=0?T.info:T.danger,textAlign:"right"}}>{totalMargem.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
+                       <td style={{padding:"7px 10px",fontSize:10,fontWeight:800,color:T.accent,textAlign:"right"}}>{totalRec>0?Math.round(totalMargem/totalRec*100):0}%</td>
+                     </tr></tfoot>
+                   </table>
+                 </div>);
+               }},
+
+              {id:"parcelamentos_projecao",cat:"Financeiro",label:"Parcelamentos e projeção de pagamentos",icon:"-",color:T.warn,roles:["admin","financeiro"],
+               render:()=>{
+                 const hoje=new Date();
+                 const proxMeses=Array.from({length:6},(_,i)=>{const d=new Date(hoje.getFullYear(),hoje.getMonth()+i,1);return{mes:`${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`,label:d.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"})};});
+                 const cartTotais=cartoes.map(cart=>{
+                   const compras=comprasCartao.filter(c=>c.cartaoId===cart.id);
+                   const saldoDev=compras.reduce((a,c)=>a+(c.valorParcela||0)*(c.parcelas-(c.parcelaAtual||0)+1),0);
+                   const mensal=compras.reduce((a,c)=>a+(c.valorParcela||0),0);
+                   return{...cart,compras,saldoDev,mensal};
+                 }).filter(c=>c.compras.length>0);
+                 return(<div>
+                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:14}}>
+                     {cartTotais.map((cart,i)=>(
+                       <div key={i} style={{background:T.surface,borderRadius:8,padding:"10px 12px",borderLeft:`3px solid ${cart.cor||T.warn}`}}>
+                         <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cart.nome}</div>
+                         <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,color:cart.cor||T.warn}}>{cart.mensal.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}<span style={{fontSize:8,color:T.muted,fontWeight:400}}>/mês</span></div>
+                         <div style={{fontSize:8,color:T.muted,marginTop:2}}>Saldo: {cart.saldoDev.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</div>
+                       </div>
+                     ))}
+                   </div>
+                   <table style={{width:"100%",borderCollapse:"collapse"}}>
+                     <thead><tr>
+                       <th style={{padding:"6px 10px",fontSize:8,color:T.muted,textAlign:"left",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>Compra / Projeto</th>
+                       <th style={{padding:"6px 10px",fontSize:8,color:T.muted,textAlign:"left",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>Cartão</th>
+                       <th style={{padding:"6px 10px",fontSize:8,color:T.muted,textAlign:"center",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>Parcelas</th>
+                       <th style={{padding:"6px 10px",fontSize:8,color:T.muted,textAlign:"right",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>Mensal</th>
+                       <th style={{padding:"6px 10px",fontSize:8,color:T.muted,textAlign:"right",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>Saldo dev.</th>
+                     </tr></thead>
+                     <tbody>{comprasCartao.map((cc,i)=>{const cart=cartoes.find(c=>c.id===cc.cartaoId);const saldo=(cc.valorParcela||0)*(cc.parcelas-(cc.parcelaAtual||0)+1);return(
+                       <tr key={i} style={{background:i%2===0?T.surface:"transparent"}}>
+                         <td style={{padding:"5px 10px",fontSize:10,fontWeight:600}}>{cc.projeto||cc.descricao}</td>
+                         <td style={{padding:"5px 10px",fontSize:9,color:T.muted}}>{cart?.nome||"—"}</td>
+                         <td style={{padding:"5px 10px",fontSize:9,textAlign:"center",fontFamily:"'JetBrains Mono',monospace"}}>{cc.parcelaAtual||1}/{cc.parcelas}</td>
+                         <td style={{padding:"5px 10px",fontSize:10,textAlign:"right",fontFamily:"'JetBrains Mono',monospace",color:T.warn,fontWeight:700}}>{(cc.valorParcela||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                         <td style={{padding:"5px 10px",fontSize:10,textAlign:"right",fontFamily:"'JetBrains Mono',monospace",color:T.danger}}>{saldo.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                       </tr>
+                     );})}
+                     </tbody>
+                     <tfoot><tr style={{borderTop:`2px solid ${T.border}`}}>
+                       <td colSpan={3} style={{padding:"6px 10px",fontSize:9,fontWeight:700}}>TOTAL</td>
+                       <td style={{padding:"6px 10px",fontSize:11,fontWeight:800,color:T.warn,textAlign:"right"}}>{comprasCartao.reduce((a,c)=>a+(c.valorParcela||0),0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                       <td style={{padding:"6px 10px",fontSize:11,fontWeight:800,color:T.danger,textAlign:"right"}}>{comprasCartao.reduce((a,c)=>a+(c.valorParcela||0)*(c.parcelas-(c.parcelaAtual||0)+1),0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                     </tr></tfoot>
+                   </table>
+                 </div>);
+               }},
+
+              {id:"fluxo_categoria_mes",cat:"Financeiro",label:"Despesas por categoria × mês",icon:"-",color:T.purple,roles:["admin","financeiro"],
+               render:()=>{
+                 const meses=[...new Set(lancamentos.filter(l=>l.saida>0).map(l=>{const[d,m,y]=l.data?.split("/")||[];return y?`${m}/${y}`:"";}).filter(Boolean))].sort();
+                 const cats=[...new Set(lancamentos.filter(l=>l.saida>0).map(l=>l.categoria||"Outros"))];
+                 const matrix=cats.map(cat=>{const porMes=Object.fromEntries(meses.map(mes=>[mes,lancamentos.filter(l=>l.saida>0&&(l.categoria||"Outros")===cat&&l.data?.includes("/"+mes.replace("/","/")||mes)).reduce((a,l)=>a+(l.saida||0),0)]));const total=Object.values(porMes).reduce((a,v)=>a+v,0);return{cat,porMes,total};}).filter(r=>r.total>0).sort((a,b)=>b.total-a.total).slice(0,8);
+                 const CORES=[T.warn,T.danger,T.purple,T.info,T.pink,T.accent,T.green,T.soft];
+                 return(<div style={{overflowX:"auto"}}>
+                   <table style={{width:"100%",borderCollapse:"collapse",minWidth:500}}>
+                     <thead><tr>
+                       <th style={{padding:"5px 8px",fontSize:8,color:T.muted,textAlign:"left",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`,minWidth:120}}>Categoria</th>
+                       {meses.slice(-6).map(m=><th key={m} style={{padding:"5px 8px",fontSize:8,color:T.muted,textAlign:"right",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>{m}</th>)}
+                       <th style={{padding:"5px 8px",fontSize:8,color:T.muted,textAlign:"right",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>Total</th>
+                     </tr></thead>
+                     <tbody>{matrix.map((r,i)=>(
+                       <tr key={i} style={{background:i%2===0?T.surface:"transparent"}}>
+                         <td style={{padding:"5px 8px"}}>
+                           <div style={{display:"flex",gap:5,alignItems:"center"}}>
+                             <div style={{width:8,height:8,borderRadius:"50%",background:CORES[i%CORES.length],flexShrink:0}}/>
+                             <span style={{fontSize:10,fontWeight:600}}>{r.cat}</span>
+                           </div>
+                         </td>
+                         {meses.slice(-6).map(m=><td key={m} style={{padding:"5px 8px",fontSize:9,textAlign:"right",fontFamily:"'JetBrains Mono',monospace",color:r.porMes[m]>0?T.text:T.border}}>{r.porMes[m]>0?r.porMes[m].toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0}):"—"}</td>)}
+                         <td style={{padding:"5px 8px",fontSize:10,fontWeight:700,textAlign:"right",fontFamily:"'JetBrains Mono',monospace",color:CORES[i%CORES.length]}}>{r.total.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
+                       </tr>
+                     ))}</tbody>
+                   </table>
+                 </div>);
+               }},
+
+              // ═══════════════════════════════════════════════
+              // COMERCIAL — DETALHADO
+              // ═══════════════════════════════════════════════
+
+              {id:"historico_closings_det",cat:"Comercial",label:"Histórico completo de fechamentos",icon:"-",color:T.info,roles:["admin","comercial"],
+               render:()=>(
+                 <div style={{overflowX:"auto",maxHeight:350,overflowY:"auto"}}>
+                   <table style={{width:"100%",borderCollapse:"collapse"}}>
+                     <thead style={{position:"sticky",top:0,background:T.card}}><tr>{["Data","Parceiro","Tipo","Projeto","Usuário","Valor","Status","Pago"].map(h=><th key={h} style={{padding:"5px 8px",fontSize:8,color:T.muted,textAlign:["Valor"].includes(h)?"right":"left",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>{h}</th>)}</tr></thead>
+                     <tbody>{[...closings].sort((a,b)=>a.date<b.date?1:-1).map((c,i)=>(
+                       <tr key={i} style={{background:i%2===0?T.surface:"transparent"}}>
+                         <td style={{padding:"5px 8px",fontSize:9,fontFamily:"'JetBrains Mono',monospace"}}>{c.date}</td>
+                         <td style={{padding:"5px 8px",fontSize:10,fontWeight:600}}>{c.partner}</td>
+                         <td style={{padding:"5px 8px"}}><span style={{fontSize:8,padding:"2px 5px",borderRadius:3,background:T.purpleDim,color:T.purple}}>{c.type}</span></td>
+                         <td style={{padding:"5px 8px",fontSize:9,color:T.muted}}>{c.project}</td>
+                         <td style={{padding:"5px 8px",fontSize:9,color:T.soft}}>{c.user}</td>
+                         <td style={{padding:"5px 8px",fontSize:10,fontWeight:700,color:T.accent,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{(c.value||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                         <td style={{padding:"5px 8px"}}><span style={{fontSize:8,padding:"2px 5px",borderRadius:3,background:c.status==="aprovado"?T.accentDim:c.status==="reprovado"?T.dangerDim:T.warnDim,color:c.status==="aprovado"?T.accent:c.status==="reprovado"?T.danger:T.warn}}>{c.status}</span></td>
+                         <td style={{padding:"5px 8px",textAlign:"center"}}><span style={{fontSize:10}}>{c.pago?"✓":"○"}</span></td>
+                       </tr>
+                     ))}
+                     </tbody>
+                     <tfoot><tr style={{borderTop:`2px solid ${T.border}`,background:T.card}}>
+                       <td colSpan={5} style={{padding:"6px 8px",fontSize:9,fontWeight:700}}>TOTAL GERAL</td>
+                       <td style={{padding:"6px 8px",fontSize:11,fontWeight:800,color:T.accent,textAlign:"right"}}>{closings.reduce((a,c)=>a+(c.value||0),0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                       <td colSpan={2}/>
+                     </tr></tfoot>
+                   </table>
+                 </div>
+               )},
+
+              {id:"prospects_det",cat:"Comercial",label:"Pipeline detalhado por responsável",icon:"-",color:T.purple,roles:["admin","comercial"],
+               render:()=>{
+                 const porResp=Object.entries(prospects.reduce((acc,p)=>{if(!acc[p.owner])acc[p.owner]={nome:p.owner,itens:[],total:0,fechados:0};acc[p.owner].itens.push(p);acc[p.owner].total+=(p.value||0);if(p.stage==="fechado")acc[p.owner].fechados++;return acc;},{})).sort((a,b)=>b[1].total-a[1].total);
+                 return(<div style={{display:"flex",flexDirection:"column",gap:10}}>
+                   {porResp.map(([resp,d])=>(
+                     <div key={resp} style={{background:T.surface,borderRadius:10,overflow:"hidden"}}>
+                       <div style={{padding:"10px 14px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                         <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12}}>{resp}</div>
+                         <div style={{display:"flex",gap:12}}>
+                           <div style={{textAlign:"center"}}><div style={{fontSize:14,fontWeight:800,color:T.info,fontFamily:"'Syne',sans-serif"}}>{d.itens.length}</div><div style={{fontSize:8,color:T.muted}}>prospects</div></div>
+                           <div style={{textAlign:"center"}}><div style={{fontSize:14,fontWeight:800,color:T.accent,fontFamily:"'Syne',sans-serif"}}>{d.fechados}</div><div style={{fontSize:8,color:T.muted}}>fechados</div></div>
+                           <div style={{textAlign:"center"}}><div style={{fontSize:14,fontWeight:800,color:T.purple,fontFamily:"'Syne',sans-serif"}}>{d.itens.length>0?Math.round(d.fechados/d.itens.length*100):0}%</div><div style={{fontSize:8,color:T.muted}}>conversão</div></div>
+                           <div style={{textAlign:"right"}}><div style={{fontSize:16,fontWeight:800,color:T.accent,fontFamily:"'Syne',sans-serif"}}>{(d.total/1000).toFixed(0)}k</div><div style={{fontSize:8,color:T.muted}}>pipeline</div></div>
+                         </div>
+                       </div>
+                       <table style={{width:"100%",borderCollapse:"collapse"}}>
+                         <thead><tr>{["Empresa","Segmento","Etapa","Valor"].map(h=><th key={h} style={{padding:"4px 10px",fontSize:8,color:T.muted,textAlign:h==="Valor"?"right":"left",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>{h}</th>)}</tr></thead>
+                         <tbody>{d.itens.map((p,i)=>{const s=PIPE_STAGES.find(x=>x.id===p.stage);return(
+                           <tr key={i} style={{background:i%2===0?"transparent":T.bg}}>
+                             <td style={{padding:"4px 10px",fontSize:10,fontWeight:600}}>{p.name}</td>
+                             <td style={{padding:"4px 10px",fontSize:9,color:T.muted}}>{p.segment}</td>
+                             <td style={{padding:"4px 10px"}}>{s&&<span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:s.color+"22",color:s.color}}>{s.label}</span>}</td>
+                             <td style={{padding:"4px 10px",fontSize:10,fontWeight:700,color:T.info,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{(p.value||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
+                           </tr>
+                         );})}
+                         </tbody>
+                       </table>
+                     </div>
+                   ))}
+                 </div>);
+               }},
+
+              // ═══════════════════════════════════════════════
+              // OPERACIONAL — DETALHADO
+              // ═══════════════════════════════════════════════
+
+              {id:"camps_status_det",cat:"Operacional",label:"Status detalhado por campanha",icon:"-",color:T.warn,roles:["admin","operacional"],
+               render:()=>(
+                 <div style={{overflowX:"auto"}}>
+                   <table style={{width:"100%",borderCollapse:"collapse"}}>
+                     <thead><tr>{["Campanha","Cliente","Etapa","Gráfica","Logística","Emb.","Tasks","Prazo"].map(h=><th key={h} style={{padding:"5px 8px",fontSize:8,color:T.muted,textAlign:["Emb.","Tasks"].includes(h)?"right":"left",textTransform:"uppercase",letterSpacing:1,borderBottom:`2px solid ${T.border}`}}>{h}</th>)}</tr></thead>
+                     <tbody>{camps.map((c,i)=>{const s=STAGES_CAMP.find(x=>x.id===c.stage);const td=tasksDone(c.tasks||{});const diasPrazo=c.graficaPrazo?Math.ceil((new Date(c.graficaPrazo.includes("-")?c.graficaPrazo:c.graficaPrazo.split("/").reverse().join("-"))-new Date())/86400000):null;return(
+                       <tr key={i} style={{background:i%2===0?T.surface:"transparent"}}>
+                         <td style={{padding:"5px 8px",fontSize:10,fontWeight:600,maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</td>
+                         <td style={{padding:"5px 8px",fontSize:9,color:T.muted}}>{c.client}</td>
+                         <td style={{padding:"5px 8px"}}>{s&&<span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:s.color+"22",color:s.color}}>{s.label}</span>}</td>
+                         <td style={{padding:"5px 8px",fontSize:9,color:c.graficaFornecedor?T.purple:T.danger}}>{c.graficaFornecedor||"—"}</td>
+                         <td style={{padding:"5px 8px",fontSize:9,color:c.logistica?T.info:T.danger}}>{c.logistica||"—"}</td>
+                         <td style={{padding:"5px 8px",fontSize:9,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{(c.sacolas||0).toLocaleString("pt-BR")}</td>
+                         <td style={{padding:"5px 8px",fontSize:9,textAlign:"right",color:td.done===td.total&&td.total>0?T.accent:T.muted,fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{td.done}/{td.total}</td>
+                         <td style={{padding:"5px 8px"}}>{diasPrazo!==null?<span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:diasPrazo<=0?T.dangerDim:diasPrazo<=7?T.warnDim:T.accentDim,color:diasPrazo<=0?T.danger:diasPrazo<=7?T.warn:T.accent}}>{diasPrazo<=0?"Vencido":diasPrazo+"d"}</span>:<span style={{fontSize:9,color:T.muted}}>—</span>}</td>
+                       </tr>
+                     );})}
+                     </tbody>
+                   </table>
+                 </div>
+               )},
+
+              // ═══════════════════════════════════════════════
+              // BASE — DETALHADO
+              // ═══════════════════════════════════════════════
+
+              {id:"ficha_parceiros_det",cat:"Base",label:"Ficha completa de parceiros",icon:"-",color:T.green,roles:["admin","base"],
+               render:()=>(
+                 <div style={{overflowX:"auto",maxHeight:380,overflowY:"auto"}}>
+                   <table style={{width:"100%",borderCollapse:"collapse"}}>
+                     <thead style={{position:"sticky",top:0,background:T.card}}><tr>{["Parceiro","Cidade/UF","Categoria","Score","Entregas","Campanhas","Contrato","Expira"].map(h=><th key={h} style={{padding:"5px 8px",fontSize:8,color:T.muted,textAlign:["Score","Entregas","Campanhas"].includes(h)?"right":"left",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>{h}</th>)}</tr></thead>
+                     <tbody>{[...basePartners].sort((a,b)=>b.score-a.score).map((p,i)=>(
+                       <tr key={i} style={{background:i%2===0?T.surface:"transparent"}}>
+                         <td style={{padding:"5px 8px",fontSize:10,fontWeight:600}}>{p.name}</td>
+                         <td style={{padding:"5px 8px",fontSize:9,color:T.muted}}>{p.city}/{p.state}</td>
+                         <td style={{padding:"5px 8px"}}><span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:T.infoDim,color:T.info}}>{p.category}</span></td>
+                         <td style={{padding:"5px 8px",fontSize:10,fontWeight:700,textAlign:"right",color:p.score>=80?T.accent:p.score>=50?T.info:T.warn}}>{p.score}</td>
+                         <td style={{padding:"5px 8px",fontSize:9,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{(p.deliveries||0).toLocaleString("pt-BR")}</td>
+                         <td style={{padding:"5px 8px",fontSize:9,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{p.campanhas||0}</td>
+                         <td style={{padding:"5px 8px"}}><span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:CONTRATO_COLOR[p.contrato?.status]+"22"||T.border,color:CONTRATO_COLOR[p.contrato?.status]||T.muted}}>{p.contrato?.status||"—"}</span></td>
+                         <td style={{padding:"5px 8px",fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{p.contrato?.expiraEm||"—"}</td>
+                       </tr>
+                     ))}</tbody>
+                   </table>
+                 </div>
+               )},
+
+              // ═══════════════════════════════════════════════
+              // MARKETING — DETALHADO
+              // ═══════════════════════════════════════════════
+
+              {id:"impactos_det",cat:"Marketing",label:"Impactos detalhados por campanha",icon:"-",color:T.pink,roles:["admin","marketing"],
+               render:()=>(
+                 <div style={{overflowX:"auto",maxHeight:380,overflowY:"auto"}}>
+                   <table style={{width:"100%",borderCollapse:"collapse"}}>
+                     <thead style={{position:"sticky",top:0,background:T.card}}><tr>{["Campanha","Cliente","Offline","Stories","Influencer","Impulsionado","Total"].map(h=><th key={h} style={{padding:"5px 8px",fontSize:8,color:T.muted,textAlign:h==="Campanha"||h==="Cliente"?"left":"right",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>{h}</th>)}</tr></thead>
+                     <tbody>{camps.map((c,i)=>{const imp=c.impactos||{};const offline=Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3);const stories=(imp.stories||[]).reduce((a,s)=>a+Number(s.impressoes),0);const infl=(imp.influencer||[]).reduce((a,s)=>a+Number(s.alcance),0);const impul=(imp.impulsionado||[]).reduce((a,s)=>a+Number(s.alcance),0);const total=offline+stories+infl+impul;return(
+                       <tr key={i} style={{background:i%2===0?T.surface:"transparent"}}>
+                         <td style={{padding:"5px 8px",fontSize:10,fontWeight:600,maxWidth:130,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</td>
+                         <td style={{padding:"5px 8px",fontSize:9,color:T.muted}}>{c.client}</td>
+                         {[offline,stories,infl,impul,total].map((v,j)=><td key={j} style={{padding:"5px 8px",fontSize:v===total?11:9,fontWeight:v===total?800:400,textAlign:"right",fontFamily:"'JetBrains Mono',monospace",color:v===total?T.pink:v>0?T.text:T.border}}>{v>0?v.toLocaleString("pt-BR"):"—"}</td>)}
+                       </tr>
+                     );})}
+                     </tbody>
+                     <tfoot><tr style={{borderTop:`2px solid ${T.border}`,background:T.card}}>
+                       <td colSpan={2} style={{padding:"5px 8px",fontSize:9,fontWeight:700}}>TOTAL</td>
+                       {[camps.reduce((a,c)=>a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3),0),camps.flatMap(c=>c.impactos?.stories||[]).reduce((a,s)=>a+Number(s.impressoes),0),camps.flatMap(c=>c.impactos?.influencer||[]).reduce((a,s)=>a+Number(s.alcance),0),camps.flatMap(c=>c.impactos?.impulsionado||[]).reduce((a,s)=>a+Number(s.alcance),0)].map((v,i)=>{const t=camps.reduce((a,c)=>{const imp=c.impactos||{};return a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3)+(imp.stories||[]).reduce((s,x)=>s+Number(x.impressoes),0)+(imp.influencer||[]).reduce((s,x)=>s+Number(x.alcance),0)+(imp.impulsionado||[]).reduce((s,x)=>s+Number(x.alcance),0);},0);return<td key={i} style={{padding:"5px 8px",fontSize:10,fontWeight:700,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{v.toLocaleString("pt-BR")}</td>;})}
+                       <td style={{padding:"5px 8px",fontSize:11,fontWeight:800,color:T.pink,textAlign:"right",fontFamily:"'Syne',sans-serif"}}>{camps.reduce((a,c)=>{const imp=c.impactos||{};return a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3)+(imp.stories||[]).reduce((s,x)=>s+Number(x.impressoes),0)+(imp.influencer||[]).reduce((s,x)=>s+Number(x.alcance),0)+(imp.impulsionado||[]).reduce((s,x)=>s+Number(x.alcance),0);},0).toLocaleString("pt-BR")}</td>
+                     </tr></tfoot>
+                   </table>
+                 </div>
+               )},
+
+              {id:"stories_parceiro_det",cat:"Marketing",label:"Stories por parceiro",icon:"-",color:"#E1306C",roles:["admin","marketing"],
+               render:()=>{
+                 const all=camps.flatMap(c=>(c.impactos?.stories||[]).map(s=>({...s,campanha:c.name,cliente:c.client})));
+                 const porParc=Object.entries(all.reduce((acc,s)=>{if(!acc[s.parceiro])acc[s.parceiro]={total:0,itens:[]};acc[s.parceiro].total+=Number(s.impressoes);acc[s.parceiro].itens.push(s);return acc;},{})).sort((a,b)=>b[1].total-a[1].total);
+                 return all.length===0?<div style={{fontSize:11,color:T.muted,textAlign:"center",padding:20}}>Nenhum story registrado ainda</div>:(
+                   <div>
+                     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
+                       {porParc.slice(0,3).map(([p,d],i)=>(
+                         <div key={i} style={{background:T.surface,borderRadius:8,padding:"10px 12px",borderLeft:`3px solid #E1306C`}}>
+                           <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p}</div>
+                           <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:"#E1306C"}}>{d.total.toLocaleString("pt-BR")}</div>
+                           <div style={{fontSize:8,color:T.muted,marginTop:2}}>{d.itens.length} post{d.itens.length!==1?"s":""}</div>
+                         </div>
+                       ))}
+                     </div>
+                     <table style={{width:"100%",borderCollapse:"collapse"}}>
+                       <thead><tr>{["Parceiro","Campanha","Impressões","Data"].map(h=><th key={h} style={{padding:"4px 8px",fontSize:8,color:T.muted,textAlign:h==="Impressões"?"right":"left",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>{h}</th>)}</tr></thead>
+                       <tbody>{all.sort((a,b)=>Number(b.impressoes)-Number(a.impressoes)).map((s,i)=>(
+                         <tr key={i} style={{background:i%2===0?T.surface:"transparent"}}>
+                           <td style={{padding:"4px 8px",fontSize:10,fontWeight:600}}>{s.parceiro}</td>
+                           <td style={{padding:"4px 8px",fontSize:9,color:T.muted}}>{s.campanha}</td>
+                           <td style={{padding:"4px 8px",fontSize:10,fontWeight:700,color:"#E1306C",textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{Number(s.impressoes).toLocaleString("pt-BR")}</td>
+                           <td style={{padding:"4px 8px",fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{s.at}</td>
+                         </tr>
+                       ))}</tbody>
+                     </table>
+                   </div>
+                 );
+               }},
             ];
 
             const cats=[...new Set(BLOCOS.filter(b=>isAdmin||b.roles.includes(user.role)).map(b=>b.cat))];
