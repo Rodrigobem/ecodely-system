@@ -19,14 +19,19 @@ module.exports = async function handler(req, res) {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1200, messages }),
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2000,
+        system: 'Você é especialista em planejamento de mídia no Brasil. Responda SEMPRE em português brasileiro. Retorne APENAS JSON puro sem markdown, sem blocos de código, sem texto antes ou depois. Apenas o objeto JSON.',
+        messages,
+      }),
     });
 
     const text = await response.text();
     try {
       return res.status(response.status).json(JSON.parse(text));
     } catch {
-      return res.status(500).json({ error: 'Invalid response', raw: text.slice(0, 200) });
+      return res.status(500).json({ error: 'Invalid response', raw: text.slice(0, 300) });
     }
   } catch (err) {
     return res.status(500).json({ error: err.message });
