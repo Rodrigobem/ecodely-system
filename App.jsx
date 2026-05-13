@@ -349,22 +349,57 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
       {planAnalise&&!planLoading&&(
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
-            {[["População",planAnalise.populacao,T.accent],["Renda média",planAnalise.rendaMedia,T.info],["Usuários delivery",planAnalise.usuariosDelivery,T.purple],["Ticket médio",planAnalise.ticketMedioDelivery,T.warn],["Classes sociais",planAnalise.classesSociais,T.pink],["Apps líderes",(planAnalise.appsLideres||[]).join(", "),T.soft]].map(([l,v,c])=>(
+            {[
+              ["População",planAnalise.populacao,T.accent],
+              ["Renda média",planAnalise.rendaMedia,T.info],
+              ["Usuários delivery",planAnalise.usuariosDelivery,T.purple],
+              ["Ticket médio",planAnalise.ticketMedioDelivery,T.warn],
+              ["Pedidos/mês na região",planAnalise.pedidosMensais,T.pink],
+              ["Apps líderes",(planAnalise.appsLideres||[]).join(", "),T.soft],
+            ].map(([l,v,c])=>(
               <div key={l} style={{background:T.surface,borderRadius:10,padding:"12px 14px",borderLeft:`3px solid ${c}`}}>
                 <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{l}</div>
                 <div style={{fontSize:12,fontWeight:700,color:c}}>{v||"—"}</div>
               </div>
             ))}
           </div>
+          {/* Dados reais do Google Maps */}
+          {(planAnalise.totalRestaurantes||planAnalise.avaliacaoMedia)&&(
+            <div style={{background:T.surface,borderRadius:10,padding:14,borderLeft:`3px solid ${T.info}`,display:"flex",gap:16,flexWrap:"wrap"}}>
+              <div style={{fontSize:9,color:T.info,fontWeight:700,textTransform:"uppercase",letterSpacing:1,width:"100%",marginBottom:4}}>Dados reais — Google Maps (raio 5km)</div>
+              {planAnalise.totalRestaurantes&&<div><div style={{fontSize:8,color:T.muted}}>Restaurantes</div><div style={{fontSize:14,fontWeight:800,color:T.info}}>{planAnalise.totalRestaurantes}</div></div>}
+              {planAnalise.avaliacaoMedia&&<div><div style={{fontSize:8,color:T.muted}}>Avaliação média</div><div style={{fontSize:14,fontWeight:800,color:T.warn}}>{planAnalise.avaliacaoMedia}/5</div></div>}
+              {planAnalise.nivelPreco&&<div><div style={{fontSize:8,color:T.muted}}>Nível de preço</div><div style={{fontSize:14,fontWeight:800,color:T.accent}}>{planAnalise.nivelPreco}</div></div>}
+              {planAnalise.topCulinarias&&<div><div style={{fontSize:8,color:T.muted}}>Culinárias dominantes</div><div style={{fontSize:11,color:T.soft}}>{planAnalise.topCulinarias.join(", ")}</div></div>}
+            </div>
+          )}
           <div style={{background:T.surface,borderRadius:10,padding:16,borderLeft:`3px solid ${T.purple}`}}>
             <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Análise estratégica</div>
             <div style={{fontSize:11,color:T.soft,lineHeight:1.7}}>{planAnalise.analise}</div>
           </div>
-          <div style={{background:T.surface,borderRadius:10,padding:16,borderLeft:`3px solid ${T.warn}`}}>
-            <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Oportunidade</div>
-            <div style={{fontSize:11,color:T.soft,lineHeight:1.7}}>{planAnalise.oportunidade}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            {planAnalise.oportunidade&&<div style={{background:T.surface,borderRadius:10,padding:14,borderLeft:`3px solid ${T.warn}`}}>
+              <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Oportunidade</div>
+              <div style={{fontSize:11,color:T.soft,lineHeight:1.6}}>{planAnalise.oportunidade}</div>
+            </div>}
+            {planAnalise.potencialImpacto&&<div style={{background:T.surface,borderRadius:10,padding:14,borderLeft:`3px solid ${T.accent}`}}>
+              <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Potencial de impacto</div>
+              <div style={{fontSize:11,color:T.soft,lineHeight:1.6}}>{planAnalise.potencialImpacto}</div>
+            </div>}
+            {planAnalise.melhorEpoca&&<div style={{background:T.surface,borderRadius:10,padding:14,borderLeft:`3px solid ${T.pink}`}}>
+              <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Melhor época</div>
+              <div style={{fontSize:11,color:T.soft}}>{planAnalise.melhorEpoca}</div>
+            </div>}
+            {planAnalise.callToAction&&<div style={{background:T.surface,borderRadius:10,padding:14,borderLeft:`3px solid ${T.info}`}}>
+              <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Sugestão de call-to-action</div>
+              <div style={{fontSize:11,color:T.soft}}>{planAnalise.callToAction}</div>
+            </div>}
           </div>
-          <button onClick={()=>gerarAnaliseIA(planAtivo)} style={{alignSelf:"flex-start",padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,cursor:"pointer",fontSize:9}}>Regenerar</button>
+          {planAnalise.roi&&<div style={{background:T.accentDim,border:`1px solid ${T.accentBorder}`,borderRadius:10,padding:14}}>
+            <div style={{fontSize:9,color:T.accent,textTransform:"uppercase",letterSpacing:1,marginBottom:6,fontWeight:700}}>Estimativa de ROI</div>
+            <div style={{fontSize:12,color:T.accent,fontWeight:600}}>{planAnalise.roi}</div>
+          </div>}
+          <button onClick={()=>gerarAnaliseIA(planAtivo)} style={{alignSelf:"flex-start",padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,cursor:"pointer",fontSize:9}}>Regenerar análise</button>
         </div>
       )}
     </div>
@@ -1992,20 +2027,90 @@ export default function App(){
   const gerarAnaliseIA=async(plano)=>{
     setPlanLoading(true);
     try{
+      // 1. Busca dados reais de restaurantes via Google Maps
+      let placesData=null;
+      if(plano.clienteLat&&plano.clienteLng){
+        try{
+          const pr=await fetch("/api/places",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({lat:plano.clienteLat,lng:plano.clienteLng,radius:5000})
+          });
+          if(pr.ok)placesData=await pr.json();
+        }catch(e){console.warn("Places API indisponível:",e.message);}
+      }
+
+      // 2. Monta contexto com dados reais para a IA
+      const placesContext=placesData?`
+DADOS REAIS DA REGIÃO (Google Maps API):
+- Total de restaurantes num raio de 5km: ${placesData.total}
+- Avaliação média dos estabelecimentos: ${placesData.avgRating}/5.0
+- Nível de preço médio: ${placesData.avgPriceLabel}
+- Principais tipos de culinária: ${placesData.topCuisines.slice(0,5).map(([t,n])=>`${t} (${n})`).join(", ")}
+- Exemplos de estabelecimentos: ${placesData.sample.join(", ")}
+`:"(dados do Google Maps não disponíveis — use estimativas baseadas no perfil da região)";
+
+      // 3. Chama a IA com contexto enriquecido
       const r=await fetch("/api/analyze",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
-          messages:[{role:"user",content:`Você é especialista em planejamento de mídia e dados demográficos do Brasil. Analise a região "${plano.regiao||plano.clienteEndereco}" para campanha de mídia in-home (embalagens de delivery branded) para o cliente "${plano.clienteNome}" do segmento "${plano.clienteSegmento}". Público-alvo: ${plano.publicoAlvo||"geral"}, faixa etária: ${plano.faixaEtaria||"18-45 anos"}, renda: ${plano.rendaEstimada||"classes B/C"}. Objetivo: ${plano.objetivo||"awareness de marca"}. Retorne APENAS JSON válido sem markdown: {"populacao":"X mil habitantes","rendaMedia":"R$ X.XXX/mês","classesSociais":"Classe B/C representa X%","usuariosDelivery":"X% usam apps de delivery","ticketMedioDelivery":"R$ XX por pedido","appsLideres":["iFood","Rappi","Mercado Pago"],"perfilConsumidor":"descrição do perfil","analise":"análise estratégica detalhada em 2 parágrafos sobre oportunidade de mídia nessa região para este cliente","oportunidade":"por que essa região é ideal para esta campanha","potencialImpacto":"estimativa de alcance e impacto"}`}]
+          messages:[{role:"user",content:`Você é especialista em planejamento de mídia e inteligência de mercado no Brasil.
+
+PERFIL DA CAMPANHA:
+- Região: ${plano.regiao||plano.clienteEndereco||"não informada"}
+- Cliente: ${plano.clienteNome} (${plano.clienteSegmento})
+- Público-alvo: ${plano.publicoAlvo||"consumidores em geral"}
+- Faixa etária: ${plano.faixaEtaria||"18-45 anos"}
+- Renda estimada: ${plano.rendaEstimada||"classes B/C"}
+- Objetivo: ${plano.objetivo||"awareness de marca"}
+
+${placesContext}
+
+CONTEXTO DO MERCADO DE DELIVERY BRASIL 2025:
+- 38,8% de penetração de usuários de delivery
+- Ticket médio: R$45-65 por pedido
+- Frequência: 4,9 pedidos/mês por usuário ativo
+- iFood domina 92% do mercado
+- Categorias top: hamburguer, pizza, japonesa, açaí, saudável
+
+Com base em TODOS esses dados, retorne APENAS um JSON válido sem markdown:
+{
+  "populacao": "estimativa da população da região",
+  "rendaMedia": "renda média mensal estimada",
+  "classesSociais": "distribuição de classes sociais",
+  "usuariosDelivery": "% estimado que usa delivery",
+  "ticketMedioDelivery": "ticket médio estimado para a região",
+  "pedidosMensais": "estimativa de pedidos/mês na região",
+  "appsLideres": ["app1","app2","app3"],
+  "culinariaDominante": "tipos de culinária mais pedidos na região",
+  "totalRestaurantes": "${placesData?.total||'estimado'}",
+  "avaliacaoMedia": "${placesData?.avgRating||'estimada'}",
+  "perfilConsumidor": "descrição detalhada do perfil do consumidor local",
+  "analise": "análise estratégica de 3 parágrafos sobre oportunidade de mídia in-home nessa região para este cliente específico",
+  "oportunidade": "por que essa região é ideal para esta campanha",
+  "potencialImpacto": "estimativa concreta de alcance com embalagens de delivery",
+  "melhorEpoca": "melhor época/período do ano para veicular",
+  "callToAction": "sugestão de call-to-action para a embalagem baseado no perfil local",
+  "roi": "estimativa de ROI baseada nos dados da região"
+}`}]
         })
       });
       const d=await r.json();
       const txt=d.content?.find(b=>b.type==="text")?.text||"{}";
       const result=JSON.parse(txt.replace(/```json|```/g,"").trim());
+      // Adiciona dados reais do Google Maps ao resultado
+      if(placesData){
+        result.totalRestaurantes=placesData.total;
+        result.avaliacaoMedia=placesData.avgRating;
+        result.nivelPreco=placesData.avgPriceLabel;
+        result.topCulinarias=placesData.topCuisines.slice(0,5).map(([t])=>t);
+        result.exemplosParceiros=placesData.sample;
+      }
       setPlanAnalise(result);
       setPlanAtivo(p=>({...p,analise:result}));
     }catch(e){
-      setPlanAnalise({analise:"Não foi possível gerar a análise. Configure a variável ANTHROPIC_API_KEY no Vercel.",populacao:"—",rendaMedia:"—",usuariosDelivery:"—",appsLideres:[],perfilConsumidor:"—",oportunidade:"—",potencialImpacto:"—"});
+      setPlanAnalise({analise:"Não foi possível gerar a análise. Verifique a conexão e tente novamente.",populacao:"—",rendaMedia:"—",usuariosDelivery:"—",appsLideres:[],perfilConsumidor:"—",oportunidade:"—",potencialImpacto:"—"});
     }finally{setPlanLoading(false);}
   };
 
