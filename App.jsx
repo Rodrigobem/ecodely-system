@@ -437,28 +437,56 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
             })}
           </div>
           <div style={{borderTop:`1px solid ${T.border}`,paddingTop:10,marginBottom:10}}>
-            <div style={{fontSize:9,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Parceiro manual</div>
-            <div style={{display:"flex",gap:6}}>
-              <input id="plan-pm" placeholder="Nome do estabelecimento" style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:10,color:T.text,outline:"none"}}/>
+            <div style={{fontSize:9,color:T.muted,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Adicionar parceiro manual</div>
+            <div style={{display:"flex",flexDirection:"column",gap:6,background:T.bg,borderRadius:8,padding:"10px 12px",border:`1px solid ${T.border}`}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                <div>
+                  <div style={{fontSize:8,color:T.muted,marginBottom:3}}>Nome do estabelecimento *</div>
+                  <input id="pm-nome" placeholder="Ex: Burger King" style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"6px 8px",fontSize:10,color:T.text,outline:"none"}}/>
+                </div>
+                <div>
+                  <div style={{fontSize:8,color:T.muted,marginBottom:3}}>Segmento</div>
+                  <input id="pm-seg" placeholder="Ex: Fast Food" style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"6px 8px",fontSize:10,color:T.text,outline:"none"}}/>
+                </div>
+              </div>
+              <div>
+                <div style={{fontSize:8,color:T.muted,marginBottom:3}}>Rua / Avenida *</div>
+                <input id="pm-rua" placeholder="Ex: Av. Paulista, 1000" style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"6px 8px",fontSize:10,color:T.text,outline:"none"}}/>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+                <div>
+                  <div style={{fontSize:8,color:T.muted,marginBottom:3}}>Bairro</div>
+                  <input id="pm-bairro" placeholder="Ex: Bela Vista" style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"6px 8px",fontSize:10,color:T.text,outline:"none"}}/>
+                </div>
+                <div>
+                  <div style={{fontSize:8,color:T.muted,marginBottom:3}}>Cidade *</div>
+                  <input id="pm-cidade" placeholder="Ex: São Paulo" style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"6px 8px",fontSize:10,color:T.text,outline:"none"}}/>
+                </div>
+                <div>
+                  <div style={{fontSize:8,color:T.muted,marginBottom:3}}>UF *</div>
+                  <input id="pm-uf" placeholder="Ex: SP" maxLength={2} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"6px 8px",fontSize:10,color:T.text,outline:"none",textTransform:"uppercase"}}/>
+                </div>
+              </div>
               <button onClick={async()=>{
-                const el=document.getElementById("plan-pm");
-                const nm=el?.value?.trim();
-                if(!nm)return;
-                // Tenta geocodificar com região, depois só nome, depois nome+Brasil
+                const nome=document.getElementById("pm-nome")?.value?.trim();
+                const seg=document.getElementById("pm-seg")?.value?.trim();
+                const rua=document.getElementById("pm-rua")?.value?.trim();
+                const bairro=document.getElementById("pm-bairro")?.value?.trim();
+                const cidade=document.getElementById("pm-cidade")?.value?.trim();
+                const uf=document.getElementById("pm-uf")?.value?.trim();
+                if(!nome||!cidade)return alert("Preencha pelo menos o nome e a cidade.");
+                const enderecoCompleto=[rua,bairro,cidade,uf,"Brasil"].filter(Boolean).join(", ");
                 let geo=null;
-                const tentativas=[
-                  `${nm}, ${planAtivo.regiao||""}`,
-                  `${nm}, ${planAtivo.clienteEndereco||""}`,
-                  `${nm}, Brasil`,
-                  nm
-                ].filter(Boolean);
+                const tentativas=[enderecoCompleto,`${nome}, ${rua||""}, ${cidade}, ${uf||""}, Brasil`,`${cidade}, ${uf||""}, Brasil`].filter(x=>x.trim().length>5);
                 for(const t of tentativas){
                   try{geo=await geocodeEndereco(t);if(geo)break;}catch(e){}
                 }
-                setPlanAtivo(p=>({...p,parceiros:[...p.parceiros,{id:Date.now(),nome:nm,segmento:"",endereco:nm,lat:geo?.lat||null,lng:geo?.lng||null,embalagens:500,tabela:6,desconto:0,manual:true,geocoded:!!geo}]}));
-                el.value="";
-                if(!geo)alert(`Não foi possível localizar "${nm}" no mapa. O parceiro foi adicionado mas não aparecerá como pin. Tente incluir a cidade no nome (ex: "Burger King Vila Madalena SP").`);
-              }} style={{padding:"6px 10px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,cursor:"pointer",fontSize:9,fontWeight:700}}>+ Add</button>
+                setPlanAtivo(p=>({...p,parceiros:[...p.parceiros,{id:Date.now(),nome,segmento:seg||"",endereco:enderecoCompleto,lat:geo?.lat||null,lng:geo?.lng||null,embalagens:500,tabela:6,desconto:0,manual:true,geocoded:!!geo}]}));
+                ["pm-nome","pm-seg","pm-rua","pm-bairro","pm-cidade","pm-uf"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+                if(!geo)alert(`"${nome}" adicionado mas não localizado no mapa. Verifique o endereço.`);
+              }} style={{padding:"7px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,cursor:"pointer",fontSize:10,fontWeight:700,width:"100%"}}>
+                + Adicionar parceiro ao plano
+              </button>
             </div>
           </div>
           {parc.map((p,i)=>(
