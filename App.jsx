@@ -2153,12 +2153,15 @@ DADOS REAIS DO IBGE:
 - Renda média per capita: ${ibgeData.rendaMediaFormatada||"não disponível"}
 - Fonte: ${ibgeData.fonte}
 `:"";
+      const placesContext=placesData?`
+DADOS REAIS DA REGIÃO (Google Maps API):
 - Total de restaurantes num raio de 5km: ${placesData.total}
 - Avaliação média dos estabelecimentos: ${placesData.avgRating}/5.0
 - Nível de preço médio: ${placesData.avgPriceLabel}
 - Principais tipos de culinária: ${placesData.topCuisines.slice(0,5).map(([t,n])=>`${t} (${n})`).join(", ")}
 - Exemplos de estabelecimentos: ${placesData.sample.join(", ")}
 `:"(dados do Google Maps não disponíveis — use estimativas baseadas no perfil da região)";
+
 
       const prompt=`Analise a região "${plano.regiao||plano.clienteEndereco||"Brasil"}" para campanha de mídia in-home (embalagens de delivery) para "${plano.clienteNome}" (${plano.clienteSegmento||"empresa"}). Público: ${plano.publicoAlvo||"geral"}, renda: ${plano.rendaEstimada||"B/C"}, objetivo: ${plano.objetivo||"awareness"}.
 
