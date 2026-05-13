@@ -1,33 +1,25 @@
-const getRawBody = (req) => new Promise((resolve, reject) => {
-  let data = '';
-  req.on('data', chunk => { data += chunk.toString(); });
-  req.on('end', () => resolve(data));
-  req.on('error', reject);
-});
-
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });
+
+  // Return diagnostic info
+  const diag = {
+    hasApiKey: !!apiKey,
+    apiKeyPrefix: apiKey ? apiKey.slice(0, 10) + '...' : null,
+    method: req.method,
+    bodyType: typeof req.body,
+    body: req.body,
+  };
+
+  if (!apiKey) return res.status(500).json({ error: 'No API key', diag });
 
   try {
-    // Parse body — handle both pre-parsed and raw cases
-    let body = req.body;
-    if (!body || typeof body === 'string') {
-      const raw = typeof body === 'string' ? body : await getRawBody(req);
-      body = JSON.parse(raw || '{}');
-    }
-
-    const { messages } = body;
-    if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ error: 'messages array required' });
-    }
-
+    const messages = req.body?.messages || [{role:'user',content:'Say "API working" in Portuguese'}];
+    
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -37,19 +29,19 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1200,
+        max_tokens: 100,
         messages,
       }),
     });
 
     const text = await response.text();
-    try {
-      const data = JSON.parse(text);
-      return res.status(response.status).json(data);
-    } catch {
-      return res.status(500).json({ error: 'Invalid JSON from Anthropic', raw: text.slice(0, 200) });
-    }
+    return res.status(response.status).json({ 
+      ok: response.ok, 
+      status: response.status,
+      diag,
+      result: text.slice(0, 500) 
+    });
   } catch (err) {
-    return res.status(500).json({ error: err.message, stack: err.stack?.slice(0, 300) });
+    return res.status(500).json({ error: err.message, diag });
   }
 };
