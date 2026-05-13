@@ -427,7 +427,7 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
                     if(!lat){
                       try{const g=await geocodeEndereco(`${p.name}, ${p.city||""}, Brasil`);if(g){lat=g.lat;lng=g.lng;}}catch(e){}
                     }
-                    setPlanAtivo(x=>({...x,parceiros:[...x.parceiros,{id:p.id,nome:p.name,segmento:p.category,endereco:p.address||p.city||"",lat,lng,embalagens:500,tabela:6,desconto:0,manual:false}]}));
+                    setPlanAtivo(x=>({...x,parceiros:[...x.parceiros,{id:p.id,nome:p.name,segmento:p.category,endereco:p.address||p.city||"",lat,lng,embalagens:500,tabela:6,desconto:0,raio:5,manual:false}]}));
                   }
                 }} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",borderRadius:7,cursor:"pointer",marginBottom:4,background:sel?T.accentDim:T.surface,border:`1px solid ${sel?T.accentBorder:T.border}`}}>
                   <div><div style={{fontSize:10,fontWeight:sel?700:400,color:sel?T.accent:T.text}}>{p.name}</div><div style={{fontSize:8,color:T.muted}}>{p.category} · {p.city}</div></div>
@@ -481,7 +481,7 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
                 for(const t of tentativas){
                   try{geo=await geocodeEndereco(t);if(geo)break;}catch(e){}
                 }
-                setPlanAtivo(p=>({...p,parceiros:[...p.parceiros,{id:Date.now(),nome,segmento:seg||"",endereco:enderecoCompleto,lat:geo?.lat||null,lng:geo?.lng||null,embalagens:500,tabela:6,desconto:0,manual:true,geocoded:!!geo}]}));
+                setPlanAtivo(p=>({...p,parceiros:[...p.parceiros,{id:Date.now(),nome,segmento:seg||"",endereco:enderecoCompleto,lat:geo?.lat||null,lng:geo?.lng||null,embalagens:500,tabela:6,desconto:0,raio:5,manual:true,geocoded:!!geo}]}));
                 ["pm-nome","pm-seg","pm-rua","pm-bairro","pm-cidade","pm-uf"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
                 if(!geo)alert(`"${nome}" adicionado mas não localizado no mapa. Verifique o endereço.`);
               }} style={{padding:"7px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,cursor:"pointer",fontSize:10,fontWeight:700,width:"100%"}}>
@@ -503,6 +503,17 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
                   <div key={k}><div style={{fontSize:7,color:T.muted,marginBottom:2}}>{l}</div>
                   <input type="number" value={p[k]||""} onChange={e=>setPlanAtivo(x=>({...x,parceiros:x.parceiros.map((q,j)=>j===i?{...q,[k]:e.target.value}:q)}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"4px 6px",fontSize:10,color:T.text,outline:"none"}}/></div>
                 ))}
+              </div>
+              <div style={{marginTop:6}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                  <div style={{fontSize:7,color:T.muted}}>Raio de abrangência</div>
+                  <div style={{fontSize:9,color:T.danger,fontWeight:700}}>{p.raio||5} km</div>
+                </div>
+                <input type="range" min={1} max={10} step={1} value={p.raio||5} onChange={e=>setPlanAtivo(x=>({...x,parceiros:x.parceiros.map((q,j)=>j===i?{...q,raio:Number(e.target.value)}:q)}))} style={{width:"100%",accentColor:"#FF4D6A",cursor:"pointer"}}/>
+                <div style={{display:"flex",justifyContent:"space-between"}}>
+                  <span style={{fontSize:7,color:T.muted}}>1km</span>
+                  <span style={{fontSize:7,color:T.muted}}>10km</span>
+                </div>
               </div>
             </div>
           ))}
@@ -707,7 +718,7 @@ const MapaPlano=({clienteLat,clienteLng,clienteNome,parceiros=[]})=>{
         if(!p.lat||!p.lng)return;
         const icon=L.divIcon({html:`<div style="width:14px;height:14px;border-radius:50%;background:#3D9EFF;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>`,className:"",iconSize:[14,14],iconAnchor:[7,7]});
         L.marker([p.lat,p.lng],{icon}).addTo(map).bindPopup(`<b>🏪 ${p.nome}</b><br/>${p.embalagens||0} emb.`);
-        L.circle([p.lat,p.lng],{radius:5000,color:"#FF4D6A",fillColor:"#FF4D6A",fillOpacity:0.06,weight:1.5,dashArray:"4"}).addTo(map);
+        L.circle([p.lat,p.lng],{radius:(p.raio||5)*1000,color:"#FF4D6A",fillColor:"#FF4D6A",fillOpacity:0.06,weight:1.5,dashArray:"4"}).addTo(map);
       });
       instRef.current=map;
     };
@@ -2114,6 +2125,8 @@ DADOS REAIS DA REGIÃO (Google Maps API):
 ${placesContext}
 
 Dados de mercado: 38,8% dos brasileiros usam delivery, ticket médio R$45-65, 4,9 pedidos/mês, iFood 92% market share.
+
+IMPORTANTE: Nunca mencione nomes de marcas, redes ou restaurantes específicos (ex: não cite Outback, McDonald's, iFood parceiros, etc.). Refira-se sempre por categorias ou nichos de culinária (ex: "restaurantes de culinária americana casual", "hamburguerias artesanais", "fast food premium", "dark kitchens de comida saudável").
 
 Retorne SOMENTE um objeto JSON válido, sem markdown, sem texto antes ou depois:
 {"populacao":"X","rendaMedia":"R$ X","classesSociais":"X%","usuariosDelivery":"X%","ticketMedioDelivery":"R$ X","pedidosMensais":"X pedidos/mês","appsLideres":["iFood","Rappi"],"culinariaDominante":"X","perfilConsumidor":"X","analise":"X","oportunidade":"X","potencialImpacto":"X","melhorEpoca":"X","callToAction":"X","roi":"X"}`;
