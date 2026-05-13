@@ -2050,55 +2050,35 @@ DADOS REAIS DA REGIÃO (Google Maps API):
 - Exemplos de estabelecimentos: ${placesData.sample.join(", ")}
 `:"(dados do Google Maps não disponíveis — use estimativas baseadas no perfil da região)";
 
-      // 3. Chama a IA com contexto enriquecido
-      const r=await fetch("/api/analyze",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          messages:[{role:"user",content:`Você é especialista em planejamento de mídia e inteligência de mercado no Brasil.
-
-PERFIL DA CAMPANHA:
-- Região: ${plano.regiao||plano.clienteEndereco||"não informada"}
-- Cliente: ${plano.clienteNome} (${plano.clienteSegmento})
-- Público-alvo: ${plano.publicoAlvo||"consumidores em geral"}
-- Faixa etária: ${plano.faixaEtaria||"18-45 anos"}
-- Renda estimada: ${plano.rendaEstimada||"classes B/C"}
-- Objetivo: ${plano.objetivo||"awareness de marca"}
+      const prompt=`Analise a região "${plano.regiao||plano.clienteEndereco||"Brasil"}" para campanha de mídia in-home (embalagens de delivery) para "${plano.clienteNome}" (${plano.clienteSegmento||"empresa"}). Público: ${plano.publicoAlvo||"geral"}, renda: ${plano.rendaEstimada||"B/C"}, objetivo: ${plano.objetivo||"awareness"}.
 
 ${placesContext}
 
-CONTEXTO DO MERCADO DE DELIVERY BRASIL 2025:
-- 38,8% de penetração de usuários de delivery
-- Ticket médio: R$45-65 por pedido
-- Frequência: 4,9 pedidos/mês por usuário ativo
-- iFood domina 92% do mercado
-- Categorias top: hamburguer, pizza, japonesa, açaí, saudável
+Dados de mercado: 38,8% dos brasileiros usam delivery, ticket médio R$45-65, 4,9 pedidos/mês, iFood 92% market share.
 
-Com base em TODOS esses dados, retorne APENAS um JSON válido sem markdown:
-{
-  "populacao": "estimativa da população da região",
-  "rendaMedia": "renda média mensal estimada",
-  "classesSociais": "distribuição de classes sociais",
-  "usuariosDelivery": "% estimado que usa delivery",
-  "ticketMedioDelivery": "ticket médio estimado para a região",
-  "pedidosMensais": "estimativa de pedidos/mês na região",
-  "appsLideres": ["app1","app2","app3"],
-  "culinariaDominante": "tipos de culinária mais pedidos na região",
-  "totalRestaurantes": "${placesData?.total||'estimado'}",
-  "avaliacaoMedia": "${placesData?.avgRating||'estimada'}",
-  "perfilConsumidor": "descrição detalhada do perfil do consumidor local",
-  "analise": "análise estratégica de 3 parágrafos sobre oportunidade de mídia in-home nessa região para este cliente específico",
-  "oportunidade": "por que essa região é ideal para esta campanha",
-  "potencialImpacto": "estimativa concreta de alcance com embalagens de delivery",
-  "melhorEpoca": "melhor época/período do ano para veicular",
-  "callToAction": "sugestão de call-to-action para a embalagem baseado no perfil local",
-  "roi": "estimativa de ROI baseada nos dados da região"
-}`}]
-        })
+Retorne SOMENTE um objeto JSON válido, sem markdown, sem texto antes ou depois:
+{"populacao":"X","rendaMedia":"R$ X","classesSociais":"X%","usuariosDelivery":"X%","ticketMedioDelivery":"R$ X","pedidosMensais":"X pedidos/mês","appsLideres":["iFood","Rappi"],"culinariaDominante":"X","perfilConsumidor":"X","analise":"X","oportunidade":"X","potencialImpacto":"X","melhorEpoca":"X","callToAction":"X","roi":"X"}`;
+
+      const r=await fetch("/api/analyze",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({messages:[{role:"user",content:prompt}]})
       });
       const d=await r.json();
       const txt=d.content?.find(b=>b.type==="text")?.text||"{}";
-      const result=JSON.parse(txt.replace(/```json|```/g,"").trim());
+      let result;
+      try{
+        result=JSON.parse(txt.replace(/```json|```/g,"").trim());
+      }catch(parseErr){
+        // Tenta extrair JSON do texto mesmo que tenha conteúdo extra
+        const match=txt.match(/\{[\s\S]*\}/);
+        if(match){
+          try{result=JSON.parse(match[0]);}
+          catch{result={analise:txt.slice(0,500),populacao:"—",rendaMedia:"—",usuariosDelivery:"—",appsLideres:[],perfilConsumidor:"—",oportunidade:"—",potencialImpacto:"—"};}
+        }else{
+          result={analise:txt.slice(0,500),populacao:"—",rendaMedia:"—",usuariosDelivery:"—",appsLideres:[],perfilConsumidor:"—",oportunidade:"—",potencialImpacto:"—"};
+        }
+      }
       // Adiciona dados reais do Google Maps ao resultado
       if(placesData){
         result.totalRestaurantes=placesData.total;
