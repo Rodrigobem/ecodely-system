@@ -419,7 +419,17 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
             {(basePartners||[]).filter(p=>p.status==="ativo").map(p=>{
               const sel=parc.find(x=>x.id===p.id);
               return(
-                <div key={p.id} onClick={()=>{if(sel){setPlanAtivo(x=>({...x,parceiros:x.parceiros.filter(y=>y.id!==p.id)}));}else{setPlanAtivo(x=>({...x,parceiros:[...x.parceiros,{id:p.id,nome:p.name,segmento:p.category,endereco:p.address||"",lat:p.lat||null,lng:p.lng||null,embalagens:500,tabela:6,desconto:0,manual:false}]}))}}} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",borderRadius:7,cursor:"pointer",marginBottom:4,background:sel?T.accentDim:T.surface,border:`1px solid ${sel?T.accentBorder:T.border}`}}>
+                <div key={p.id} onClick={async()=>{
+                  if(sel){
+                    setPlanAtivo(x=>({...x,parceiros:x.parceiros.filter(y=>y.id!==p.id)}));
+                  }else{
+                    let lat=p.lat||null,lng=p.lng||null;
+                    if(!lat){
+                      try{const g=await geocodeEndereco(`${p.name}, ${p.city||""}, Brasil`);if(g){lat=g.lat;lng=g.lng;}}catch(e){}
+                    }
+                    setPlanAtivo(x=>({...x,parceiros:[...x.parceiros,{id:p.id,nome:p.name,segmento:p.category,endereco:p.address||p.city||"",lat,lng,embalagens:500,tabela:6,desconto:0,manual:false}]}));
+                  }
+                }} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",borderRadius:7,cursor:"pointer",marginBottom:4,background:sel?T.accentDim:T.surface,border:`1px solid ${sel?T.accentBorder:T.border}`}}>
                   <div><div style={{fontSize:10,fontWeight:sel?700:400,color:sel?T.accent:T.text}}>{p.name}</div><div style={{fontSize:8,color:T.muted}}>{p.category} · {p.city}</div></div>
                   <div style={{fontSize:10,color:sel?T.accent:T.muted}}>{sel?"✓":"+"}</div>
                 </div>
