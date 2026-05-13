@@ -440,13 +440,34 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
             <div style={{fontSize:9,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Parceiro manual</div>
             <div style={{display:"flex",gap:6}}>
               <input id="plan-pm" placeholder="Nome do estabelecimento" style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:10,color:T.text,outline:"none"}}/>
-              <button onClick={async()=>{const el=document.getElementById("plan-pm");const nm=el?.value?.trim();if(!nm)return;const geo=await geocodeEndereco(nm+", "+(planAtivo.regiao||"Brasil"));setPlanAtivo(p=>({...p,parceiros:[...p.parceiros,{id:Date.now(),nome:nm,segmento:"",endereco:nm,lat:geo?.lat||null,lng:geo?.lng||null,embalagens:500,tabela:6,desconto:0,manual:true}]}));el.value="";}} style={{padding:"6px 10px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,cursor:"pointer",fontSize:9,fontWeight:700}}>+ Add</button>
+              <button onClick={async()=>{
+                const el=document.getElementById("plan-pm");
+                const nm=el?.value?.trim();
+                if(!nm)return;
+                // Tenta geocodificar com região, depois só nome, depois nome+Brasil
+                let geo=null;
+                const tentativas=[
+                  `${nm}, ${planAtivo.regiao||""}`,
+                  `${nm}, ${planAtivo.clienteEndereco||""}`,
+                  `${nm}, Brasil`,
+                  nm
+                ].filter(Boolean);
+                for(const t of tentativas){
+                  try{geo=await geocodeEndereco(t);if(geo)break;}catch(e){}
+                }
+                setPlanAtivo(p=>({...p,parceiros:[...p.parceiros,{id:Date.now(),nome:nm,segmento:"",endereco:nm,lat:geo?.lat||null,lng:geo?.lng||null,embalagens:500,tabela:6,desconto:0,manual:true,geocoded:!!geo}]}));
+                el.value="";
+                if(!geo)alert(`Não foi possível localizar "${nm}" no mapa. O parceiro foi adicionado mas não aparecerá como pin. Tente incluir a cidade no nome (ex: "Burger King Vila Madalena SP").`);
+              }} style={{padding:"6px 10px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,cursor:"pointer",fontSize:9,fontWeight:700}}>+ Add</button>
             </div>
           </div>
           {parc.map((p,i)=>(
-            <div key={p.id||i} style={{background:T.surface,borderRadius:8,padding:"8px 10px",marginBottom:6,border:`1px solid ${T.border}`}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-                <span style={{fontSize:10,fontWeight:700}}>{p.nome}</span>
+            <div key={p.id||i} style={{background:T.surface,borderRadius:8,padding:"8px 10px",marginBottom:6,border:`1px solid ${p.lat?T.border:T.warn+"44"}`}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                <div style={{display:"flex",gap:5,alignItems:"center"}}>
+                  <span style={{fontSize:10,fontWeight:700}}>{p.nome}</span>
+                  <span title={p.lat?"Localizado no mapa":"Sem localização — não aparece no mapa"} style={{fontSize:9}}>{p.lat?"📍":"⚠️"}</span>
+                </div>
                 <div onClick={()=>setPlanAtivo(x=>({...x,parceiros:x.parceiros.filter((_,j)=>j!==i)}))} style={{cursor:"pointer",color:T.muted,fontSize:14}}>×</div>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
