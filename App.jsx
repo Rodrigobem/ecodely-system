@@ -363,8 +363,25 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
               </div>
             ))}
           </div>
-          {/* Dados reais do Google Maps */}
-          {(planAnalise.totalRestaurantes||planAnalise.avaliacaoMedia)&&(
+          {/* Dados reais do IBGE */}
+          {planAnalise.ibge&&(
+            <div style={{background:T.surface,borderRadius:10,padding:14,border:`1px solid ${T.accent}44`}}>
+              <div style={{fontSize:9,color:T.accent,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>
+                📊 Dados oficiais — IBGE ({planAnalise.ibge.municipio}/{planAnalise.ibge.uf})
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                <div style={{background:T.card,borderRadius:8,padding:12,borderLeft:`3px solid ${T.accent}`}}>
+                  <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>População</div>
+                  <div style={{fontSize:16,fontWeight:800,color:T.accent}}>{planAnalise.ibge.populacao||"—"}</div>
+                </div>
+                <div style={{background:T.card,borderRadius:8,padding:12,borderLeft:`3px solid ${T.info}`}}>
+                  <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Renda média per capita</div>
+                  <div style={{fontSize:16,fontWeight:800,color:T.info}}>{planAnalise.ibge.rendaMedia||"—"}</div>
+                </div>
+              </div>
+              <div style={{fontSize:8,color:T.muted,marginTop:8}}>Fonte: {planAnalise.ibge.fonte}</div>
+            </div>
+          )}
             <div style={{background:T.surface,borderRadius:10,padding:14,borderLeft:`3px solid ${T.info}`,display:"flex",gap:16,flexWrap:"wrap"}}>
               <div style={{fontSize:9,color:T.info,fontWeight:700,textTransform:"uppercase",letterSpacing:1,width:"100%",marginBottom:4}}>Dados reais — Google Maps (raio 5km)</div>
               {planAnalise.totalRestaurantes&&<div><div style={{fontSize:8,color:T.muted}}>Restaurantes</div><div style={{fontSize:14,fontWeight:800,color:T.info}}>{planAnalise.totalRestaurantes}</div></div>}
@@ -2097,7 +2114,25 @@ export default function App(){
   const gerarAnaliseIA=async(plano)=>{
     setPlanLoading(true);
     try{
-      // 1. Busca dados reais de restaurantes via Google Maps
+      // 1. Busca dados reais do IBGE (população e renda por município)
+      let ibgeData=null;
+      const cidadeRaw=plano.regiao||plano.clienteEndereco||"";
+      const cidadeMatch=cidadeRaw.match(/([A-Za-zÀ-ÿ\s]+?)(?:,|\s*[-–]\s*|\s*\/\s*|\s+SP|\s+RJ|\s+MG|\s+RS|\s+PR|\s+SC|\s+BA|\s+CE|\s+PE|\s+GO|\s+DF|$)/);
+      const cidade=cidadeMatch?cidadeMatch[1].trim():cidadeRaw.split(",")[0].trim();
+      const ufMatch=cidadeRaw.match(/\b([A-Z]{2})\b/);
+      const uf=ufMatch?ufMatch[1]:null;
+      if(cidade){
+        try{
+          const ir=await fetch("/api/ibge",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({cidade,uf})
+          });
+          if(ir.ok)ibgeData=await ir.json();
+        }catch(e){console.warn("IBGE indisponível:",e.message);}
+      }
+
+      // 2. Busca dados reais de restaurantes via Google Maps
       let placesData=null;
       if(plano.clienteLat&&plano.clienteLng){
         try{
@@ -2110,9 +2145,14 @@ export default function App(){
         }catch(e){console.warn("Places API indisponível:",e.message);}
       }
 
-      // 2. Monta contexto com dados reais para a IA
-      const placesContext=placesData?`
-DADOS REAIS DA REGIÃO (Google Maps API):
+      // 3. Monta contexto com dados reais para a IA
+      const ibgeContext=ibgeData?`
+DADOS REAIS DO IBGE:
+- Município: ${ibgeData.municipio} / ${ibgeData.uf}
+- População: ${ibgeData.populacaoFormatada||"não disponível"}
+- Renda média per capita: ${ibgeData.rendaMediaFormatada||"não disponível"}
+- Fonte: ${ibgeData.fonte}
+`:"";
 - Total de restaurantes num raio de 5km: ${placesData.total}
 - Avaliação média dos estabelecimentos: ${placesData.avgRating}/5.0
 - Nível de preço médio: ${placesData.avgPriceLabel}
@@ -2122,11 +2162,14 @@ DADOS REAIS DA REGIÃO (Google Maps API):
 
       const prompt=`Analise a região "${plano.regiao||plano.clienteEndereco||"Brasil"}" para campanha de mídia in-home (embalagens de delivery) para "${plano.clienteNome}" (${plano.clienteSegmento||"empresa"}). Público: ${plano.publicoAlvo||"geral"}, renda: ${plano.rendaEstimada||"B/C"}, objetivo: ${plano.objetivo||"awareness"}.
 
+${ibgeContext}
 ${placesContext}
 
 Dados de mercado: 38,8% dos brasileiros usam delivery, ticket médio R$45-65, 4,9 pedidos/mês, iFood 92% market share.
 
 IMPORTANTE: Nunca mencione nomes de marcas, redes ou restaurantes específicos (ex: não cite Outback, McDonald's, iFood parceiros, etc.). Refira-se sempre por categorias ou nichos de culinária (ex: "restaurantes de culinária americana casual", "hamburguerias artesanais", "fast food premium", "dark kitchens de comida saudável").
+
+${ibgeData?.populacaoFormatada?`USE os dados reais do IBGE acima para população e renda — não estime esses valores.`:''}
 
 Retorne SOMENTE um objeto JSON válido, sem markdown, sem texto antes ou depois:
 {"populacao":"X","rendaMedia":"R$ X","classesSociais":"X%","usuariosDelivery":"X%","ticketMedioDelivery":"R$ X","pedidosMensais":"X pedidos/mês","appsLideres":["iFood","Rappi"],"culinariaDominante":"X","perfilConsumidor":"X","analise":"X","oportunidade":"X","potencialImpacto":"X","melhorEpoca":"X","callToAction":"X","roi":"X"}`;
@@ -2151,7 +2194,12 @@ Retorne SOMENTE um objeto JSON válido, sem markdown, sem texto antes ou depois:
           result={analise:txt.slice(0,500),populacao:"—",rendaMedia:"—",usuariosDelivery:"—",appsLideres:[],perfilConsumidor:"—",oportunidade:"—",potencialImpacto:"—"};
         }
       }
-      // Adiciona dados reais do Google Maps ao resultado
+      // Adiciona dados reais ao resultado
+      if(ibgeData){
+        result.populacao=ibgeData.populacaoFormatada||result.populacao;
+        result.rendaMedia=ibgeData.rendaMediaFormatada||result.rendaMedia;
+        result.ibge={municipio:ibgeData.municipio,uf:ibgeData.uf,populacao:ibgeData.populacaoFormatada,rendaMedia:ibgeData.rendaMediaFormatada,fonte:ibgeData.fonte};
+      }
       if(placesData){
         result.totalRestaurantes=placesData.total;
         result.avaliacaoMedia=placesData.avgRating;
