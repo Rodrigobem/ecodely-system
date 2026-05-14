@@ -518,10 +518,25 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
       <div style={{background:T.surface,borderRadius:12,padding:14,marginBottom:16,border:`1px solid ${T.warn}44`}}>
         <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10,color:T.warn,marginBottom:10}}>🧮 Calculadora de Campanha</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:cValorProposta>0&&cValorTabela>0?10:0}}>
-          {[["Valor da proposta (R$)","valorProposta","Ex: 50000"],["Valor tabela (R$/emb)","valorTabela","Ex: 12"],["Desconto (%)","desconto","Ex: 50"]].map(([l,k,ph])=>(
+          {[["Valor da proposta (R$)","valorProposta","Ex: 50.000,00"],["Valor tabela (R$/emb)","valorTabela","Ex: 12,00"],["Desconto (%)","desconto","Ex: 50"]].map(([l,k,ph])=>(
             <div key={k}>
               <div style={{fontSize:7,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
-              <input type="number" value={calc[k]||""} onChange={e=>setPlanAtivo(p=>({...p,calc:{...(p.calc||{}),[k]:e.target.value}}))} placeholder={ph} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}/>
+              {k==="desconto"?(
+                <input type="number" min="0" max="100" value={calc[k]||""} onChange={e=>setPlanAtivo(p=>({...p,calc:{...(p.calc||{}),[k]:e.target.value}}))} placeholder={ph} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}/>
+              ):(
+                <input
+                  type="text"
+                  value={calc[k+"_fmt"]||""}
+                  onChange={e=>{
+                    const raw=e.target.value.replace(/\D/g,"");
+                    const num=Number(raw)/100;
+                    const fmt=num>0?num.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}):"";
+                    setPlanAtivo(p=>({...p,calc:{...(p.calc||{}),[k]:num,[k+"_fmt"]:fmt}}));
+                  }}
+                  placeholder={ph}
+                  style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}
+                />
+              )}
             </div>
           ))}
         </div>
