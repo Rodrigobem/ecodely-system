@@ -377,14 +377,14 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
                 <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.info}`}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
                     <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>Renda per capita</div>
-                    {!ibgeData?.rendaPerCapita&&planAnalise.ibge.rendaMedia&&<div style={{fontSize:6,color:T.warn,background:T.warnDim,borderRadius:4,padding:"1px 5px"}}>IA</div>}
+                    {planAnalise.ibge.fonte&&planAnalise.ibge.fonte.includes("IA")&&<div style={{fontSize:6,color:T.warn,background:T.warnDim,borderRadius:4,padding:"1px 5px"}}>IA</div>}
                   </div>
                   <div style={{fontSize:11,fontWeight:700,color:T.info}}>{planAnalise.ibge.rendaMedia||"—"}</div>
                 </div>
                 <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.purple}`}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
                     <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>Ensino superior</div>
-                    {!ibgeData?.pctSuperior&&planAnalise.ibge.pctSuperior&&<div style={{fontSize:6,color:T.warn,background:T.warnDim,borderRadius:4,padding:"1px 5px"}}>IA</div>}
+                    {planAnalise.ibge.fonte&&planAnalise.ibge.fonte.includes("IA")&&<div style={{fontSize:6,color:T.warn,background:T.warnDim,borderRadius:4,padding:"1px 5px"}}>IA</div>}
                   </div>
                   <div style={{fontSize:11,fontWeight:700,color:T.purple}}>{planAnalise.ibge.pctSuperior||"—"}</div>
                 </div>
