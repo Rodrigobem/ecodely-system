@@ -2199,6 +2199,7 @@ export default function App(){
       }
 
       // 3. Monta contexto com dados reais para a IA
+      const semRenda=!ibgeData?.rendaPerCapitaFormatada?"ATENÇÃO: Renda per capita não disponível no IBGE. Use PIB per capita, nível de preço dos restaurantes, urbanização e escolaridade para ESTIMAR a faixa de renda e indique que é estimativa.":"";
       const ibgeContext=ibgeData?`
 DADOS OFICIAIS DO IBGE — ${ibgeData.municipio}/${ibgeData.uf}:
 - População: ${ibgeData.populacaoFormatada||"não disponível"}
@@ -2208,8 +2209,8 @@ DADOS OFICIAIS DO IBGE — ${ibgeData.municipio}/${ibgeData.uf}:
 - Taxa de urbanização: ${ibgeData.pctUrbano||"não disponível"}
 - Ensino superior: ${ibgeData.pctSuperior||"não disponível"}
 - Fonte: ${ibgeData.fonte}
-${!ibgeData.rendaPerCapitaFormatada?`ATENÇÃO: Renda per capita não disponível no IBGE para este município. Use os outros indicadores (PIB per capita, nível de preço dos restaurantes, taxa de urbanização, escolaridade) para ESTIMAR a faixa de renda provável da população e indique que é uma estimativa.`:''}
-`:"(dados do IBGE não disponíveis)");
+${semRenda}
+`:"(dados do IBGE não disponíveis)";
       const placesContext=placesData?`
 DADOS REAIS DA REGIÃO (Google Maps API — raio 5km):
 - Total de restaurantes: ${placesData.total}
