@@ -503,10 +503,10 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
 
   // Calculadora de campanha
   const calc=planAtivo.calc||{};
-  const cValorProposta=Number(calc.valorProposta||0);
-  const cValorTabela=Number(calc.valorTabela||0);
-  const cDesconto=Number(calc.desconto||0);
-  const cValorBruto=cValorTabela*(1-cDesconto/100);
+  const cValorProposta=parseFloat(String(calc.valorProposta||0).replace(",","."))||0;
+  const cValorTabela=parseFloat(String(calc.valorTabela||0).replace(",","."))||0;
+  const cDesconto=parseFloat(String(calc.desconto||0).replace(",","."))||0;
+  const cValorBruto=cValorTabela>0?parseFloat((cValorTabela*(1-cDesconto/100)).toFixed(2)):0;
   const cTotalEmb=cValorBruto>0?Math.ceil(cValorProposta/cValorBruto):0;
   const cParcNecessarios=cTotalEmb>0?Math.ceil(cTotalEmb/1000):0;
   const cEmbPorParc=cParcNecessarios>0?Math.ceil(cTotalEmb/Math.max(cParcNecessarios,parc.length||1)):0;
@@ -2441,35 +2441,38 @@ Retorne SOMENTE JSON válido sem markdown:
   };
 
   const sugerirParceiros=async(plano,parceirosBase)=>{
-    const ativos=parceirosBase.filter(p=>p.status==="ativo");
+    const ativos=parceirosBase.filter(p=>p.status==="ativo").slice(0,30); // max 30
     if(!ativos.length)return null;
+    const ctrl=new AbortController();
+    const timer=setTimeout(()=>ctrl.abort(),20000); // 20s timeout
     try{
       const r=await fetch("/api/analyze",{
         method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({messages:[{role:"user",content:`Você é especialista em planejamento de mídia in-home (embalagens de delivery) no Brasil.
+        signal:ctrl.signal,
+        body:JSON.stringify({messages:[{role:"user",content:`Você é especialista em planejamento de mídia in-home no Brasil.
 
-BRIEFING DA CAMPANHA:
+BRIEFING:
 - Cliente: ${plano.clienteNome||"—"} | Segmento: ${plano.clienteSegmento||"—"}
-- Público-alvo: ${plano.publicoAlvo||"—"} | Faixa etária: ${plano.faixaEtaria||"—"}
-- Renda estimada: ${plano.rendaEstimada||"—"} | Região: ${plano.regiao||"—"}
+- Público: ${plano.publicoAlvo||"—"} | Faixa etária: ${plano.faixaEtaria||"—"}
+- Renda: ${plano.rendaEstimada||"—"} | Região: ${plano.regiao||"—"}
 - Objetivo: ${plano.objetivo||"—"}
-- Preferência de parceiro: ${plano.preferenciaParceiro||"Sem preferência — identifique o perfil ideal"}
+- Preferência de parceiro: ${plano.preferenciaParceiro||"sem preferência — identifique o perfil ideal"}
 
 PARCEIROS DISPONÍVEIS (id|nome|categoria|cidade):
 ${ativos.map(p=>`${p.id}|${p.name}|${p.category||"—"}|${p.city||"—"}`).join("\n")}
 
-Analise o briefing e identifique quais parceiros da base são mais adequados para essa campanha.
-Considere: alinhamento do perfil do público-alvo com o tipo de restaurante, região, faixa de renda, e tipo de culinária que melhor conecta com o objetivo da campanha.
-
-Retorne SOMENTE JSON válido sem markdown:
-{"recomendados":["id1","id2","id3"],"perfilIdeal":"descrição do perfil de parceiro ideal","justificativa":"por que esses parceiros se adequam ao briefing em 2-3 frases"}`}]})
+Identifique os parceiros mais adequados para esta campanha com base no briefing.
+Retorne SOMENTE JSON: {"recomendados":["id1","id2","id3"],"perfilIdeal":"perfil ideal em 1 frase","justificativa":"justificativa em 2 frases"}`}]})
       });
+      clearTimeout(timer);
       const d=await r.json();
       const txt=d.content?.find(b=>b.type==="text")?.text||"{}";
-      const clean=txt.replace(/```json|```/g,"").trim();
-      const match=clean.match(/\{[\s\S]*\}/);
+      const match=txt.replace(/```json|```/g,"").trim().match(/\{[\s\S]*\}/);
       return match?JSON.parse(match[0]):null;
-    }catch(e){return null;}
+    }catch(e){
+      clearTimeout(timer);
+      return null;
+    }
   };
 
   const gerarPropostaPDF=(plano,analise)=>{
