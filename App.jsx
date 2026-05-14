@@ -497,8 +497,8 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
 
 // ── WIZ STEP 3 ────────────────────────────────────────────────────────────
 const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEndereco,sugerirParceiros})=>{
-  const [sugestao,setSugestao]=React.useState(null);
-  const [loadingSug,setLoadingSug]=React.useState(false);
+  const [sugestao,setSugestao]=useState(null);
+  const [loadingSug,setLoadingSug]=useState(false);
   if(!visible)return null;
 
   // Calculadora de campanha
