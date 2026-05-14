@@ -529,7 +529,7 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
                   value={calc[k+"_fmt"]||""}
                   onChange={e=>{
                     const raw=e.target.value.replace(/\D/g,"");
-                    const num=Number(raw)/100;
+                    const num=Number(raw);
                     const fmt=num>0?num.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}):"";
                     setPlanAtivo(p=>({...p,calc:{...(p.calc||{}),[k]:num,[k+"_fmt"]:fmt}}));
                   }}
