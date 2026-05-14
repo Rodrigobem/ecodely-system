@@ -382,12 +382,24 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
               <div style={{fontSize:8,color:T.muted,marginTop:8}}>Fonte: {planAnalise.ibge.fonte}</div>
             </div>
           )}
-            <div style={{background:T.surface,borderRadius:10,padding:14,borderLeft:`3px solid ${T.info}`,display:"flex",gap:16,flexWrap:"wrap"}}>
-              <div style={{fontSize:9,color:T.info,fontWeight:700,textTransform:"uppercase",letterSpacing:1,width:"100%",marginBottom:4}}>Dados reais — Google Maps (raio 5km)</div>
-              {planAnalise.totalRestaurantes&&<div><div style={{fontSize:8,color:T.muted}}>Restaurantes</div><div style={{fontSize:14,fontWeight:800,color:T.info}}>{planAnalise.totalRestaurantes}</div></div>}
-              {planAnalise.avaliacaoMedia&&<div><div style={{fontSize:8,color:T.muted}}>Avaliação média</div><div style={{fontSize:14,fontWeight:800,color:T.warn}}>{planAnalise.avaliacaoMedia}/5</div></div>}
-              {planAnalise.nivelPreco&&<div><div style={{fontSize:8,color:T.muted}}>Nível de preço</div><div style={{fontSize:14,fontWeight:800,color:T.accent}}>{planAnalise.nivelPreco}</div></div>}
-              {planAnalise.topCulinarias&&<div><div style={{fontSize:8,color:T.muted}}>Culinárias dominantes</div><div style={{fontSize:11,color:T.soft}}>{planAnalise.topCulinarias.join(", ")}</div></div>}
+          {(planAnalise.totalRestaurantes||planAnalise.avaliacaoMedia)&&(
+            <div style={{background:T.surface,borderRadius:10,padding:14,borderLeft:`3px solid ${T.info}`}}>
+              <div style={{fontSize:9,color:T.info,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>🗺️ Dados reais — Google Maps (raio 5km)</div>
+              <div style={{display:"flex",gap:20,flexWrap:"wrap",marginBottom:10}}>
+                {planAnalise.totalRestaurantes&&<div><div style={{fontSize:8,color:T.muted}}>Restaurantes</div><div style={{fontSize:16,fontWeight:800,color:T.info}}>{planAnalise.totalRestaurantes}</div></div>}
+                {planAnalise.avaliacaoMedia&&<div><div style={{fontSize:8,color:T.muted}}>Avaliação média</div><div style={{fontSize:16,fontWeight:800,color:T.warn}}>{planAnalise.avaliacaoMedia}/5</div></div>}
+                {planAnalise.nivelPreco&&<div><div style={{fontSize:8,color:T.muted}}>Nível de preço</div><div style={{fontSize:16,fontWeight:800,color:T.accent}}>{planAnalise.nivelPreco}</div></div>}
+              </div>
+              {planAnalise.topCulinarias&&planAnalise.topCulinarias.length>0&&(
+                <div>
+                  <div style={{fontSize:8,color:T.muted,marginBottom:6}}>Culinárias encontradas na região:</div>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {planAnalise.topCulinarias.map((c,i)=>(
+                      <span key={i} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:20,padding:"3px 10px",fontSize:9,color:T.soft}}>{typeof c==="object"?`${c.label} (${c.count})`:`${c}`}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
           <div style={{background:T.surface,borderRadius:10,padding:16,borderLeft:`3px solid ${T.purple}`}}>
@@ -2207,7 +2219,7 @@ Retorne SOMENTE um objeto JSON válido, sem markdown, sem texto antes ou depois:
         result.totalRestaurantes=placesData.total;
         result.avaliacaoMedia=placesData.avgRating;
         result.nivelPreco=placesData.avgPriceLabel;
-        result.topCulinarias=placesData.topCuisines.slice(0,5).map(([t])=>t);
+        result.topCulinarias=placesData.topCuisines||[];
         result.exemplosParceiros=placesData.sample;
       }
       setPlanAnalise(result);
