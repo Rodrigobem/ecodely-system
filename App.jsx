@@ -365,21 +365,37 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
           </div>
           {/* Dados reais do IBGE */}
           {planAnalise.ibge&&(
-            <div style={{background:T.surface,borderRadius:10,padding:14,border:`1px solid ${T.accent}44`}}>
-              <div style={{fontSize:9,color:T.accent,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>
+            <div style={{background:T.surface,borderRadius:10,padding:16,border:`1px solid ${T.accent}44`}}>
+              <div style={{fontSize:9,color:T.accent,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>
                 📊 Dados oficiais — IBGE ({planAnalise.ibge.municipio}/{planAnalise.ibge.uf})
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                <div style={{background:T.card,borderRadius:8,padding:12,borderLeft:`3px solid ${T.accent}`}}>
-                  <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>População</div>
-                  <div style={{fontSize:16,fontWeight:800,color:T.accent}}>{planAnalise.ibge.populacao||"—"}</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:8}}>
+                <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.accent}`}}>
+                  <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>População</div>
+                  <div style={{fontSize:14,fontWeight:800,color:T.accent}}>{planAnalise.ibge.populacao||"—"}</div>
                 </div>
-                <div style={{background:T.card,borderRadius:8,padding:12,borderLeft:`3px solid ${T.info}`}}>
-                  <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Renda média per capita</div>
-                  <div style={{fontSize:16,fontWeight:800,color:T.info}}>{planAnalise.ibge.rendaMedia||"—"}</div>
+                <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.info}`}}>
+                  <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Renda per capita</div>
+                  <div style={{fontSize:12,fontWeight:800,color:T.info}}>{planAnalise.ibge.rendaMedia||<span style={{color:T.warn,fontSize:10}}>estimada pela IA</span>}</div>
+                </div>
+                <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.purple}`}}>
+                  <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>PIB per capita</div>
+                  <div style={{fontSize:12,fontWeight:800,color:T.purple}}>{planAnalise.ibge.pibPerCapita||"—"}</div>
+                </div>
+                <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.green}`}}>
+                  <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Internet nos domicílios</div>
+                  <div style={{fontSize:14,fontWeight:800,color:T.green}}>{planAnalise.ibge.pctInternet||"—"}</div>
+                </div>
+                <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.warn}`}}>
+                  <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Taxa de urbanização</div>
+                  <div style={{fontSize:14,fontWeight:800,color:T.warn}}>{planAnalise.ibge.pctUrbano||"—"}</div>
+                </div>
+                <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.pink}`}}>
+                  <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Ensino superior</div>
+                  <div style={{fontSize:14,fontWeight:800,color:T.pink}}>{planAnalise.ibge.pctSuperior||"—"}</div>
                 </div>
               </div>
-              <div style={{fontSize:8,color:T.muted,marginTop:8}}>Fonte: {planAnalise.ibge.fonte}</div>
+              <div style={{fontSize:8,color:T.muted}}>Fonte: {planAnalise.ibge.fonte}</div>
             </div>
           )}
           {(planAnalise.totalRestaurantes||planAnalise.avaliacaoMedia)&&(
@@ -2184,12 +2200,16 @@ export default function App(){
 
       // 3. Monta contexto com dados reais para a IA
       const ibgeContext=ibgeData?`
-DADOS REAIS DO IBGE:
-- Município: ${ibgeData.municipio} / ${ibgeData.uf}
+DADOS OFICIAIS DO IBGE — ${ibgeData.municipio}/${ibgeData.uf}:
 - População: ${ibgeData.populacaoFormatada||"não disponível"}
-- Renda média per capita: ${ibgeData.rendaMediaFormatada||"não disponível"}
+- Renda per capita: ${ibgeData.rendaPerCapitaFormatada||"não disponível no Censo"}
+- PIB per capita: ${ibgeData.pibPerCapitaFormatado||"não disponível"}
+- Domicílios com internet: ${ibgeData.pctInternet||"não disponível"}
+- Taxa de urbanização: ${ibgeData.pctUrbano||"não disponível"}
+- Ensino superior: ${ibgeData.pctSuperior||"não disponível"}
 - Fonte: ${ibgeData.fonte}
-`:"";
+${!ibgeData.rendaPerCapitaFormatada?`ATENÇÃO: Renda per capita não disponível no IBGE para este município. Use os outros indicadores (PIB per capita, nível de preço dos restaurantes, taxa de urbanização, escolaridade) para ESTIMAR a faixa de renda provável da população e indique que é uma estimativa.`:''}
+`:"(dados do IBGE não disponíveis)");
       const placesContext=placesData?`
 DADOS REAIS DA REGIÃO (Google Maps API — raio 5km):
 - Total de restaurantes: ${placesData.total}
@@ -2242,8 +2262,18 @@ Retorne SOMENTE um objeto JSON válido, sem markdown, sem texto antes ou depois:
       // Adiciona dados reais ao resultado
       if(ibgeData){
         result.populacao=ibgeData.populacaoFormatada||result.populacao;
-        result.rendaMedia=ibgeData.rendaMediaFormatada||result.rendaMedia;
-        result.ibge={municipio:ibgeData.municipio,uf:ibgeData.uf,populacao:ibgeData.populacaoFormatada,rendaMedia:ibgeData.rendaMediaFormatada,fonte:ibgeData.fonte};
+        result.rendaMedia=ibgeData.rendaPerCapitaFormatada||result.rendaMedia;
+        result.ibge={
+          municipio:ibgeData.municipio,
+          uf:ibgeData.uf,
+          populacao:ibgeData.populacaoFormatada,
+          rendaMedia:ibgeData.rendaPerCapitaFormatada,
+          pibPerCapita:ibgeData.pibPerCapitaFormatado,
+          pctInternet:ibgeData.pctInternet,
+          pctUrbano:ibgeData.pctUrbano,
+          pctSuperior:ibgeData.pctSuperior,
+          fonte:ibgeData.fonte,
+        };
       }
       if(placesData){
         result.totalRestaurantes=placesData.total;
