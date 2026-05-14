@@ -2167,13 +2167,30 @@ export default function App(){
   const gerarAnaliseIA=async(plano)=>{
     setPlanLoading(true);
     try{
-      // 1. Busca dados reais do IBGE (população e renda por município)
+      // 1. Busca dados reais do IBGE — usa reverse geocoding se tiver lat/lng
       let ibgeData=null;
-      const cidadeRaw=plano.regiao||plano.clienteEndereco||"";
-      const cidadeMatch=cidadeRaw.match(/([A-Za-zÀ-ÿ\s]+?)(?:,|\s*[-–]\s*|\s*\/\s*|\s+SP|\s+RJ|\s+MG|\s+RS|\s+PR|\s+SC|\s+BA|\s+CE|\s+PE|\s+GO|\s+DF|$)/);
-      const cidade=cidadeMatch?cidadeMatch[1].trim():cidadeRaw.split(",")[0].trim();
-      const ufMatch=cidadeRaw.match(/\b([A-Z]{2})\b/);
-      const uf=ufMatch?ufMatch[1]:null;
+      let cidade="", uf="";
+
+      if(plano.clienteLat&&plano.clienteLng){
+        // Reverse geocoding via Nominatim para pegar cidade exata
+        try{
+          const rgResp=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${plano.clienteLat}&lon=${plano.clienteLng}&format=json&accept-language=pt-BR`,{headers:{"User-Agent":"Ecodely-Sistema/1.0"}});
+          const rgData=await rgResp.json();
+          cidade=rgData.address?.city||rgData.address?.town||rgData.address?.municipality||rgData.address?.county||"";
+          uf=rgData.address?.state_code||rgData.address?.["ISO3166-2-lvl4"]?.replace("BR-","")||"";
+        }catch(e){console.warn("Reverse geocoding falhou:",e.message);}
+      }
+
+      // Fallback: extrai da string da região
+      if(!cidade){
+        const cidadeRaw=plano.regiao||plano.clienteEndereco||"";
+        const partes=cidadeRaw.split(/[,\/\-–]/).map(s=>s.trim()).filter(Boolean);
+        // Pega a parte que parece uma cidade (mais de 3 chars, não é sigla de UF)
+        cidade=partes.find(p=>p.length>3&&!/^[A-Z]{2}$/.test(p))||partes[0]||"";
+        const ufMatch=cidadeRaw.match(/\b([A-Z]{2})\b/);
+        uf=ufMatch?ufMatch[1]:"";
+      }
+
       if(cidade){
         try{
           const ir=await fetch("/api/ibge",{
