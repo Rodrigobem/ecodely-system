@@ -375,18 +375,16 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
                   <div style={{fontSize:14,fontWeight:800,color:T.accent}}>{planAnalise.ibge.populacao||"—"}</div>
                 </div>
                 <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.info}`}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                    <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>Renda per capita</div>
-                    {planAnalise.ibge.fonte&&planAnalise.ibge.fonte.includes("IA")&&<div style={{fontSize:6,color:T.warn,background:T.warnDim,borderRadius:4,padding:"1px 5px"}}>IA</div>}
+                  <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Renda per capita</div>
+                  <div style={{fontSize:12,fontWeight:700,color:planAnalise.ibge.rendaMedia?T.info:T.warn}}>
+                    {planAnalise.ibge.rendaMedia||"estimada pela IA ↓"}
                   </div>
-                  <div style={{fontSize:11,fontWeight:700,color:T.info}}>{planAnalise.ibge.rendaMedia||"—"}</div>
                 </div>
                 <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.purple}`}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                    <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>Ensino superior</div>
-                    {planAnalise.ibge.fonte&&planAnalise.ibge.fonte.includes("IA")&&<div style={{fontSize:6,color:T.warn,background:T.warnDim,borderRadius:4,padding:"1px 5px"}}>IA</div>}
+                  <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Com ensino superior</div>
+                  <div style={{fontSize:12,fontWeight:700,color:planAnalise.ibge.pctSuperior?T.purple:T.warn}}>
+                    {planAnalise.ibge.pctSuperior||"estimado pela IA ↓"}
                   </div>
-                  <div style={{fontSize:11,fontWeight:700,color:T.purple}}>{planAnalise.ibge.pctSuperior||"—"}</div>
                 </div>
               </div>
               <div style={{fontSize:8,color:T.muted}}>Fonte: {planAnalise.ibge.fonte}</div>
@@ -414,8 +412,8 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
                   {planAnalise.topDetalhado.map((p,i)=>(
                     <div key={i} style={{background:T.card,borderRadius:8,padding:"8px 12px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:9,color:T.muted,marginBottom:2}}>Estabelecimento {i+1} da região</div>
-                        {p.topReviews?.[0]?.text&&<div style={{fontSize:9,color:T.soft,fontStyle:"italic"}}>"{p.topReviews[0].text.slice(0,120)}..."</div>}
+                        <div style={{fontSize:10,fontWeight:700,color:T.text,marginBottom:2}}>{p.name}</div>
+                        {p.topReviews?.[0]?.text&&<div style={{fontSize:9,color:T.muted,fontStyle:"italic"}}>"{p.topReviews[0].text.slice(0,120)}..."</div>}
                       </div>
                       <div style={{textAlign:"right",marginLeft:10,flexShrink:0}}>
                         <div style={{fontSize:13,fontWeight:800,color:T.warn}}>{p.rating}★</div>
@@ -2230,37 +2228,27 @@ DADOS REAIS DA REGIÃO (Google Maps API — raio 5km):
 - Distribuição: ${placesData.distribuicao?.excelente||0} excelentes (4.5+), ${placesData.distribuicao?.bom||0} bons (4.0-4.5), ${placesData.distribuicao?.regular||0} regulares
 - Culinárias presentes: ${(placesData.topCuisines||[]).map(c=>typeof c==='object'?`${c.label} (${c.count})`:`${c}`).join(', ')}
 ${placesData.topDetailed?.length?`
-PERFIL DOS ESTABELECIMENTOS (use apenas para entender o padrão da região — NÃO cite nomes):
-${placesData.topDetailed.map((p,i)=>`- Estabelecimento ${i+1}: ${p.rating}★, ${p.totalReviews} avaliações${p.topReviews?.[0]?.text?`, cliente disse: "${p.topReviews[0].text.slice(0,100)}"`:''}`).join('\n')}
+TOP ESTABELECIMENTOS (por relevância e avaliação):
+${placesData.topDetailed.map((p,i)=>`${i+1}. ${p.name} — ${p.rating}★ (${p.totalReviews} avaliações)${p.topReviews?.length?` | Clientes dizem: "${p.topReviews[0]?.text?.slice(0,100)}..."`:''}`).join('\n')}
 `:''}
 `:"(dados do Google Maps não disponíveis — use estimativas baseadas no perfil da região)";
 
 
-      const prompt=`Você é especialista em planejamento de mídia e inteligência de mercado no Brasil.
-
-PERFIL DA CAMPANHA:
-- Região: ${plano.regiao||plano.clienteEndereco||"não informada"}
-- Cliente: ${plano.clienteNome} (${plano.clienteSegmento||"empresa"})
-- Público-alvo: ${plano.publicoAlvo||"consumidores em geral"}
-- Faixa etária: ${plano.faixaEtaria||"18-45 anos"}
-- Objetivo: ${plano.objetivo||"awareness de marca"}
+      const prompt=`Analise a região "${plano.regiao||plano.clienteEndereco||"Brasil"}" para campanha de mídia in-home (embalagens de delivery) para "${plano.clienteNome}" (${plano.clienteSegmento||"empresa"}). Público: ${plano.publicoAlvo||"geral"}, objetivo: ${plano.objetivo||"awareness"}.
 
 ${ibgeContext}
 ${placesContext}
 
-DADOS DE MERCADO BRASIL 2025:
-- 38,8% penetração delivery, ticket médio R$45-65, 4,9 pedidos/mês, iFood 92%
+Dados de mercado: 38,8% dos brasileiros usam delivery, ticket médio R$45-65, 4,9 pedidos/mês, iFood 92% market share.
 
-REGRAS OBRIGATÓRIAS:
-1. NUNCA use dados do briefing do cliente para preencher campos demográficos (renda, população, etc) — use apenas dados do IBGE, Google Maps e seu conhecimento
-2. NUNCA cite nomes de marcas, redes ou restaurantes específicos
-3. Para renda média, use a renda per capita do IBGE se disponível. Se não, estime com base no PIB, nível de preço dos restaurantes e perfil da região — indique "(estimativa)"
-4. Para ensino superior, use o dado do IBGE se disponível. Se não, estime com base no porte da cidade e presença de universidades — indique "(estimativa)"
-5. Para usuários delivery, calcule: população × 38,8% usando a população real do IBGE
-6. Para pedidos mensais, calcule: usuários delivery × 4,9
+REGRAS:
+1. Nunca cite nomes de marcas ou restaurantes específicos — use categorias (ex: "hamburguerias artesanais")
+2. Para rendaMedia: use dado do IBGE se disponível. Se não, estime com base no perfil da região
+3. Para escolaridade: estime o % da população com ensino superior com base no porte da cidade e PIB
+4. Não use dados de briefing do cliente para campos demográficos
 
 Retorne SOMENTE JSON válido sem markdown:
-{"populacao":"X","rendaMedia":"R$ X (fonte)","classesSociais":"X","usuariosDelivery":"X pessoas (X%)","ticketMedioDelivery":"R$ X","pedidosMensais":"X pedidos/mês","appsLideres":["iFood","Rappi"],"culinariaDominante":"X","perfilConsumidor":"X","analise":"3 parágrafos sobre oportunidade de mídia in-home nessa região","oportunidade":"X","potencialImpacto":"X","melhorEpoca":"X","callToAction":"X","roi":"X","escolaridade":"X% com ensino superior (fonte)"}`;
+{"populacao":"X","rendaMedia":"R$ X/mês","classesSociais":"X","usuariosDelivery":"X%","ticketMedioDelivery":"R$ X","pedidosMensais":"X pedidos/mês","appsLideres":["iFood","Rappi"],"culinariaDominante":"X","perfilConsumidor":"X","analise":"X","oportunidade":"X","potencialImpacto":"X","melhorEpoca":"X","callToAction":"X","roi":"X","escolaridade":"X% com ensino superior"}`;
 
       const r=await fetch("/api/analyze",{
         method:"POST",
@@ -2290,9 +2278,9 @@ Retorne SOMENTE JSON válido sem markdown:
           municipio:ibgeData.municipio,
           uf:ibgeData.uf,
           populacao:ibgeData.populacaoFormatada,
-          rendaMedia:ibgeData.rendaPerCapitaFormatada||result.rendaMedia||null,
+          rendaMedia:ibgeData.rendaPerCapitaFormatada||(result.rendaMedia||null),
           pctSuperior:ibgeData.pctSuperior||result.escolaridade||null,
-          fonte:ibgeData.rendaPerCapitaFormatada?'IBGE — Censo 2022 / Estimativa 2024':'IBGE (pop.) + IA (estimativas)',
+          fonte:ibgeData.rendaPerCapitaFormatada?ibgeData.fonte:"IBGE (pop.) + est. IA",
         };
       }
       if(placesData){
