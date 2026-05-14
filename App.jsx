@@ -355,13 +355,27 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
               ["Usuários delivery",planAnalise.usuariosDelivery,T.purple],
               ["Ticket médio",planAnalise.ticketMedioDelivery,T.warn],
               ["Pedidos/mês na região",planAnalise.pedidosMensais,T.pink],
-              ["Apps líderes",(planAnalise.appsLideres||[]).join(", "),T.soft],
             ].map(([l,v,c])=>(
               <div key={l} style={{background:T.surface,borderRadius:10,padding:"12px 14px",borderLeft:`3px solid ${c}`}}>
                 <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{l}</div>
                 <div style={{fontSize:12,fontWeight:700,color:c}}>{v||"—"}</div>
               </div>
             ))}
+            <div style={{background:T.surface,borderRadius:10,padding:"12px 14px",borderLeft:`3px solid ${T.soft}`}}>
+              <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Apps líderes</div>
+              {Array.isArray(planAnalise.appsLideres)&&planAnalise.appsLideres.length>0&&typeof planAnalise.appsLideres[0]==="object"?(
+                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                  {planAnalise.appsLideres.slice(0,3).map((a,i)=>(
+                    <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span style={{fontSize:10,fontWeight:600,color:T.text}}>{a.nome}</span>
+                      <span style={{fontSize:10,fontWeight:700,color:i===0?T.accent:i===1?T.info:T.muted}}>{a.share}</span>
+                    </div>
+                  ))}
+                </div>
+              ):(
+                <div style={{fontSize:11,fontWeight:700,color:T.soft}}>{Array.isArray(planAnalise.appsLideres)?planAnalise.appsLideres.join(", "):planAnalise.appsLideres}</div>
+              )}
+            </div>
           </div>
           {/* Dados reais do IBGE */}
           {planAnalise.ibge&&(
@@ -422,11 +436,19 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
               )}
               {planAnalise.topCulinarias&&planAnalise.topCulinarias.length>0&&(
                 <div>
-                  <div style={{fontSize:8,color:T.muted,marginBottom:6}}>Culinárias encontradas:</div>
+                  <div style={{fontSize:8,color:T.muted,marginBottom:6}}>Culinárias encontradas na região:</div>
                   <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    {planAnalise.topCulinarias.map((c,i)=>(
-                      <span key={i} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:20,padding:"3px 10px",fontSize:9,color:T.soft}}>{typeof c==="object"?`${c.label} (${c.count})`:c}</span>
-                    ))}
+                    {planAnalise.topCulinarias.map((c,i)=>{
+                      const label=typeof c==="object"?c.label:c;
+                      const count=typeof c==="object"?c.count:null;
+                      const maxCount=typeof planAnalise.topCulinarias[0]==="object"?planAnalise.topCulinarias[0].count:20;
+                      const pct=count?Math.round((count/maxCount)*100):null;
+                      return(
+                        <span key={i} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:20,padding:"3px 10px",fontSize:9,color:T.soft}}>
+                          {label}{pct&&pct<100?` · ${pct}%`:""}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -2245,7 +2267,7 @@ REGRAS:
 4. Não use dados de briefing do cliente para campos demográficos
 
 Retorne SOMENTE JSON válido sem markdown:
-{"populacao":"X","rendaMedia":"R$ X/mês","classesSociais":"X","usuariosDelivery":"X%","ticketMedioDelivery":"R$ X","pedidosMensais":"X pedidos/mês","appsLideres":["iFood","Rappi"],"culinariaDominante":"X","perfilConsumidor":"X","analise":"X","oportunidade":"X","potencialImpacto":"X","melhorEpoca":"X","callToAction":"X","roi":"X","escolaridade":"X% com ensino superior"}`;
+{"populacao":"X","rendaMedia":"R$ X/mês","classesSociais":"X","usuariosDelivery":"X%","ticketMedioDelivery":"R$ X","pedidosMensais":"X pedidos/mês","appsLideres":[{"nome":"iFood","share":"XX%"},{"nome":"Rappi","share":"XX%"},{"nome":"Outros","share":"XX%"}],"culinariaDominante":"X","perfilConsumidor":"X","analise":"X","oportunidade":"X","potencialImpacto":"X","melhorEpoca":"X","callToAction":"X","roi":"X","escolaridade":"X% com ensino superior"}`;
 
       const r=await fetch("/api/analyze",{
         method:"POST",
