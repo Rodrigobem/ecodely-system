@@ -315,6 +315,11 @@ const WizStep1=({visible,planAtivo,setPlanAtivo,planGeoLoading,setPlanGeoLoading
       </div>
       {planAtivo.clienteLat&&<div style={{fontSize:9,color:T.accent,fontFamily:"'JetBrains Mono',monospace"}}>✓ {planAtivo.clienteLat.toFixed(4)}, {planAtivo.clienteLng.toFixed(4)}</div>}
       <div>
+        <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Preferência de segmento de parceiro <span style={{color:T.accent,fontWeight:700}}>(opcional)</span></div>
+        <input value={planAtivo.preferenciaParceiro||""} onChange={e=>setPlanAtivo(p=>({...p,preferenciaParceiro:e.target.value}))} placeholder="Ex: restaurantes japoneses, hamburguerias artesanais · Deixe em branco para a IA identificar" style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+        <div style={{fontSize:8,color:T.muted,marginTop:3}}>💡 Se não preenchido, a IA vai identificar o perfil de parceiro ideal com base no briefing</div>
+      </div>
+      <div>
         <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Verba disponível (R$)</div>
         <input type="number" value={planAtivo.verba||""} onChange={e=>setPlanAtivo(p=>({...p,verba:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
       </div>
@@ -491,7 +496,9 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
 };
 
 // ── WIZ STEP 3 ────────────────────────────────────────────────────────────
-const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEndereco})=>{
+const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEndereco,sugerirParceiros})=>{
+  const [sugestao,setSugestao]=React.useState(null);
+  const [loadingSug,setLoadingSug]=React.useState(false);
   if(!visible)return null;
 
   // Calculadora de campanha
@@ -574,27 +581,50 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
         <div>
-          <div style={{fontSize:10,color:T.muted,marginBottom:8,fontWeight:700}}>Parceiros da base</div>
-          <div style={{maxHeight:180,overflowY:"auto",marginBottom:10}}>
-            {(basePartners||[]).filter(p=>p.status==="ativo").map(p=>{
-              const sel=parc.find(x=>x.id===p.id);
-              return(
-                <div key={p.id} onClick={async()=>{
-                  if(sel){
-                    setPlanAtivo(x=>({...x,parceiros:x.parceiros.filter(y=>y.id!==p.id)}));
-                  }else{
-                    let lat=p.lat||null,lng=p.lng||null;
-                    if(!lat){
-                      try{const g=await geocodeEndereco(`${p.name}, ${p.city||""}, Brasil`);if(g){lat=g.lat;lng=g.lng;}}catch(e){}
+          {/* Sugestão da IA */}
+          <div style={{marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{fontSize:10,color:T.muted,fontWeight:700}}>Parceiros da base</div>
+            <button onClick={async()=>{setLoadingSug(true);setSugestao(null);const s=await sugerirParceiros(planAtivo,basePartners||[]);setSugestao(s);setLoadingSug(false);}} style={{padding:"5px 12px",background:T.purpleDim,border:`1px solid ${T.purple}44`,color:T.purple,borderRadius:6,cursor:"pointer",fontSize:9,fontWeight:700}}>
+              {loadingSug?"🤖 Analisando...":"🤖 Sugerir pelo briefing"}
+            </button>
+          </div>
+          {sugestao&&(
+            <div style={{background:T.purpleDim,border:`1px solid ${T.purple}44`,borderRadius:8,padding:"10px 12px",marginBottom:10}}>
+              <div style={{fontSize:9,color:T.purple,fontWeight:700,marginBottom:4}}>IA recomenda para "{planAtivo.clienteNome}":</div>
+              <div style={{fontSize:9,color:T.soft,marginBottom:6,lineHeight:1.5}}>{sugestao.perfilIdeal}</div>
+              <div style={{fontSize:8,color:T.muted,fontStyle:"italic"}}>{sugestao.justificativa}</div>
+            </div>
+          )}
+          <div style={{maxHeight:280,overflowY:"auto",marginBottom:10}}>
+            {(()=>{
+              const ativos=(basePartners||[]).filter(p=>p.status==="ativo");
+              const recsIds=(sugestao&&sugestao.recomendados||[]).map(String);
+              const recs=ativos.filter(p=>recsIds.includes(String(p.id)));
+              const outros=ativos.filter(p=>!recsIds.includes(String(p.id)));
+              return [...recs,...outros].map(p=>{
+                const sel=parc.find(x=>x.id===p.id);
+                const isRec=recsIds.includes(String(p.id));
+                return(
+                  <div key={p.id} onClick={async()=>{
+                    if(sel){setPlanAtivo(x=>({...x,parceiros:x.parceiros.filter(y=>y.id!==p.id)}));}
+                    else{
+                      let lat=p.lat||null,lng=p.lng||null;
+                      if(!lat&&(p.city||p.address)){try{const g=await geocodeEndereco(`${p.name}, ${p.city||p.address}, Brasil`);if(g){lat=g.lat;lng=g.lng;}}catch(e){}}
+                      setPlanAtivo(x=>({...x,parceiros:[...x.parceiros,{id:p.id,nome:p.name,segmento:p.category,endereco:p.address||p.city||"",lat,lng,embalagens:500,tabela:6,desconto:0,raio:5,manual:false}]}));
                     }
-                    setPlanAtivo(x=>({...x,parceiros:[...x.parceiros,{id:p.id,nome:p.name,segmento:p.category,endereco:p.address||p.city||"",lat,lng,embalagens:500,tabela:6,desconto:0,raio:5,manual:false}]}));
-                  }
-                }} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",borderRadius:7,cursor:"pointer",marginBottom:4,background:sel?T.accentDim:T.surface,border:`1px solid ${sel?T.accentBorder:T.border}`}}>
-                  <div><div style={{fontSize:10,fontWeight:sel?700:400,color:sel?T.accent:T.text}}>{p.name}</div><div style={{fontSize:8,color:T.muted}}>{p.category} · {p.city}</div></div>
-                  <div style={{fontSize:10,color:sel?T.accent:T.muted}}>{sel?"✓":"+"}</div>
-                </div>
-              );
-            })}
+                  }} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",borderRadius:7,cursor:"pointer",marginBottom:4,background:sel?T.accentDim:isRec?T.purpleDim:T.surface,border:`1px solid ${sel?T.accentBorder:isRec?T.purple+"66":T.border}`}}>
+                    <div>
+                      <div style={{display:"flex",gap:5,alignItems:"center"}}>
+                        <div style={{fontSize:10,fontWeight:sel||isRec?700:400,color:sel?T.accent:isRec?T.purple:T.text}}>{p.name}</div>
+                        {isRec&&!sel&&<span style={{fontSize:7,background:T.purple,color:"#fff",borderRadius:4,padding:"1px 5px"}}>IA ✓</span>}
+                      </div>
+                      <div style={{fontSize:8,color:T.muted}}>{p.category} · {p.city}</div>
+                    </div>
+                    <div style={{fontSize:10,color:sel?T.accent:isRec?T.purple:T.muted}}>{sel?"✓":"+"}</div>
+                  </div>
+                );
+              });
+            })()}
           </div>
           <div style={{borderTop:`1px solid ${T.border}`,paddingTop:10,marginBottom:10}}>
             <div style={{fontSize:9,color:T.muted,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Adicionar parceiro manual</div>
@@ -765,7 +795,7 @@ const WizStep4=({visible,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCu
 };
 
 // ── PLAN WIZARD ───────────────────────────────────────────────────────────
-const PlanWizard=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,setShowPlanWizard,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCur,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,user,basePartners,projects})=>(
+const PlanWizard=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,setShowPlanWizard,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCur,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,sugerirParceiros,user,basePartners,projects})=>(
   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden"}}>
     <div style={{padding:"16px 24px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
       <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15}}>{planAtivo.clienteNome||"Novo Planejamento"}</div>
@@ -779,7 +809,7 @@ const PlanWizard=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPl
     <div style={{padding:24}}>
       <WizStep1 visible={planStep===1} planAtivo={planAtivo} setPlanAtivo={setPlanAtivo} planGeoLoading={planGeoLoading} setPlanGeoLoading={setPlanGeoLoading} geocodeEndereco={geocodeEndereco} projects={projects}/>
       <WizStep2 visible={planStep===2} planAtivo={planAtivo} planAnalise={planAnalise} planLoading={planLoading} gerarAnaliseIA={gerarAnaliseIA}/>
-      <WizStep3 visible={planStep===3} planAtivo={planAtivo} setPlanAtivo={setPlanAtivo} parc={parc} basePartners={basePartners} geocodeEndereco={geocodeEndereco}/>
+      <WizStep3 visible={planStep===3} planAtivo={planAtivo} setPlanAtivo={setPlanAtivo} parc={parc} basePartners={basePartners} geocodeEndereco={geocodeEndereco} sugerirParceiros={sugerirParceiros}/>
       <WizStep4 visible={planStep===4} parc={parc} outras={outras} total={total} totalEmb={totalEmb} totalImpactos={totalImpactos} custoImp={custoImp} fmtCur={fmtCur} planAtivo={planAtivo} planAnalise={planAnalise} salvarPlano={salvarPlano} gerarPropostaPDF={gerarPropostaPDF} setPlanAtivo={setPlanAtivo}/>
     </div>
     <div style={{padding:"14px 24px",borderTop:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between"}}>
@@ -790,7 +820,7 @@ const PlanWizard=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPl
 );
 
 
-const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,showPlanWizard,setShowPlanWizard,planejamentos,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,user,basePartners,projects})=>{
+const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,showPlanWizard,setShowPlanWizard,planejamentos,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,sugerirParceiros,user,basePartners,projects})=>{
   const parc=(planAtivo&&Array.isArray(planAtivo.parceiros)?planAtivo.parceiros:[]);
   const outras=(planAtivo&&Array.isArray(planAtivo.outrasMidias)?planAtivo.outrasMidias:[]);
   const pl=Array.isArray(planejamentos)?planejamentos:[];
@@ -852,6 +882,7 @@ const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanA
           total={total} totalEmb={totalEmb} totalImpactos={totalImpactos} custoImp={custoImp} fmtCur={fmtCur}
           salvarPlano={salvarPlano} gerarPropostaPDF={gerarPropostaPDF}
           geocodeEndereco={geocodeEndereco} gerarAnaliseIA={gerarAnaliseIA}
+          sugerirParceiros={sugerirParceiros}
           user={user} basePartners={basePartners} projects={projects}
         />
       )}
@@ -859,7 +890,7 @@ const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanA
   );
 };
 
-const EMPTY_PLAN={id:null,projectId:"",clienteNome:"",clienteSegmento:"",clienteEndereco:"",clienteLat:null,clienteLng:null,publicoAlvo:"",faixaEtaria:"",rendaEstimada:"",objetivo:"",verba:"",prazo:"",regiao:"",analise:null,parceiros:[],outrasMidias:[],createdBy:"",createdAt:""};
+const EMPTY_PLAN={id:null,projectId:"",clienteNome:"",clienteSegmento:"",clienteEndereco:"",clienteLat:null,clienteLng:null,publicoAlvo:"",faixaEtaria:"",rendaEstimada:"",objetivo:"",verba:"",prazo:"",regiao:"",preferenciaParceiro:"",analise:null,parceiros:[],outrasMidias:[],calc:{},createdBy:"",createdAt:""};
 
 // ── MAPA DE PLANEJAMENTO (Leaflet) ──────────────────────────────────────────
 const MapaPlano=({clienteLat,clienteLng,clienteNome,parceiros=[]})=>{
@@ -2407,6 +2438,38 @@ Retorne SOMENTE JSON válido sem markdown:
     await supabase.from("planejamentos").upsert({id:rec.id,data:rec});
     pushNotif("Plano salvo!",rec.clienteNome,T.accent);
     return rec;
+  };
+
+  const sugerirParceiros=async(plano,parceirosBase)=>{
+    const ativos=parceirosBase.filter(p=>p.status==="ativo");
+    if(!ativos.length)return null;
+    try{
+      const r=await fetch("/api/analyze",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({messages:[{role:"user",content:`Você é especialista em planejamento de mídia in-home (embalagens de delivery) no Brasil.
+
+BRIEFING DA CAMPANHA:
+- Cliente: ${plano.clienteNome||"—"} | Segmento: ${plano.clienteSegmento||"—"}
+- Público-alvo: ${plano.publicoAlvo||"—"} | Faixa etária: ${plano.faixaEtaria||"—"}
+- Renda estimada: ${plano.rendaEstimada||"—"} | Região: ${plano.regiao||"—"}
+- Objetivo: ${plano.objetivo||"—"}
+- Preferência de parceiro: ${plano.preferenciaParceiro||"Sem preferência — identifique o perfil ideal"}
+
+PARCEIROS DISPONÍVEIS (id|nome|categoria|cidade):
+${ativos.map(p=>`${p.id}|${p.name}|${p.category||"—"}|${p.city||"—"}`).join("\n")}
+
+Analise o briefing e identifique quais parceiros da base são mais adequados para essa campanha.
+Considere: alinhamento do perfil do público-alvo com o tipo de restaurante, região, faixa de renda, e tipo de culinária que melhor conecta com o objetivo da campanha.
+
+Retorne SOMENTE JSON válido sem markdown:
+{"recomendados":["id1","id2","id3"],"perfilIdeal":"descrição do perfil de parceiro ideal","justificativa":"por que esses parceiros se adequam ao briefing em 2-3 frases"}`}]})
+      });
+      const d=await r.json();
+      const txt=d.content?.find(b=>b.type==="text")?.text||"{}";
+      const clean=txt.replace(/```json|```/g,"").trim();
+      const match=clean.match(/\{[\s\S]*\}/);
+      return match?JSON.parse(match[0]):null;
+    }catch(e){return null;}
   };
 
   const gerarPropostaPDF=(plano,analise)=>{
