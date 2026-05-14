@@ -645,10 +645,11 @@ const WizStep4=({visible,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCu
   const cDesconto=Number(calc.desconto||0);
   const cValorBruto=cValorTabela*(1-cDesconto/100);
   const cTotalEmb=cValorBruto>0?cValorProposta/cValorBruto:0;
-  const capPorParceiro=parc.length>0
-    ?parc.reduce((a,p)=>a+Number(p.embalagens||1000),0)/parc.length
+  // Capacidade: 1.000/mês por padrão, ou quantidade cadastrada no parceiro se maior que 0
+  const capMedia=parc.length>0
+    ?parc.reduce((a,p)=>a+Number(p.capacidade||1000),0)/parc.length
     :1000;
-  const cParcNecessarios=cTotalEmb>0?Math.ceil(cTotalEmb/capPorParceiro):0;
+  const cParcNecessarios=cTotalEmb>0?Math.ceil(cTotalEmb/1000):0;
   const cEmbPorParc=cParcNecessarios>0?Math.ceil(cTotalEmb/cParcNecessarios):0;
 
   const distribuir=()=>{
@@ -695,7 +696,7 @@ const WizStep4=({visible,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCu
             </div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div style={{fontSize:9,color:T.muted}}>
-                {parc.length>0?`Baseado em ${parc.length} parceiro(s) selecionado(s) com média de ${Math.round(capPorParceiro).toLocaleString("pt-BR")} emb./mês cada`:`Usando capacidade padrão de 1.000 emb./parceiro/mês`}
+                Capacidade padrão: 1.000 emb./parceiro/mês · {cParcNecessarios} parceiro(s) necessário(s) · {cEmbPorParc.toLocaleString("pt-BR")} emb. cada (arredondado ↑)
               </div>
               {parc.length>0&&<button onClick={distribuir} style={{padding:"8px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,border:"none",color:"#000",borderRadius:7,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10}}>✓ Distribuir nos parceiros</button>}
             </div>
