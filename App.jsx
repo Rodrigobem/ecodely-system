@@ -383,19 +383,44 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
             </div>
           )}
           {(planAnalise.totalRestaurantes||planAnalise.avaliacaoMedia)&&(
-            <div style={{background:T.surface,borderRadius:10,padding:14,borderLeft:`3px solid ${T.info}`}}>
-              <div style={{fontSize:9,color:T.info,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>🗺️ Dados reais — Google Maps (raio 5km)</div>
-              <div style={{display:"flex",gap:20,flexWrap:"wrap",marginBottom:10}}>
-                {planAnalise.totalRestaurantes&&<div><div style={{fontSize:8,color:T.muted}}>Restaurantes</div><div style={{fontSize:16,fontWeight:800,color:T.info}}>{planAnalise.totalRestaurantes}</div></div>}
-                {planAnalise.avaliacaoMedia&&<div><div style={{fontSize:8,color:T.muted}}>Avaliação média</div><div style={{fontSize:16,fontWeight:800,color:T.warn}}>{planAnalise.avaliacaoMedia}/5</div></div>}
-                {planAnalise.nivelPreco&&<div><div style={{fontSize:8,color:T.muted}}>Nível de preço</div><div style={{fontSize:16,fontWeight:800,color:T.accent}}>{planAnalise.nivelPreco}</div></div>}
+            <div style={{background:T.surface,borderRadius:10,padding:16,borderLeft:`3px solid ${T.info}`}}>
+              <div style={{fontSize:9,color:T.info,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>🗺️ Dados reais — Google Maps (raio 5km)</div>
+              <div style={{display:"flex",gap:20,flexWrap:"wrap",marginBottom:12}}>
+                {planAnalise.totalRestaurantes&&<div><div style={{fontSize:8,color:T.muted}}>Restaurantes</div><div style={{fontSize:18,fontWeight:800,color:T.info}}>{planAnalise.totalRestaurantes}</div></div>}
+                {planAnalise.avaliacaoMedia&&<div><div style={{fontSize:8,color:T.muted}}>Avaliação média</div><div style={{fontSize:18,fontWeight:800,color:T.warn}}>{planAnalise.avaliacaoMedia}★</div></div>}
+                {planAnalise.totalReviews&&<div><div style={{fontSize:8,color:T.muted}}>Total de avaliações</div><div style={{fontSize:18,fontWeight:800,color:T.purple}}>{Number(planAnalise.totalReviews).toLocaleString("pt-BR")}</div></div>}
+                {planAnalise.nivelPreco&&<div><div style={{fontSize:8,color:T.muted}}>Nível de preço</div><div style={{fontSize:14,fontWeight:800,color:T.accent}}>{planAnalise.nivelPreco}</div></div>}
               </div>
+              {planAnalise.distribuicao&&(
+                <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+                  <div style={{background:T.accentDim,borderRadius:6,padding:"4px 10px",fontSize:9,color:T.accent}}>⭐ {planAnalise.distribuicao.excelente} excelentes (4.5+)</div>
+                  <div style={{background:T.warnDim,borderRadius:6,padding:"4px 10px",fontSize:9,color:T.warn}}>👍 {planAnalise.distribuicao.bom} bons (4.0+)</div>
+                  <div style={{background:T.surface,borderRadius:6,padding:"4px 10px",fontSize:9,color:T.muted}}>😐 {planAnalise.distribuicao.regular} regulares</div>
+                </div>
+              )}
+              {planAnalise.topDetalhado&&planAnalise.topDetalhado.length>0&&(
+                <div style={{marginBottom:12}}>
+                  <div style={{fontSize:8,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Top estabelecimentos por relevância</div>
+                  {planAnalise.topDetalhado.map((p,i)=>(
+                    <div key={i} style={{background:T.card,borderRadius:8,padding:"8px 12px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:10,fontWeight:700,color:T.text,marginBottom:2}}>{p.name}</div>
+                        {p.topReviews?.[0]?.text&&<div style={{fontSize:9,color:T.muted,fontStyle:"italic"}}>"{p.topReviews[0].text.slice(0,120)}..."</div>}
+                      </div>
+                      <div style={{textAlign:"right",marginLeft:10,flexShrink:0}}>
+                        <div style={{fontSize:13,fontWeight:800,color:T.warn}}>{p.rating}★</div>
+                        <div style={{fontSize:8,color:T.muted}}>{p.totalReviews} avaliações</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               {planAnalise.topCulinarias&&planAnalise.topCulinarias.length>0&&(
                 <div>
-                  <div style={{fontSize:8,color:T.muted,marginBottom:6}}>Culinárias encontradas na região:</div>
+                  <div style={{fontSize:8,color:T.muted,marginBottom:6}}>Culinárias encontradas:</div>
                   <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                     {planAnalise.topCulinarias.map((c,i)=>(
-                      <span key={i} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:20,padding:"3px 10px",fontSize:9,color:T.soft}}>{typeof c==="object"?`${c.label} (${c.count})`:`${c}`}</span>
+                      <span key={i} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:20,padding:"3px 10px",fontSize:9,color:T.soft}}>{typeof c==="object"?`${c.label} (${c.count})`:c}</span>
                     ))}
                   </div>
                 </div>
@@ -2166,12 +2191,17 @@ DADOS REAIS DO IBGE:
 - Fonte: ${ibgeData.fonte}
 `:"";
       const placesContext=placesData?`
-DADOS REAIS DA REGIÃO (Google Maps API):
-- Total de restaurantes num raio de 5km: ${placesData.total}
-- Avaliação média dos estabelecimentos: ${placesData.avgRating}/5.0
+DADOS REAIS DA REGIÃO (Google Maps API — raio 5km):
+- Total de restaurantes: ${placesData.total}
+- Avaliação média geral: ${placesData.avgRating}/5.0
+- Total de avaliações na região: ${placesData.totalReviews?.toLocaleString('pt-BR')||"—"}
 - Nível de preço médio: ${placesData.avgPriceLabel}
-- Principais tipos de culinária na região: ${placesData.topCuisines.slice(0,5).map(c=>typeof c==='object'&&c.label?`${c.label} (${c.count} locais)`:String(c)).join(", ")}
-- Exemplos de estabelecimentos: ${placesData.sample.join(", ")}
+- Distribuição: ${placesData.distribuicao?.excelente||0} excelentes (4.5+), ${placesData.distribuicao?.bom||0} bons (4.0-4.5), ${placesData.distribuicao?.regular||0} regulares
+- Culinárias presentes: ${(placesData.topCuisines||[]).map(c=>typeof c==='object'?`${c.label} (${c.count})`:`${c}`).join(', ')}
+${placesData.topDetailed?.length?`
+TOP ESTABELECIMENTOS (por relevância e avaliação):
+${placesData.topDetailed.map((p,i)=>`${i+1}. ${p.name} — ${p.rating}★ (${p.totalReviews} avaliações)${p.topReviews?.length?` | Clientes dizem: "${p.topReviews[0]?.text?.slice(0,100)}..."`:''}`).join('\n')}
+`:''}
 `:"(dados do Google Maps não disponíveis — use estimativas baseadas no perfil da região)";
 
 
@@ -2218,7 +2248,10 @@ Retorne SOMENTE um objeto JSON válido, sem markdown, sem texto antes ou depois:
       if(placesData){
         result.totalRestaurantes=placesData.total;
         result.avaliacaoMedia=placesData.avgRating;
+        result.totalReviews=placesData.totalReviews;
         result.nivelPreco=placesData.avgPriceLabel;
+        result.distribuicao=placesData.distribuicao;
+        result.topDetalhado=placesData.topDetailed||[];
         result.topCulinarias=placesData.topCuisines||[];
         result.exemplosParceiros=placesData.sample;
       }
