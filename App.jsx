@@ -410,12 +410,9 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
                 <div style={{marginBottom:12}}>
                   <div style={{fontSize:8,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Top estabelecimentos por relevância</div>
                   {planAnalise.topDetalhado.map((p,i)=>(
-                    <div key={i} style={{background:T.card,borderRadius:8,padding:"8px 12px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:10,fontWeight:700,color:T.text,marginBottom:2}}>{p.name}</div>
-                        {p.topReviews?.[0]?.text&&<div style={{fontSize:9,color:T.muted,fontStyle:"italic"}}>"{p.topReviews[0].text.slice(0,120)}..."</div>}
-                      </div>
-                      <div style={{textAlign:"right",marginLeft:10,flexShrink:0}}>
+                    <div key={i} style={{background:T.card,borderRadius:8,padding:"8px 12px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div style={{fontSize:9,color:T.muted}}>Estabelecimento {i+1} da região</div>
+                      <div style={{textAlign:"right",flexShrink:0}}>
                         <div style={{fontSize:13,fontWeight:800,color:T.warn}}>{p.rating}★</div>
                         <div style={{fontSize:8,color:T.muted}}>{p.totalReviews} avaliações</div>
                       </div>
