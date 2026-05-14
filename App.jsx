@@ -424,8 +424,11 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
                 <div style={{marginBottom:12}}>
                   <div style={{fontSize:8,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Top estabelecimentos por relevância</div>
                   {planAnalise.topDetalhado.map((p,i)=>(
-                    <div key={i} style={{background:T.card,borderRadius:8,padding:"8px 12px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <div style={{fontSize:9,color:T.muted}}>Estabelecimento {i+1} da região</div>
+                    <div key={i} style={{background:T.card,borderRadius:8,padding:"8px 12px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:9,color:T.muted,marginBottom:4}}>Estabelecimento {i+1} da região</div>
+                        {p.topReviews?.[0]?.text&&<div style={{fontSize:9,color:T.soft,fontStyle:"italic",lineHeight:1.5}}>"{p.topReviews[0].text.slice(0,150)}..."</div>}
+                      </div>
                       <div style={{textAlign:"right",flexShrink:0}}>
                         <div style={{fontSize:13,fontWeight:800,color:T.warn}}>{p.rating}★</div>
                         <div style={{fontSize:8,color:T.muted}}>{p.totalReviews} avaliações</div>
