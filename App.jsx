@@ -375,16 +375,18 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
                   <div style={{fontSize:14,fontWeight:800,color:T.accent}}>{planAnalise.ibge.populacao||"—"}</div>
                 </div>
                 <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.info}`}}>
-                  <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Renda per capita</div>
-                  <div style={{fontSize:12,fontWeight:700,color:planAnalise.ibge.rendaMedia?T.info:T.warn}}>
-                    {planAnalise.ibge.rendaMedia||"estimada pela IA ↓"}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                    <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>Renda per capita</div>
+                    {!ibgeData?.rendaPerCapita&&planAnalise.ibge.rendaMedia&&<div style={{fontSize:6,color:T.warn,background:T.warnDim,borderRadius:4,padding:"1px 5px"}}>IA</div>}
                   </div>
+                  <div style={{fontSize:11,fontWeight:700,color:T.info}}>{planAnalise.ibge.rendaMedia||"—"}</div>
                 </div>
                 <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.purple}`}}>
-                  <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Com ensino superior</div>
-                  <div style={{fontSize:12,fontWeight:700,color:planAnalise.ibge.pctSuperior?T.purple:T.warn}}>
-                    {planAnalise.ibge.pctSuperior||"estimado pela IA ↓"}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                    <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>Ensino superior</div>
+                    {!ibgeData?.pctSuperior&&planAnalise.ibge.pctSuperior&&<div style={{fontSize:6,color:T.warn,background:T.warnDim,borderRadius:4,padding:"1px 5px"}}>IA</div>}
                   </div>
+                  <div style={{fontSize:11,fontWeight:700,color:T.purple}}>{planAnalise.ibge.pctSuperior||"—"}</div>
                 </div>
               </div>
               <div style={{fontSize:8,color:T.muted}}>Fonte: {planAnalise.ibge.fonte}</div>
@@ -2288,9 +2290,9 @@ Retorne SOMENTE JSON válido sem markdown:
           municipio:ibgeData.municipio,
           uf:ibgeData.uf,
           populacao:ibgeData.populacaoFormatada,
-          rendaMedia:ibgeData.rendaPerCapitaFormatada,
-          pctSuperior:ibgeData.pctSuperior,
-          fonte:ibgeData.fonte,
+          rendaMedia:ibgeData.rendaPerCapitaFormatada||result.rendaMedia||null,
+          pctSuperior:ibgeData.pctSuperior||result.escolaridade||null,
+          fonte:ibgeData.rendaPerCapitaFormatada?'IBGE — Censo 2022 / Estimativa 2024':'IBGE (pop.) + IA (estimativas)',
         };
       }
       if(placesData){
