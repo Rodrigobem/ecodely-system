@@ -412,8 +412,8 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
                   {planAnalise.topDetalhado.map((p,i)=>(
                     <div key={i} style={{background:T.card,borderRadius:8,padding:"8px 12px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:10,fontWeight:700,color:T.text,marginBottom:2}}>{p.name}</div>
-                        {p.topReviews?.[0]?.text&&<div style={{fontSize:9,color:T.muted,fontStyle:"italic"}}>"{p.topReviews[0].text.slice(0,120)}..."</div>}
+                        <div style={{fontSize:9,color:T.muted,marginBottom:2}}>Estabelecimento {i+1} da região</div>
+                        {p.topReviews?.[0]?.text&&<div style={{fontSize:9,color:T.soft,fontStyle:"italic"}}>"{p.topReviews[0].text.slice(0,120)}..."</div>}
                       </div>
                       <div style={{textAlign:"right",marginLeft:10,flexShrink:0}}>
                         <div style={{fontSize:13,fontWeight:800,color:T.warn}}>{p.rating}★</div>
@@ -2228,25 +2228,37 @@ DADOS REAIS DA REGIÃO (Google Maps API — raio 5km):
 - Distribuição: ${placesData.distribuicao?.excelente||0} excelentes (4.5+), ${placesData.distribuicao?.bom||0} bons (4.0-4.5), ${placesData.distribuicao?.regular||0} regulares
 - Culinárias presentes: ${(placesData.topCuisines||[]).map(c=>typeof c==='object'?`${c.label} (${c.count})`:`${c}`).join(', ')}
 ${placesData.topDetailed?.length?`
-TOP ESTABELECIMENTOS (por relevância e avaliação):
-${placesData.topDetailed.map((p,i)=>`${i+1}. ${p.name} — ${p.rating}★ (${p.totalReviews} avaliações)${p.topReviews?.length?` | Clientes dizem: "${p.topReviews[0]?.text?.slice(0,100)}..."`:''}`).join('\n')}
+PERFIL DOS ESTABELECIMENTOS (use apenas para entender o padrão da região — NÃO cite nomes):
+${placesData.topDetailed.map((p,i)=>`- Estabelecimento ${i+1}: ${p.rating}★, ${p.totalReviews} avaliações${p.topReviews?.[0]?.text?`, cliente disse: "${p.topReviews[0].text.slice(0,100)}"`:''}`).join('\n')}
 `:''}
 `:"(dados do Google Maps não disponíveis — use estimativas baseadas no perfil da região)";
 
 
-      const prompt=`Analise a região "${plano.regiao||plano.clienteEndereco||"Brasil"}" para campanha de mídia in-home (embalagens de delivery) para "${plano.clienteNome}" (${plano.clienteSegmento||"empresa"}). Público: ${plano.publicoAlvo||"geral"}, renda: ${plano.rendaEstimada||"B/C"}, objetivo: ${plano.objetivo||"awareness"}.
+      const prompt=`Você é especialista em planejamento de mídia e inteligência de mercado no Brasil.
+
+PERFIL DA CAMPANHA:
+- Região: ${plano.regiao||plano.clienteEndereco||"não informada"}
+- Cliente: ${plano.clienteNome} (${plano.clienteSegmento||"empresa"})
+- Público-alvo: ${plano.publicoAlvo||"consumidores em geral"}
+- Faixa etária: ${plano.faixaEtaria||"18-45 anos"}
+- Objetivo: ${plano.objetivo||"awareness de marca"}
 
 ${ibgeContext}
 ${placesContext}
 
-Dados de mercado: 38,8% dos brasileiros usam delivery, ticket médio R$45-65, 4,9 pedidos/mês, iFood 92% market share.
+DADOS DE MERCADO BRASIL 2025:
+- 38,8% penetração delivery, ticket médio R$45-65, 4,9 pedidos/mês, iFood 92%
 
-IMPORTANTE: Nunca mencione nomes de marcas, redes ou restaurantes específicos (ex: não cite Outback, McDonald's, iFood parceiros, etc.). Refira-se sempre por categorias ou nichos de culinária (ex: "restaurantes de culinária americana casual", "hamburguerias artesanais", "fast food premium", "dark kitchens de comida saudável").
+REGRAS OBRIGATÓRIAS:
+1. NUNCA use dados do briefing do cliente para preencher campos demográficos (renda, população, etc) — use apenas dados do IBGE, Google Maps e seu conhecimento
+2. NUNCA cite nomes de marcas, redes ou restaurantes específicos
+3. Para renda média, use a renda per capita do IBGE se disponível. Se não, estime com base no PIB, nível de preço dos restaurantes e perfil da região — indique "(estimativa)"
+4. Para ensino superior, use o dado do IBGE se disponível. Se não, estime com base no porte da cidade e presença de universidades — indique "(estimativa)"
+5. Para usuários delivery, calcule: população × 38,8% usando a população real do IBGE
+6. Para pedidos mensais, calcule: usuários delivery × 4,9
 
-${ibgeData?.populacaoFormatada?`USE os dados reais do IBGE acima para população e renda — não estime esses valores.`:''}
-
-Retorne SOMENTE um objeto JSON válido, sem markdown, sem texto antes ou depois:
-{"populacao":"X","rendaMedia":"R$ X","classesSociais":"X%","usuariosDelivery":"X%","ticketMedioDelivery":"R$ X","pedidosMensais":"X pedidos/mês","appsLideres":["iFood","Rappi"],"culinariaDominante":"X","perfilConsumidor":"X","analise":"X","oportunidade":"X","potencialImpacto":"X","melhorEpoca":"X","callToAction":"X","roi":"X"}`;
+Retorne SOMENTE JSON válido sem markdown:
+{"populacao":"X","rendaMedia":"R$ X (fonte)","classesSociais":"X","usuariosDelivery":"X pessoas (X%)","ticketMedioDelivery":"R$ X","pedidosMensais":"X pedidos/mês","appsLideres":["iFood","Rappi"],"culinariaDominante":"X","perfilConsumidor":"X","analise":"3 parágrafos sobre oportunidade de mídia in-home nessa região","oportunidade":"X","potencialImpacto":"X","melhorEpoca":"X","callToAction":"X","roi":"X","escolaridade":"X% com ensino superior (fonte)"}`;
 
       const r=await fetch("/api/analyze",{
         method:"POST",
