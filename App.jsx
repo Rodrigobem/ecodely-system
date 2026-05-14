@@ -526,15 +526,23 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
               ):(
                 <input
                   type="text"
+                  inputMode="numeric"
                   value={calc[k+"_fmt"]||""}
-                  onChange={e=>{
-                    const raw=e.target.value.replace(/\D/g,"");
-                    const num=Number(raw);
-                    const fmt=num>0?num.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}):"";
-                    setPlanAtivo(p=>({...p,calc:{...(p.calc||{}),[k]:num,[k+"_fmt"]:fmt}}));
-                  }}
                   placeholder={ph}
-                  style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}
+                  readOnly
+                  onKeyDown={e=>{
+                    if(["Tab","Enter","ArrowLeft","ArrowRight"].includes(e.key))return;
+                    e.preventDefault();
+                    const raw=String(calc[k+"_raw"]||"");
+                    let nr;
+                    if(/^\d$/.test(e.key)) nr=raw+e.key;
+                    else if(e.key==="Backspace"||e.key==="Delete") nr=raw.slice(0,-1);
+                    else return;
+                    const num=Number(nr)||0;
+                    const fmt=num>0?num.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}):"";
+                    setPlanAtivo(p=>({...p,calc:{...(p.calc||{}),[k]:num,[k+"_raw"]:nr,[k+"_fmt"]:fmt}}));
+                  }}
+                  style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none",cursor:"text"}}
                 />
               )}
             </div>
