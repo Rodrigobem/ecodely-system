@@ -1,6 +1,5 @@
 const CUISINE_KEYWORDS = [
   {label:'Hamburguer/Lanches', keyword:'hamburger'},
-  {label:'Pizza', keyword:'pizza'},
   {label:'Japonesa/Sushi', keyword:'japanese food'},
   {label:'Brasileira/Marmitex', keyword:'comida brasileira'},
   {label:'Açaí', keyword:'açaí'},
@@ -9,6 +8,7 @@ const CUISINE_KEYWORDS = [
   {label:'Saudável/Fit', keyword:'comida saudável'},
   {label:'Churrasco', keyword:'churrascaria'},
   {label:'Frango/Fast Food', keyword:'fast food'},
+  {label:'Mexicana', keyword:'mexican food'},
 ];
 
 module.exports = async function handler(req, res) {
