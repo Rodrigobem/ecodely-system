@@ -2170,7 +2170,7 @@ DADOS REAIS DA REGIÃO (Google Maps API):
 - Total de restaurantes num raio de 5km: ${placesData.total}
 - Avaliação média dos estabelecimentos: ${placesData.avgRating}/5.0
 - Nível de preço médio: ${placesData.avgPriceLabel}
-- Principais tipos de culinária: ${placesData.topCuisines.slice(0,5).map(([t,n])=>`${t} (${n})`).join(", ")}
+- Principais tipos de culinária na região: ${placesData.topCuisines.slice(0,5).map(c=>typeof c==='object'&&c.label?`${c.label} (${c.count} locais)`:String(c)).join(", ")}
 - Exemplos de estabelecimentos: ${placesData.sample.join(", ")}
 `:"(dados do Google Maps não disponíveis — use estimativas baseadas no perfil da região)";
 
