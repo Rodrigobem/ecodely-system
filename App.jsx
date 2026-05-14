@@ -376,23 +376,15 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
                 </div>
                 <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.info}`}}>
                   <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Renda per capita</div>
-                  <div style={{fontSize:12,fontWeight:800,color:T.info}}>{planAnalise.ibge.rendaMedia||<span style={{color:T.warn,fontSize:10}}>estimada pela IA</span>}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:planAnalise.ibge.rendaMedia?T.info:T.warn}}>
+                    {planAnalise.ibge.rendaMedia||"estimada pela IA ↓"}
+                  </div>
                 </div>
                 <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.purple}`}}>
-                  <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>PIB per capita</div>
-                  <div style={{fontSize:12,fontWeight:800,color:T.purple}}>{planAnalise.ibge.pibPerCapita||"—"}</div>
-                </div>
-                <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.green}`}}>
-                  <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Internet nos domicílios</div>
-                  <div style={{fontSize:14,fontWeight:800,color:T.green}}>{planAnalise.ibge.pctInternet||"—"}</div>
-                </div>
-                <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.warn}`}}>
-                  <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Taxa de urbanização</div>
-                  <div style={{fontSize:14,fontWeight:800,color:T.warn}}>{planAnalise.ibge.pctUrbano||"—"}</div>
-                </div>
-                <div style={{background:T.card,borderRadius:8,padding:10,borderLeft:`3px solid ${T.pink}`}}>
-                  <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Ensino superior</div>
-                  <div style={{fontSize:14,fontWeight:800,color:T.pink}}>{planAnalise.ibge.pctSuperior||"—"}</div>
+                  <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Com ensino superior</div>
+                  <div style={{fontSize:12,fontWeight:700,color:planAnalise.ibge.pctSuperior?T.purple:T.warn}}>
+                    {planAnalise.ibge.pctSuperior||"estimado pela IA ↓"}
+                  </div>
                 </div>
               </div>
               <div style={{fontSize:8,color:T.muted}}>Fonte: {planAnalise.ibge.fonte}</div>
@@ -2216,17 +2208,16 @@ export default function App(){
       }
 
       // 3. Monta contexto com dados reais para a IA
-      const semRenda=!ibgeData?.rendaPerCapitaFormatada?"ATENÇÃO: Renda per capita não disponível no IBGE. Use PIB per capita, nível de preço dos restaurantes, urbanização e escolaridade para ESTIMAR a faixa de renda e indique que é estimativa.":"";
+      const semRenda=!ibgeData?.rendaPerCapitaFormatada?"- ATENÇÃO: Renda per capita não disponível no IBGE. Estime a faixa de renda com base nos outros indicadores disponíveis e indique '(estimativa)'.":"";
+      const semSuperior=!ibgeData?.pctSuperior?"- ATENÇÃO: % ensino superior não disponível no IBGE. Estime com base no perfil da região (porte da cidade, PIB, presença de universidades próximas) e indique '(estimativa)'.":"";
       const ibgeContext=ibgeData?`
 DADOS OFICIAIS DO IBGE — ${ibgeData.municipio}/${ibgeData.uf}:
 - População: ${ibgeData.populacaoFormatada||"não disponível"}
-- Renda per capita: ${ibgeData.rendaPerCapitaFormatada||"não disponível no Censo"}
-- PIB per capita: ${ibgeData.pibPerCapitaFormatado||"não disponível"}
-- Domicílios com internet: ${ibgeData.pctInternet||"não disponível"}
-- Taxa de urbanização: ${ibgeData.pctUrbano||"não disponível"}
-- Ensino superior: ${ibgeData.pctSuperior||"não disponível"}
+- Renda per capita: ${ibgeData.rendaPerCapitaFormatada||"não disponível"}
+- % com ensino superior: ${ibgeData.pctSuperior||"não disponível"}
 - Fonte: ${ibgeData.fonte}
 ${semRenda}
+${semSuperior}
 `:"(dados do IBGE não disponíveis)";
       const placesContext=placesData?`
 DADOS REAIS DA REGIÃO (Google Maps API — raio 5km):
@@ -2286,9 +2277,6 @@ Retorne SOMENTE um objeto JSON válido, sem markdown, sem texto antes ou depois:
           uf:ibgeData.uf,
           populacao:ibgeData.populacaoFormatada,
           rendaMedia:ibgeData.rendaPerCapitaFormatada,
-          pibPerCapita:ibgeData.pibPerCapitaFormatado,
-          pctInternet:ibgeData.pctInternet,
-          pctUrbano:ibgeData.pctUrbano,
           pctSuperior:ibgeData.pctSuperior,
           fonte:ibgeData.fonte,
         };
