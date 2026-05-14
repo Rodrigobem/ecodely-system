@@ -637,9 +637,71 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
 // ── WIZ STEP 4 ────────────────────────────────────────────────────────────
 const WizStep4=({visible,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCur,planAtivo,planAnalise,salvarPlano,gerarPropostaPDF,setPlanAtivo})=>{
   if(!visible)return null;
+
+  // Calculadora de campanha
+  const calc=planAtivo.calc||{};
+  const cValorProposta=Number(calc.valorProposta||0);
+  const cValorTabela=Number(calc.valorTabela||0);
+  const cDesconto=Number(calc.desconto||0);
+  const cValorBruto=cValorTabela*(1-cDesconto/100);
+  const cTotalEmb=cValorBruto>0?cValorProposta/cValorBruto:0;
+  const capPorParceiro=parc.length>0
+    ?parc.reduce((a,p)=>a+Number(p.embalagens||1000),0)/parc.length
+    :1000;
+  const cParcNecessarios=cTotalEmb>0?Math.ceil(cTotalEmb/capPorParceiro):0;
+  const cEmbPorParc=cParcNecessarios>0?Math.ceil(cTotalEmb/cParcNecessarios):0;
+
+  const distribuir=()=>{
+    if(!cTotalEmb||!parc.length)return;
+    const embPorParc=Math.ceil(cTotalEmb/parc.length);
+    setPlanAtivo(p=>({...p,parceiros:p.parceiros.map(x=>({...x,embalagens:embPorParc,tabela:cValorTabela||x.tabela,desconto:cDesconto}))}));
+  };
+
   return(
     <div>
       <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.warn,fontSize:12,marginBottom:14}}>Etapa 4 — Resumo e Proposta</div>
+
+      {/* CALCULADORA DE CAMPANHA */}
+      <div style={{background:T.surface,borderRadius:12,padding:16,marginBottom:16,border:`1px solid ${T.warn}44`}}>
+        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,color:T.warn,marginBottom:12}}>🧮 Calculadora de Campanha</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:12}}>
+          <div>
+            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Valor da proposta (R$)</div>
+            <input type="number" value={calc.valorProposta||""} onChange={e=>setPlanAtivo(p=>({...p,calc:{...p.calc,valorProposta:e.target.value}}))} placeholder="Ex: 50000" style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 10px",fontSize:12,color:T.text,outline:"none"}}/>
+          </div>
+          <div>
+            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Valor tabela (R$/embalagem)</div>
+            <input type="number" value={calc.valorTabela||""} onChange={e=>setPlanAtivo(p=>({...p,calc:{...p.calc,valorTabela:e.target.value}}))} placeholder="Ex: 12" style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 10px",fontSize:12,color:T.text,outline:"none"}}/>
+          </div>
+          <div>
+            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Desconto (%)</div>
+            <input type="number" min="0" max="100" value={calc.desconto||""} onChange={e=>setPlanAtivo(p=>({...p,calc:{...p.calc,desconto:e.target.value}}))} placeholder="Ex: 50" style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 10px",fontSize:12,color:T.text,outline:"none"}}/>
+          </div>
+        </div>
+        {cValorProposta>0&&cValorTabela>0&&(
+          <div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:12}}>
+              {[
+                ["Valor bruto/emb",`R$ ${cValorBruto.toFixed(2).replace(".",",")}`,T.accent],
+                ["Total embalagens",Math.ceil(cTotalEmb).toLocaleString("pt-BR"),T.purple],
+                ["Parceiros necessários",cParcNecessarios,T.info],
+                ["Emb. por parceiro",cEmbPorParc.toLocaleString("pt-BR"),T.warn],
+              ].map(([l,v,c])=>(
+                <div key={l} style={{background:T.card,borderRadius:8,padding:"10px 12px",textAlign:"center",borderTop:`2px solid ${c}`}}>
+                  <div style={{fontSize:14,fontWeight:800,color:c,marginBottom:2}}>{v}</div>
+                  <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{fontSize:9,color:T.muted}}>
+                {parc.length>0?`Baseado em ${parc.length} parceiro(s) selecionado(s) com média de ${Math.round(capPorParceiro).toLocaleString("pt-BR")} emb./mês cada`:`Usando capacidade padrão de 1.000 emb./parceiro/mês`}
+              </div>
+              {parc.length>0&&<button onClick={distribuir} style={{padding:"8px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,border:"none",color:"#000",borderRadius:7,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10}}>✓ Distribuir nos parceiros</button>}
+            </div>
+          </div>
+        )}
+      </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
         {[["Investimento",fmtCur(total),T.accent],["Embalagens",totalEmb.toLocaleString("pt-BR"),T.purple],["Impactos",totalImpactos.toLocaleString("pt-BR"),T.info],["Custo/impacto",`R$ ${custoImp}`,T.warn]].map(([l,v,c])=>(
           <div key={l} style={{background:T.surface,borderRadius:10,padding:14,textAlign:"center",border:`1px solid ${c}33`}}>
