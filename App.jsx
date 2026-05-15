@@ -115,6 +115,7 @@ const CLIENT_BILLING=[];
 const LANCAMENTOS_INIT=[];
 const FAT_MENSAIS_INIT=[];
 const CAMPS_INIT=[];
+const SUPPLIERS=[];
 const MONTHLY_DATA=[{month:"Nov/24",receita:28400,previsao:30000},{month:"Dez/24",receita:31200,previsao:32000},{month:"Jan/25",receita:19800,previsao:22000},{month:"Fev/25",receita:35600,previsao:34000},{month:"Mar/25",receita:42100,previsao:40000},{month:"Abr/25",receita:38700,previsao:41000},{month:"Mai/25",receita:0,previsao:52000},{month:"Jun/25",receita:0,previsao:58000}];
 const USER_BILLING=[];
 
