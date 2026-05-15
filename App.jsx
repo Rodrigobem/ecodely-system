@@ -2489,220 +2489,255 @@ Retorne SOMENTE JSON: {"recomendados":["id1","id2","id3"],"perfilIdeal":"perfil 
     if(!w)return;
     const fmt=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:2});
     const fmtN=v=>Number(v||0).toLocaleString("pt-BR");
-
-    // Linha embalagens
-    const embRows=(plano.parceiros||[]).map(p=>{
-      const tabUnit=Number(p.tabela||6);
-      const qtd=Number(p.embalagens||0);
-      const desc=Number(p.desconto||0);
-      const bruto=qtd*tabUnit*(1-desc/100);
-      return `<tr>
-        <td>Embalagem Branded Delivery — ${p.nome}</td>
-        <td style="text-align:center">${fmtN(qtd)} un</td>
-        <td style="text-align:right">${fmt(tabUnit)}/un</td>
-        <td style="text-align:center">${desc>0?desc+"%":"—"}</td>
-        <td style="text-align:right;font-weight:700;color:#00A36C">${fmt(bruto)}</td>
-      </tr>`;
-    }).join("");
-
-    // Outras mídias
-    const midiaRows=(plano.outrasMidias||[]).map(m=>{
-      const tab=Number(m.tabela||0);
-      const qtd=Number(m.qtd||1);
-      const desc=Number(m.desconto||0);
-      const bruto=tab*(1-desc/100);
-      return `<tr>
-        <td>${m.tipo}${m.descricao?` — ${m.descricao}`:""}</td>
-        <td style="text-align:center">${fmtN(qtd)} ${m.unidade||"un"}</td>
-        <td style="text-align:right">${fmt(tab)}</td>
-        <td style="text-align:center">${desc>0?desc+"%":"—"}</td>
-        <td style="text-align:right;font-weight:700;color:#00A36C">${fmt(bruto)}</td>
-      </tr>`;
-    }).join("");
-
-    const totalEmb=(plano.parceiros||[]).reduce((a,p)=>a+Number(p.embalagens||0)*Number(p.tabela||6)*(1-Number(p.desconto||0)/100),0);
-    const totalMidia=(plano.outrasMidias||[]).reduce((a,m)=>a+Number(m.tabela||0)*(1-Number(m.desconto||0)/100),0);
-    const total=totalEmb+totalMidia;
-    const totalEmb2=(plano.parceiros||[]).reduce((a,p)=>a+Number(p.embalagens||0),0);
-    const impactos=Math.round(totalEmb2*3.3);
+    const parceiros=plano.parceiros||[];
+    const outras=plano.outrasMidias||[];
+    const totalEmb=parceiros.reduce((a,p)=>a+Number(p.embalagens||0),0);
+    const totalVal=parceiros.reduce((a,p)=>a+Number(p.embalagens||0)*Number(p.tabela||6)*(1-Number(p.desconto||0)/100),0);
+    const totalMidia=outras.reduce((a,m)=>a+Number(m.tabela||0)*(1-Number(m.desconto||0)/100),0);
+    const total=totalVal+totalMidia;
+    const impactos=Math.round(totalEmb*3.3);
     const numProposta=`ECO-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`;
+    const custoImpacto=impactos>0?(total/impactos).toFixed(2):0;
 
-    const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Proposta Comercial — ${plano.clienteNome}</title>
+    // Apps com market share
+    const appsArr=Array.isArray(analise?.appsLideres)&&typeof analise.appsLideres[0]==="object"
+      ?analise.appsLideres
+      :(analise?.appsLideres||[]).map(a=>({nome:a,share:"—"}));
+
+    const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Proposta — ${plano.clienteNome}</title>
     <style>
       *{box-sizing:border-box;margin:0;padding:0}
       body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#1a1a2e;background:#fff}
       @page{margin:0;size:A4}
       @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-      .page{max-width:794px;margin:0 auto;padding:0}
-
-      /* CAPA */
-      .capa{height:297mm;background:linear-gradient(145deg,#0a1628 0%,#0f2040 50%,#0a1628 100%);display:flex;flex-direction:column;justify-content:space-between;padding:60px 56px;position:relative;overflow:hidden;page-break-after:always}
-      .capa::before{content:"";position:absolute;top:-100px;right:-100px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,#00E5A044 0%,transparent 70%)}
-      .capa::after{content:"";position:absolute;bottom:-80px;left:-80px;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,#3D9EFF22 0%,transparent 70%)}
-      .capa-logo{font-size:32px;font-weight:900;color:#00E5A0;letter-spacing:-1px}
-      .capa-slogan{font-size:12px;color:#00E5A088;letter-spacing:3px;text-transform:uppercase;margin-top:6px}
-      .capa-center{flex:1;display:flex;flex-direction:column;justify-content:center;z-index:1}
-      .capa-tag{font-size:10px;color:#00E5A0;letter-spacing:4px;text-transform:uppercase;margin-bottom:20px}
-      .capa-title{font-size:48px;font-weight:900;color:#fff;line-height:1.1;margin-bottom:24px;letter-spacing:-1px}
-      .capa-cliente{font-size:18px;color:#00E5A0;font-weight:600;margin-bottom:8px}
-      .capa-meta{font-size:11px;color:#ffffff55;margin-top:4px}
-      .capa-footer{display:flex;justify-content:space-between;align-items:flex-end;z-index:1}
-      .capa-info{font-size:10px;color:#ffffff44}
-      .capa-num{font-size:10px;color:#00E5A066;font-family:monospace}
-
-      /* CONTEÚDO */
-      .section{padding:48px 56px;page-break-inside:avoid}
-      .section-break{page-break-before:always}
-      .sec-label{font-size:9px;color:#00A36C;letter-spacing:4px;text-transform:uppercase;margin-bottom:12px;font-weight:700}
-      .sec-title{font-size:28px;font-weight:800;color:#0a1628;margin-bottom:24px;letter-spacing:-0.5px}
-      .divider{height:3px;background:linear-gradient(90deg,#00E5A0,transparent);border-radius:2px;margin-bottom:32px}
-
-      /* CARDS DE DADOS */
-      .data-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
-      .data-card{background:#f8fafb;border-radius:10px;padding:16px;border-left:3px solid #00E5A0}
-      .data-label{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
-      .data-value{font-size:16px;font-weight:800;color:#0a1628}
-      .data-sub{font-size:9px;color:#aaa;margin-top:2px}
-
-      /* ANÁLISE */
-      .analysis-box{background:#f0faf6;border-radius:12px;padding:24px;border:1px solid #00E5A033;margin-bottom:20px}
-      .analysis-text{font-size:11px;color:#2a4a3a;line-height:1.8}
-
-      /* TABELA FINANCEIRA */
-      .fin-table{width:100%;border-collapse:collapse;margin-bottom:20px}
-      .fin-table th{background:#0a1628;color:#fff;padding:10px 14px;font-size:9px;text-transform:uppercase;letter-spacing:1px;font-weight:700}
-      .fin-table td{padding:10px 14px;font-size:11px;border-bottom:1px solid #f0f0f0}
-      .fin-table tr:nth-child(even) td{background:#f8fafb}
-      .fin-total{background:#00E5A0!important;color:#000;font-weight:900;font-size:13px}
-      .fin-total td{background:#00E5A0;color:#000;font-weight:900;padding:12px 14px;font-size:12px}
-
-      /* IMPACTOS */
-      .impact-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
-      .impact-card{text-align:center;background:#0a1628;border-radius:10px;padding:16px}
-      .impact-num{font-size:22px;font-weight:900;color:#00E5A0}
-      .impact-label{font-size:9px;color:#ffffff66;margin-top:4px;text-transform:uppercase;letter-spacing:1px}
-
-      /* PRÓXIMOS PASSOS */
-      .step-item{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #f0f0f0}
-      .step-num{width:28px;height:28px;border-radius:50%;background:#00E5A0;color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0}
-      .step-text{font-size:11px;color:#444;line-height:1.6;padding-top:4px}
-      .footer-bar{background:#0a1628;padding:20px 56px;display:flex;justify-content:space-between;align-items:center;margin-top:auto}
-      .footer-txt{font-size:9px;color:#ffffff44}
+      .pb{page-break-before:always}
+      .capa{height:100vh;min-height:260mm;background:linear-gradient(145deg,#050d1f 0%,#0d1f3c 60%,#050d1f 100%);display:flex;flex-direction:column;justify-content:space-between;padding:56px;position:relative;overflow:hidden}
+      .capa::before{content:"";position:absolute;top:-120px;right:-120px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,#00E5A033 0%,transparent 65%)}
+      .capa::after{content:"";position:absolute;bottom:-100px;left:-100px;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,#3D9EFF1a 0%,transparent 65%)}
+      .logo{font-size:30px;font-weight:900;color:#00E5A0;letter-spacing:-1px}
+      .slogan{font-size:10px;color:#00E5A066;letter-spacing:4px;text-transform:uppercase;margin-top:5px}
+      .capa-mid{flex:1;display:flex;flex-direction:column;justify-content:center;z-index:1;padding:40px 0}
+      .capa-tag{font-size:9px;color:#00E5A0;letter-spacing:5px;text-transform:uppercase;margin-bottom:18px;border-left:2px solid #00E5A0;padding-left:12px}
+      .capa-h{font-size:52px;font-weight:900;color:#fff;line-height:1.05;letter-spacing:-2px;margin-bottom:20px}
+      .capa-seg{font-size:15px;color:#00E5A0;font-weight:600;margin-bottom:6px}
+      .capa-reg{font-size:12px;color:#ffffff55}
+      .capa-foot{display:flex;justify-content:space-between;align-items:flex-end;z-index:1}
+      .capa-contact{font-size:9px;color:#ffffff33;line-height:1.8}
+      .capa-num{font-size:9px;color:#00E5A055;font-family:monospace;text-align:right;line-height:1.8}
+      .sec{padding:44px 52px}
+      .sec-lbl{font-size:8px;color:#00A36C;letter-spacing:5px;text-transform:uppercase;margin-bottom:10px;font-weight:700}
+      .sec-h{font-size:26px;font-weight:800;color:#0a1628;margin-bottom:20px;letter-spacing:-0.5px}
+      .bar{height:3px;background:linear-gradient(90deg,#00E5A0,#3D9EFF,transparent);border-radius:2px;margin-bottom:28px}
+      .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+      .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+      .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+      .card{background:#f8fafc;border-radius:10px;padding:16px;border-left:3px solid #00E5A0}
+      .card.blue{border-left-color:#3D9EFF}
+      .card.purple{border-left-color:#9B7FFF}
+      .card.warn{border-left-color:#F5A623}
+      .card.pink{border-left-color:#F472B6}
+      .card.dark{background:#0a1628;border-left-color:#00E5A0}
+      .lbl{font-size:8px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+      .val{font-size:15px;font-weight:800;color:#0a1628}
+      .val.sm{font-size:12px}
+      .val.green{color:#00A36C}
+      .val.blue{color:#3D9EFF}
+      .val.purple{color:#9B7FFF}
+      .val.white{color:#fff}
+      .sub{font-size:8px;color:#aaa;margin-top:2px}
+      .box{background:#f0faf6;border:1px solid #00E5A033;border-radius:10px;padding:20px;margin-bottom:16px}
+      .box.warn{background:#fff8f0;border-color:#F5A62333}
+      .box.blue{background:#f0f6ff;border-color:#3D9EFF33}
+      .box.purple{background:#f5f0ff;border-color:#9B7FFF33}
+      .box.dark{background:#050d1f;border-color:#00E5A033}
+      .box-lbl{font-size:8px;color:#00A36C;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;font-weight:700}
+      .box-txt{font-size:11px;color:#2a4a3a;line-height:1.85}
+      .ibge-badge{display:inline-flex;align-items:center;gap:5px;background:#e8f8f2;border:1px solid #00E5A044;border-radius:20px;padding:4px 10px;font-size:8px;color:#00A36C;font-weight:700;margin-bottom:14px}
+      .maps-badge{display:inline-flex;align-items:center;gap:5px;background:#e8f0ff;border:1px solid #3D9EFF44;border-radius:20px;padding:4px 10px;font-size:8px;color:#3D9EFF;font-weight:700;margin-bottom:14px;margin-left:8px}
+      .app-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f0}
+      .app-bar-bg{flex:1;background:#f0f0f0;border-radius:4px;height:6px}
+      .app-bar{background:#00E5A0;border-radius:4px;height:6px}
+      .imp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:20px 0}
+      .imp-card{text-align:center;background:#050d1f;border-radius:10px;padding:16px 10px}
+      .imp-num{font-size:20px;font-weight:900;color:#00E5A0}
+      .imp-lbl{font-size:8px;color:#ffffff55;margin-top:4px;text-transform:uppercase;letter-spacing:1px}
+      .fin-t{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:11px}
+      .fin-t th{background:#0a1628;color:#fff;padding:9px 12px;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:700}
+      .fin-t td{padding:9px 12px;border-bottom:1px solid #f0f0f0}
+      .fin-t tr:nth-child(even) td{background:#fafafa}
+      .fin-total td{background:#00E5A0;color:#000;font-weight:800;padding:11px 12px;font-size:13px}
+      .step{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid #f5f5f5}
+      .step-n{width:26px;height:26px;border-radius:50%;background:#00E5A0;color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px}
+      .step-t{font-size:11px;color:#333;line-height:1.65}
+      .foot-bar{background:#050d1f;padding:16px 52px;display:flex;justify-content:space-between;align-items:center}
+      .foot-t{font-size:8px;color:#ffffff33}
+      .section-title-box{background:linear-gradient(135deg,#00E5A011,#3D9EFF08);border-radius:10px;padding:12px 16px;margin-bottom:20px;border:1px solid #00E5A022}
+      .pill{display:inline-block;background:#f0f0f0;border-radius:20px;padding:3px 10px;font-size:9px;color:#555;margin:2px}
+      .pill.green{background:#e8f8f2;color:#00A36C}
+      .roi-box{background:linear-gradient(135deg,#050d1f,#0d1f3c);border-radius:12px;padding:24px;margin-bottom:16px;border:1px solid #00E5A033}
+      .roi-h{font-size:10px;color:#00E5A0;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
+      .roi-txt{font-size:12px;color:#00E5A0;font-weight:600;line-height:1.7}
+      .cta-box{background:linear-gradient(135deg,#F5A62311,#F5A62305);border:1px solid #F5A62333;border-radius:10px;padding:20px;margin-bottom:16px}
     </style></head><body>
 
     <!-- CAPA -->
     <div class="capa">
-      <div>
-        <div class="capa-logo">ECODELY</div>
-        <div class="capa-slogan">Onde tem Delivery, tem Ecodely</div>
+      <div><div class="logo">ECODELY</div><div class="slogan">Onde tem Delivery, tem Ecodely</div></div>
+      <div class="capa-mid">
+        <div class="capa-tag">Proposta Comercial de Mídia</div>
+        <div class="capa-h">${plano.clienteNome||"Cliente"}</div>
+        <div class="capa-seg">${plano.clienteSegmento||""} ${plano.regiao?`· ${plano.regiao}`:""}</div>
+        <div class="capa-reg">Responsável: ${plano.createdBy||user?.name||"—"} · ${new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"})}</div>
       </div>
-      <div class="capa-center">
-        <div class="capa-tag">Proposta Comercial</div>
-        <div class="capa-title">${plano.clienteNome||"Cliente"}</div>
-        <div class="capa-cliente">${plano.clienteSegmento||""} ${plano.regiao?`· ${plano.regiao}`:""}</div>
-        <div class="capa-meta">Responsável: ${plano.createdBy||user?.name||"—"} · ${new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"})}</div>
-      </div>
-      <div class="capa-footer">
-        <div class="capa-info">Mídia In-Home · Embalagens de Delivery<br>ecodely.com.br · comercial@ecodely.com.br</div>
-        <div class="capa-num">Nº ${numProposta}<br>Válida por 15 dias</div>
+      <div class="capa-foot">
+        <div class="capa-contact">Mídia In-Home · Embalagens de Delivery<br>ecodely.com.br · comercial@ecodely.com.br</div>
+        <div class="capa-num">Nº ${numProposta}<br>Válida por 15 dias<br>${plano.prazo?`Período: ${plano.prazo}`:""}</div>
       </div>
     </div>
 
     <!-- SOBRE A ECODELY -->
-    <div class="section">
-      <div class="sec-label">Quem somos</div>
-      <div class="sec-title">A mídia que vai até o seu cliente</div>
-      <div class="divider"></div>
-      <p style="font-size:12px;color:#444;line-height:1.9;margin-bottom:16px">A <strong>Ecodely</strong> é uma plataforma de mídia in-home que transforma embalagens de delivery em poderosos canais de comunicação. Conectamos marcas ao consumidor final no momento mais receptivo: a chegada do pedido em casa.</p>
+    <div class="sec pb">
+      <div class="sec-lbl">Quem somos</div>
+      <div class="sec-h">A mídia que vai até o seu cliente</div>
+      <div class="bar"></div>
+      <p style="font-size:12px;color:#444;line-height:1.9;margin-bottom:14px">A <strong>Ecodely</strong> é uma plataforma de mídia in-home que transforma embalagens de delivery em poderosos canais de comunicação. Conectamos marcas ao consumidor final no momento mais receptivo: a chegada do pedido em casa.</p>
       <p style="font-size:12px;color:#444;line-height:1.9;margin-bottom:24px">Nossa rede de restaurantes, dark kitchens e estabelecimentos parceiros garante distribuição inteligente, segmentada por região, perfil demográfico e comportamento de consumo. Cada embalagem é uma experiência — não um anúncio.</p>
-      <div class="data-grid">
-        <div class="data-card"><div class="data-label">Impactos por embalagem</div><div class="data-value">3,3×</div><div class="data-sub">Visualizações médias únicas</div></div>
-        <div class="data-card"><div class="data-label">Modelo</div><div class="data-value">In-home</div><div class="data-sub">No ambiente do consumidor</div></div>
-        <div class="data-card"><div class="data-label">Segmentação</div><div class="data-value">Por região</div><div class="data-sub">Geo + demográfica + comportamental</div></div>
+      <div class="g3">
+        <div class="card"><div class="lbl">Impactos por embalagem</div><div class="val green">3,3×</div><div class="sub">Visualizações médias únicas</div></div>
+        <div class="card blue"><div class="lbl">Modelo</div><div class="val blue">In-home</div><div class="sub">No ambiente do consumidor</div></div>
+        <div class="card purple"><div class="lbl">Segmentação</div><div class="val purple">Geo + Demo</div><div class="sub">Regional + comportamental</div></div>
       </div>
     </div>
 
     ${analise?`
-    <!-- ANÁLISE DA REGIÃO -->
-    <div class="section section-break">
-      <div class="sec-label">Inteligência de mercado</div>
-      <div class="sec-title">Perfil da região — ${plano.regiao||plano.clienteEndereco||""}</div>
-      <div class="divider"></div>
-      <div class="data-grid">
-        <div class="data-card"><div class="data-label">População</div><div class="data-value">${analise.populacao||"—"}</div></div>
-        <div class="data-card"><div class="data-label">Renda média</div><div class="data-value">${analise.rendaMedia||"—"}</div></div>
-        <div class="data-card"><div class="data-label">Usuários de delivery</div><div class="data-value">${analise.usuariosDelivery||"—"}</div></div>
-        <div class="data-card"><div class="data-label">Ticket médio delivery</div><div class="data-value">${analise.ticketMedioDelivery||"—"}</div></div>
-        <div class="data-card"><div class="data-label">Classes sociais</div><div class="data-value" style="font-size:12px">${analise.classesSociais||"—"}</div></div>
-        <div class="data-card"><div class="data-label">Apps líderes</div><div class="data-value" style="font-size:12px">${(analise.appsLideres||[]).join(", ")||"—"}</div></div>
-      </div>
-      <div class="analysis-box">
-        <div class="data-label" style="margin-bottom:8px">Análise estratégica</div>
-        <div class="analysis-text">${analise.analise||""}</div>
-      </div>
-      <div class="analysis-box" style="background:#fff8f0;border-color:#F5A62333">
-        <div class="data-label" style="margin-bottom:8px;color:#F5A623">Oportunidade identificada</div>
-        <div class="analysis-text">${analise.oportunidade||""}</div>
-      </div>
-    </div>`:""}
+    <!-- INTELIGÊNCIA DE MERCADO -->
+    <div class="sec pb">
+      <div class="sec-lbl">Inteligência de mercado</div>
+      <div class="sec-h">Análise da região — ${plano.regiao||plano.clienteEndereco||""}</div>
+      <div class="bar"></div>
 
-    <!-- DETALHES DA CAMPANHA E IMPACTOS -->
-    <div class="section section-break">
-      <div class="sec-label">A campanha</div>
-      <div class="sec-title">Embalagem Branded Delivery</div>
-      <div class="divider"></div>
-      <div class="data-grid" style="grid-template-columns:repeat(4,1fr)">
-        <div class="data-card"><div class="data-label">Embalagens</div><div class="data-value">${fmtN(totalEmb2)}</div><div class="data-sub">unidades</div></div>
-        <div class="data-card"><div class="data-label">Parceiros</div><div class="data-value">${plano.parceiros?.length||0}</div><div class="data-sub">estabelecimentos</div></div>
-        <div class="data-card"><div class="data-label">Público-alvo</div><div class="data-value" style="font-size:13px">${plano.publicoAlvo||"—"}</div></div>
-        <div class="data-card"><div class="data-label">Região</div><div class="data-value" style="font-size:13px">${plano.regiao||"—"}</div></div>
+      ${analise.ibge?`
+      <div class="ibge-badge">📊 Dados Oficiais IBGE — ${analise.ibge.municipio}/${analise.ibge.uf}</div>
+      <div class="g3" style="margin-bottom:20px">
+        <div class="card"><div class="lbl">População</div><div class="val green">${analise.ibge.populacao||"—"}</div><div class="sub">Estimativa 2024</div></div>
+        <div class="card blue"><div class="lbl">Renda per capita</div><div class="val blue sm">${analise.ibge.rendaMedia||"—"}</div><div class="sub">Censo 2022</div></div>
+        <div class="card purple"><div class="lbl">Ensino superior</div><div class="val purple">${analise.ibge.pctSuperior||"—"}</div><div class="sub">% da população</div></div>
+      </div>`:""}
+
+      ${analise.totalRestaurantes?`
+      <div class="maps-badge">🗺️ Google Maps — raio 5km</div>
+      <div class="g4" style="margin-bottom:20px">
+        <div class="card"><div class="lbl">Restaurantes</div><div class="val">${analise.totalRestaurantes}</div><div class="sub">No raio de 5km</div></div>
+        <div class="card warn"><div class="lbl">Avaliação média</div><div class="val" style="color:#F5A623">${analise.avaliacaoMedia}★</div></div>
+        <div class="card blue"><div class="lbl">Total avaliações</div><div class="val blue sm">${Number(analise.totalReviews||0).toLocaleString("pt-BR")}</div></div>
+        <div class="card"><div class="lbl">Nível de preço</div><div class="val sm">${analise.nivelPreco||"—"}</div></div>
       </div>
-      <div class="impact-grid">
-        <div class="impact-card"><div class="impact-num">${fmtN(impactos)}</div><div class="impact-label">Impactos offline</div></div>
-        <div class="impact-card"><div class="impact-num">3,3×</div><div class="impact-label">Por embalagem</div></div>
-        <div class="impact-card"><div class="impact-num">${plano.faixaEtaria||"18–45"}</div><div class="impact-label">Faixa etária</div></div>
-        <div class="impact-card"><div class="impact-num">${plano.prazo||"30 dias"}</div><div class="impact-label">Período</div></div>
+      ${analise.distribuicao?`<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+        <span class="pill green">⭐ ${analise.distribuicao.excelente} excelentes (4.5+)</span>
+        <span class="pill" style="background:#fff8e8;color:#c87000">👍 ${analise.distribuicao.bom} bons (4.0+)</span>
+        <span class="pill">😐 ${analise.distribuicao.regular} regulares</span>
+        ${(analise.topCulinarias||[]).map(c=>`<span class="pill">${typeof c==="object"?c.label:c}</span>`).join("")}
+      </div>`:""}
+      `:""}
+
+      <div class="g3">
+        <div class="card"><div class="lbl">Usuários delivery</div><div class="val green">${analise.usuariosDelivery||"—"}</div></div>
+        <div class="card warn"><div class="lbl">Ticket médio</div><div class="val" style="color:#F5A623">${analise.ticketMedioDelivery||"—"}</div></div>
+        <div class="card blue"><div class="lbl">Pedidos/mês na região</div><div class="val blue sm">${analise.pedidosMensais||"—"}</div></div>
       </div>
-      ${plano.parceiros?.length>0?`
-      <table style="width:100%;border-collapse:collapse;margin-top:16px">
-        <thead><tr style="background:#f8fafb"><th style="padding:8px 12px;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;text-align:left">Parceiro</th><th style="padding:8px 12px;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;text-align:right">Embalagens</th><th style="padding:8px 12px;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;text-align:left">Segmento</th></tr></thead>
-        <tbody>${(plano.parceiros||[]).map((p,i)=>`<tr style="border-bottom:1px solid #f0f0f0;background:${i%2===0?"#fff":"#fafafa"}"><td style="padding:8px 12px;font-size:11px;font-weight:600">${p.nome}</td><td style="padding:8px 12px;font-size:11px;text-align:right">${fmtN(p.embalagens)} un</td><td style="padding:8px 12px;font-size:11px;color:#888">${p.segmento||"—"}</td></tr>`).join("")}</tbody>
+
+      ${appsArr.length>0?`
+      <div style="margin-bottom:20px">
+        <div class="lbl" style="margin-bottom:12px">Apps líderes de delivery na região</div>
+        ${appsArr.slice(0,3).map((a,i)=>{
+          const pct=parseInt(String(a.share||"").replace("%",""))||0;
+          const w=Math.max(pct,5);
+          return `<div class="app-row">
+            <div style="font-size:11px;font-weight:700;color:#0a1628;width:80px">${a.nome||a}</div>
+            <div class="app-bar-bg"><div class="app-bar" style="width:${w}%;background:${i===0?"#00E5A0":i===1?"#3D9EFF":"#9B7FFF"}"></div></div>
+            <div style="font-size:11px;font-weight:700;color:${i===0?"#00A36C":i===1?"#3D9EFF":"#9B7FFF"};width:40px;text-align:right">${a.share||"—"}</div>
+          </div>`;
+        }).join("")}
+      </div>`:""}
+
+      ${analise.perfilConsumidor?`<div class="box"><div class="box-lbl">Perfil do consumidor local</div><div class="box-txt">${analise.perfilConsumidor}</div></div>`:""}
+      ${analise.analise?`<div class="box"><div class="box-lbl">Análise estratégica</div><div class="box-txt">${analise.analise}</div></div>`:""}
+      ${analise.oportunidade?`<div class="box warn"><div class="box-lbl" style="color:#F5A623">Oportunidade identificada</div><div class="box-txt" style="color:#5a3a00">${analise.oportunidade}</div></div>`:""}
+      ${analise.potencialImpacto?`<div class="box blue"><div class="box-lbl" style="color:#3D9EFF">Potencial de impacto</div><div class="box-txt" style="color:#0a2a5a">${analise.potencialImpacto}</div></div>`:""}
+    </div>
+
+    <!-- ROI E CALL-TO-ACTION -->
+    ${analise.roi||analise.callToAction||analise.melhorEpoca?`
+    <div class="sec pb">
+      <div class="sec-lbl">Estratégia</div>
+      <div class="sec-h">ROI e recomendações</div>
+      <div class="bar"></div>
+      ${analise.roi?`<div class="roi-box"><div class="roi-h">💰 Estimativa de ROI</div><div class="roi-txt">${analise.roi}</div></div>`:""}
+      <div class="g2">
+        ${analise.callToAction?`<div class="cta-box"><div class="lbl" style="color:#F5A623;margin-bottom:8px">📢 Call-to-action sugerido para a embalagem</div><div style="font-size:11px;color:#5a3a00;line-height:1.7">${analise.callToAction}</div></div>`:""}
+        ${analise.melhorEpoca?`<div class="box purple"><div class="box-lbl" style="color:#9B7FFF">📅 Melhor época para veicular</div><div class="box-txt" style="color:#2a1a5a">${analise.melhorEpoca}</div></div>`:""}
+      </div>
+      ${analise.escolaridade?`<div class="box"><div class="box-lbl">🎓 Perfil educacional da região</div><div class="box-txt">${analise.escolaridade}</div></div>`:""}
+    </div>`:""}`:""}
+
+    <!-- CAMPANHA -->
+    <div class="sec pb">
+      <div class="sec-lbl">A campanha</div>
+      <div class="sec-h">Embalagem Branded Delivery</div>
+      <div class="bar"></div>
+      <div class="g4">
+        <div class="card"><div class="lbl">Embalagens</div><div class="val green">${fmtN(totalEmb)}</div><div class="sub">unidades</div></div>
+        <div class="card blue"><div class="lbl">Parceiros</div><div class="val blue">${parceiros.length}</div><div class="sub">estabelecimentos</div></div>
+        <div class="card warn"><div class="lbl">Público-alvo</div><div class="val sm" style="color:#c87000">${plano.publicoAlvo||"—"}</div></div>
+        <div class="card purple"><div class="lbl">Período</div><div class="val purple sm">${plano.prazo||"—"}</div></div>
+      </div>
+      <div class="imp-grid">
+        <div class="imp-card"><div class="imp-num">${fmtN(impactos)}</div><div class="imp-lbl">Impactos totais</div></div>
+        <div class="imp-card"><div class="imp-num">3,3×</div><div class="imp-lbl">Por embalagem</div></div>
+        <div class="imp-card"><div class="imp-num">R$ ${custoImpacto}</div><div class="imp-lbl">Custo/impacto</div></div>
+        <div class="imp-card"><div class="imp-num">${plano.faixaEtaria||"18–45"}</div><div class="imp-lbl">Faixa etária</div></div>
+      </div>
+      ${parceiros.length>0?`
+      <table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:11px">
+        <thead><tr style="background:#f8fafb"><th style="padding:8px 12px;font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#888;text-align:left">Parceiro</th><th style="padding:8px 12px;font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#888;text-align:right">Embalagens</th><th style="padding:8px 12px;font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#888;text-align:left">Segmento</th><th style="padding:8px 12px;font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#888;text-align:right">Raio</th></tr></thead>
+        <tbody>${parceiros.map((p,i)=>`<tr style="border-bottom:1px solid #f0f0f0;background:${i%2===0?"#fff":"#fafafa"}"><td style="padding:8px 12px;font-weight:600">${p.nome}</td><td style="padding:8px 12px;text-align:right">${fmtN(p.embalagens)} un</td><td style="padding:8px 12px;color:#888">${p.segmento||"—"}</td><td style="padding:8px 12px;text-align:right;color:#888">${p.raio||5}km</td></tr>`).join("")}</tbody>
       </table>`:""}
     </div>
 
-    <!-- RESUMO FINANCEIRO -->
-    <div class="section section-break">
-      <div class="sec-label">Investimento</div>
-      <div class="sec-title">Resumo financeiro</div>
-      <div class="divider"></div>
-      <table class="fin-table">
-        <thead><tr><th style="text-align:left">Item</th><th style="text-align:center">Qtd</th><th style="text-align:right">Tabela (R$)</th><th style="text-align:center">Desconto</th><th style="text-align:right">Valor Bruto (R$)</th></tr></thead>
+    <!-- FINANCEIRO -->
+    <div class="sec pb">
+      <div class="sec-lbl">Investimento</div>
+      <div class="sec-h">Resumo financeiro</div>
+      <div class="bar"></div>
+      <table class="fin-t">
+        <thead><tr><th style="text-align:left">Item</th><th style="text-align:center">Qtd</th><th style="text-align:right">Tabela (R$)</th><th style="text-align:center">Desconto</th><th style="text-align:right">Valor Bruto</th></tr></thead>
         <tbody>
-          ${embRows}
-          ${midiaRows}
+          ${parceiros.map(p=>{const t=Number(p.tabela||6),q=Number(p.embalagens||0),d=Number(p.desconto||0),b=q*t*(1-d/100);return`<tr><td>Embalagem Branded — ${p.nome}</td><td style="text-align:center">${fmtN(q)} un</td><td style="text-align:right">${fmt(t)}/un</td><td style="text-align:center">${d>0?d+"%":"—"}</td><td style="text-align:right;font-weight:700;color:#00A36C">${fmt(b)}</td></tr>`;}).join("")}
+          ${outras.map(m=>{const t=Number(m.tabela||0),d=Number(m.desconto||0),b=t*(1-d/100);return`<tr><td>${m.tipo}${m.descricao?` — ${m.descricao}`:""}</td><td style="text-align:center">${m.qtd||1}</td><td style="text-align:right">${fmt(t)}</td><td style="text-align:center">${d>0?d+"%":"—"}</td><td style="text-align:right;font-weight:700;color:#00A36C">${fmt(b)}</td></tr>`;}).join("")}
         </tbody>
         <tfoot><tr class="fin-total"><td colspan="4">INVESTIMENTO TOTAL</td><td style="text-align:right">${fmt(total)}</td></tr></tfoot>
       </table>
-      <p style="font-size:10px;color:#999;margin-top:8px">* Valores em Reais (BRL). Impostos não inclusos quando aplicável.</p>
+      <p style="font-size:9px;color:#999;margin-top:8px">* Valores em Reais (BRL). Impostos não inclusos quando aplicável. Proposta válida por 15 dias.</p>
     </div>
 
     <!-- PRÓXIMOS PASSOS -->
-    <div class="section">
-      <div class="sec-label">Para começar</div>
-      <div class="sec-title">Próximos passos</div>
-      <div class="divider"></div>
-      ${[["Aprovação","Proposta válida por 15 dias a partir da data de emissão"],["Contrato","Aprovação mediante assinatura do contrato e emissão do PI"],["Arte","Material criativo para embalagem deve ser enviado em até 5 dias úteis após aprovação"],["Produção","Gráfica inicia produção após recebimento da arte aprovada"],["Performance","Relatório de performance entregue ao final da campanha com todos os dados de impacto"]].map(([n,t],i)=>`<div class="step-item"><div class="step-num">${i+1}</div><div><strong style="font-size:11px">${n}</strong><div class="step-text">${t}</div></div></div>`).join("")}
+    <div class="sec">
+      <div class="sec-lbl">Para começar</div>
+      <div class="sec-h">Próximos passos</div>
+      <div class="bar"></div>
+      ${[["Aprovação","Proposta válida por 15 dias a partir da data de emissão. Confirme seu interesse pelo e-mail ou WhatsApp."],["Contrato","Aprovação mediante assinatura do contrato e emissão do PI (Pedido de Inserção)."],["Arte","Material criativo para embalagem enviado em até 5 dias úteis após aprovação. Fornecemos template."],["Produção","Gráfica inicia produção após recebimento da arte aprovada. Prazo médio: 7 dias úteis."],["Performance","Relatório de performance entregue ao final da campanha com dados de impacto, distribuição e alcance."]].map(([n,t],i)=>`<div class="step"><div class="step-n">${i+1}</div><div><strong style="font-size:11px;color:#0a1628">${n}</strong><div class="step-t">${t}</div></div></div>`).join("")}
     </div>
 
-    <div class="footer-bar">
-      <div class="footer-txt">ECODELY MÍDIA IN-HOME · ecodely.com.br · comercial@ecodely.com.br</div>
-      <div class="footer-txt">Nº ${numProposta} · Confidencial</div>
+    <div class="foot-bar">
+      <div class="foot-t">ECODELY MÍDIA IN-HOME · ecodely.com.br · comercial@ecodely.com.br</div>
+      <div class="foot-t">Nº ${numProposta} · Documento Confidencial · ${new Date().getFullYear()}</div>
     </div>
-
     <script>setTimeout(()=>window.print(),800);</script>
     </body></html>`;
     w.document.write(html);w.document.close();
   };
+
 
   const createCamp=async()=>{
     if(!newCamp.name||!newCamp.client)return;
