@@ -126,7 +126,7 @@ const STAGES_CAMP=[
 
 const mkTimeline=(entries)=>entries;
 const mkFiles=(files)=>files;
-const mkImpactos=()=>({stories:[],influencer:[],impulsionado:[],galeria:[]});
+const mkImpactos=()=>({stories:[],influencer:[],impulsionado:[],galeria:[],evidencias:{},influencerMetricas:{visualizacoes:0,alcance:0,comentarios:0}});
 
 const CAMPS_INIT=[
   {id:1,name:"O Boticário - Maio 2025",client:"O Boticário",stage:3,project:"Dia das Mães",startDate:"05/05/2025",endDate:"31/05/2025",region:"São Paulo · SP",segments:["Hamburguer","Açaí","Café"],graficaFornecedor:"Gráfica TopPrint",material:"Sacola kraft 30x40",graficaPrazo:"28/04/2025",logistica:"Transportadora",logisticaFornecedor:"TransBrasil Cargo",logisticaPrazo:"02/05/2025",parceiros:87,sacolas:18000,sacolasDistribuidas:null,progress:60,
@@ -230,22 +230,22 @@ const BASE_PARTNERS_INIT=[
     contrato:{status:"assinado",enviadoEm:"10/09/2024",assinadoEm:"12/09/2024",expiraEm:"12/09/2025"}},
   {id:2,name:"Pizza da Vila",handle:"@pizzadavila_rj",city:"Rio de Janeiro",state:"RJ",category:"Pizza",deliveries:187,status:"prospectado",mesesNaBase:1,campanhas:0,engajamento:2,
     endereco:{rua:"Rua Voluntários da Pátria",numero:"340",bairro:"Botafogo",cep:"22270-010",lat:-22.9519,lng:-43.1823},
-    contrato:{status:"pendente",enviadoEm:"01/05/2025",assinadoEm:null,expiraEm:null}},
+    contrato:{status:"pendente",enviadoEm:"01/05/2025",assinadoEm:null,expiraEm:null},whatsapp:"",instagram_seguidores:0,foto_fachada:""},
   {id:3,name:"Sushi Zen",handle:"@sushizen_bsb",city:"Brasília",state:"DF",category:"Japonesa",deliveries:445,status:"negociando",mesesNaBase:3,campanhas:1,engajamento:3,
     endereco:{rua:"CLN 408 Bloco B",numero:"12",bairro:"Asa Norte",cep:"70855-520",lat:-15.7396,lng:-47.8826},
-    contrato:{status:"pendente",enviadoEm:"15/03/2025",assinadoEm:null,expiraEm:null}},
+    contrato:{status:"pendente",enviadoEm:"15/03/2025",assinadoEm:null,expiraEm:null},whatsapp:"",instagram_seguidores:0,foto_fachada:""},
   {id:4,name:"Açaí Raiz",handle:"@acairaiz_ssa",city:"Salvador",state:"BA",category:"Açaí",deliveries:276,status:"ativo",mesesNaBase:6,campanhas:2,engajamento:3,
     endereco:{rua:"Av. Oceânica",numero:"876",bairro:"Ondina",cep:"40170-010",lat:-13.0061,lng:-38.5147},
-    contrato:{status:"assinado",enviadoEm:"05/11/2024",assinadoEm:"06/11/2024",expiraEm:"06/11/2025"}},
+    contrato:{status:"assinado",enviadoEm:"05/11/2024",assinadoEm:"06/11/2024",expiraEm:"06/11/2025"},whatsapp:"",instagram_seguidores:0,foto_fachada:""},
   {id:5,name:"Churrasco do Gaúcho",handle:"@churrascodogaucho",city:"Porto Alegre",state:"RS",category:"Churrascaria",deliveries:203,status:"ativo",mesesNaBase:5,campanhas:2,engajamento:2,
     endereco:{rua:"Av. Ipiranga",numero:"1681",bairro:"Azenha",cep:"90160-093",lat:-30.0453,lng:-51.2177},
-    contrato:{status:"expirando",enviadoEm:"02/05/2024",assinadoEm:"04/05/2024",expiraEm:"04/06/2025"}},
+    contrato:{status:"expirando",enviadoEm:"02/05/2024",assinadoEm:"04/05/2024",expiraEm:"04/06/2025"},whatsapp:"",instagram_seguidores:0,foto_fachada:""},
   {id:6,name:"Tapioca Nordestina",handle:"@tapioca_nordestina",city:"Recife",state:"PE",category:"Regional",deliveries:98,status:"ativo",mesesNaBase:2,campanhas:1,engajamento:1,
     endereco:{rua:"Rua do Bom Jesus",numero:"197",bairro:"Recife Antigo",cep:"50030-170",lat:-8.0631,lng:-34.8711},
-    contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null}},
+    contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},whatsapp:"",instagram_seguidores:0,foto_fachada:""},
   {id:7,name:"Café Paulistano",handle:"@cafepaulistano",city:"São Paulo",state:"SP",category:"Café",deliveries:156,status:"ativo",mesesNaBase:4,campanhas:1,engajamento:2,
     endereco:{rua:"Rua Oscar Freire",numero:"540",bairro:"Jardins",cep:"01426-000",lat:-23.5635,lng:-46.6711},
-    contrato:{status:"assinado",enviadoEm:"10/01/2025",assinadoEm:"11/01/2025",expiraEm:"11/01/2026"}},
+    contrato:{status:"assinado",enviadoEm:"10/01/2025",assinadoEm:"11/01/2025",expiraEm:"11/01/2026"},whatsapp:"",instagram_seguidores:0,foto_fachada:""},
 ].map(p=>({...p,score:calcScore(p)}));
 const STATUS_PARTNER={ativo:T.accent,negociando:T.warn,prospectado:T.info,"sem resposta":T.muted};
 const CONTRATO_COLOR={"assinado":T.accent,"pendente":T.warn,"expirando":T.danger,"sem contrato":T.muted,"expirado":T.danger};
@@ -989,7 +989,7 @@ const FILE_COLOR={arte:T.pink,pi:T.info,contrato:T.purple,base:T.green,nf:T.warn
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 // CAMPAIGN MODAL - with Tarefas, Etapas, Histórico, Arquivos
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
-const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddFile,onUpdateSacolas,onUpdateImpactos,onOpenClientPanel,onEditCamp,projects,suppliers,users:allUsers})=>{
+const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddFile,onUpdateSacolas,onUpdateImpactos,onOpenClientPanel,onEditCamp,onGerarCheckin,onGerarPosVenda,projects,suppliers,users:allUsers})=>{
   const[iTab,setITab]=useState("tarefas");
   const[comment,setComment]=useState("");
   const[uploading,setUploading]=useState(false);
@@ -1367,6 +1367,12 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                 <button className="btn" onClick={()=>onOpenClientPanel(camp)} style={{padding:"8px 16px",background:`linear-gradient(135deg,${T.purple},${T.purple}AA)`,color:"#fff",borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,whiteSpace:"nowrap"}}>
                   - Visualizar painel
                 </button>
+                <button className="btn" onClick={()=>onGerarCheckin&&onGerarCheckin(camp)} style={{padding:"8px 16px",background:"linear-gradient(135deg,#1a3a1a,#3a7a1a)",color:"#A8E633",borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,whiteSpace:"nowrap",border:"none"}}>
+                  📍 Check-in PDF
+                </button>
+                <button className="btn" onClick={()=>onGerarPosVenda&&onGerarPosVenda(camp)} style={{padding:"8px 16px",background:"linear-gradient(135deg,#A8E633,#3a7a1a)",color:"#000",borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,whiteSpace:"nowrap",border:"none"}}>
+                  📋 Pós-venda PDF
+                </button>
               </div>
 
               {/* Preview mini */}
@@ -1448,142 +1454,151 @@ const CoverageMap=({partners,height=300})=>{
 
 // IMPACTOS TAB
 const ImpactosTab=({camp,allPartners,onUpdate})=>{
-  const[newStory,setNewStory]=useState({parceiro:'',impressoes:''});
-  const[newInfl,setNewInfl]=useState({nome:'',alcance:''});
-  const[newImp,setNewImp]=useState({plataforma:'',alcance:''});
-  const[newFoto,setNewFoto]=useState({url:'',legenda:'',orientacao:'horizontal'});
-  const[uploadingGal,setUploadingGal]=useState(false);
-  const galFileRef=useRef(null);
-  const imp=camp.impactos||{stories:[],influencer:[],impulsionado:[],galeria:[]};
+  const[uploadingKey,setUploadingKey]=useState(null);
+  const[inflMet,setInflMet]=useState({visualizacoes:"",alcance:"",comentarios:""});
+  const fileRef=useRef(null);
+  const[uploadTarget,setUploadTarget]=useState(null); // {parceiroId, categoria}
+  const imp=camp.impactos||{stories:[],influencer:[],impulsionado:[],galeria:[],evidencias:{},influencerMetricas:{}};
+  const ev=imp.evidencias||{};
   const sacolas=camp.sacolasDistribuidas||camp.sacolas||0;
   const offline=Math.round(sacolas*3.3);
   const stTotal=imp.stories.reduce((a,s)=>a+Number(s.impressoes),0);
-  const inTotal=imp.influencer.reduce((a,i)=>a+Number(i.alcance),0);
-  const imTotal=imp.impulsionado.reduce((a,i)=>a+Number(i.alcance),0);
-  const total=offline+stTotal+inTotal+imTotal;
+  const inTotal=(imp.influencerMetricas?.visualizacoes||imp.influencer?.reduce((a,i)=>a+Number(i.alcance),0)||0);
+  const total=offline+stTotal+inTotal;
   const upd=(field,val)=>onUpdate(camp.id,{...imp,[field]:val});
-  const iS={width:'100%',background:'#0C0E18',border:'1px solid #1A1E30',borderRadius:7,padding:'7px 11px',fontSize:11,color:'#E6E8F0',outline:'none',fontFamily:"'JetBrains Mono',monospace"};
+  const updEv=(parceiroId,cat,arr)=>onUpdate(camp.id,{...imp,evidencias:{...ev,[parceiroId]:{...(ev[parceiroId]||{}), [cat]:arr}}});
+  const iS={width:"100%",background:"#0C0E18",border:"1px solid #1A1E30",borderRadius:7,padding:"7px 11px",fontSize:11,color:"#E6E8F0",outline:"none"};
 
-  // Converte link do Drive/YouTube para embed
-  const convertUrl=(url,tipo)=>{
-    if(!url)return url;
-    // Google Drive: qualquer formato → /preview (funciona para imagem E vídeo)
-    const driveId=url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/)?.[1];
-    if(driveId)return`https://drive.google.com/file/d/${driveId}/preview`;
-    // YouTube watch ou youtu.be → embed
-    const ytId=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)?.[1];
-    if(ytId)return`https://www.youtube.com/embed/${ytId}`;
-    return url;
-  };
-
-  const isDriveOrYT=(url)=>{
-    if(!url)return false;
-    return url.includes('drive.google.com')||url.includes('youtube.com')||url.includes('youtu.be');
-  };
-
-  const isVideo=(url)=>url&&(url.includes('youtube.com/embed')||url.includes('drive.google.com/file/d')||/\.(mp4|mov|webm)$/i.test(url));
-
-  const handleGalUpload=async(e)=>{
+  const handleUpload=async(e)=>{
     const file=e.target.files?.[0];
-    if(!file)return;
-    setUploadingGal(true);
-    const path=`campanhas/${camp.id}/galeria/${Date.now()}_${file.name.replace(/\s/g,'_')}`;
-    const{error}=await supabase.storage.from('ecodely-files').upload(path,file,{upsert:true});
-    if(error){console.error('Galeria upload error:',error);setUploadingGal(false);return;}
-    const{data:{publicUrl}}=supabase.storage.from('ecodely-files').getPublicUrl(path);
-    const tipo=file.type.startsWith('video')?'video':'foto';
-    upd('galeria',[...imp.galeria,{id:Date.now(),url:publicUrl,legenda:file.name.replace(/\.[^.]+$/,''),tipo,at:new Date().toLocaleDateString('pt-BR')}]);
-    setUploadingGal(false);
-    e.target.value='';
+    if(!file||!uploadTarget)return;
+    const{parceiroId,categoria}=uploadTarget;
+    setUploadingKey(`${parceiroId}_${categoria}`);
+    const path=`campanhas/${camp.id}/evidencias/${parceiroId}_${categoria}_${Date.now()}_${file.name.replace(/\s/g,"_")}`;
+    const{error}=await supabase.storage.from("ecodely-files").upload(path,file,{upsert:true});
+    if(error){setUploadingKey(null);return;}
+    const{data:{publicUrl}}=supabase.storage.from("ecodely-files").getPublicUrl(path);
+    const arr=ev[parceiroId]?.[categoria]||[];
+    updEv(parceiroId,categoria,[...arr,{url:publicUrl,at:new Date().toLocaleDateString("pt-BR"),legenda:file.name.replace(/\.[^.]+$/,"")}]);
+    setUploadingKey(null);
+    e.target.value="";
   };
+
+  const triggerUpload=(parceiroId,categoria)=>{
+    setUploadTarget({parceiroId,categoria});
+    setTimeout(()=>fileRef.current?.click(),50);
+  };
+
+  const parceiros=(camp.parceirosIds||[]).map(id=>allPartners.find(p=>p.id===id)).filter(Boolean);
+  const CATS=[{key:"checkin",label:"📍 Check-in",color:T.accent,hint:"Foto do parceiro com as embalagens no 1º dia"},
+              {key:"stories",label:"📱 Print de Stories",color:"#E1306C",hint:"Print do stories postado pelo parceiro"},
+              {key:"fotos",label:"📸 Fotos da Campanha",color:T.info,hint:"Fotos das embalagens em campo"}];
+
   return(
     <div>
-      <div style={{background:'linear-gradient(135deg,#00E5A015,#9B7FFF10)',border:'1px solid #00E5A040',borderRadius:12,padding:'18px 20px',marginBottom:16}}>
-        <div style={{fontSize:9,color:T.accent,fontFamily:"'JetBrains Mono',monospace",textTransform:'uppercase',letterSpacing:1.5,marginBottom:6}}>Total de impactos</div>
+      <input ref={fileRef} type="file" accept="image/*,video/*" style={{display:"none"}} onChange={handleUpload}/>
+
+      {/* Totais */}
+      <div style={{background:"linear-gradient(135deg,#00E5A015,#9B7FFF10)",border:"1px solid #00E5A040",borderRadius:12,padding:"18px 20px",marginBottom:16}}>
+        <div style={{fontSize:9,color:T.accent,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Total de impactos</div>
         <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:36,color:T.accent,marginBottom:8}}>{total.toLocaleString()}</div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8}}>
-          {[{l:'Offline',v:offline,c:T.purple},{l:'Stories',v:stTotal,c:'#E1306C'},{l:'Influencer',v:inTotal,c:T.warn},{l:'Impulsionado',v:imTotal,c:T.info}].map((k,i)=>(
-            <div key={i} style={{background:'#06070D',borderRadius:8,padding:'8px 10px',textAlign:'center'}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+          {[{l:"Offline",v:offline,c:T.purple},{l:"Stories",v:stTotal,c:"#E1306C"},{l:"Influencer",v:inTotal,c:T.warn}].map((k,i)=>(
+            <div key={i} style={{background:"#06070D",borderRadius:8,padding:"8px 10px",textAlign:"center"}}>
               <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:k.c}}>{k.v.toLocaleString()}</div>
               <div style={{fontSize:8,color:T.muted}}>{k.l}</div>
             </div>
           ))}
         </div>
       </div>
-      <div style={{background:T.card,border:'1px solid '+T.border,borderRadius:10,padding:'12px 16px',marginBottom:10}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-          <div><div style={{fontSize:11,fontWeight:700,color:T.purple,fontFamily:"'Syne',sans-serif"}}>Impacto Offline</div><div style={{fontSize:9,color:T.muted,marginTop:2}}>{sacolas.toLocaleString()} sacolas x 3,3</div></div>
-          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:T.purple}}>{offline.toLocaleString()}</div>
+
+      {/* Stories dos parceiros */}
+      <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:10,padding:"12px 16px",marginBottom:10}}>
+        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:"#E1306C",marginBottom:10}}>Stories dos Parceiros</div>
+        {imp.stories.map((s,i)=>(
+          <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid "+T.border}}>
+            <div style={{fontSize:11}}>{s.parceiro}</div>
+            <div style={{display:"flex",gap:10,alignItems:"center"}}>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:"#E1306C"}}>{Number(s.impressoes).toLocaleString()}</span>
+              <button onClick={()=>upd("stories",imp.stories.filter((_,j)=>j!==i))} style={{background:"transparent",border:"none",color:T.danger,cursor:"pointer",fontSize:12}}>×</button>
+            </div>
+          </div>
+        ))}
+        <div style={{display:"flex",gap:6,marginTop:8}}>
+          <select id="st-parc" style={{...iS,flex:1}}>
+            <option value="">Parceiro</option>
+            {parceiros.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+          </select>
+          <input id="st-imp" type="number" placeholder="Impressões" style={{...iS,width:110}}/>
+          <button onClick={()=>{const parc=document.getElementById("st-parc").value,imp2=document.getElementById("st-imp").value;if(!parc||!imp2)return;upd("stories",[...imp.stories,{id:Date.now(),parceiro:parc,impressoes:Number(imp2),at:new Date().toLocaleDateString("pt-BR")}]);document.getElementById("st-imp").value="";}} style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>+ Adicionar</button>
         </div>
       </div>
-      {[
-        {title:'Stories dos Parceiros',color:'#E1306C',items:imp.stories,field:'stories',addItem:newStory,setAdd:setNewStory,inputs:[{k:'parceiro',ph:'Parceiro',isSelect:true},{k:'impressoes',ph:'Impressoes',type:'number'}],labelKey:'parceiro',valueKey:'impressoes'},
-        {title:'Influenciadores',color:T.warn,items:imp.influencer,field:'influencer',addItem:newInfl,setAdd:setNewInfl,inputs:[{k:'nome',ph:'@influencer'},{k:'alcance',ph:'Alcance',type:'number'}],labelKey:'nome',valueKey:'alcance'},
-        {title:'Campanha Impulsionada',color:T.info,items:imp.impulsionado,field:'impulsionado',addItem:newImp,setAdd:setNewImp,inputs:[{k:'plataforma',ph:'Plataforma',isSelectPl:true},{k:'alcance',ph:'Alcance',type:'number'}],labelKey:'plataforma',valueKey:'alcance'},
-      ].map((section)=>(
-        <div key={section.field} style={{background:T.card,border:'1px solid '+T.border,borderRadius:10,padding:'12px 16px',marginBottom:10}}>
-          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:section.color,marginBottom:10}}>{section.title}</div>
-          {section.items.map((item,i)=>(
-            <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 0',borderBottom:'1px solid '+T.border}}>
-              <div style={{fontSize:11}}>{item[section.labelKey]}</div>
-              <div style={{display:'flex',gap:10,alignItems:'center'}}>
-                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:section.color,fontSize:13}}>{Number(item[section.valueKey]).toLocaleString()}</div>
-                <div onClick={()=>upd(section.field,section.items.filter((_,j)=>j!==i))} style={{fontSize:9,color:T.danger,cursor:'pointer'}}>x</div>
-              </div>
+
+      {/* Influenciador */}
+      <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:10,padding:"12px 16px",marginBottom:10}}>
+        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.warn,marginBottom:10}}>Influenciador</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:8}}>
+          {[["visualizacoes","Visualizações"],["alcance","Alcance"],["comentarios","Comentários"]].map(([k,l])=>(
+            <div key={k}>
+              <div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+              <input type="number" value={imp.influencerMetricas?.[k]||""} onChange={e=>upd("influencerMetricas",{...(imp.influencerMetricas||{}),[k]:Number(e.target.value)})} placeholder="0" style={iS}/>
             </div>
           ))}
-          <div style={{display:'flex',gap:8,marginTop:10}}>
-            {section.inputs.map(inp=>(
-              inp.isSelect?(
-                <select key={inp.k} value={section.addItem[inp.k]} onChange={e=>section.setAdd(p=>({...p,[inp.k]:e.target.value}))} style={{...iS,flex:2}}>
-                  <option value="">Parceiro...</option>
-                  {allPartners.filter(p=>camp.parceirosIds&&camp.parceirosIds.includes(p.id)).map(p=><option key={p.id}>{p.name}</option>)}
-                </select>
-              ):inp.isSelectPl?(
-                <select key={inp.k} value={section.addItem[inp.k]} onChange={e=>section.setAdd(p=>({...p,[inp.k]:e.target.value}))} style={{...iS,flex:2}}>
-                  <option value="">Plataforma...</option>
-                  {['Instagram Ads','Facebook Ads','TikTok Ads','Google Ads','YouTube'].map(pl=><option key={pl}>{pl}</option>)}
-                </select>
-              ):(
-                <input key={inp.k} type={inp.type||'text'} placeholder={inp.ph} value={section.addItem[inp.k]} onChange={e=>section.setAdd(p=>({...p,[inp.k]:e.target.value}))} style={{...iS,flex:inp.type==='number'?1:2}}/>
-              )
-            ))}
-            <button onClick={()=>{
-              const lk=section.labelKey,vk=section.valueKey;
-              if(!section.addItem[lk]||!section.addItem[vk])return;
-              upd(section.field,[...section.items,{id:Date.now(),...section.addItem,at:new Date().toLocaleDateString('pt-BR')}]);
-              section.setAdd({[lk]:'',alcance:'',nome:'',impressoes:'',plataforma:''});
-            }} style={{padding:'7px 12px',background:section.color,color:section.color===T.info?'#fff':'#000',borderRadius:7,border:'none',cursor:'pointer',fontWeight:700,fontSize:11}}>+</button>
-          </div>
+        </div>
+      </div>
+
+      {/* Galeria por parceiro */}
+      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:T.text,marginBottom:10,marginTop:8}}>Evidências por Parceiro</div>
+      {parceiros.length===0&&<div style={{fontSize:10,color:T.muted,padding:"12px 0"}}>Nenhum parceiro vinculado à campanha.</div>}
+      {parceiros.map(p=>(
+        <div key={p.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"14px 16px",marginBottom:10}}>
+          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.text,marginBottom:12}}>{p.name} <span style={{fontSize:9,color:T.muted,fontWeight:400}}>· {p.city}/{p.state}</span></div>
+          {CATS.map(cat=>{
+            const fotos=(ev[p.id]||{})[cat.key]||[];
+            const uploading=uploadingKey===`${p.id}_${cat.key}`;
+            return(
+              <div key={cat.key} style={{marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <div>
+                    <div style={{fontSize:10,fontWeight:700,color:cat.color}}>{cat.label}</div>
+                    <div style={{fontSize:8,color:T.muted}}>{cat.hint}</div>
+                  </div>
+                  <button onClick={()=>triggerUpload(p.id,cat.key)} style={{padding:"5px 12px",background:uploading?T.surface:T.card,border:`1px solid ${cat.color}55`,color:cat.color,borderRadius:6,cursor:"pointer",fontSize:9,fontWeight:700}}>
+                    {uploading?"Enviando...":"+ Upload"}
+                  </button>
+                </div>
+                {fotos.length>0&&(
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {fotos.map((f,fi)=>(
+                      <div key={fi} style={{position:"relative",width:80,height:80}}>
+                        <img src={f.url} style={{width:80,height:80,objectFit:"cover",borderRadius:7,border:`1px solid ${cat.color}44`}} alt={f.legenda}/>
+                        <button onClick={()=>updEv(p.id,cat.key,fotos.filter((_,j)=>j!==fi))} style={{position:"absolute",top:2,right:2,background:"#000000CC",border:"none",color:"#fff",borderRadius:"50%",width:18,height:18,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>×</button>
+                        <div style={{fontSize:7,color:T.muted,textAlign:"center",marginTop:2}}>{f.at}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {fotos.length===0&&<div style={{fontSize:9,color:T.muted,fontStyle:"italic"}}>Nenhuma foto ainda</div>}
+              </div>
+            );
+          })}
         </div>
       ))}
-      <div style={{background:T.card,border:'1px solid '+T.border,borderRadius:10,padding:'12px 16px'}}>
-        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:10}}>Galeria da Campanha</div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:8,marginBottom:12}}>
-          {imp.galeria.map((g,i)=>(
-            <GaleriaItem key={i} g={g} editable onRemove={()=>upd('galeria',imp.galeria.filter((_,j)=>j!==i))}/>
-          ))}
-        </div>
-        {/* Upload direto */}
-        <input ref={galFileRef} type="file" accept="image/*,video/*" style={{display:'none'}} onChange={handleGalUpload}/>
-        <div style={{display:'flex',gap:8,marginBottom:8,alignItems:'center'}}>
-          <button onClick={()=>!uploadingGal&&galFileRef.current?.click()} style={{padding:'7px 12px',background:uploadingGal?T.accentDim:T.surface,border:`1px solid ${T.accent}55`,color:T.accent,borderRadius:7,cursor:'pointer',fontSize:10,fontWeight:700,whiteSpace:'nowrap'}}>
-            {uploadingGal?'Enviando...':'- Upload foto/vídeo'}
+
+      {/* Influenciador — galeria */}
+      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"14px 16px",marginBottom:10}}>
+        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.warn,marginBottom:12}}>📢 Conteúdo de Influenciador</div>
+        {(ev["influencer"]?.conteudo||[]).map((f,fi)=>(
+          <div key={fi} style={{position:"relative",display:"inline-block",marginRight:8,marginBottom:8}}>
+            <img src={f.url} style={{width:80,height:80,objectFit:"cover",borderRadius:7,border:`1px solid ${T.warn}44`}} alt={f.legenda}/>
+            <button onClick={()=>{const arr=(ev["influencer"]?.conteudo||[]).filter((_,j)=>j!==fi);updEv("influencer","conteudo",arr);}} style={{position:"absolute",top:2,right:2,background:"#000000CC",border:"none",color:"#fff",borderRadius:"50%",width:18,height:18,cursor:"pointer",fontSize:11}}>×</button>
+          </div>
+        ))}
+        <div>
+          <button onClick={()=>triggerUpload("influencer","conteudo")} style={{padding:"6px 14px",background:T.card,border:`1px solid ${T.warn}55`,color:T.warn,borderRadius:6,cursor:"pointer",fontSize:9,fontWeight:700}}>
+            {uploadingKey==="influencer_conteudo"?"Enviando...":"+ Upload Reels/Stories"}
           </button>
-          <span style={{fontSize:9,color:T.muted}}>ou cole um link abaixo</span>
         </div>
-        {/* Link externo com orientação */}
-        <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-          <input placeholder="Link — Google Drive, YouTube, Instagram..." value={newFoto.url} onChange={e=>setNewFoto(p=>({...p,url:e.target.value}))} style={{...iS,flex:3,minWidth:180}}/>
-          <input placeholder="Legenda" value={newFoto.legenda} onChange={e=>setNewFoto(p=>({...p,legenda:e.target.value}))} style={{...iS,flex:1,minWidth:80}}/>
-          <select value={newFoto.orientacao} onChange={e=>setNewFoto(p=>({...p,orientacao:e.target.value}))} style={{...iS,width:'auto',padding:'7px 8px'}}>
-            <option value="horizontal">- Horizontal</option>
-            <option value="vertical">- Vertical</option>
-            <option value="quadrado">- Quadrado</option>
-          </select>
-          <button onClick={()=>{if(!newFoto.url)return;upd('galeria',[...imp.galeria,{id:Date.now(),url:newFoto.url,legenda:newFoto.legenda,orientacao:newFoto.orientacao,tipo:isDriveOrYT(newFoto.url)?'video':'foto',at:new Date().toLocaleDateString('pt-BR')}]);setNewFoto({url:'',legenda:'',orientacao:'horizontal'}); }} style={{padding:'7px 12px',background:T.accent,color:'#000',borderRadius:7,border:'none',cursor:'pointer',fontWeight:700,fontSize:11}}>+</button>
-        </div>
-        <div style={{fontSize:9,color:T.muted,marginTop:5,fontFamily:"'JetBrains Mono',monospace"}}>Drive: cole o link de compartilhamento — convertido automaticamente. Escolha a orientação antes de adicionar.</div>
       </div>
     </div>
   );
@@ -2278,7 +2293,7 @@ export default function App(){
   const addProspectToBase=async(prosp)=>{
     const already=basePartners.find(p=>p.name===prosp.name);
     if(already){pushNotif("Já na base",`${prosp.name} já está cadastrado`,T.warn);return;}
-    const newP={id:Date.now(),name:prosp.name,handle:`@${prosp.name.toLowerCase().replace(/\s/g,"_")}`,city:"-",state:"-",category:prosp.segment,deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:1,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null}};
+    const newP={id:Date.now(),name:prosp.name,handle:`@${prosp.name.toLowerCase().replace(/\s/g,"_")}`,city:"-",state:"-",category:prosp.segment,deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:1,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},whatsapp:"",instagram_seguidores:0,foto_fachada:""};
     const withScore={...newP,score:calcScore(newP)};
     setBasePartners(prev=>[...prev,withScore]);
     setProspects(prev=>prev.map(p=>p.id===prosp.id?{...p,stage:"fechado"}:p));
@@ -2482,6 +2497,294 @@ Retorne SOMENTE JSON: {"recomendados":["id1","id2","id3"],"perfilIdeal":"perfil 
       clearTimeout(timer);
       return null;
     }
+  };
+
+  const gerarCheckinPDF=(camp,allPartners)=>{
+    const w=window.open("","_blank");if(!w)return;
+    const parceiros=(camp.parceirosIds||[]).map(id=>allPartners.find(p=>p.id===id)).filter(Boolean);
+    const ev=camp.impactos?.evidencias||{};
+    const numDoc=`CHK-${camp.id}-${new Date().getFullYear()}`;
+    const dataHoje=new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"});
+    const horaHoje=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+
+    const parcRows=parceiros.map((p,i)=>{
+      const checkins=ev[p.id]?.checkin||[];
+      const endereco=p.endereco?`${p.endereco.rua||""}, ${p.endereco.numero||""} — ${p.endereco.bairro||""}, ${p.city}/${p.state}`:"Endereço não cadastrado";
+      return`<div class="parc-block">
+        <div class="parc-header">
+          <div>
+            <div class="parc-num">PARCEIRO ${String(i+1).padStart(2,"0")}</div>
+            <div class="parc-name">${p.name}</div>
+            <div class="parc-addr">📍 ${endereco}</div>
+            ${p.category?`<div class="parc-cat">${p.category}</div>`:""}
+          </div>
+          ${p.foto_fachada?`<img src="${p.foto_fachada}" class="fachada-img" alt="Fachada"/>`:""}
+        </div>
+        <div class="checkin-grid">
+          ${checkins.length>0
+            ?checkins.map(f=>`<div class="checkin-item"><img src="${f.url}" alt="Check-in"/><div class="checkin-label">Check-in · ${f.at}</div></div>`).join("")
+            :`<div class="no-foto">Foto de check-in pendente</div>`}
+        </div>
+        <div class="parc-footer">
+          <span>Volume: <strong>${p.deliveries||"—"} embalagens</strong></span>
+          <span>Data/Hora: <strong>${dataHoje} às ${horaHoje}</strong></span>
+        </div>
+      </div>`;
+    }).join("");
+
+    const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Check-in — ${camp.name}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#1a1a2e;background:#fff}
+      @page{margin:15mm;size:A4}
+      @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+      .header{background:linear-gradient(135deg,#050d1f,#0d1f3c);padding:32px 40px;color:#fff;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px}
+      .logo{font-size:24px;font-weight:900;color:#00E5A0;letter-spacing:-1px}
+      .doc-title{font-size:11px;color:#00E5A066;letter-spacing:4px;text-transform:uppercase;margin-top:4px}
+      .header-right{text-align:right}
+      .doc-num{font-size:10px;color:#00E5A055;font-family:monospace}
+      .doc-date{font-size:10px;color:#ffffff44;margin-top:4px}
+      .campaign-box{background:#f8fafc;border:1px solid #e0e0e0;border-radius:10px;padding:20px 28px;margin:0 0 24px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+      .cb-lbl{font-size:8px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+      .cb-val{font-size:13px;font-weight:700;color:#0a1628}
+      .section-title{font-size:10px;color:#00A36C;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #00E5A0}
+      .parc-block{background:#fff;border:1px solid #e8ecf0;border-radius:10px;padding:20px;margin-bottom:18px;break-inside:avoid}
+      .parc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+      .parc-num{font-size:8px;color:#00A36C;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:4px}
+      .parc-name{font-size:16px;font-weight:800;color:#0a1628;margin-bottom:4px}
+      .parc-addr{font-size:10px;color:#666;margin-bottom:4px}
+      .parc-cat{display:inline-block;background:#e8f8f2;color:#00A36C;font-size:8px;font-weight:700;border-radius:20px;padding:2px 10px;text-transform:uppercase;letter-spacing:1px}
+      .fachada-img{width:100px;height:70px;object-fit:cover;border-radius:8px;border:1px solid #e0e0e0;flex-shrink:0}
+      .checkin-grid{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;min-height:80px;background:#f8fafc;border-radius:8px;padding:10px;align-items:center}
+      .checkin-item{text-align:center}
+      .checkin-item img{width:90px;height:90px;object-fit:cover;border-radius:7px;border:1px solid #e0e0e0}
+      .checkin-label{font-size:8px;color:#888;margin-top:4px}
+      .no-foto{font-size:10px;color:#bbb;font-style:italic;padding:8px}
+      .parc-footer{display:flex;justify-content:space-between;font-size:10px;color:#888;padding-top:10px;border-top:1px solid #f0f0f0}
+      .parc-footer strong{color:#0a1628}
+      .sign-box{background:#f0faf6;border:1px solid #00E5A033;border-radius:10px;padding:20px 28px;margin-top:24px;display:flex;justify-content:space-between;align-items:center}
+      .sign-line{border-top:1px solid #0a1628;width:200px;padding-top:8px;font-size:9px;color:#888;text-align:center}
+      .footer{text-align:center;margin-top:24px;font-size:8px;color:#bbb;padding-top:12px;border-top:1px solid #f0f0f0}
+    </style></head><body>
+    <div class="header">
+      <div><div class="logo">ECODELY</div><div class="doc-title">Documento de Check-in</div></div>
+      <div class="header-right"><div class="doc-num">Nº ${numDoc}</div><div class="doc-date">${dataHoje} às ${horaHoje}</div></div>
+    </div>
+    <div style="padding:0 0 24px">
+      <div class="campaign-box">
+        <div><div class="cb-lbl">Campanha</div><div class="cb-val">${camp.name}</div></div>
+        <div><div class="cb-lbl">Anunciante</div><div class="cb-val">${camp.client}</div></div>
+        <div><div class="cb-lbl">Localidade</div><div class="cb-val">${camp.city||parceiros[0]?.city||"—"}</div></div>
+        <div><div class="cb-lbl">Período</div><div class="cb-val">${camp.period||"—"}</div></div>
+        <div><div class="cb-lbl">Parceiros</div><div class="cb-val">${parceiros.length}</div></div>
+        <div><div class="cb-lbl">Status</div><div class="cb-val" style="color:#00A36C">✓ Campanha no ar</div></div>
+      </div>
+      <div class="section-title">Comprovação de início — parceiros participantes</div>
+      ${parcRows}
+      <div class="sign-box">
+        <div class="sign-line">Responsável Ecodely</div>
+        <div style="font-size:10px;color:#888;text-align:center">Documento gerado automaticamente<br>em ${dataHoje} às ${horaHoje}</div>
+        <div class="sign-line">Gerente de Operações</div>
+      </div>
+    </div>
+    <div class="footer">ECODELY MÍDIA IN-HOME · ecodely.com.br · Documento Nº ${numDoc} · Confidencial</div>
+    <script>setTimeout(()=>window.print(),600);</script>
+    </body></html>`;
+    w.document.write(html);w.document.close();
+  };
+
+  const gerarPosVendaPDF=async(camp,allPartners)=>{
+    const w=window.open("","_blank");if(!w)return;
+    const parceiros=(camp.parceirosIds||[]).map(id=>allPartners.find(p=>p.id===id)).filter(Boolean);
+    const ev=camp.impactos?.evidencias||{};
+    const inflMet=camp.impactos?.influencerMetricas||{};
+    const inflConteudo=ev["influencer"]?.conteudo||[];
+    const sacolas=camp.sacolasDistribuidas||camp.sacolas||0;
+    const impactosFisicos=Math.round(sacolas*3.3*3);
+    const impactosDigitais=parceiros.reduce((a,p)=>a+Math.round(Number(((ev[p.id]?.fotos||[]).length>0?camp.sacolas/parceiros.length:0)*0.9)),0);
+    const impactosInfluencer=Number(inflMet.visualizacoes||0);
+    const impactosTotal=impactosFisicos+impactosDigitais+impactosInfluencer;
+    const custoImpressao=impactosTotal>0?(camp.valor||0)/impactosTotal:0;
+    const numDoc=`PV-${camp.id}-${new Date().getFullYear()}`;
+    const dataHoje=new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"});
+
+    // Gera conclusão com IA
+    let conclusaoIA="";
+    try{
+      const r=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({messages:[{role:"user",content:`Escreva uma conclusão estratégica profissional para um relatório de pós-venda de mídia in-home.
+Campanha: ${camp.name} | Cliente: ${camp.client} | Parceiros: ${parceiros.map(p=>p.name).join(", ")}
+Embalagens: ${sacolas} | Impactos totais: ${impactosTotal.toLocaleString()} | Custo/impressão: R$ ${custoImpressao.toFixed(2)}
+Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
+      const d=await r.json();
+      conclusaoIA=d.content?.find(b=>b.type==="text")?.text||"";
+    }catch(e){}
+
+    const parcRows=parceiros.map((p,i)=>{
+      const checkins=ev[p.id]?.checkin||[];
+      const fotos=ev[p.id]?.fotos||[];
+      const stories=ev[p.id]?.stories||[];
+      const allFotos=[...checkins,...fotos,...stories];
+      const volParceiro=Math.round(sacolas/parceiros.length);
+      const impactosParceiro=Math.round(volParceiro*0.9);
+      const endereco=p.endereco?`${p.endereco.rua||""}, ${p.endereco.numero||""} — ${p.endereco.bairro||""}, ${p.city}/${p.state}`:"";
+      return`<div class="parc-page">
+        <div class="parc-header-row">
+          <div>
+            <div class="parc-badge">PARCEIRO ${String(i+1).padStart(2,"0")}</div>
+            <div class="parc-h">${p.name}</div>
+            <div class="parc-loc">📍 ${p.city}/${p.state}${endereco?` · ${endereco}`:""}</div>
+          </div>
+          ${p.foto_fachada?`<img src="${p.foto_fachada}" class="fachada" alt="Fachada"/>`:""}
+        </div>
+        <div class="parc-stats">
+          <div class="ps-card"><div class="ps-lbl">Volume</div><div class="ps-val">${volParceiro.toLocaleString()} unidades</div></div>
+          <div class="ps-card"><div class="ps-lbl">Impactos digitais</div><div class="ps-val g">${impactosParceiro.toLocaleString()} pessoas</div></div>
+          ${p.handle?`<div class="ps-card"><div class="ps-lbl">Instagram</div><div class="ps-val">${p.handle}${p.instagram_seguidores?` · ${Number(p.instagram_seguidores).toLocaleString()} seg.`:""}</div></div>`:""}
+        </div>
+        ${allFotos.length>0?`<div class="foto-grid">${allFotos.slice(0,4).map(f=>`<div class="foto-item"><img src="${f.url}" alt="${f.legenda||"Foto"}"/><div class="foto-lbl">${f.legenda||f.at||""}</div></div>`).join("")}</div>`:""}
+      </div>`;
+    }).join("");
+
+    const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Pós-venda — ${camp.name}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#1a1a2e;background:#fff}
+      @page{margin:0;size:A4}
+      @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+      .pb{page-break-before:always}
+      .capa{height:100vh;min-height:260mm;background:linear-gradient(145deg,#0a1f0a,#1a3a1a);display:flex;flex-direction:column;justify-content:space-between;padding:52px;position:relative;overflow:hidden}
+      .capa::before{content:"";position:absolute;top:-100px;right:-100px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,#A8E63344 0%,transparent 65%)}
+      .logo{font-size:28px;font-weight:900;color:#A8E633;letter-spacing:-1px}
+      .slogan{font-size:9px;color:#A8E63366;letter-spacing:4px;text-transform:uppercase;margin-top:4px}
+      .capa-mid{flex:1;display:flex;flex-direction:column;justify-content:center;z-index:1}
+      .capa-tag{font-size:8px;color:#A8E633;letter-spacing:5px;text-transform:uppercase;margin-bottom:14px;border-left:2px solid #A8E633;padding-left:10px}
+      .capa-h{font-size:44px;font-weight:900;color:#fff;line-height:1.05;letter-spacing:-2px;margin-bottom:16px}
+      .capa-sub{font-size:13px;color:#A8E633;font-weight:600;margin-bottom:4px}
+      .capa-meta{font-size:10px;color:#ffffff44}
+      .capa-foot{display:flex;justify-content:space-between;align-items:flex-end;z-index:1;font-size:9px}
+      .capa-contact{color:#ffffff33;line-height:1.8}
+      .capa-num{color:#A8E63355;font-family:monospace;text-align:right;line-height:1.8}
+      .sec{padding:36px 48px}
+      .sec-lbl{font-size:8px;color:#3a7a1a;letter-spacing:5px;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+      .sec-h{font-size:24px;font-weight:800;color:#0a1f0a;margin-bottom:16px}
+      .bar{height:3px;background:linear-gradient(90deg,#A8E633,#3a7a1a,transparent);border-radius:2px;margin-bottom:24px}
+      .exec-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+      .ec{background:#0a1f0a;border-radius:10px;padding:16px;text-align:center}
+      .ec-v{font-size:24px;font-weight:900;color:#A8E633}
+      .ec-l{font-size:8px;color:#ffffff66;margin-top:4px;text-transform:uppercase;letter-spacing:1px}
+      .resumo-box{background:#f0faf0;border:1px solid #A8E63333;border-radius:10px;padding:18px;margin-bottom:16px;font-size:11px;color:#1a3a1a;line-height:1.85}
+      .parc-page{background:#fff;border:1px solid #e8ecf0;border-radius:10px;padding:20px;margin-bottom:20px;break-inside:avoid}
+      .parc-header-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+      .parc-badge{font-size:8px;color:#3a7a1a;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:4px}
+      .parc-h{font-size:18px;font-weight:800;color:#0a1f0a;margin-bottom:4px}
+      .parc-loc{font-size:9px;color:#666}
+      .fachada{width:90px;height:65px;object-fit:cover;border-radius:7px;border:1px solid #e0e0e0}
+      .parc-stats{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+      .ps-card{background:#f8faf8;border-radius:7px;padding:8px 12px;border-left:2px solid #A8E633;flex:1;min-width:100px}
+      .ps-lbl{font-size:8px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+      .ps-val{font-size:11px;font-weight:700;color:#0a1f0a}
+      .ps-val.g{color:#3a7a1a}
+      .foto-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+      .foto-item img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:7px;border:1px solid #e0e0e0}
+      .foto-lbl{font-size:8px;color:#888;text-align:center;margin-top:3px}
+      .infl-section{background:#fff8f0;border:1px solid #F5A62333;border-radius:10px;padding:20px;margin-bottom:16px}
+      .infl-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+      .infl-img-grid{display:flex;gap:8px;flex-wrap:wrap}
+      .infl-img-grid img{width:80px;height:80px;object-fit:cover;border-radius:7px}
+      .conclusao{background:#0a1f0a;border-radius:12px;padding:24px;color:#fff}
+      .conclusao-lbl{font-size:8px;color:#A8E633;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:10px}
+      .conclusao-txt{font-size:12px;color:#ffffff99;line-height:1.85}
+      .foot-bar{background:#0a1f0a;padding:14px 48px;display:flex;justify-content:space-between;align-items:center}
+      .foot-t{font-size:8px;color:#ffffff33}
+    </style></head><body>
+
+    <!-- CAPA -->
+    <div class="capa">
+      <div><div class="logo">ECODELY</div><div class="slogan">Relatório de Comprovação</div></div>
+      <div class="capa-mid">
+        <div class="capa-tag">Pós-Venda</div>
+        <div class="capa-h">${camp.client}</div>
+        <div class="capa-sub">${camp.name}${camp.period?` · ${camp.period}`:""}</div>
+        <div class="capa-meta">${parceiros.length} parceiro(s) · ${sacolas.toLocaleString()} embalagens · ${impactosTotal.toLocaleString()} impactos totais</div>
+      </div>
+      <div class="capa-foot">
+        <div class="capa-contact">Mídia In-Home · Embalagens de Delivery<br>ecodely.com.br · comercial@ecodely.com.br</div>
+        <div class="capa-num">Nº ${numDoc}<br>${dataHoje}</div>
+      </div>
+    </div>
+
+    <!-- SÍNTESE EXECUTIVA -->
+    <div class="sec pb">
+      <div class="sec-lbl">Síntese executiva</div>
+      <div class="sec-h">Resultados da campanha</div>
+      <div class="bar"></div>
+      <div class="exec-grid">
+        <div class="ec"><div class="ec-v">${sacolas.toLocaleString()}</div><div class="ec-l">Embalagens</div></div>
+        <div class="ec"><div class="ec-v">${impactosTotal.toLocaleString()}</div><div class="ec-l">Impactos Totais</div></div>
+        <div class="ec"><div class="ec-v">2h a 4h</div><div class="ec-l">OTS</div></div>
+        <div class="ec"><div class="ec-v">R$ ${custoImpressao.toFixed(2).replace(".",",")}</div><div class="ec-l">Custo/Impressão</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div style="background:#f8faf8;border-radius:10px;padding:14px;border-left:3px solid #A8E633">
+          <div style="font-size:8px;color:#888;text-transform:uppercase;margin-bottom:4px">Domicílios Impactados</div>
+          <div style="font-size:18px;font-weight:800;color:#0a1f0a">${sacolas.toLocaleString()}</div>
+          <div style="font-size:9px;color:#888">Acesso direto ao lar</div>
+        </div>
+        <div style="background:#f8faf8;border-radius:10px;padding:14px;border-left:3px solid #3a7a1a">
+          <div style="font-size:8px;color:#888;text-transform:uppercase;margin-bottom:4px">Impactos Totais</div>
+          <div style="font-size:18px;font-weight:800;color:#0a1f0a">${impactosTotal.toLocaleString()}</div>
+          <div style="font-size:9px;color:#888">Físico + Digital + Influencers</div>
+        </div>
+      </div>
+      <div class="resumo-box"><strong>Resumo da Operação:</strong> A campanha ${camp.name} para ${camp.client}${camp.city?` em ${camp.city}`:""} executou a distribuição de ${sacolas.toLocaleString()} embalagens branded delivery através de ${parceiros.length} parceiro(s) estratégicos. Com ${impactosTotal.toLocaleString()} impactos totais e custo por impressão de R$ ${custoImpressao.toFixed(2).replace(".",",")}, a campanha garantiu presença direta no lar do consumidor no momento de maior receptividade.</div>
+      <div style="font-size:9px;color:#666;background:#f8faf8;border-radius:8px;padding:12px"><strong>Memória de Cálculo:</strong> Impactos gerados pelas exposições físicas (${sacolas.toLocaleString()} casas × 3,3 hab/casa × 15 olhares médios) somadas ao alcance digital orgânico${inflMet.visualizacoes?` e ${Number(inflMet.visualizacoes).toLocaleString()} visualizações via influenciadores`:""}</div>
+    </div>
+
+    <!-- POR PARCEIRO -->
+    <div class="sec pb">
+      <div class="sec-lbl">Evidências por parceiro</div>
+      <div class="sec-h">Comprovação em campo</div>
+      <div class="bar"></div>
+      ${parcRows}
+    </div>
+
+    <!-- INFLUENCIADOR -->
+    ${inflConteudo.length>0||inflMet.visualizacoes?`
+    <div class="sec pb">
+      <div class="sec-lbl">Amplificação digital</div>
+      <div class="sec-h">Estratégia de Influenciadores</div>
+      <div class="bar"></div>
+      <div class="infl-section">
+        <div class="infl-stats">
+          ${inflMet.visualizacoes?`<div style="background:#fff;border-radius:7px;padding:10px;text-align:center;border:1px solid #F5A62333"><div style="font-size:18px;font-weight:800;color:#c87000">${Number(inflMet.visualizacoes).toLocaleString()}</div><div style="font-size:8px;color:#888">Visualizações</div></div>`:""}
+          ${inflMet.alcance?`<div style="background:#fff;border-radius:7px;padding:10px;text-align:center;border:1px solid #F5A62333"><div style="font-size:18px;font-weight:800;color:#c87000">${Number(inflMet.alcance).toLocaleString()}</div><div style="font-size:8px;color:#888">Alcance</div></div>`:""}
+          ${inflMet.comentarios?`<div style="background:#fff;border-radius:7px;padding:10px;text-align:center;border:1px solid #F5A62333"><div style="font-size:18px;font-weight:800;color:#c87000">${Number(inflMet.comentarios).toLocaleString()}</div><div style="font-size:8px;color:#888">Comentários</div></div>`:""}
+        </div>
+        ${inflConteudo.length>0?`<div class="infl-img-grid">${inflConteudo.map(f=>`<img src="${f.url}" alt="Influencer"/>`).join("")}</div>`:""}
+      </div>
+    </div>`:""} 
+
+    <!-- CONCLUSÃO -->
+    <div class="sec">
+      <div class="sec-lbl">Conclusão</div>
+      <div class="sec-h">Análise estratégica final</div>
+      <div class="bar"></div>
+      <div class="conclusao">
+        <div class="conclusao-lbl">Ecodely Mídia — Relatório Consolidado · ${dataHoje}</div>
+        <div class="conclusao-txt">${conclusaoIA||`A campanha ${camp.name} comprovou a eficácia da presença direta no cotidiano do consumidor através da mídia in-home. Com custo por impressão de R$ ${custoImpressao.toFixed(2).replace(".",",")} e alta visibilidade nos parceiros participantes, a Ecodely entregou resultados mensuráveis e de alto impacto.`}</div>
+      </div>
+    </div>
+
+    <div class="foot-bar">
+      <div class="foot-t">ECODELY MÍDIA IN-HOME · ecodely.com.br · comercial@ecodely.com.br</div>
+      <div class="foot-t">Nº ${numDoc} · Confidencial · ${new Date().getFullYear()}</div>
+    </div>
+    <script>setTimeout(()=>window.print(),800);</script>
+    </body></html>`;
+    w.document.write(html);w.document.close();
   };
 
   const gerarPropostaPDF=(plano,analise)=>{
@@ -2889,7 +3192,7 @@ Retorne SOMENTE JSON: {"recomendados":["id1","id2","id3"],"perfilIdeal":"perfil 
       )}
 
       {/* MODAL */}
-      {selCamp&&<CampModal camp={selCamp} user={user} allPartners={basePartners} onClose={()=>setSelCamp(null)} onToggleTask={toggleTask} onAddComment={addComment} onAddFile={addFile} onUpdateSacolas={updateSacolas} onUpdateImpactos={updateImpactos} onOpenClientPanel={(c)=>{setClientPanelCamp(c);setSelCamp(null);}} onEditCamp={async(id,fields)=>{let upd=null;setCamps(p=>p.map(c=>{if(c.id!==id)return c;upd={...c,...fields};return upd;}));setSelCamp(p=>({...p,...fields}));if(upd)await supabase.from("campanhas").upsert({id:upd.id,data:upd});}} projects={projects} suppliers={suppliers} users={users}/>}
+      {selCamp&&<CampModal camp={selCamp} user={user} allPartners={basePartners} onClose={()=>setSelCamp(null)} onToggleTask={toggleTask} onAddComment={addComment} onAddFile={addFile} onUpdateSacolas={updateSacolas} onUpdateImpactos={updateImpactos} onOpenClientPanel={(c)=>{setClientPanelCamp(c);setSelCamp(null);}} onGerarCheckin={(c)=>gerarCheckinPDF(c,basePartners)} onGerarPosVenda={(c)=>gerarPosVendaPDF(c,basePartners)} onEditCamp={async(id,fields)=>{let upd=null;setCamps(p=>p.map(c=>{if(c.id!==id)return c;upd={...c,...fields};return upd;}));setSelCamp(p=>({...p,...fields}));if(upd)await supabase.from("campanhas").upsert({id:upd.id,data:upd});}} projects={projects} suppliers={suppliers} users={users}/>}
 
       {/* CLIENT PANEL */}
       {clientPanelCamp&&<ClientPanel camp={clientPanelCamp} allPartners={basePartners} onClose={()=>setClientPanelCamp(null)} onPDF={()=>setPdfCamp(clientPanelCamp)}/>}
@@ -5351,6 +5654,27 @@ Retorne SOMENTE JSON: {"recomendados":["id1","id2","id3"],"perfilIdeal":"perfil 
                           </div>
                         )}
                         <button className="btn" onClick={async()=>{let upd=null;setBasePartners(prev=>prev.map(p=>{if(p.id!==selPartner.id)return p;upd={...p,endereco:selPartner.endereco};return upd;}));if(upd)await supabase.from("parceiros").upsert({id:upd.id,data:upd});}} style={{width:"100%",marginTop:10,padding:"8px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>- Salvar endereço</button>
+                      </div>
+
+                      {/* WhatsApp + Instagram + Fachada */}
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:16,marginBottom:14}}>
+                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Contato Digital</div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                          <div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>WhatsApp</div>
+                            <input value={selPartner.whatsapp||""} onChange={e=>setSelPartner(p=>({...p,whatsapp:e.target.value}))} placeholder="+55 11 99999-9999" style={inpS}/>
+                          </div>
+                          <div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Seguidores Instagram</div>
+                            <input type="number" value={selPartner.instagram_seguidores||""} onChange={e=>setSelPartner(p=>({...p,instagram_seguidores:Number(e.target.value)}))} placeholder="Ex: 20300" style={inpS}/>
+                          </div>
+                        </div>
+                        <div style={{marginBottom:8}}>
+                          <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Foto da Fachada (URL)</div>
+                          <input value={selPartner.foto_fachada||""} onChange={e=>setSelPartner(p=>({...p,foto_fachada:e.target.value}))} placeholder="https://... ou cole URL da imagem" style={inpS}/>
+                          {selPartner.foto_fachada&&<img src={selPartner.foto_fachada} style={{width:"100%",height:100,objectFit:"cover",borderRadius:7,marginTop:6}} alt="Fachada" onError={e=>e.target.style.display="none"}/>}
+                        </div>
+                        <button className="btn" onClick={async()=>{let upd=null;setBasePartners(prev=>prev.map(p=>{if(p.id!==selPartner.id)return p;upd={...p,whatsapp:selPartner.whatsapp,instagram_seguidores:selPartner.instagram_seguidores,foto_fachada:selPartner.foto_fachada};return upd;}));if(upd)await supabase.from("parceiros").upsert({id:upd.id,data:upd});}} style={{width:"100%",padding:"8px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>Salvar contato digital</button>
                       </div>
 
                       {/* Contract */}
