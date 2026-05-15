@@ -5575,16 +5575,76 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:16,width:"100%",maxWidth:540,maxHeight:"88vh",overflow:"auto"}} onClick={e=>e.stopPropagation()}>
                     <div style={{padding:"18px 22px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                       <div>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:17,marginBottom:5}}>{selPartner.name}</div>
+                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:17,marginBottom:5}}>{selPartner.name||"Novo Parceiro"}</div>
                         <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-                          <Badge label={selPartner.category} color={T.purple}/>
+                          <Badge label={selPartner.category||"Sem categoria"} color={T.purple}/>
                           <Badge label={selPartner.status} color={STATUS_PARTNER[selPartner.status]||T.muted}/>
-                          <Badge label={`Score ${selPartner.score}`} color={selPartner.score>80?T.accent:selPartner.score>60?T.warn:T.danger}/>
+                          {selPartner.score&&<Badge label={`Score ${selPartner.score}`} color={selPartner.score>80?T.accent:selPartner.score>60?T.warn:T.danger}/>}
                         </div>
                       </div>
                       <div onClick={()=>setSelPartner(null)} style={{cursor:"pointer",color:T.muted,fontSize:20}}>×</div>
                     </div>
                     <div style={{padding:"18px 22px"}}>
+                      {/* Dados básicos */}
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:16,marginBottom:14}}>
+                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Dados Básicos</div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                          <div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Nome do estabelecimento *</div>
+                            <input value={selPartner.name||""} onChange={e=>setSelPartner(p=>({...p,name:e.target.value}))} placeholder="Ex: Burger Bros SP" style={inpS}/>
+                          </div>
+                          <div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Segmento / Culinária *</div>
+                            <input value={selPartner.category||""} onChange={e=>setSelPartner(p=>({...p,category:e.target.value}))} placeholder="Ex: Hamburguer, Japonesa" style={inpS}/>
+                          </div>
+                          <div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Handle Instagram</div>
+                            <input value={selPartner.handle||""} onChange={e=>setSelPartner(p=>({...p,handle:e.target.value}))} placeholder="@restaurante" style={inpS}/>
+                          </div>
+                          <div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Status</div>
+                            <select value={selPartner.status||"prospectado"} onChange={e=>setSelPartner(p=>({...p,status:e.target.value}))} style={inpS}>
+                              {["prospectado","negociando","ativo","inativo"].map(s=><option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Cidade</div>
+                            <input value={selPartner.city||""} onChange={e=>setSelPartner(p=>({...p,city:e.target.value}))} placeholder="São Paulo" style={inpS}/>
+                          </div>
+                          <div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Estado (UF)</div>
+                            <input value={selPartner.state||""} onChange={e=>setSelPartner(p=>({...p,state:e.target.value.toUpperCase().slice(0,2)}))} placeholder="SP" style={inpS}/>
+                          </div>
+                          <div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Entregas / mês</div>
+                            <input type="number" value={selPartner.deliveries||""} onChange={e=>setSelPartner(p=>({...p,deliveries:Number(e.target.value)}))} placeholder="Ex: 500" style={inpS}/>
+                          </div>
+                          <div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Meses na base</div>
+                            <input type="number" value={selPartner.mesesNaBase||""} onChange={e=>setSelPartner(p=>({...p,mesesNaBase:Number(e.target.value)}))} placeholder="0" style={inpS}/>
+                          </div>
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+                          <div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>⭐ Avaliação Google (0-5)</div>
+                            <input type="number" min="0" max="5" step="0.1" value={selPartner.avaliacaoGoogle||""} onChange={e=>setSelPartner(p=>({...p,avaliacaoGoogle:Number(e.target.value)}))} placeholder="Ex: 4.3" style={inpS}/>
+                          </div>
+                          <div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>🛵 Avaliação iFood (0-5)</div>
+                            <input type="number" min="0" max="5" step="0.1" value={selPartner.avaliacaoIfood||""} onChange={e=>setSelPartner(p=>({...p,avaliacaoIfood:Number(e.target.value)}))} placeholder="Ex: 4.7" style={inpS}/>
+                          </div>
+                        </div>
+                        <button onClick={async()=>{
+                          const upd={...selPartner,score:calcScore(selPartner)};
+                          setSelPartner(upd);
+                          setBasePartners(prev=>{
+                            const exists=prev.find(p=>p.id===upd.id);
+                            return exists?prev.map(p=>p.id===upd.id?upd:p):[...prev,upd];
+                          });
+                          await supabase.from("parceiros").upsert({id:upd.id,data:upd});
+                          pushNotif("Parceiro salvo",upd.name,"Dados atualizados",T.accent);
+                        }} style={{width:"100%",padding:"9px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,border:"none",cursor:"pointer"}}>💾 Salvar dados básicos</button>
+                      </div>
                       {/* Score breakdown */}
                       <div style={{marginBottom:18}}>
                         <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Score Detalhado</div>
@@ -5746,7 +5806,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {["assinado","pendente","expirando","sem contrato"].map(s=><option key={s}>{s}</option>)}
                     </select>
                     </div>
-                    <button onClick={()=>setSelPartner({id:Date.now(),name:"",handle:"",city:"",state:"",category:"",deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:2,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},whatsapp:"",instagram_seguidores:0,foto_fachada:"",address:"",_isNew:true})} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10,cursor:"pointer",whiteSpace:"nowrap"}}>+ Novo Parceiro</button>
+                    <button onClick={()=>setSelPartner({id:Date.now(),name:"",handle:"",city:"",state:"",category:"",deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:2,avaliacaoGoogle:0,avaliacaoIfood:0,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},whatsapp:"",instagram_seguidores:0,foto_fachada:"",address:"",_isNew:true})} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10,cursor:"pointer",whiteSpace:"nowrap"}}>+ Novo Parceiro</button>
                   </div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                     <div style={{display:"grid",gridTemplateColumns:"2fr 1.1fr 0.9fr 0.7fr 0.7fr 0.9fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:8}}>
