@@ -3238,8 +3238,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             const myPipeTotal=myProspects.reduce((a,p)=>a+(p.value||0),0);
 
             // Faturamento real — soma entradas dos lançamentos
-            const receitaReal=lancamentos.reduce((a,l)=>a+(l.entrada||0),0);
-            const despesaReal=lancamentos.reduce((a,l)=>a+(l.saida||0),0);
+            const receitaReal=lancamentos.filter(l=>l.tipo!=="Saldo Anterior").reduce((a,l)=>a+(l.entrada||0),0);
+            const despesaReal=lancamentos.filter(l=>l.tipo!=="Saldo Anterior").reduce((a,l)=>a+(l.saida||0),0);
 
             // Faturamento por cliente — agrupa camps por client com valorLiquido
             const fatPorCliente=Object.values(camps.reduce((acc,c)=>{
@@ -4603,7 +4603,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <div>
                               <div style={{fontSize:11,fontWeight:500}}>{l.descricao}</div>
                               <div style={{display:"flex",gap:5,marginTop:2,flexWrap:"wrap"}}>
-                                <span style={{fontSize:7,padding:"1px 5px",borderRadius:3,background:l.tipo==="Receita"?T.accentDim:T.dangerDim,color:l.tipo==="Receita"?T.accent:T.danger}}>{l.categoria}</span>
+                                <span style={{fontSize:7,padding:"1px 5px",borderRadius:3,background:l.tipo==="Saldo Anterior"?T.purpleDim:l.tipo==="Receita"?T.accentDim:T.dangerDim,color:l.tipo==="Saldo Anterior"?T.purple:l.tipo==="Receita"?T.accent:T.danger}}>{l.tipo==="Saldo Anterior"?"Saldo Ant.":l.categoria}</span>
                                 <span style={{fontSize:7,color:T.muted}}>{l.centrosCusto}</span>
                                 {l.forma&&<span style={{fontSize:7,color:T.muted}}>{l.forma}</span>}
                                 {l.projeto&&<span style={{fontSize:7,color:T.info}}>{l.projeto}</span>}
@@ -5946,8 +5946,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                }},
               {id:"dre",cat:"Financeiro",label:"DRE — Resultado",icon:"-",color:T.info,roles:["admin","financeiro"],
                render:()=>{
-                 const rec=lancamentos.reduce((a,l)=>a+(l.entrada||0),0);
-                 const desp=lancamentos.reduce((a,l)=>a+(l.saida||0),0);
+                 const rec=lancamentos.filter(l=>l.tipo!=="Saldo Anterior").reduce((a,l)=>a+(l.entrada||0),0);
+                 const desp=lancamentos.filter(l=>l.tipo!=="Saldo Anterior").reduce((a,l)=>a+(l.saida||0),0);
                  const res=rec-desp;
                  const data=[{name:"Receita",value:rec,fill:T.accent},{name:"Despesas",value:desp,fill:T.danger},{name:"Resultado",value:res,fill:res>=0?T.info:T.danger}];
                  return(<div>
@@ -5963,7 +5963,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                }},
               {id:"desp_categoria",cat:"Financeiro",label:"Despesas por categoria",icon:"-",color:T.warn,roles:["admin","financeiro"],
                render:()=>{
-                 const cats=Object.entries(lancamentos.filter(l=>l.saida>0).reduce((acc,l)=>{const cat=l.categoria||"Outros";acc[cat]=(acc[cat]||0)+(l.saida||0);return acc;},{})).sort((a,b)=>b[1]-a[1]).slice(0,6);
+                 const cats=Object.entries(lancamentos.filter(l=>l.tipo!=="Saldo Anterior"&&l.saida>0).reduce((acc,l)=>{const cat=l.categoria||"Outros";acc[cat]=(acc[cat]||0)+(l.saida||0);return acc;},{})).sort((a,b)=>b[1]-a[1]).slice(0,6);
                  const COLORS=[T.warn,T.danger,T.purple,T.info,T.pink,T.accent];
                  const data=cats.map(([name,value])=>({name,value}));
                  return(<div style={{display:"flex",gap:12,alignItems:"center"}}>
