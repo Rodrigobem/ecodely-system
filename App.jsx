@@ -57,37 +57,8 @@ const CUSTOS_FIXOS_INIT=[
   {id:15,descricao:"DARF",valor:178.31,dia:20,categoria:"Imposto",centrosCusto:"Financeiro",ativo:true},
   {id:16,descricao:"Acao Ambiental - Selo EPN",valor:226,dia:30,categoria:"Ambiental",centrosCusto:"Operacional",ativo:true},
 ];
-const LANCAMENTOS_INIT=[
-  {id:1,data:"02/04/2026",descricao:"PI 2523 CLIENTE DIALOGO | BAIRRO IPIRANGA - NF 134",entrada:76800,saida:0,tipo:"Receita",categoria:"Projeto",centrosCusto:"Comercial",forma:"PIX",projeto:"NF 134",contaBancoId:1},
-  {id:2,data:"02/04/2026",descricao:"PI 2555 CLIENTE DIALOGO | BAIRRO MOOCA - NF 135",entrada:76800,saida:0,tipo:"Receita",categoria:"Projeto",centrosCusto:"Comercial",forma:"PIX",projeto:"NF 135",contaBancoId:1},
-  {id:3,data:"02/04/2026",descricao:"PRONAMP - Conta Bradesco 13/42",entrada:0,saida:2494.85,tipo:"Despesa",categoria:"Financiamento",centrosCusto:"Financeiro",forma:"Debito",projeto:"",contaBancoId:1},
-  {id:4,data:"02/04/2026",descricao:"SALARIO PRISCILA",entrada:0,saida:1000,tipo:"Despesa",categoria:"Salario",centrosCusto:"Comercial",forma:"PIX",projeto:"",contaBancoId:1},
-  {id:5,data:"02/04/2026",descricao:"SALARIO VICTORIA (base)",entrada:0,saida:1000,tipo:"Despesa",categoria:"Salario",centrosCusto:"Base",forma:"PIX",projeto:"",contaBancoId:1},
-  {id:6,data:"02/04/2026",descricao:"SALARIO LARISSA",entrada:0,saida:1343.75,tipo:"Despesa",categoria:"Salario",centrosCusto:"Marketing",forma:"PIX",projeto:"",contaBancoId:1},
-  {id:7,data:"02/04/2026",descricao:"SALARIO PEDRO DESIGNER",entrada:0,saida:2500,tipo:"Despesa",categoria:"Salario",centrosCusto:"Operacional",forma:"PIX",projeto:"",contaBancoId:1},
-  {id:8,data:"02/04/2026",descricao:"JUROS APORTE RENATO",entrada:0,saida:2400,tipo:"Despesa",categoria:"Financiamento",centrosCusto:"Financeiro",forma:"PIX",projeto:"",contaBancoId:1},
-  {id:9,data:"02/04/2026",descricao:"SALARIO PEDRO (socio)",entrada:0,saida:12500,tipo:"Despesa",categoria:"Pro-Labore",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1},
-  {id:10,data:"02/04/2026",descricao:"SALARIO RODRIGO (socio)",entrada:0,saida:12500,tipo:"Despesa",categoria:"Pro-Labore",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1},
-  {id:11,data:"18/04/2026",descricao:"DAS - NF 134 e 135 DIALOGO",entrada:0,saida:173.34,tipo:"Despesa",categoria:"Imposto",centrosCusto:"Financeiro",forma:"Boleto",projeto:"DAS Abril/2026",contaBancoId:1},
-  {id:12,data:"18/04/2026",descricao:"DARF",entrada:0,saida:178.31,tipo:"Despesa",categoria:"Imposto",centrosCusto:"Financeiro",forma:"DARF",projeto:"",contaBancoId:1},
-  {id:13,data:"15/04/2026",descricao:"CONTADOR",entrada:0,saida:568.62,tipo:"Despesa",categoria:"Contador",centrosCusto:"Financeiro",forma:"Boleto",projeto:"",contaBancoId:1},
-  {id:14,data:"15/04/2026",descricao:"COWORKING DELTA",entrada:0,saida:212,tipo:"Despesa",categoria:"Infraestrutura",centrosCusto:"Administrativo",forma:"Boleto",projeto:"",contaBancoId:1},
-  {id:15,data:"30/04/2026",descricao:"ACAO AMBIENTAL - SELO EPN",entrada:0,saida:226,tipo:"Despesa",categoria:"Ambiental",centrosCusto:"Operacional",forma:"Boleto",projeto:"",contaBancoId:1},
-];
-const FAT_MENSAIS_INIT=[
-  {mes:"Mai/2025",fat:80000},
-  {mes:"Jun/2025",fat:45000},
-  {mes:"Jul/2025",fat:60000},
-  {mes:"Ago/2025",fat:120000},
-  {mes:"Set/2025",fat:95000},
-  {mes:"Out/2025",fat:110000},
-  {mes:"Nov/2025",fat:85000},
-  {mes:"Dez/2025",fat:70000},
-  {mes:"Jan/2026",fat:115440},
-  {mes:"Fev/2026",fat:39840},
-  {mes:"Mar/2026",fat:90000},
-  {mes:"Abr/2026",fat:153600},
-];
+
+
 const CAT_RECEITA=["Projeto","Acao Delivery","Consultoria","Patrocinio","Transferencia","Outros"];
 const CAT_DESPESA=["Salario","Pro-Labore","Grafica","Frete","Imposto","Contador","Financiamento","SaaS","Infraestrutura","Marketing","Viagem","Juridico","Ambiental","Reembolso","Outros"];
 const CENTROS_CUSTO_INIT=["Comercial","Operacional","Marketing","Financeiro","Base","Administrativo","RH"];
@@ -128,72 +99,7 @@ const mkTimeline=(entries)=>entries;
 const mkFiles=(files)=>files;
 const mkImpactos=()=>({stories:[],influencer:[],impulsionado:[],galeria:[],evidencias:{},influencerMetricas:{visualizacoes:0,alcance:0,comentarios:0}});
 
-const CAMPS_INIT=[
-  {id:1,name:"O Boticário - Maio 2025",client:"O Boticário",stage:3,project:"Dia das Mães",startDate:"05/05/2025",endDate:"31/05/2025",region:"São Paulo · SP",segments:["Hamburguer","Açaí","Café"],graficaFornecedor:"Gráfica TopPrint",material:"Sacola kraft 30x40",graficaPrazo:"28/04/2025",logistica:"Transportadora",logisticaFornecedor:"TransBrasil Cargo",logisticaPrazo:"02/05/2025",parceiros:87,sacolas:18000,sacolasDistribuidas:null,progress:60,
-    parceirosIds:[1,7],
-    impactos:{
-      stories:[{id:1,parceiro:"Burger Bros SP",impressoes:4200,at:"02/05 18:00"},{id:2,parceiro:"Café Paulistano",impressoes:2800,at:"03/05 10:00"}],
-      influencer:[],
-      impulsionado:[],
-      galeria:[{id:1,url:"https://images.unsplash.com/photo-1591715088903-00b4d9543e87?w=400",tipo:"foto",legenda:"Sacolas em campo - SP",at:"01/05"},{id:2,url:"https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400",tipo:"foto",legenda:"Parceiro Burger Bros",at:"02/05"}]
-    },
-    tasks:{comercial:[{id:"c1",label:"Emitir PI",done:true,doneAt:"28/04 10:20",doneBy:"Ana Lima"},{id:"c2",label:"Enviar contrato ao cliente",done:true,doneAt:"28/04 11:05",doneBy:"Ana Lima"}],financeiro:[{id:"f1",label:"Receber PI",done:true,doneAt:"29/04 09:00",doneBy:"Paulo Neto"},{id:"f2",label:"Faturar NF",done:false},{id:"f3",label:"Lançar planilha financeira",done:false}],marketing:[{id:"m1",label:"Post Instagram",done:true,doneAt:"01/05 14:30",doneBy:"Juliana Faria"},{id:"m2",label:"Post LinkedIn",done:false},{id:"m3",label:"Contratar influencer",done:false}],base:[{id:"b1",label:"Confirmar base participante",done:true,doneAt:"27/04 16:00",doneBy:"Mariana Costa"},{id:"b2",label:"Enviar contrato de exclusividade",done:false}]},
-    timeline:mkTimeline([
-      {id:1,type:"stage",text:"Campanha criada - Etapa: Fechamento",user:"Rodrigo Bem",avatar:"RB",at:"25/04 09:00",color:T.info},
-      {id:2,type:"task",text:"Tarefa concluída: Confirmar base participante",user:"Mariana Costa",avatar:"MC",at:"27/04 16:00",color:T.green},
-      {id:3,type:"task",text:"Tarefa concluída: Emitir PI",user:"Ana Lima",avatar:"AL",at:"28/04 10:20",color:T.info},
-      {id:4,type:"task",text:"Tarefa concluída: Enviar contrato ao cliente",user:"Ana Lima",avatar:"AL",at:"28/04 11:05",color:T.info},
-      {id:5,type:"stage",text:"Etapa avançada: Gráfica - Logística",user:"Carlos Mendes",avatar:"CM",at:"02/05 08:30",color:T.purple},
-      {id:6,type:"task",text:"Tarefa concluída: Receber PI",user:"Paulo Neto",avatar:"PN",at:"29/04 09:00",color:T.warn},
-      {id:7,type:"comment",text:"Arte aprovada pelo cliente. Seguindo para impressão.",user:"Ana Lima",avatar:"AL",at:"30/04 15:00",color:T.soft},
-      {id:8,type:"task",text:"Tarefa concluída: Post Instagram",user:"Juliana Faria",avatar:"JF",at:"01/05 14:30",color:T.pink},
-    ]),
-    files:mkFiles([
-      {id:1,name:"Arte_Boticario_MaeDias.pdf",type:"arte",size:"4.2 MB",uploadedBy:"Ana Lima",at:"30/04 14:55",icon:"-"},
-      {id:2,name:"PI_Boticario_0052025.pdf",type:"pi",size:"1.1 MB",uploadedBy:"Ana Lima",at:"28/04 10:18",icon:"-"},
-      {id:3,name:"Contrato_Boticario_Assinado.pdf",type:"contrato",size:"890 KB",uploadedBy:"Rodrigo Bem",at:"28/04 11:00",icon:"-"},
-      {id:4,name:"Base_Parceiros_Confirmada.xlsx",type:"base",size:"320 KB",uploadedBy:"Mariana Costa",at:"27/04 16:00",icon:"-"},
-    ])},
 
-  {id:2,name:"Pirelli - Junho 2025",client:"Pirelli Brasil",stage:1,project:"Copa 2025",startDate:"01/06/2025",endDate:"30/06/2025",region:"Rio de Janeiro · RJ",segments:["Pizza","Japonesa","Hamburguer"],graficaFornecedor:"",material:"",graficaPrazo:"",logistica:"",logisticaFornecedor:"",logisticaPrazo:"",parceiros:54,sacolas:10000,progress:15,
-    parceirosIds:[2],impactos:mkImpactos(),
-    tasks:{comercial:[{id:"c1",label:"Emitir PI",done:false},{id:"c2",label:"Enviar contrato ao cliente",done:false}],financeiro:[{id:"f1",label:"Receber PI",done:false},{id:"f2",label:"Faturar NF",done:false},{id:"f3",label:"Lançar planilha financeira",done:false}],marketing:[{id:"m1",label:"Post Instagram",done:false},{id:"m2",label:"Post LinkedIn",done:false},{id:"m3",label:"Contratar influencer",done:false}],base:[{id:"b1",label:"Confirmar base participante",done:true,doneAt:"02/05 09:00",doneBy:"Mariana Costa"},{id:"b2",label:"Enviar contrato de exclusividade",done:false}]},
-    timeline:mkTimeline([
-      {id:1,type:"stage",text:"Campanha criada - Etapa: Fechamento",user:"Rodrigo Bem",avatar:"RB",at:"01/05 10:00",color:T.info},
-      {id:2,type:"task",text:"Tarefa concluída: Confirmar base participante",user:"Mariana Costa",avatar:"MC",at:"02/05 09:00",color:T.green},
-    ]),
-    files:mkFiles([])},
-
-  {id:3,name:"Supergasbras - Abril 2025",client:"Supergasbras",stage:5,project:"Verão 2025",startDate:"01/04/2025",endDate:"30/04/2025",region:"Salvador · BA + Recife · PE",segments:["Açaí","Regional","Padaria"],graficaFornecedor:"Gráfica ColorMax",material:"Sacola biodegradável",graficaPrazo:"20/03/2025",logistica:"Correios",logisticaFornecedor:"ECT",logisticaPrazo:"28/03/2025",parceiros:123,sacolas:25000,sacolasDistribuidas:null,progress:100,
-    parceirosIds:[4,6],
-    impactos:{
-      stories:[{id:1,parceiro:"Açaí Raiz",impressoes:8400,at:"15/04 12:00"},{id:2,parceiro:"Tapioca Nordestina",impressoes:3200,at:"18/04 16:00"}],
-      influencer:[{id:1,nome:"@blogdochef_ssa",alcance:45000,at:"10/04"}],
-      impulsionado:[{id:1,plataforma:"Instagram Ads",alcance:120000,at:"12/04"}],
-      galeria:[{id:1,url:"https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400",tipo:"foto",legenda:"Açaí Raiz com sacolas Ecodely",at:"05/04"},{id:2,url:"https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400",tipo:"foto",legenda:"Campanha em campo - Salvador",at:"10/04"},{id:3,url:"https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400",tipo:"foto",legenda:"Story parceiro Recife",at:"18/04"}]
-    },
-    tasks:{comercial:[{id:"c1",label:"Emitir PI",done:true,doneAt:"10/03 09:00",doneBy:"Ana Lima"},{id:"c2",label:"Enviar contrato ao cliente",done:true,doneAt:"10/03 11:00",doneBy:"Ana Lima"}],financeiro:[{id:"f1",label:"Receber PI",done:true,doneAt:"11/03 10:00",doneBy:"Paulo Neto"},{id:"f2",label:"Faturar NF",done:true,doneAt:"02/04 09:00",doneBy:"Paulo Neto"},{id:"f3",label:"Lançar planilha financeira",done:true,doneAt:"02/04 10:00",doneBy:"Paulo Neto"}],marketing:[{id:"m1",label:"Post Instagram",done:true,doneAt:"01/04 08:00",doneBy:"Juliana Faria"},{id:"m2",label:"Post LinkedIn",done:true,doneAt:"01/04 08:30",doneBy:"Juliana Faria"},{id:"m3",label:"Contratar influencer",done:true,doneAt:"15/03 14:00",doneBy:"Juliana Faria"}],base:[{id:"b1",label:"Confirmar base participante",done:true,doneAt:"08/03 16:00",doneBy:"Mariana Costa"},{id:"b2",label:"Enviar contrato de exclusividade",done:true,doneAt:"12/03 11:00",doneBy:"Mariana Costa"}]},
-    timeline:mkTimeline([
-      {id:1,type:"stage",text:"Campanha criada",user:"Rodrigo Bem",avatar:"RB",at:"05/03 09:00",color:T.info},
-      {id:2,type:"stage",text:"Campanha finalizada com sucesso",user:"Rodrigo Bem",avatar:"RB",at:"30/04 18:00",color:T.accent},
-    ]),
-    files:mkFiles([
-      {id:1,name:"Relatorio_Final_Supergasbras.pdf",type:"relatorio",size:"2.8 MB",uploadedBy:"Rodrigo Bem",at:"30/04 17:00",icon:"-"},
-      {id:2,name:"NF_Supergasbras_04_2025.pdf",type:"nf",size:"540 KB",uploadedBy:"Paulo Neto",at:"02/04 09:05",icon:"-"},
-    ])},
-
-  {id:4,name:"T4F - Maio 2025",client:"T4F Entretenimento",stage:2,project:"Copa 2025",startDate:"15/05/2025",endDate:"15/06/2025",region:"São Paulo + Porto Alegre",segments:["Café","Sobremesa","Hamburguer"],graficaFornecedor:"Gráfica TopPrint",material:"Sacola papel offset",graficaPrazo:"08/05/2025",logistica:"",logisticaFornecedor:"",logisticaPrazo:"",parceiros:67,sacolas:14000,progress:30,
-    parceirosIds:[1,5,7],impactos:mkImpactos(),
-    tasks:{comercial:[{id:"c1",label:"Emitir PI",done:true,doneAt:"25/04 10:00",doneBy:"Ana Lima"},{id:"c2",label:"Enviar contrato ao cliente",done:true,doneAt:"25/04 11:00",doneBy:"Ana Lima"}],financeiro:[{id:"f1",label:"Receber PI",done:true,doneAt:"26/04 09:00",doneBy:"Paulo Neto"},{id:"f2",label:"Faturar NF",done:false},{id:"f3",label:"Lançar planilha financeira",done:false}],marketing:[{id:"m1",label:"Post Instagram",done:true,doneAt:"28/04 10:00",doneBy:"Juliana Faria"},{id:"m2",label:"Post LinkedIn",done:true,doneAt:"28/04 10:30",doneBy:"Juliana Faria"},{id:"m3",label:"Contratar influencer",done:false}],base:[{id:"b1",label:"Confirmar base participante",done:true,doneAt:"27/04 15:00",doneBy:"Mariana Costa"},{id:"b2",label:"Enviar contrato de exclusividade",done:false}]},
-    timeline:mkTimeline([
-      {id:1,type:"stage",text:"Campanha criada - Etapa: Fechamento",user:"Rodrigo Bem",avatar:"RB",at:"24/04 14:00",color:T.info},
-      {id:2,type:"stage",text:"Etapa avançada: Fechamento - Gráfica",user:"Carlos Mendes",avatar:"CM",at:"02/05 09:00",color:T.purple},
-      {id:3,type:"comment",text:"-- Prazo da gráfica é 08/05. Confirmar arte até 06/05.",user:"Carlos Mendes",avatar:"CM",at:"03/05 08:00",color:T.warn},
-    ]),
-    files:mkFiles([
-      {id:1,name:"PI_T4F_Copa2025.pdf",type:"pi",size:"980 KB",uploadedBy:"Ana Lima",at:"25/04 10:00",icon:"-"},
-    ])},
-];
 
 // --- COMMERCIAL ---------------------------------------------------------------
 const PIPE_STAGES=[{id:"lead",label:"Lead",color:T.muted,prob:10},{id:"qualificado",label:"Qualificado",color:T.info,prob:30},{id:"proposta",label:"Proposta",color:T.purple,prob:60},{id:"negociacao",label:"Negociação",color:T.warn,prob:80},{id:"fechado",label:"Fechado",color:T.accent,prob:100}];
@@ -204,10 +110,10 @@ const PROSPECTS_INIT=[
   {id:4,name:"iFood",contact:"Bruno Sá",email:"bruno@ifood.com.br",segment:"Tecnologia",value:200000,stage:"negociacao",owner:"Rodrigo Bem",notes:"Reunião marcada 20/04"},
   {id:5,name:"Riachuelo",contact:"Carla Vaz",email:"carla@riachuelo.com.br",segment:"Moda",value:55000,stage:"proposta",owner:"Ana Lima",notes:"Aguardando aprovação interna"},
 ];
-const CLIENTS_LIST=[{id:10,name:"O Boticário",contact:"Maria Silva",email:"maria@boticario.com.br",segment:"Beleza",campaigns:3,ltv:127000,owner:"Rodrigo Bem"},{id:11,name:"Pirelli Brasil",contact:"João Souza",email:"joao@pirelli.com",segment:"Automotivo",campaigns:1,ltv:38000,owner:"Ana Lima"},{id:12,name:"Supergasbras",contact:"Carla Moura",email:"carla@supergasbras.com.br",segment:"Energia",campaigns:2,ltv:74000,owner:"Rodrigo Bem"},{id:13,name:"T4F",contact:"Bruno Lima",email:"bruno@t4f.com.br",segment:"Entretenimento",campaigns:1,ltv:42000,owner:"Ana Lima"}];
-const CLIENT_BILLING=[{name:"O Boticário",segment:"Beleza",campanhas:3,faturado:127000,pendente:0,ultima:"Abr/25"},{name:"Pirelli Brasil",segment:"Automotivo",campanhas:1,faturado:38000,pendente:14000,ultima:"Jun/25"},{name:"Supergasbras",segment:"Energia",campanhas:2,faturado:74000,pendente:0,ultima:"Abr/25"},{name:"T4F",segment:"Entretenimento",campanhas:1,faturado:42000,pendente:22000,ultima:"Mai/25"}];
+const CLIENTS_LIST=[];
+const CLIENT_BILLING=[];
 const MONTHLY_DATA=[{month:"Nov/24",receita:28400,previsao:30000},{month:"Dez/24",receita:31200,previsao:32000},{month:"Jan/25",receita:19800,previsao:22000},{month:"Fev/25",receita:35600,previsao:34000},{month:"Mar/25",receita:42100,previsao:40000},{month:"Abr/25",receita:38700,previsao:41000},{month:"Mai/25",receita:0,previsao:52000},{month:"Jun/25",receita:0,previsao:58000}];
-const USER_BILLING=[{user:"Rodrigo Bem",avatar:"RB",color:T.accent,faturado:127000,meta:150000,campanhas:4},{user:"Ana Lima",avatar:"AL",color:T.info,faturado:154000,meta:150000,campanhas:5}];
+const USER_BILLING=[];
 
 // --- COMMISSIONS -------------------------------------------------------------
 const PROJECTS_INIT=[{id:1,name:"Copa 2025",active:true},{id:2,name:"Verão 2025",active:true},{id:3,name:"Dia das Mães 2025",active:true}];
@@ -224,32 +130,7 @@ const calcScore=(p)=>{
   const s5=p.engajamento*5;
   return Math.min(Math.round(s1+s2+s3+s4+s5),100);
 };
-const BASE_PARTNERS_INIT=[
-  {id:1,name:"Burger Bros SP",handle:"@burgerbros_sp",city:"São Paulo",state:"SP",category:"Hamburguer",deliveries:312,status:"ativo",mesesNaBase:8,campanhas:3,engajamento:3,
-    endereco:{rua:"Rua Augusta",numero:"1204",bairro:"Consolação",cep:"01304-001",lat:-23.5542,lng:-46.6527},
-    contrato:{status:"assinado",enviadoEm:"10/09/2024",assinadoEm:"12/09/2024",expiraEm:"12/09/2025"}},
-  {id:2,name:"Pizza da Vila",handle:"@pizzadavila_rj",city:"Rio de Janeiro",state:"RJ",category:"Pizza",deliveries:187,status:"prospectado",mesesNaBase:1,campanhas:0,engajamento:2,
-    endereco:{rua:"Rua Voluntários da Pátria",numero:"340",bairro:"Botafogo",cep:"22270-010",lat:-22.9519,lng:-43.1823},
-    contrato:{status:"pendente",enviadoEm:"01/05/2025",assinadoEm:null,expiraEm:null},whatsapp:"",instagram_seguidores:0,foto_fachada:""},
-  {id:3,name:"Sushi Zen",handle:"@sushizen_bsb",city:"Brasília",state:"DF",category:"Japonesa",deliveries:445,status:"negociando",mesesNaBase:3,campanhas:1,engajamento:3,
-    endereco:{rua:"CLN 408 Bloco B",numero:"12",bairro:"Asa Norte",cep:"70855-520",lat:-15.7396,lng:-47.8826},
-    contrato:{status:"pendente",enviadoEm:"15/03/2025",assinadoEm:null,expiraEm:null},whatsapp:"",instagram_seguidores:0,foto_fachada:""},
-  {id:4,name:"Açaí Raiz",handle:"@acairaiz_ssa",city:"Salvador",state:"BA",category:"Açaí",deliveries:276,status:"ativo",mesesNaBase:6,campanhas:2,engajamento:3,
-    endereco:{rua:"Av. Oceânica",numero:"876",bairro:"Ondina",cep:"40170-010",lat:-13.0061,lng:-38.5147},
-    contrato:{status:"assinado",enviadoEm:"05/11/2024",assinadoEm:"06/11/2024",expiraEm:"06/11/2025"},whatsapp:"",instagram_seguidores:0,foto_fachada:""},
-  {id:5,name:"Churrasco do Gaúcho",handle:"@churrascodogaucho",city:"Porto Alegre",state:"RS",category:"Churrascaria",deliveries:203,status:"ativo",mesesNaBase:5,campanhas:2,engajamento:2,
-    endereco:{rua:"Av. Ipiranga",numero:"1681",bairro:"Azenha",cep:"90160-093",lat:-30.0453,lng:-51.2177},
-    contrato:{status:"expirando",enviadoEm:"02/05/2024",assinadoEm:"04/05/2024",expiraEm:"04/06/2025"},whatsapp:"",instagram_seguidores:0,foto_fachada:""},
-  {id:6,name:"Tapioca Nordestina",handle:"@tapioca_nordestina",city:"Recife",state:"PE",category:"Regional",deliveries:98,status:"ativo",mesesNaBase:2,campanhas:1,engajamento:1,
-    endereco:{rua:"Rua do Bom Jesus",numero:"197",bairro:"Recife Antigo",cep:"50030-170",lat:-8.0631,lng:-34.8711},
-    contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},whatsapp:"",instagram_seguidores:0,foto_fachada:""},
-  {id:7,name:"Café Paulistano",handle:"@cafepaulistano",city:"São Paulo",state:"SP",category:"Café",deliveries:156,status:"ativo",mesesNaBase:4,campanhas:1,engajamento:2,
-    endereco:{rua:"Rua Oscar Freire",numero:"540",bairro:"Jardins",cep:"01426-000",lat:-23.5635,lng:-46.6711},
-    contrato:{status:"assinado",enviadoEm:"10/01/2025",assinadoEm:"11/01/2025",expiraEm:"11/01/2026"},whatsapp:"",instagram_seguidores:0,foto_fachada:""},
-].map(p=>({...p,score:calcScore(p)}));
-const STATUS_PARTNER={ativo:T.accent,negociando:T.warn,prospectado:T.info,"sem resposta":T.muted};
-const CONTRATO_COLOR={"assinado":T.accent,"pendente":T.warn,"expirando":T.danger,"sem contrato":T.muted,"expirado":T.danger};
-const SUPPLIERS=[{id:1,name:"Gráfica TopPrint",type:"grafica",contact:"Roberto Alves",phone:"(11) 3333-0001",email:"roberto@topprint.com.br",leadTime:"7 dias",rating:5,campaigns:2},{id:2,name:"Gráfica ColorMax",type:"grafica",contact:"Sandra Reis",phone:"(11) 3333-0002",email:"sandra@colormax.com.br",leadTime:"10 dias",rating:4,campaigns:1},{id:3,name:"TransBrasil Cargo",type:"logistica",contact:"Fernando Dias",phone:"(11) 4444-0001",email:"fernando@transbrasil.com.br",leadTime:"3 dias",rating:4,campaigns:1},{id:4,name:"ECT Correios",type:"logistica",contact:"Agência SP",phone:"0800-725-0100",email:"",leadTime:"5-10 dias",rating:3,campaigns:1}];
+const BASE_PARTNERS_INIT=[];
 
 // --- NAV ---------------------------------------------------------------------
 const getNav=(role,queueCount,notifCount,extraRoles=[])=>[
