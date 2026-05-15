@@ -1924,6 +1924,9 @@ export default function App(){
   const[cadTab,setCadTab]=useState("clientes");
   const[filterSeg,setFilterSeg]=useState("todos");
   const[filterFrom,setFilterFrom]=useState("2024-11");
+  const[nf,setNf]=useState({name:"",type:"grafica",contact:"",phone:"",email:"",leadTime:"7 dias",rating:4});
+  const[showNewCliente,setShowNewCliente]=useState(false);
+  const[novoCliente,setNovoCliente]=useState({name:"",contact:"",email:"",phone:"",segment:"",agency:""});
   const[filterTo,setFilterTo]=useState("2025-06");
   const[showNewProsp,setShowNewProsp]=useState(false);
   const[newProsp,setNewProsp]=useState({name:"",contact:"",email:"",segment:"Beleza",value:"",stage:"lead",owner:"Ana Lima",notes:""});
@@ -5729,18 +5732,21 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               {/* -- PARCEIROS -- */}
               {baseTab==="parceiros"&&(
                 <div>
-                  <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
+                  <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap",alignItems:"center",justifyContent:"space-between"}}>
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                     <input value={baseSearch} onChange={e=>setBaseSearch(e.target.value)} placeholder="Buscar parceiro ou @..." style={{...inpS,width:200}}/>
                     <select value={baseFilter} onChange={e=>setBaseFilter(e.target.value)} style={{...selS,width:"auto"}}><option value="todos">Todos status</option>{["ativo","negociando","prospectado"].map(s=><option key={s}>{s}</option>)}</select>
                     <select value={baseScoreMin} onChange={e=>setBaseScoreMin(Number(e.target.value))} style={{...selS,width:"auto"}}>
                       <option value={0}>Qualquer score</option>
-                      <option value={80}>Score - 80</option>
-                      <option value={60}>Score - 60</option>
+                      <option value={80}>Score ≥ 80</option>
+                      <option value={60}>Score ≥ 60</option>
                     </select>
                     <select value={baseContratoFilter} onChange={e=>setBaseContratoFilter(e.target.value)} style={{...selS,width:"auto"}}>
                       <option value="todos">Todos contratos</option>
                       {["assinado","pendente","expirando","sem contrato"].map(s=><option key={s}>{s}</option>)}
                     </select>
+                    </div>
+                    <button onClick={()=>setSelPartner({id:Date.now(),name:"",handle:"",city:"",state:"",category:"",deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:2,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},whatsapp:"",instagram_seguidores:0,foto_fachada:"",address:"",_isNew:true})} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10,cursor:"pointer",whiteSpace:"nowrap"}}>+ Novo Parceiro</button>
                   </div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                     <div style={{display:"grid",gridTemplateColumns:"2fr 1.1fr 0.9fr 0.7fr 0.7fr 0.9fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:8}}>
@@ -6773,59 +6779,81 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           -------------------------------------- */}
           {tab==="cadastros"&&(
             <div>
-              <div style={{display:"flex",gap:5,marginBottom:14}}>
-                {[["clientes","Clientes"],["fornecedores","Fornecedores"]].map(([v,l])=>(
-                  <div key={v} onClick={()=>setCadTab(v)} className="tb" style={{padding:"7px 12px",borderRadius:6,fontSize:10,background:cadTab===v?T.accentDim:T.card,border:`1px solid ${cadTab===v?T.accentBorder:T.border}`,color:cadTab===v?T.accent:T.muted}}>{l}</div>
-                ))}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                <div style={{display:"flex",gap:5}}>
+                  {[["clientes","Clientes"],["fornecedores","Fornecedores"]].map(([v,l])=>(
+                    <div key={v} onClick={()=>setCadTab(v)} className="tb" style={{padding:"7px 12px",borderRadius:6,fontSize:10,background:cadTab===v?T.accentDim:T.card,border:`1px solid ${cadTab===v?T.accentBorder:T.border}`,color:cadTab===v?T.accent:T.muted,cursor:"pointer"}}>{l}</div>
+                  ))}
+                </div>
+                {cadTab==="clientes"&&<button onClick={()=>setShowNewCliente(v=>!v)} style={{padding:"7px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>+ Novo Cliente</button>}
               </div>
+
               {cadTab==="clientes"&&(
-                <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
-                  <div style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 0.8fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
-                    {["Cliente","Contato","Segmento","Campanhas","LTV"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
+                <div>
+                  {showNewCliente&&(
+                    <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16,marginBottom:12}}>
+                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.accent,marginBottom:12,fontSize:12}}>Novo Cliente</div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
+                        {[["Nome *","name","Ex: Selfit Academias"],["Contato","contact","Nome do responsável"],["Email","email","email@empresa.com"],["Telefone","phone","(11) 99999-9999"],["Segmento","segment","Ex: Academia, Varejo"],["Agência","agency","Nome da agência (opcional)"]].map(([l,k,ph])=>(
+                          <div key={k}>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+                            <input value={novoCliente[k]||""} onChange={e=>setNovoCliente(p=>({...p,[k]:e.target.value}))} placeholder={ph} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}/>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{display:"flex",gap:8}}>
+                        <button onClick={()=>{if(!novoCliente.name)return;setShowNewCliente(false);setNovoCliente({name:"",contact:"",email:"",phone:"",segment:"",agency:""});pushNotif("Cliente cadastrado",novoCliente.name,"Novo cliente adicionado",T.accent);}} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>Salvar</button>
+                        <button onClick={()=>setShowNewCliente(false)} style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10,cursor:"pointer"}}>Cancelar</button>
+                      </div>
+                    </div>
+                  )}
+                  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
+                    <div style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 0.8fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
+                      {["Cliente","Contato","Segmento","Campanhas","LTV"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
+                    </div>
+                    {CLIENTS_LIST.map((c,i)=>(<div key={i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 0.8fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
+                      <div><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.email}</div></div>
+                      <div style={{fontSize:11,color:T.soft}}>{c.contact}</div>
+                      <Badge label={c.segment} color={T.purple}/>
+                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:T.info}}>{c.campaigns}</div>
+                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmtK(c.ltv)}</div>
+                    </div>))}
                   </div>
-                  {CLIENTS_LIST.map((c,i)=>(<div key={i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 0.8fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
-                    <div><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.email}</div></div>
-                    <div style={{fontSize:11,color:T.soft}}>{c.contact}</div>
-                    <Badge label={c.segment} color={T.purple}/>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:T.info}}>{c.campaigns}</div>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmtK(c.ltv)}</div>
-                  </div>))}
                 </div>
               )}
+
               {cadTab==="fornecedores"&&(
-                <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
-                  <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 0.8fr 0.6fr 0.3fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
-                    {["Fornecedor","Tipo","Contato","Prazo","-",""].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
+                <div>
+                  <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16,marginBottom:12}}>
+                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.accent,marginBottom:12,fontSize:11}}>Novo Fornecedor</div>
+                    <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                      <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Nome *</div><input placeholder="Ex: Gráfica Rápida" value={nf.name} onChange={e=>setNf(p=>({...p,name:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                      <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Tipo</div><select value={nf.type} onChange={e=>setNf(p=>({...p,type:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}><option value="grafica">Gráfica</option><option value="logistica">Logística</option></select></div>
+                      <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Contato</div><input placeholder="Nome" value={nf.contact} onChange={e=>setNf(p=>({...p,contact:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                      <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Email</div><input placeholder="email@fornecedor.com" value={nf.email} onChange={e=>setNf(p=>({...p,email:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                      <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Prazo</div><input placeholder="7 dias" value={nf.leadTime} onChange={e=>setNf(p=>({...p,leadTime:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                    </div>
+                    <button onClick={async()=>{if(!nf.name)return;const rec={...nf,id:Date.now(),campaigns:0};setSuppliers(p=>[...p,rec]);setNf({name:"",type:"grafica",contact:"",phone:"",email:"",leadTime:"7 dias",rating:4});await supabase.from("fornecedores").insert(rec);pushNotif("Fornecedor cadastrado",rec.name,"Adicionado com sucesso",T.accent);}} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>+ Adicionar Fornecedor</button>
                   </div>
-                  {suppliers.map((s,i)=>(<div key={i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 0.8fr 0.6fr 0.3fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
-                    <div><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{s.name}</div><div style={{fontSize:9,color:T.muted}}>{s.email}</div></div>
-                    <Badge label={s.type==="grafica"?"Gráfica":"Logística"} color={s.type==="grafica"?T.purple:T.warn}/>
-                    <div style={{fontSize:11,color:T.soft}}>{s.contact}</div>
-                    <div style={{fontSize:10,color:T.soft,fontFamily:"'JetBrains Mono',monospace"}}>{s.leadTime}</div>
-                    <div style={{fontSize:11}}>{"-".repeat(s.rating)}<span style={{color:T.border}}>{"-".repeat(5-s.rating)}</span></div>
-                    <div onClick={async()=>{setSuppliers(p=>p.filter(x=>x.id!==s.id));await supabase.from("fornecedores").delete().eq("id",s.id);}} style={{fontSize:9,color:T.danger,cursor:"pointer",textAlign:"center"}}>x</div>
-                  </div>))}
-                  {/* Adicionar fornecedor */}
-                  <div style={{padding:"12px 16px",borderTop:`1px solid ${T.border}`,display:"flex",gap:8,flexWrap:"wrap"}}>
-                    {(()=>{
-                      const[nf,setNf]=useState({name:"",type:"grafica",contact:"",phone:"",email:"",leadTime:"7 dias",rating:4});
-                      return(<>
-                        <input placeholder="Nome" value={nf.name} onChange={e=>setNf(p=>({...p,name:e.target.value}))} style={{...inpS,flex:2,minWidth:120}}/>
-                        <select value={nf.type} onChange={e=>setNf(p=>({...p,type:e.target.value}))} style={{...inpS,width:"auto"}}>
-                          <option value="grafica">Gráfica</option>
-                          <option value="logistica">Logística</option>
-                        </select>
-                        <input placeholder="Contato" value={nf.contact} onChange={e=>setNf(p=>({...p,contact:e.target.value}))} style={{...inpS,flex:1,minWidth:80}}/>
-                        <input placeholder="Email" value={nf.email} onChange={e=>setNf(p=>({...p,email:e.target.value}))} style={{...inpS,flex:1,minWidth:100}}/>
-                        <input placeholder="Prazo" value={nf.leadTime} onChange={e=>setNf(p=>({...p,leadTime:e.target.value}))} style={{...inpS,width:80}}/>
-                        <button onClick={async()=>{if(!nf.name)return;const rec={...nf,id:Date.now(),campaigns:0};setSuppliers(p=>[...p,rec]);setNf({name:"",type:"grafica",contact:"",phone:"",email:"",leadTime:"7 dias",rating:4});await supabase.from("fornecedores").insert(rec);}} style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer"}}>+ Adicionar</button>
-                      </>);
-                    })()}
+                  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
+                    <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 0.8fr 0.6fr 0.3fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
+                      {["Fornecedor","Tipo","Contato","Prazo","Rating",""].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
+                    </div>
+                    {suppliers.length===0&&<div style={{padding:"20px 16px",fontSize:11,color:T.muted,textAlign:"center"}}>Nenhum fornecedor cadastrado ainda.</div>}
+                    {suppliers.map((s,i)=>(<div key={i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 0.8fr 0.6fr 0.3fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
+                      <div><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{s.name}</div><div style={{fontSize:9,color:T.muted}}>{s.email}</div></div>
+                      <Badge label={s.type==="grafica"?"Gráfica":"Logística"} color={s.type==="grafica"?T.purple:T.warn}/>
+                      <div style={{fontSize:11,color:T.soft}}>{s.contact}</div>
+                      <div style={{fontSize:10,color:T.soft,fontFamily:"'JetBrains Mono',monospace"}}>{s.leadTime}</div>
+                      <div style={{fontSize:11,color:T.warn}}>{"★".repeat(s.rating||0)}</div>
+                      <div onClick={async()=>{setSuppliers(p=>p.filter(x=>x.id!==s.id));await supabase.from("fornecedores").delete().eq("id",s.id);}} style={{fontSize:9,color:T.danger,cursor:"pointer",textAlign:"center"}}>✕</div>
+                    </div>))}
                   </div>
                 </div>
               )}
             </div>
           )}
+
 
           {/* --------------------------------------
               USUÁRIOS
