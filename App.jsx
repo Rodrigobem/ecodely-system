@@ -5549,6 +5549,7 @@ Retorne SOMENTE JSON: {"recomendados":["id1","id2","id3"],"perfilIdeal":"perfil 
               planejamentos={planejamentos}
               salvarPlano={salvarPlano} gerarPropostaPDF={gerarPropostaPDF}
               geocodeEndereco={geocodeEndereco} gerarAnaliseIA={gerarAnaliseIA}
+              sugerirParceiros={sugerirParceiros}
               user={user} basePartners={basePartners} projects={projects}
             />
           )}
