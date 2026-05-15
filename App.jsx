@@ -512,9 +512,15 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
   const cEmbPorParc=cParcNecessarios>0?Math.ceil(cTotalEmb/Math.max(cParcNecessarios,parc.length||1)):0;
 
   const distribuir=()=>{
-    if(!cTotalEmb||!parc.length)return;
+    if(!cTotalEmb)return alert("Preencha os campos da calculadora primeiro.");
+    if(!parc.length)return alert("Selecione pelo menos um parceiro antes de distribuir.");
+    if(parc.length<cParcNecessarios){
+      const falta=cParcNecessarios-parc.length;
+      if(!window.confirm(`Você selecionou ${parc.length} parceiro(s), mas a calculadora indica ${cParcNecessarios} necessários.\nCada parceiro receberá mais de 1.000 embalagens.\n\nDeseja distribuir mesmo assim?`))return;
+    }
     const embPorParc=Math.ceil(cTotalEmb/parc.length);
     setPlanAtivo(p=>({...p,parceiros:p.parceiros.map(x=>({...x,embalagens:embPorParc,tabela:cValorTabela||x.tabela,desconto:cDesconto}))}));
+    alert(`✓ ${parc.length} parceiro(s) atualizado(s) com ${embPorParc.toLocaleString("pt-BR")} embalagens cada.\nTotal: ${(parc.length*embPorParc).toLocaleString("pt-BR")} embalagens · Valor: R$ ${(parc.length*embPorParc*cValorBruto).toLocaleString("pt-BR",{minimumFractionDigits:2})}`);
   };
 
   return(
@@ -571,8 +577,11 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
               ))}
             </div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div style={{fontSize:8,color:T.muted}}>
-                Selecione {cParcNecessarios} parceiro(s) abaixo · cada um receberá {cEmbPorParc.toLocaleString("pt-BR")} embalagens
+              <div style={{fontSize:8,color:parc.length<cParcNecessarios?T.warn:T.muted}}>
+                {parc.length<cParcNecessarios
+                  ?`⚠️ Selecione mais ${cParcNecessarios-parc.length} parceiro(s) — precisa de ${cParcNecessarios} para máx. 1.000 emb. cada`
+                  :`✓ ${parc.length} selecionado(s) · ${cEmbPorParc.toLocaleString("pt-BR")} emb. por parceiro · total R$ ${(cTotalEmb*cValorBruto).toLocaleString("pt-BR",{minimumFractionDigits:0})}`
+                }
               </div>
               {parc.length>0&&<button onClick={distribuir} style={{padding:"6px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,border:"none",color:"#000",borderRadius:6,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:9}}>✓ Distribuir automaticamente</button>}
             </div>
