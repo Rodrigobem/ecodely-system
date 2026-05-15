@@ -551,7 +551,7 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
                     if(/^\d$/.test(e.key)) nr=raw+e.key;
                     else if(e.key==="Backspace"||e.key==="Delete") nr=raw.slice(0,-1);
                     else return;
-                    const num=Number(nr)||0;
+                    const num=nr.length>0?Number(nr)/100:0;
                     const fmt=num>0?num.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}):"";
                     setPlanAtivo(p=>({...p,calc:{...(p.calc||{}),[k]:num,[k+"_raw"]:nr,[k+"_fmt"]:fmt}}));
                   }}
