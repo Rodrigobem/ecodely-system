@@ -1865,8 +1865,20 @@ export default function App(){
         supabase.from("fornecedores").select("*").order("id"),
         supabase.from("configuracoes").select("*"),
       ]);
-      const normData=d=>{if(!d)return"";if(d.includes("/"))return d;const[y,m,dd]=d.split("T")[0].split("-");return`${dd}/${m}/${y}`;};
-      if(lanc.data?.length)setLancamentos(lanc.data.map(r=>({...r,data:normData(r.data),centrosCusto:r.centrosCusto||r.centroscusto||"",contaBancoId:r.contaBancoId||r.contabancoid||1})));
+      if(lanc.data?.length){
+        const normData=d=>{
+          try{
+            if(!d)return"";
+            const s=String(d);
+            if(s.includes("/"))return s;
+            // ISO format: 2026-04-01
+            const parts=s.split("T")[0].split("-");
+            if(parts.length===3)return`${parts[2]}/${parts[1]}/${parts[0]}`;
+            return s;
+          }catch(e){return String(d||"");}
+        };
+        setLancamentos(lanc.data.map(r=>({...r,data:normData(r.data),centrosCusto:r.centrosCusto||"",contaBancoId:r.contaBancoId||1})));
+      }
       if(conts.data?.length)setContas(conts.data);
       if(carts.data?.length)setCartoes(carts.data);
       if(compras.data?.length)setComprasCartao(compras.data.map(r=>({...r,cartaoId:r.cartaoId,valorTotal:r.valorTotal,parcelaAtual:r.parcelaAtual,valorParcela:r.valorParcela,mesInicio:r.mesInicio})));
