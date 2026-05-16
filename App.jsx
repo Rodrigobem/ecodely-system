@@ -1847,7 +1847,7 @@ export default function App(){
   useEffect(()=>{
     const load=async()=>{
       const [lanc,conts,carts,compras,custos,fats,camps,prosps,parts,cls,commt,projs,pts,usrs,centros,forn,cfgs]=await Promise.all([
-        supabase.from("lancamentos").select("*").order("id"),
+        supabase.from("lancamentos").select("*").order("id").limit(10000),
         supabase.from("contas").select("*").order("id"),
         supabase.from("cartoes").select("*").order("id"),
         supabase.from("compras_cartao").select("*").order("id"),
