@@ -4564,10 +4564,30 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
                 {/* FLUXO DE CAIXA */}
                 {finTab==="fluxo"&&(()=>{
-                  // showAdd, novoLanc ja declarados no nivel do componente
-                  const lancOrdenados=[...lancMesFilt].sort((a,b)=>a.data.split("/").reverse().join("")-b.data.split("/").reverse().join(""));
+                  // Calcula saldo anterior automaticamente (soma de todos os meses anteriores)
+                  const [mmAtual,aaAtual]=finMesRef.split("/");
+                  const saldoAnterior=lancamentos
+                    .filter(l=>l.tipo!=="Saldo Anterior")
+                    .filter(l=>{
+                      const p=l.data.split("/");
+                      if(p.length<3)return false;
+                      const mm=p[1],aa=p[2];
+                      return aa<aaAtual||(aa===aaAtual&&mm<mmAtual);
+                    })
+                    .reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0);
+                  // Adiciona também os Saldo Anterior entries históricos (ex: Dez/2024)
+                  const saldoAntHistorico=lancamentos
+                    .filter(l=>l.tipo==="Saldo Anterior")
+                    .filter(l=>{
+                      const p=l.data.split("/");
+                      if(p.length<3)return false;
+                      const mm=p[1],aa=p[2];
+                      return aa<aaAtual||(aa===aaAtual&&mm<mmAtual);
+                    })
+                    .reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0);
+                  const lancOrdenados=[...lancMesFilt].filter(l=>l.tipo!=="Saldo Anterior").sort((a,b)=>a.data.split("/").reverse().join("")-b.data.split("/").reverse().join(""));
                   // Agrupar por dia com saldo acumulado
-                  let saldoAcum=0;
+                  let saldoAcum=saldoAnterior+saldoAntHistorico;
                   const grupos=[];
                   let diaAtual=null, grupoAtual=[];
                   lancOrdenados.forEach(l=>{
@@ -4682,6 +4702,20 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           ))}
                         </div>
                         {grupos.length===0&&<div style={{padding:24,textAlign:"center",color:"#888",fontSize:11,background:"#fff"}}>Nenhum lançamento em {finMesRef}</div>}
+                        {/* Linha de saldo anterior automático */}
+                        {(saldoAnterior+saldoAntHistorico)!==0&&<div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,background:"#f0e8ff",alignItems:"stretch"}}>
+                          <div style={{fontSize:10,color:"#7c3aed",fontFamily:"Arial,sans-serif",padding:"7px 10px",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",display:"flex",alignItems:"center"}}>01/{mmAtual}</div>
+                          <div style={{padding:"7px 10px",boxShadow:"inset -2px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff"}}>
+                            <div style={{fontSize:11,color:"#7c3aed",fontWeight:700}}>SALDO ANTERIOR</div>
+                            <span style={{fontSize:7,padding:"1px 5px",borderRadius:3,background:"#ede9fe",color:"#7c3aed"}}>Automático</span>
+                          </div>
+                          <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:700,textAlign:"right",padding:"7px 10px",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{(saldoAnterior+saldoAntHistorico)>0?fmt(saldoAnterior+saldoAntHistorico):""}</div>
+                          <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:700,textAlign:"right",padding:"7px 10px",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{(saldoAnterior+saldoAntHistorico)<0?fmt(Math.abs(saldoAnterior+saldoAntHistorico)):""}</div>
+                          <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:38,alignSelf:"stretch"}}/>
+                          <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:38,alignSelf:"stretch"}}/>
+                          <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:38,alignSelf:"stretch"}}/>
+                          <div style={{background:"#f0e8ff",minHeight:38}}/>
+                        </div>}
                         {grupos.map((grupo,gi)=>{
                           const dEntradas=grupo.lancs.reduce((a,l)=>a+(l.entrada||0),0);
                           const dSaidas=grupo.lancs.reduce((a,l)=>a+(l.saida||0),0);
