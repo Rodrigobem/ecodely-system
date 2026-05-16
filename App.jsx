@@ -1736,8 +1736,7 @@ export default function App(){
   const[user,setUser]=useState(()=>{try{const s=localStorage.getItem("ecodely_user");return s?JSON.parse(s):null;}catch{return null;}});
   const[loginForm,setLoginForm]=useState({email:"",pass:""});
   const[loginErr,setLoginErr]=useState("");
-  const[tab,setTab]=useState(()=>localStorage.getItem("ecodely_tab")||"dashboard");
-  const setTabP=t=>{setTabP(t);localStorage.setItem("ecodely_tab",t);};
+  const[tab,setTab]=useState(()=>{try{const s=localStorage.getItem("ecodely_tab");return s||"dashboard";}catch{return"dashboard";}});
   const[camps,setCamps]=useState(CAMPS_INIT);
   const[selCamp,setSelCamp]=useState(null);
   const[campView,setCampView]=useState("kanban");
@@ -1759,6 +1758,7 @@ export default function App(){
   // Financial module state
   const[finTab,setFinTab]=useState("visao");
   const[tema,setTema]=useState(()=>localStorage.getItem("ecodely_tema")||"escuro");
+  useEffect(()=>{localStorage.setItem("ecodely_tab",tab);},[tab]);
   T=THEMES[tema]||THEMES.escuro;
   useEffect(()=>{localStorage.setItem("ecodely_tema",tema);document.body.style.background=T.bg;},[tema]);
   const[editLanc,setEditLanc]=useState(null);
@@ -2000,7 +2000,7 @@ export default function App(){
   // --- HANDLERS ------------------------------------------------------------
   const handleLogin=()=>{
     const u=users.find(u=>u.email===loginForm.email&&u.pass===loginForm.pass&&u.active!==false);
-    if(u&&u.active){setUser(u);localStorage.setItem("ecodely_user",JSON.stringify(u));setTabP("minha-fila");setLoginErr("");}
+    if(u&&u.active){setUser(u);localStorage.setItem("ecodely_user",JSON.stringify(u));setTab("minha-fila");setLoginErr("");}
     else setLoginErr("E-mail ou senha incorretos.");
   };
 
@@ -3148,7 +3148,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
         </div>
         <div style={{flex:1,padding:"10px 8px",overflowY:"auto"}}>
           {nav.map(n=>(
-            <div key={n.id} className="nb" onClick={()=>setTabP(n.id)} style={{display:"flex",alignItems:"center",gap:9,padding:"9px 10px",borderRadius:7,marginBottom:1,background:tab===n.id?T.accentDim:"transparent",border:`1px solid ${tab===n.id?T.accentBorder:"transparent"}`}}>
+            <div key={n.id} className="nb" onClick={()=>setTab(n.id)} style={{display:"flex",alignItems:"center",gap:9,padding:"9px 10px",borderRadius:7,marginBottom:1,background:tab===n.id?T.accentDim:"transparent",border:`1px solid ${tab===n.id?T.accentBorder:"transparent"}`}}>
               <span style={{fontSize:12,color:tab===n.id?T.accent:T.muted,width:16,textAlign:"center"}}>{n.icon}</span>
               <span style={{fontSize:11,color:tab===n.id?T.text:T.muted,fontFamily:"Arial,sans-serif"}}>{n.label}</span>
               {n.badge&&<div style={{marginLeft:"auto",background:T.danger,borderRadius:8,padding:"1px 5px",fontSize:8,color:"#fff",fontWeight:700}}>{n.badge}</div>}
@@ -3187,7 +3187,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           </div>
           <div style={{display:"flex",gap:10,alignItems:"center"}}>
             {pendingQueue.length>0&&tab!=="minha-fila"&&(
-              <div onClick={()=>setTabP("minha-fila")} style={{display:"flex",gap:8,alignItems:"center",padding:"7px 12px",background:T.dangerDim,border:`1px solid ${T.danger}44`,borderRadius:8,cursor:"pointer"}}>
+              <div onClick={()=>setTab("minha-fila")} style={{display:"flex",gap:8,alignItems:"center",padding:"7px 12px",background:T.dangerDim,border:`1px solid ${T.danger}44`,borderRadius:8,cursor:"pointer"}}>
                 <div className="pulse" style={{width:6,height:6,borderRadius:"50%",background:T.danger}}/>
                 <span style={{fontSize:10,color:T.danger,fontFamily:"Arial,sans-serif"}}>{pendingQueue.length} pendente{pendingQueue.length>1?"s":""}</span>
               </div>
@@ -3228,7 +3228,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           onClick={async()=>{
                             setInbox(p=>p.map(x=>x.id===n.id?{...x,read:true}:x));
                             if(user?.id&&!n.auto)await supabase.from("notificacoes").update({lida:true}).eq("id",n.id);
-                            if(n.tab){setTabP(n.tab);setInboxOpen(false);}
+                            if(n.tab){setTab(n.tab);setInboxOpen(false);}
                           }}
                           style={{padding:"12px 16px",borderBottom:`1px solid ${T.border}`,background:n.read?"transparent":n.color+"12",cursor:"pointer",transition:"background 0.15s"}}>
                           <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
@@ -3310,10 +3310,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             const DashComercial=()=>(
               <div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-                  <KCard label="Meu pipeline" value={fmtK(myProspects.reduce((a,p)=>a+(p.value||0),0))} sub={`${myProspects.length} prospects`} color={T.info} icon="-" onClick={()=>{setTabP("comercial");setCommTab("pipeline");}} hint="Ver pipeline -"/>
+                  <KCard label="Meu pipeline" value={fmtK(myProspects.reduce((a,p)=>a+(p.value||0),0))} sub={`${myProspects.length} prospects`} color={T.info} icon="-" onClick={()=>{setTab("comercial");setCommTab("pipeline");}} hint="Ver pipeline -"/>
                   <KCard label="Propostas enviadas" value={myProspects.filter(p=>["proposta","negociacao","fechado"].includes(p.stage)).length} sub="no período" color={T.purple} icon="-"/>
                   <KCard label="Minha taxa conversao" value={myProspects.length>0?Math.round((myProspects.filter(p=>p.stage==="fechado").length/myProspects.length)*100)+"%":"0%"} sub="prospects fechados" color={T.accent} icon="-"/>
-                  <KCard label="Minhas tarefas" value={pendingQueue.length} sub="pendentes" color={pendingQueue.length>0?T.danger:T.accent} icon="-" onClick={()=>setTabP("minha-fila")} hint="Ver fila -"/>
+                  <KCard label="Minhas tarefas" value={pendingQueue.length} sub="pendentes" color={pendingQueue.length>0?T.danger:T.accent} icon="-" onClick={()=>setTab("minha-fila")} hint="Ver fila -"/>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:12}}>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
@@ -3401,7 +3401,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               return(
                 <div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-                    <KCard label="Campanhas no ar" value={campsAtivas.length} sub="em andamento" color={T.accent} icon="-" onClick={()=>setTabP("campanhas")} hint="Ver campanhas -"/>
+                    <KCard label="Campanhas no ar" value={campsAtivas.length} sub="em andamento" color={T.accent} icon="-" onClick={()=>setTab("campanhas")} hint="Ver campanhas -"/>
                     <KCard label="Influenciadores ativos" value={influAtivos} sub="no período" color={T.purple} icon="-"/>
                     <KCard label="Impactos totais" value={totalImpMes.toLocaleString()} sub="todos os canais" color={T.info} icon="-"/>
                     <KCard label="Ações com parceiros" value={campsComStories} sub="com stories registrados" color={T.warn} icon="-"/>
@@ -3467,7 +3467,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.info,marginBottom:10}}>Minhas tarefas</div>
                       <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:32,color:pendingQueue.length>0?T.danger:T.accent,marginBottom:4}}>{pendingQueue.length}</div>
                       <div style={{fontSize:9,color:T.muted,marginBottom:8}}>tarefas pendentes</div>
-                      <button onClick={()=>setTabP("minha-fila")} className="btn" style={{width:"100%",padding:"7px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10}}>Ver fila -</button>
+                      <button onClick={()=>setTab("minha-fila")} className="btn" style={{width:"100%",padding:"7px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10}}>Ver fila -</button>
                     </div>
                   </div>
                 </div>
@@ -3478,10 +3478,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             const DashFinanceiro=()=>(
               <div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-                  <KCard label="Receita total" value={fmtK(receitaReal)} sub="lançamentos no período" color={T.accent} icon="-" onClick={()=>{setTabP("financeiro-modulo");}} hint="Ver financeiro -"/>
+                  <KCard label="Receita total" value={fmtK(receitaReal)} sub="lançamentos no período" color={T.accent} icon="-" onClick={()=>{setTab("financeiro-modulo");}} hint="Ver financeiro -"/>
                   <KCard label="Total despesas" value={fmtK(despesaReal)} sub="lançamentos no período" color={T.danger} icon="-"/>
                   <KCard label="Resultado líquido" value={fmtK(receitaReal-despesaReal)} sub="receita - despesas" color={receitaReal>despesaReal?T.accent:T.danger} icon="-"/>
-                  <KCard label="Pendente aprovação" value={closings.filter(c=>c.status==="pendente").length} sub="comissões" color={T.purple} icon="-" onClick={()=>setTabP("comissoes")} hint="Aprovar -"/>
+                  <KCard label="Pendente aprovação" value={closings.filter(c=>c.status==="pendente").length} sub="comissões" color={T.purple} icon="-" onClick={()=>setTab("comissoes")} hint="Aprovar -"/>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
@@ -3540,8 +3540,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
                     <KCard label="Em gráfica" value={campsGrafica.length} sub="aguardando impressão" color={T.purple} icon="-"/>
                     <KCard label="Em logística" value={campsLogistica.length} sub="em distribuição" color={T.warn} icon="-"/>
-                    <KCard label="Minhas tarefas" value={pendingQueue.length} sub="pendentes" color={pendingQueue.length>0?T.danger:T.accent} icon="-" onClick={()=>setTabP("minha-fila")} hint="Ver fila -"/>
-                    <KCard label="Parceiros na base" value={basePartners.length} sub="cadastrados" color={T.info} icon="-" onClick={()=>setTabP("base")} hint="Ver base -"/>
+                    <KCard label="Minhas tarefas" value={pendingQueue.length} sub="pendentes" color={pendingQueue.length>0?T.danger:T.accent} icon="-" onClick={()=>setTab("minha-fila")} hint="Ver fila -"/>
+                    <KCard label="Parceiros na base" value={basePartners.length} sub="cadastrados" color={T.info} icon="-" onClick={()=>setTab("base")} hint="Ver base -"/>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                     {[{title:"Na Gráfica",camps:campsGrafica,color:T.purple},{title:"Na Logística",camps:campsLogistica,color:T.warn}].map((g,gi)=>(
@@ -3579,8 +3579,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               return(
                 <div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-                    <KCard label="Campanhas no ar" value={campsAtivas.length} sub="ativas" color={T.accent} icon="-" onClick={()=>setTabP("campanhas")} hint="Ver campanhas -"/>
-                    <KCard label="Parceiros ativos" value={parceirosAtivos} sub="na base" color={T.info} icon="-" onClick={()=>setTabP("base")} hint="Ver base -"/>
+                    <KCard label="Campanhas no ar" value={campsAtivas.length} sub="ativas" color={T.accent} icon="-" onClick={()=>setTab("campanhas")} hint="Ver campanhas -"/>
+                    <KCard label="Parceiros ativos" value={parceirosAtivos} sub="na base" color={T.info} icon="-" onClick={()=>setTab("base")} hint="Ver base -"/>
                     <KCard label="Contratos assinados" value={contratosMes} sub="no total" color={T.green} icon="-"/>
                     <KCard label="Parceiros faltantes" value={Math.max(0,parcFaltantes)} sub="em campanhas ativas" color={parcFaltantes>0?T.danger:T.accent} icon="-"/>
                   </div>
@@ -3612,7 +3612,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,marginBottom:8}}>Minha fila</div>
                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:28,color:pendingQueue.length>0?T.danger:T.accent}}>{pendingQueue.length}</div>
                         <div style={{fontSize:9,color:T.muted,marginBottom:8}}>tarefas pendentes</div>
-                        <button onClick={()=>setTabP("minha-fila")} className="btn" style={{width:"100%",padding:"7px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10}}>Ver fila -</button>
+                        <button onClick={()=>setTab("minha-fila")} className="btn" style={{width:"100%",padding:"7px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10}}>Ver fila -</button>
                       </div>
                     </div>
                   </div>
@@ -3651,10 +3651,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   </div>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:12}}>
-                  <KCard label="Campanhas ativas" value={campsAtivas.length} sub="em andamento" color={T.accent} icon="-" onClick={()=>setTabP("campanhas")} hint="Ver campanhas -"/>
-                  <KCard label="Pipeline comercial" value={fmtK(pipeTotal)} sub={`${prospects.length} prospects`} color={T.info} icon="-" onClick={()=>{setTabP("comercial");setCommTab("pipeline");}} hint="Ver pipeline -"/>
+                  <KCard label="Campanhas ativas" value={campsAtivas.length} sub="em andamento" color={T.accent} icon="-" onClick={()=>setTab("campanhas")} hint="Ver campanhas -"/>
+                  <KCard label="Pipeline comercial" value={fmtK(pipeTotal)} sub={`${prospects.length} prospects`} color={T.info} icon="-" onClick={()=>{setTab("comercial");setCommTab("pipeline");}} hint="Ver pipeline -"/>
                   <KCard label="Total a receber" value={fmtK(CLIENT_BILLING.reduce((a,c)=>a+c.pendente,0))} sub="NFs em aberto" color={T.warn} icon="-"/>
-                  <KCard label="Total a pagar" value={fmtK(closings.filter(c=>c.status==="aprovado"&&!c.pago).reduce((a,c)=>a+c.value,0))} sub="comissões aprovadas" color={T.danger} icon="-" onClick={()=>setTabP("comissoes")} hint="Ver comissões -"/>
+                  <KCard label="Total a pagar" value={fmtK(closings.filter(c=>c.status==="aprovado"&&!c.pago).reduce((a,c)=>a+c.value,0))} sub="comissões aprovadas" color={T.danger} icon="-" onClick={()=>setTab("comissoes")} hint="Ver comissões -"/>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:12}}>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
@@ -3678,7 +3678,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {Object.keys(SEC_LABEL).filter(s=>["comercial","financeiro","marketing","base"].includes(s)).map(s=>{
                         const pend=camps.flatMap(c=>c.tasks[s]?.filter(t=>!t.done)||[]).length;
                         return(
-                          <div key={s} onClick={()=>{setTabP("minha-fila");setQueueFilter(pend>0?"pendentes":"todos");}} className="hr" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}`,cursor:"pointer",borderRadius:4}}>
+                          <div key={s} onClick={()=>{setTab("minha-fila");setQueueFilter(pend>0?"pendentes":"todos");}} className="hr" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}`,cursor:"pointer",borderRadius:4}}>
                             <span style={{fontSize:10,color:SEC_COLOR[s]}}>{SEC_LABEL[s]}</span>
                             <div style={{background:pend>0?T.danger+"22":T.accentDim,color:pend>0?T.danger:T.accent,border:`1px solid ${pend>0?T.danger+"44":T.accentBorder}`,borderRadius:7,padding:"2px 8px",fontSize:9,fontWeight:700}}>{pend>0?`${pend} pendente${pend>1?"s":""}` :"Em dia -"}</div>
                           </div>
@@ -3694,7 +3694,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         </div>
                       ))}
                       {basePartners.filter(p=>p.contrato.status==="expirando").map((p,i)=>(
-                        <div key={`c${i}`} onClick={()=>{setTabP("base");setBaseTab("contratos");}} className="hr" style={{marginBottom:8,padding:"5px 4px",borderRadius:6,cursor:"pointer"}}>
+                        <div key={`c${i}`} onClick={()=>{setTab("base");setBaseTab("contratos");}} className="hr" style={{marginBottom:8,padding:"5px 4px",borderRadius:6,cursor:"pointer"}}>
                           <div style={{fontSize:11,fontWeight:600}}>{p.name}</div>
                           <div style={{fontSize:9,color:T.danger}}>Contrato expira {p.contrato.expiraEm}</div>
                         </div>
@@ -5568,10 +5568,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                 {[
-                  {l:"DMs hoje",v:"20",c:"#E1306C",hint:"Ver conversas DM -",action:()=>setTabP("base")},
-                  {l:"WhatsApps hoje",v:"38",c:T.green,hint:"Ver conversas WA -",action:()=>setTabP("base")},
-                  {l:"Aguardando resposta",v:"241",c:T.warn,hint:"Ver lista de aguardando -",action:()=>{setTabP("base");setBaseFilter("prospectado");}},
-                  {l:"Convertidos",v:"8",c:T.accent,hint:"Ver base ativa -",action:()=>{setTabP("base");setBaseFilter("ativo");setBaseTab("parceiros");}},
+                  {l:"DMs hoje",v:"20",c:"#E1306C",hint:"Ver conversas DM -",action:()=>setTab("base")},
+                  {l:"WhatsApps hoje",v:"38",c:T.green,hint:"Ver conversas WA -",action:()=>setTab("base")},
+                  {l:"Aguardando resposta",v:"241",c:T.warn,hint:"Ver lista de aguardando -",action:()=>{setTab("base");setBaseFilter("prospectado");}},
+                  {l:"Convertidos",v:"8",c:T.accent,hint:"Ver base ativa -",action:()=>{setTab("base");setBaseFilter("ativo");setBaseTab("parceiros");}},
                 ].map((k,i)=>(
                   <div key={i} onClick={k.action} className="hr" style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"13px 15px",cursor:"pointer",borderLeft:`3px solid ${k.c}`,transition:"all 0.15s"}}
                     onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
