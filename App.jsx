@@ -4619,8 +4619,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           {["Data","Descricao","Entrada","Saida","Saldo"].map(h=><div key={h} style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>{h}</div>)}
                         </div>
                         {/* Header */}
-                        <div style={{display:"grid",gridTemplateColumns:"90px 1fr 130px 130px 140px",padding:"8px 14px",gap:8,background:T.surface,borderBottom:`1px solid ${T.border}`}}>
-                          {["DATA","DESCRIÇÃO","ENTRADA","SAÍDA","SALDO"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,textAlign:h==="DATA"||h==="DESCRIÇÃO"?"left":"right"}}>{h}</div>)}
+                        <div style={{display:"grid",gridTemplateColumns:"90px 1fr 120px 120px 110px 110px 130px",padding:"8px 14px",gap:6,background:T.surface,borderBottom:`1px solid ${T.border}`}}>
+                          {["DATA","DESCRIÇÃO","ENTRADA","SAÍDA","TOT. ENTRADA","TOT. SAÍDA","SALDO"].map(h=>(
+                            <div key={h} style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,textAlign:h==="DATA"||h==="DESCRIÇÃO"?"left":"right"}}>{h}</div>
+                          ))}
                         </div>
                         {grupos.length===0&&<div style={{padding:24,textAlign:"center",color:T.muted,fontSize:11}}>Nenhum lançamento em {finMesRef}</div>}
                         {grupos.map((grupo,gi)=>{
@@ -4628,14 +4630,13 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           const dSaidas=grupo.lancs.reduce((a,l)=>a+(l.saida||0),0);
                           saldoAcum+=dEntradas-dSaidas;
                           const saldoDia=saldoAcum;
-                          // Calculate running saldo per line within the day
-                          let saldoLinha=saldoAcum-(dEntradas-dSaidas);
+                          const ultimo=grupo.lancs.length-1;
                           return(
-                            <div key={gi}>
+                            <div key={gi} style={{borderBottom:`2px solid ${T.border}44`}}>
                               {grupo.lancs.map((l,i)=>{
-                                saldoLinha+=l.entrada-l.saida;
+                                const isUltimo=i===ultimo;
                                 return(
-                                  <div key={l.id||i} style={{display:"grid",gridTemplateColumns:"90px 1fr 130px 130px 140px",padding:"8px 14px",gap:8,borderBottom:`1px solid ${T.border}22`,background:l.tipo==="Saldo Anterior"?T.purpleDim:i%2===0?"transparent":T.surface+"44",alignItems:"center",cursor:"pointer"}} onClick={()=>setEditLanc(l)}>
+                                  <div key={l.id||i} style={{display:"grid",gridTemplateColumns:"90px 1fr 120px 120px 110px 110px 130px",padding:"8px 14px",gap:6,borderBottom:isUltimo?"none":`1px solid ${T.border}22`,background:l.tipo==="Saldo Anterior"?T.purpleDim:i%2===0?"transparent":T.surface+"44",alignItems:"center",cursor:"pointer"}} onClick={()=>setEditLanc(l)}>
                                     <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{l.tipo==="Saldo Anterior"?"":l.data.slice(0,5)}</div>
                                     <div>
                                       <div style={{fontSize:11,color:l.tipo==="Saldo Anterior"?T.purple:T.text,lineHeight:1.4}}>{l.descricao}</div>
@@ -4643,27 +4644,22 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                     </div>
                                     <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.accent,fontWeight:700,textAlign:"right"}}>{l.entrada>0?fmt(l.entrada):""}</div>
                                     <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.danger,fontWeight:700,textAlign:"right"}}>{l.saida>0?fmt(l.saida):""}</div>
-                                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:saldoLinha>=0?T.accent:T.danger,textAlign:"right"}}>{fmt(saldoLinha)}</div>
+                                    {/* 3 colunas extras só na última linha do dia */}
+                                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.accent,textAlign:"right",opacity:isUltimo?1:0}}>{isUltimo&&dEntradas>0?fmt(dEntradas):""}</div>
+                                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.danger,textAlign:"right",opacity:isUltimo?1:0}}>{isUltimo&&dSaidas>0?fmt(dSaidas):""}</div>
+                                    <div style={{fontFamily:"'Syne',sans-serif",fontSize:12,fontWeight:800,color:isUltimo?(saldoDia>=0?T.accent:T.danger):T.muted,textAlign:"right",opacity:isUltimo?1:0}}>{isUltimo?fmt(saldoDia):""}</div>
                                   </div>
                                 );
                               })}
-                              {/* Separador de dia */}
-                              <div style={{display:"grid",gridTemplateColumns:"90px 1fr 130px 130px 140px",padding:"5px 14px",gap:8,background:T.surface,borderTop:`1px solid ${T.border}`,borderBottom:`2px solid ${T.border}55`,alignItems:"center"}}>
-                                <div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{grupo.data.slice(0,5)}</div>
-                                <div style={{fontSize:8,color:T.muted,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Total do dia</div>
-                                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.accent,textAlign:"right"}}>{dEntradas>0?fmt(dEntradas):""}</div>
-                                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.danger,textAlign:"right"}}>{dSaidas>0?fmt(dSaidas):""}</div>
-                                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:800,color:saldoDia>=0?T.accent:T.danger,textAlign:"right"}}>{fmt(saldoDia)}</div>
-                              </div>
                             </div>
                           );
                         })}
 
-                        <div style={{display:"grid",gridTemplateColumns:"100px 1fr 120px 120px 120px",padding:"10px 14px",gap:8,background:T.surface,borderTop:`2px solid ${T.border}`}}>
-                          <div style={{fontSize:9,color:T.muted,gridColumn:"1/3",fontWeight:700}}>TOTAL DO MES</div>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,color:T.accent}}>{fmt(totalEntradas)}</div>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,color:T.danger}}>{fmt(totalSaidas)}</div>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,color:lucroMes>=0?T.accent:T.danger}}>{fmt(lucroMes)}</div>
+                        <div style={{display:"grid",gridTemplateColumns:"90px 1fr 120px 120px 110px 110px 130px",padding:"10px 14px",gap:6,background:T.surface,borderTop:`2px solid ${T.border}`}}>
+                          <div style={{fontSize:9,color:T.muted,gridColumn:"1/3",fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>TOTAL DO MÊS</div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,color:T.accent,textAlign:"right"}}>{fmt(totalEntradas)}</div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,color:T.danger,textAlign:"right"}}>{fmt(totalSaidas)}</div>
+                          <div style={{gridColumn:"5/8",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,color:lucroMes>=0?T.accent:T.danger,textAlign:"right"}}>{fmt(lucroMes)}</div>
                         </div>
                       </div>
                     </div>
