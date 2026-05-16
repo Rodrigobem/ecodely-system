@@ -4574,9 +4574,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
                 {/* FLUXO DE CAIXA */}
                 {finTab==="fluxo"&&(()=>{
-                  const [mmAtual,aaAtual]=finMesRef.split("/");
-                  const saldoAnterior=saldoAcumuladoAnterior-saldoAntHistorico;
-                  const saldoAntHistorico=0; // já incluído no saldoAcumuladoAnterior
+                  const [mmAtual,aaAtual]=[mmRef,aaRef];
                   const lancOrdenados=[...lancMesFilt].filter(l=>l.tipo!=="Saldo Anterior").sort((a,b)=>a.data.split("/").reverse().join("")-b.data.split("/").reverse().join(""));
                   let saldoAcum=saldoAcumuladoAnterior;
                   const grupos=[];
