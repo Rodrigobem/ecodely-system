@@ -4671,13 +4671,14 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                     <div style={{fontSize:11,color:l.tipo==="Saldo Anterior"?"#7c3aed":"#1a1a2e",lineHeight:1.4}}>{l.descricao}</div>
                                     <span style={{fontSize:7,padding:"1px 5px",borderRadius:3,background:l.tipo==="Saldo Anterior"?"#ede9fe":l.tipo==="Receita"?"#dcfce7":"#fee2e2",color:l.tipo==="Saldo Anterior"?"#7c3aed":l.tipo==="Receita"?"#16a34a":"#dc2626"}}>{l.tipo==="Saldo Anterior"?"Saldo Ant.":l.categoria}</span>
                                   </div>
-                                  <div data-col="2" style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:700,textAlign:"right",padding:"7px 10px",borderRight:"1px solid #888",whiteSpace:"nowrap"}}>{l.entrada>0?fmt(l.entrada):""}</div>
-                                  <div data-col="3" style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:700,textAlign:"right",padding:"7px 10px",borderRight:"1px solid #888",whiteSpace:"nowrap"}}>{l.saida>0?fmt(l.saida):""}</div>
-                                  <div style={{borderRight:"1px solid #888",minHeight:38,background:l.confirmado?"#d4edda":i%2===0?"#fff":"#f2f6fc"}}/><div style={{borderRight:"1px solid #888",minHeight:38,background:l.confirmado?"#d4edda":i%2===0?"#fff":"#f2f6fc"}}/><div style={{borderRight:"1px solid #888",minHeight:38,background:l.confirmado?"#d4edda":i%2===0?"#fff":"#f2f6fc"}}/>
-                                  <div onClick={async e=>{e.stopPropagation();const upd={...l,confirmado:!l.confirmado};setLancamentos(p=>p.map(x=>x.id===l.id?upd:x));await supabase.from("lancamentos").update({confirmado:!l.confirmado}).eq("id",l.id);}} style={{display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",height:"100%",background:l.confirmado?"#16a34a":i%2===0?"#fff":"#f2f6fc",minHeight:38}} title={l.confirmado?"Marcar como pendente":"Confirmar pagamento"}>
-                                    <span style={{fontSize:14}}>{l.confirmado?"✓":"○"}</span>
+                                  <div data-col="2" style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:700,textAlign:"right",padding:"7px 10px",borderRight:"1px solid #888",whiteSpace:"nowrap",background:rowBg}}>{l.entrada>0?fmt(l.entrada):""}</div>
+                                  <div data-col="3" style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:700,textAlign:"right",padding:"7px 10px",borderRight:"1px solid #888",whiteSpace:"nowrap",background:rowBg}}>{l.saida>0?fmt(l.saida):""}</div>
+                                  <div style={{borderRight:"1px solid #888",minHeight:38,background:rowBg}}/><div style={{borderRight:"1px solid #888",minHeight:38,background:rowBg}}/><div style={{borderRight:"1px solid #888",minHeight:38,background:rowBg}}/>
+                                  <div onClick={async e=>{e.stopPropagation();const upd={...l,confirmado:!l.confirmado};setLancamentos(p=>p.map(x=>x.id===l.id?upd:x));await supabase.from("lancamentos").update({confirmado:!l.confirmado}).eq("id",l.id);}} style={{display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",background:rowBg,minHeight:38}} title={l.confirmado?"Marcar como pendente":"Confirmar pagamento"}>
+                                    <span style={{fontSize:14,color:l.confirmado?"#16a34a":"#aaa"}}>{l.confirmado?"✓":"○"}</span>
                                   </div>
                                 </div>
+                                );})()}
                               ))}
                               {/* Linha dedicada ao saldo do período */}
                               <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,background:"#d4edda",borderBottom:"2px solid #555",borderTop:"1px solid #888",alignItems:"center"}}>
