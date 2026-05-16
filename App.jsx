@@ -1752,6 +1752,8 @@ export default function App(){
   // Financial module state
   const[finTab,setFinTab]=useState("visao");
   const[editLanc,setEditLanc]=useState(null);
+  const[colWidths,setColWidths]=useState([90,340,120,120,110,110,130,36]);
+  const[colWidths,setColWidths]=useState([90,320,120,120,110,110,130,36]);
   const[relTab,setRelTab]=useState("gerencial");
   const[relSelecionados,setRelSelecionados]=useState([]);
   const[relTitulo,setRelTitulo]=useState("Relatório Ecodely");
@@ -4642,10 +4644,17 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       )}
                       {/* Transaction table */}
                       <div style={{background:"#fff",border:"2px solid #555",borderRadius:4,overflow:"hidden",boxShadow:"0 1px 4px #00000022"}}>
-                        {/* Header — Excel style */}
-                        <div style={{display:"grid",gridTemplateColumns:"90px 1fr 120px 120px 110px 110px 130px 36px",padding:"0",gap:0,background:"#1a4a7a",borderBottom:"2px solid #0f3460"}}>
+                        {/* Header — Excel style com colunas redimensionáveis */}
+                        <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),padding:"0",gap:0,background:"#1a4a7a",borderBottom:"2px solid #0f3460",position:"relative"}}>
                           {["DATA","DESCRIÇÃO","ENTRADA","SAÍDA","TOT. ENTRADA","TOT. SAÍDA","SALDO","✓"].map((h,i)=>(
-                            <div key={h} style={{fontSize:8,color:"#fff",textTransform:"uppercase",letterSpacing:1,fontWeight:700,textAlign:h==="DATA"||h==="DESCRIÇÃO"?"left":"right",padding:"9px 10px",borderRight:i<6?"1px solid #0f3460":"none"}}>{h}</div>
+                            <div key={h} style={{fontSize:8,color:"#fff",textTransform:"uppercase",letterSpacing:1,fontWeight:700,textAlign:i<=1?"left":"right",padding:"9px 10px",borderRight:"1px solid #2d6fad",position:"relative",userSelect:"none",overflow:"hidden",whiteSpace:"nowrap"}}>
+                              {h}
+                              {i<7&&<div
+                                style={{position:"absolute",right:0,top:0,bottom:0,width:6,cursor:"col-resize",zIndex:10}}
+                                onDoubleClick={e=>{e.stopPropagation();const cells=document.querySelectorAll("[data-col='"+i+"']");let maxW=80;cells.forEach(el=>{const w=(el.textContent||"").length*7+24;if(w>maxW)maxW=w;});setColWidths(p=>{const n=[...p];n[i]=Math.min(Math.max(maxW,60),500);return n;});}}
+                                onMouseDown={e=>{e.preventDefault();const sx=e.clientX,sw=colWidths[i];const mv=ev=>{setColWidths(p=>{const n=[...p];n[i]=Math.max(40,sw+(ev.clientX-sx));return n;});};const up=()=>{window.removeEventListener("mousemove",mv);window.removeEventListener("mouseup",up);};window.addEventListener("mousemove",mv);window.addEventListener("mouseup",up);}}
+                              />}
+                            </div>
                           ))}
                         </div>
                         {grupos.length===0&&<div style={{padding:24,textAlign:"center",color:"#888",fontSize:11,background:"#fff"}}>Nenhum lançamento em {finMesRef}</div>}
@@ -4657,14 +4666,14 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           return(
                             <div key={gi}>
                               {grupo.lancs.map((l,i)=>(
-                                <div key={l.id||i} style={{display:"grid",gridTemplateColumns:"90px 1fr 120px 120px 110px 110px 130px 36px",gap:0,borderBottom:"1px solid #888",background:l.confirmado?"#d4edda":l.tipo==="Saldo Anterior"?"#f0e8ff":i%2===0?"#fff":"#f2f6fc",alignItems:"center",cursor:"pointer"}} onClick={()=>setEditLanc({...l})}>
-                                  <div style={{fontSize:10,color:"#444",fontFamily:"Arial,sans-serif",padding:"7px 10px",borderRight:"1px solid #888"}}>{l.tipo==="Saldo Anterior"?"":l.data.slice(0,5)}</div>
-                                  <div style={{padding:"7px 10px",borderRight:"1px solid #888"}}>
+                                <div key={l.id||i} style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,borderBottom:"1px solid #888",background:l.confirmado?"#d4edda":l.tipo==="Saldo Anterior"?"#f0e8ff":i%2===0?"#fff":"#f2f6fc",alignItems:"center",cursor:"pointer"}} onClick={()=>setEditLanc({...l})}>
+                                  <div data-col="0" style={{fontSize:10,color:"#444",fontFamily:"Arial,sans-serif",padding:"7px 10px",borderRight:"1px solid #888",overflow:"hidden",whiteSpace:"nowrap"}}>{l.tipo==="Saldo Anterior"?"":l.data.slice(0,5)}</div>
+                                  <div data-col="1" style={{padding:"7px 10px",borderRight:"1px solid #888",overflow:"hidden"}}>
                                     <div style={{fontSize:11,color:l.tipo==="Saldo Anterior"?"#7c3aed":"#1a1a2e",lineHeight:1.4}}>{l.descricao}</div>
                                     <span style={{fontSize:7,padding:"1px 5px",borderRadius:3,background:l.tipo==="Saldo Anterior"?"#ede9fe":l.tipo==="Receita"?"#dcfce7":"#fee2e2",color:l.tipo==="Saldo Anterior"?"#7c3aed":l.tipo==="Receita"?"#16a34a":"#dc2626"}}>{l.tipo==="Saldo Anterior"?"Saldo Ant.":l.categoria}</span>
                                   </div>
-                                  <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:700,textAlign:"right",padding:"7px 10px",borderRight:"1px solid #888"}}>{l.entrada>0?fmt(l.entrada):""}</div>
-                                  <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:700,textAlign:"right",padding:"7px 10px",borderRight:"1px solid #888"}}>{l.saida>0?fmt(l.saida):""}</div>
+                                  <div data-col="2" style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:700,textAlign:"right",padding:"7px 10px",borderRight:"1px solid #888",whiteSpace:"nowrap"}}>{l.entrada>0?fmt(l.entrada):""}</div>
+                                  <div data-col="3" style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:700,textAlign:"right",padding:"7px 10px",borderRight:"1px solid #888",whiteSpace:"nowrap"}}>{l.saida>0?fmt(l.saida):""}</div>
                                   <div style={{borderRight:"1px solid #888"}}/><div style={{borderRight:"1px solid #888"}}/><div style={{borderRight:"1px solid #888"}}/>
                                   <div onClick={async e=>{e.stopPropagation();const upd={...l,confirmado:!l.confirmado};setLancamentos(p=>p.map(x=>x.id===l.id?upd:x));await supabase.from("lancamentos").update({confirmado:!l.confirmado}).eq("id",l.id);}} style={{display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",height:"100%",background:l.confirmado?"#16a34a":"transparent"}} title={l.confirmado?"Marcar como pendente":"Confirmar pagamento"}>
                                     <span style={{fontSize:14}}>{l.confirmado?"✓":"○"}</span>
@@ -4672,7 +4681,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                 </div>
                               ))}
                               {/* Linha dedicada ao saldo do período */}
-                              <div style={{display:"grid",gridTemplateColumns:"90px 1fr 120px 120px 110px 110px 130px 36px",gap:0,background:"#d4edda",borderBottom:"2px solid #555",borderTop:"1px solid #888",alignItems:"center"}}>
+                              <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,background:"#d4edda",borderBottom:"2px solid #555",borderTop:"1px solid #888",alignItems:"center"}}>
                                 <div style={{fontSize:9,color:"#2d6a4f",fontFamily:"Arial,sans-serif",fontWeight:700,padding:"6px 10px",borderRight:"1px solid #888"}}>{grupo.data.slice(0,5)}</div>
                                 <div style={{fontSize:9,color:"#2d6a4f",fontWeight:800,textTransform:"uppercase",letterSpacing:1,padding:"6px 10px",borderRight:"1px solid #888"}}>Saldo do período</div>
                                 <div style={{borderRight:"1px solid #888",padding:"6px 0"}}/><div style={{borderRight:"1px solid #888",padding:"6px 0"}}/>
@@ -4684,7 +4693,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           );
                         })}
 
-                        <div style={{display:"grid",gridTemplateColumns:"90px 1fr 120px 120px 110px 110px 130px",padding:"10px 14px",gap:6,background:"#1a4a7a",borderTop:"2px solid #1a4a7a"}}>
+                        <div style={{display:"grid",gridTemplateColumns:colWidths.slice(0,7).map(w=>w+"px").join(" "),padding:"10px 0",gap:0,background:"#1a4a7a",borderTop:"2px solid #1a4a7a"}}>
                           <div style={{fontSize:9,color:"#fff",gridColumn:"1/3",fontWeight:800,textTransform:"uppercase",letterSpacing:1}}>TOTAL DO MÊS</div>
                           <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,color:"#90ee90",textAlign:"right"}}>{fmt(totalEntradas)}</div>
                           <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,color:"#ff9999",textAlign:"right"}}>{fmt(totalSaidas)}</div>
