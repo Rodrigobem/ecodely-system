@@ -1753,7 +1753,6 @@ export default function App(){
   const[finTab,setFinTab]=useState("visao");
   const[editLanc,setEditLanc]=useState(null);
   const[colWidths,setColWidths]=useState([90,340,120,120,110,110,130,36]);
-  const[colWidths,setColWidths]=useState([90,320,120,120,110,110,130,36]);
   const[relTab,setRelTab]=useState("gerencial");
   const[relSelecionados,setRelSelecionados]=useState([]);
   const[relTitulo,setRelTitulo]=useState("Relatório Ecodely");
