@@ -1865,8 +1865,6 @@ export default function App(){
         supabase.from("fornecedores").select("*").order("id"),
         supabase.from("configuracoes").select("*"),
       ]);
-      if(lanc.error)console.error("LANC ERR:",JSON.stringify(lanc.error));
-      console.log("LANC rows:",lanc.data?.length,"sample:",JSON.stringify(lanc.data?.[0]));
       if(lanc.data?.length){
         const normData=d=>{
           try{
@@ -4607,12 +4605,12 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       )}
                       {/* Transaction table */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
-                        <div style={{display:"grid",gridTemplateColumns:"90px 1fr 100px 100px 100px",background:T.surface,padding:"8px 14px",gap:8}}>
+                        <div style={{display:"grid",gridTemplateColumns:"100px 1fr 120px 120px 120px",background:T.surface,padding:"8px 14px",gap:8}}>
                           {["Data","Descricao","Entrada","Saida","Saldo"].map(h=><div key={h} style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>{h}</div>)}
                         </div>
                         {lancComSaldo.length===0&&<div style={{padding:24,textAlign:"center",color:T.muted,fontSize:11}}>Nenhum lancamento em {finMesRef}</div>}
                         {lancComSaldo.map((l,i)=>(
-                          <div key={l.id} style={{display:"grid",gridTemplateColumns:"90px 1fr 100px 100px 100px",padding:"9px 14px",gap:8,borderBottom:`1px solid ${T.border}`,background:i%2===0?"transparent":T.surface+"55"}}>
+                          <div key={l.id} style={{display:"grid",gridTemplateColumns:"100px 1fr 120px 120px 120px",padding:"9px 14px",gap:8,borderBottom:`1px solid ${T.border}`,background:i%2===0?"transparent":T.surface+"55"}}>
                             <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{l.data.slice(0,5)}</div>
                             <div>
                               <div style={{fontSize:11,fontWeight:500}}>{l.descricao}</div>
@@ -4628,7 +4626,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <div style={{fontSize:11,color:l.saldoAcum>=0?T.accent:T.danger,fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{fmt(l.saldoAcum)}</div>
                           </div>
                         ))}
-                        <div style={{display:"grid",gridTemplateColumns:"90px 1fr 100px 100px 100px",padding:"10px 14px",gap:8,background:T.surface,borderTop:`2px solid ${T.border}`}}>
+                        <div style={{display:"grid",gridTemplateColumns:"100px 1fr 120px 120px 120px",padding:"10px 14px",gap:8,background:T.surface,borderTop:`2px solid ${T.border}`}}>
                           <div style={{fontSize:9,color:T.muted,gridColumn:"1/3",fontWeight:700}}>TOTAL DO MES</div>
                           <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,color:T.accent}}>{fmt(totalEntradas)}</div>
                           <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,color:T.danger}}>{fmt(totalSaidas)}</div>
