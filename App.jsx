@@ -1847,7 +1847,7 @@ export default function App(){
   useEffect(()=>{
     const load=async()=>{
       const [lanc,conts,carts,compras,custos,fats,camps,prosps,parts,cls,commt,projs,pts,usrs,centros,forn,cfgs]=await Promise.all([
-        supabase.from("lancamentos").select("*").order("id").limit(10000),
+        supabase.from("lancamentos").select("*").order("id").range(0,999),
         supabase.from("contas").select("*").order("id"),
         supabase.from("cartoes").select("*").order("id"),
         supabase.from("compras_cartao").select("*").order("id"),
@@ -1865,19 +1865,20 @@ export default function App(){
         supabase.from("fornecedores").select("*").order("id"),
         supabase.from("configuracoes").select("*"),
       ]);
-      if(lanc.data?.length){
-        const normData=d=>{
-          try{
-            if(!d)return"";
-            const s=String(d);
-            if(s.includes("/"))return s;
-            const parts=s.split("T")[0].split("-");
-            if(parts.length===3)return`${parts[2]}/${parts[1]}/${parts[0]}`;
-            return s;
-          }catch(e){return String(d||"");}
-        };
-        setLancamentos(lanc.data.map(r=>({...r,data:normData(r.data),centrosCusto:r.centrosCusto||"",contaBancoId:r.contaBancoId||1})));
+      // Paginação: Supabase limita 1000 rows por request
+      const normData=d=>{try{if(!d)return"";const s=String(d);if(s.includes("/"))return s;const p=s.split("T")[0].split("-");return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:s;}catch(e){return"";}};
+      let allLanc=lanc.data||[];
+      if(allLanc.length>=1000){
+        let pg=1;
+        while(true){
+          const{data:bt}=await supabase.from("lancamentos").select("*").order("id").range(pg*1000,(pg+1)*1000-1);
+          if(!bt?.length)break;
+          allLanc=[...allLanc,...bt];
+          if(bt.length<1000)break;
+          pg++;
+        }
       }
+      if(allLanc.length)setLancamentos(allLanc.map(r=>({...r,data:normData(r.data),centrosCusto:r.centrosCusto||"",contaBancoId:r.contaBancoId||1})));
       if(conts.data?.length)setContas(conts.data);
       if(carts.data?.length)setCartoes(carts.data);
       if(compras.data?.length)setComprasCartao(compras.data.map(r=>({...r,cartaoId:r.cartaoId,valorTotal:r.valorTotal,parcelaAtual:r.parcelaAtual,valorParcela:r.valorParcela,mesInicio:r.mesInicio})));
