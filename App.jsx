@@ -1865,13 +1865,14 @@ export default function App(){
         supabase.from("fornecedores").select("*").order("id"),
         supabase.from("configuracoes").select("*"),
       ]);
+      if(lanc.error)console.error("LANC ERR:",JSON.stringify(lanc.error));
+      console.log("LANC rows:",lanc.data?.length,"sample:",JSON.stringify(lanc.data?.[0]));
       if(lanc.data?.length){
         const normData=d=>{
           try{
             if(!d)return"";
             const s=String(d);
             if(s.includes("/"))return s;
-            // ISO format: 2026-04-01
             const parts=s.split("T")[0].split("-");
             if(parts.length===3)return`${parts[2]}/${parts[1]}/${parts[0]}`;
             return s;
