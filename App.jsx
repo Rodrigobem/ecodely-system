@@ -4607,75 +4607,81 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       </div>
                       {/* Add button */}
                       <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
-                        <button onClick={()=>setShowAdd(p=>!p)} className="btn" style={{padding:"8px 16px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:11,fontWeight:700}}>+ Novo Lancamento</button>
+                        <button onClick={()=>setShowAdd(true)} style={{padding:"9px 18px",background:T.accent,border:"none",color:"#000",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",letterSpacing:0.5}}>+ Novo Lançamento</button>
                       </div>
-                      {/* Add form */}
-                      {showAdd&&(
-                        <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16,marginBottom:16}}>
-                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:12}}>Novo Lancamento</div>
-                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
-                            {[["data","Data","date"],["descricao","Descricao","text"],["projeto","Projeto/NF","text"]].map(([k,ph,tp])=>(
-                              <div key={k}>
-                                <div style={{fontSize:9,color:T.muted,marginBottom:3}}>{ph}</div>
-                                <input type={tp} value={novoLanc[k]} onChange={e=>setNovoLanc(p=>({...p,[k]:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/>
-                              </div>
-                            ))}
-                            {[["entrada","Entrada (R$)"],["saida","Saida (R$)"]].map(([k,ph])=>(
-                              <div key={k}>
-                                <div style={{fontSize:9,color:T.muted,marginBottom:3}}>{ph}</div>
-                                <input type="number" value={novoLanc[k]||""} onChange={e=>setNovoLanc(p=>({...p,[k]:Number(e.target.value)}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/>
-                              </div>
-                            ))}
+                      {/* Modal Novo Lançamento */}
+                      {showAdd&&<div style={{position:"fixed",inset:0,background:"#00000099",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setShowAdd(false)}>
+                        <div style={{background:"#fff",borderRadius:14,padding:28,width:560,maxWidth:"95vw",boxShadow:"0 24px 64px #00000044"}} onClick={e=>e.stopPropagation()}>
+                          <div style={{fontWeight:800,fontSize:16,color:"#1a1a2e",marginBottom:20}}>Novo Lançamento</div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+                            <div style={{gridColumn:"1/3"}}>
+                              <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Descrição *</div>
+                              <input autoFocus value={novoLanc.descricao} onChange={e=>setNovoLanc(p=>({...p,descricao:e.target.value}))} placeholder="Ex: Salário Victor, NF 92, Gráfica..." style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}/>
+                            </div>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:3}}>Tipo</div>
-                              <select value={novoLanc.tipo} onChange={e=>setNovoLanc(p=>({...p,tipo:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}>
+                              <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Data *</div>
+                              <input type="date" value={novoLanc.data} onChange={e=>setNovoLanc(p=>({...p,data:e.target.value}))} style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}/>
+                            </div>
+                            <div>
+                              <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Tipo</div>
+                              <select value={novoLanc.tipo} onChange={e=>setNovoLanc(p=>({...p,tipo:e.target.value,categoria:e.target.value==="Receita"?CAT_RECEITA[0]:CAT_DESPESA[0]}))} style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}>
                                 <option>Receita</option><option>Despesa</option>
                               </select>
                             </div>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:3}}>Categoria</div>
-                              <select value={novoLanc.categoria} onChange={e=>setNovoLanc(p=>({...p,categoria:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}>
+                              <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Entrada (R$)</div>
+                              <input type="number" value={novoLanc.entrada||""} onChange={e=>setNovoLanc(p=>({...p,entrada:Number(e.target.value),saida:0,tipo:"Receita"}))} placeholder="0,00" style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box",color:"#16a34a",fontWeight:700}}/>
+                            </div>
+                            <div>
+                              <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Saída (R$)</div>
+                              <input type="number" value={novoLanc.saida||""} onChange={e=>setNovoLanc(p=>({...p,saida:Number(e.target.value),entrada:0,tipo:"Despesa"}))} placeholder="0,00" style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box",color:"#dc2626",fontWeight:700}}/>
+                            </div>
+                            <div>
+                              <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Categoria</div>
+                              <select value={novoLanc.categoria} onChange={e=>setNovoLanc(p=>({...p,categoria:e.target.value}))} style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}>
                                 {(novoLanc.tipo==="Receita"?CAT_RECEITA:CAT_DESPESA).map(c=><option key={c}>{c}</option>)}
                               </select>
                             </div>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:3}}>Centro de Custo</div>
-                              <select value={novoLanc.centrosCusto} onChange={e=>setNovoLanc(p=>({...p,centrosCusto:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}>
-                                {centrosCusto.map(c=><option key={c}>{c}</option>)}
-                              </select>
-                            </div>
-                            <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:3}}>Forma Pagamento</div>
-                              <select value={novoLanc.forma} onChange={e=>setNovoLanc(p=>({...p,forma:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}>
+                              <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Forma de Pagamento</div>
+                              <select value={novoLanc.forma} onChange={e=>setNovoLanc(p=>({...p,forma:e.target.value}))} style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}>
                                 {FORMAS_PAG.map(f=><option key={f}>{f}</option>)}
                               </select>
                             </div>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:3}}>Conta</div>
-                              <select value={novoLanc.contaBancoId} onChange={e=>setNovoLanc(p=>({...p,contaBancoId:Number(e.target.value)}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}>
+                              <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Centro de Custo</div>
+                              <select value={novoLanc.centrosCusto} onChange={e=>setNovoLanc(p=>({...p,centrosCusto:e.target.value}))} style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}>
+                                {centrosCusto.map(c=><option key={c}>{c}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Conta Bancária</div>
+                              <select value={novoLanc.contaBancoId} onChange={e=>setNovoLanc(p=>({...p,contaBancoId:Number(e.target.value)}))} style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}>
                                 {contas.map(c=><option key={c.id} value={c.id}>{c.banco}</option>)}
                               </select>
                             </div>
+                            <div>
+                              <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Projeto / NF</div>
+                              <input value={novoLanc.projeto} onChange={e=>setNovoLanc(p=>({...p,projeto:e.target.value}))} placeholder="Opcional" style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}/>
+                            </div>
                           </div>
-                          <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-                            <button onClick={()=>setShowAdd(false)} className="btn" style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10}}>Cancelar</button>
+                          <div style={{display:"flex",gap:10,justifyContent:"flex-end",borderTop:"1px solid #f0f0f0",paddingTop:16}}>
+                            <button onClick={()=>setShowAdd(false)} style={{padding:"9px 20px",background:"#f5f5f5",border:"none",borderRadius:8,cursor:"pointer",fontSize:12,fontFamily:"Arial,sans-serif"}}>Cancelar</button>
                             <button onClick={async()=>{
-                              if(!novoLanc.data||!novoLanc.descricao)return;
+                              if(!novoLanc.data||!novoLanc.descricao.trim())return alert("Preencha data e descrição!");
+                              if(!novoLanc.entrada&&!novoLanc.saida)return alert("Informe entrada ou saída!");
                               const dateFmt=novoLanc.data.split("-").reverse().join("/");
                               const novoId=Date.now();
                               const rec={...novoLanc,id:novoId,data:dateFmt};
                               setLancamentos(p=>[...p,rec]);
-                              setContas(p=>p.map(c=>c.id===novoLanc.contaBancoId?{...c,saldo:c.saldo+novoLanc.entrada-novoLanc.saida}:c));
                               setShowAdd(false);
                               setNovoLanc({data:new Date().toISOString().slice(0,10),descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1});
-                              const {error:errLanc}=await supabase.from("lancamentos").upsert({...rec,centrosCusto:rec.centrosCusto,contaBancoId:rec.contaBancoId});
-                              if(errLanc){console.error("SUPABASE upsert lancamento:",errLanc);alert("Erro Supabase: "+errLanc.message);}
-                              const contaAtual=contas.find(c=>c.id===novoLanc.contaBancoId);
-                              if(contaAtual){const{error:errConta}=await supabase.from("contas").update({saldo:contaAtual.saldo+novoLanc.entrada-novoLanc.saida}).eq("id",novoLanc.contaBancoId);if(errConta)console.error("SUPABASE update conta:",errConta);}
-                            }} className="btn" style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700}}>Salvar</button>
+                              const{error}=await supabase.from("lancamentos").upsert({...rec,centrosCusto:rec.centrosCusto,contaBancoId:rec.contaBancoId});
+                              if(error)alert("Erro ao salvar: "+error.message);
+                            }} style={{padding:"9px 28px",background:"#1a4a7a",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,fontFamily:"Arial,sans-serif"}}>Salvar Lançamento</button>
                           </div>
                         </div>
-                      )}
+                      </div>}
                       {/* Transaction table */}
                       <div style={{background:"#fff",border:"2px solid #555",borderRadius:4,overflow:"auto",boxShadow:"0 1px 4px #00000022"}}>
                         {/* Header — Excel style com colunas redimensionáveis */}
