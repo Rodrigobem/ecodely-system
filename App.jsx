@@ -1733,7 +1733,7 @@ const Toast=({notifs,onDismiss})=>{
 // MAIN APP
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 export default function App(){
-  const[user,setUser]=useState(null);
+  const[user,setUser]=useState(()=>{try{const s=localStorage.getItem("ecodely_user");return s?JSON.parse(s):null;}catch{return null;}});
   const[loginForm,setLoginForm]=useState({email:"",pass:""});
   const[loginErr,setLoginErr]=useState("");
   const[tab,setTab]=useState("dashboard");
@@ -1999,7 +1999,7 @@ export default function App(){
   // --- HANDLERS ------------------------------------------------------------
   const handleLogin=()=>{
     const u=users.find(u=>u.email===loginForm.email&&u.pass===loginForm.pass&&u.active!==false);
-    if(u&&u.active){setUser(u);setTab("minha-fila");setLoginErr("");}
+    if(u&&u.active){setUser(u);localStorage.setItem("ecodely_user",JSON.stringify(u));setTab("minha-fila");setLoginErr("");}
     else setLoginErr("E-mail ou senha incorretos.");
   };
 
@@ -3161,7 +3161,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               <div style={{fontSize:10,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.name.split(" ")[0]}</div>
               <div style={{fontSize:9,color:ROLE_COLOR[user.role]}}>{ROLE_LABELS[user.role]}</div>
             </div>
-            <div onClick={()=>setUser(null)} style={{fontSize:13,color:T.muted,cursor:"pointer"}} title="Sair">-</div>
+            <div onClick={()=>{setUser(null);localStorage.removeItem("ecodely_user");}} style={{fontSize:13,color:T.muted,cursor:"pointer"}} title="Sair">-</div>
           </div>
         </div>
         {/* Seletor de Tema */}
