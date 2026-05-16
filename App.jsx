@@ -6,7 +6,13 @@ const SUPABASE_URL = "https://xklvqcxhtariqqhvnseh.supabase.co";
 const SUPABASE_KEY = "sb_publishable_0Y8LZnFlLIrVrQ-EdsjTQQ_1w0MwYQ2";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const T={bg:"#06070D",surface:"#0C0E18",card:"#10121E",border:"#1A1E30",accent:"#00E5A0",accentDim:"#00E5A012",accentBorder:"#00E5A038",text:"#E6E8F0",muted:"#4A5070",soft:"#8A90A8",warn:"#F5A623",warnDim:"#F5A62315",danger:"#FF4D6A",dangerDim:"#FF4D6A12",info:"#3D9EFF",infoDim:"#3D9EFF12",purple:"#9B7FFF",purpleDim:"#9B7FFF12",pink:"#F472B6",green:"#25D366",greenDim:"#25D36612"};
+const THEMES={
+  escuro:{name:"Escuro",bg:"#06070D",surface:"#0C0E18",card:"#10121E",border:"#1A1E30",accent:"#00E5A0",accentDim:"#00E5A012",accentBorder:"#00E5A038",text:"#E6E8F0",muted:"#4A5070",soft:"#8A90A8",warn:"#F5A623",warnDim:"#F5A62315",danger:"#FF4D6A",dangerDim:"#FF4D6A12",info:"#3D9EFF",infoDim:"#3D9EFF12",purple:"#9B7FFF",purpleDim:"#9B7FFF12",pink:"#F472B6",green:"#25D366",greenDim:"#25D36612"},
+  claro:{name:"Claro",bg:"#f5f7fa",surface:"#ffffff",card:"#ffffff",border:"#e2e8f0",accent:"#059669",accentDim:"#05966912",accentBorder:"#05966938",text:"#1a202c",muted:"#718096",soft:"#a0aec0",warn:"#d97706",warnDim:"#d9770615",danger:"#dc2626",dangerDim:"#dc262612",info:"#2563eb",infoDim:"#2563eb12",purple:"#7c3aed",purpleDim:"#7c3aed12",pink:"#db2777",green:"#059669",greenDim:"#05966912"},
+  azul:{name:"Azul",bg:"#eef2ff",surface:"#ffffff",card:"#ffffff",border:"#c7d2fe",accent:"#4f46e5",accentDim:"#4f46e512",accentBorder:"#4f46e538",text:"#1e1b4b",muted:"#6366f1",soft:"#818cf8",warn:"#d97706",warnDim:"#d9770615",danger:"#dc2626",dangerDim:"#dc262612",info:"#0ea5e9",infoDim:"#0ea5e912",purple:"#7c3aed",purpleDim:"#7c3aed12",pink:"#db2777",green:"#059669",greenDim:"#05966912"},
+  naval:{name:"Naval",bg:"#0f172a",surface:"#1e293b",card:"#1e293b",border:"#334155",accent:"#38bdf8",accentDim:"#38bdf812",accentBorder:"#38bdf838",text:"#e2e8f0",muted:"#64748b",soft:"#94a3b8",warn:"#fbbf24",warnDim:"#fbbf2415",danger:"#f87171",dangerDim:"#f8717112",info:"#60a5fa",infoDim:"#60a5fa12",purple:"#a78bfa",purpleDim:"#a78bfa12",pink:"#f472b6",green:"#34d399",greenDim:"#34d39912"},
+};
+let T=THEMES.escuro;
 
 // --- FINANCIAL MODULE DATA ----------------------------------------------------
 const SIMPLES_ANEXO_III=[
@@ -154,7 +160,7 @@ const getNav=(role,queueCount,notifCount,extraRoles=[])=>[
 ].filter(n=>n.roles.includes(role)||extraRoles.some(r=>n.roles.includes(r)));
 
 // --- HELPERS -----------------------------------------------------------------
-const Badge=({label,color})=>(<span style={{fontSize:9,padding:"2px 8px",borderRadius:4,background:color+"22",color,border:`1px solid ${color}33`,fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap"}}>{label}</span>);
+const Badge=({label,color})=>(<span style={{fontSize:9,padding:"2px 8px",borderRadius:4,background:color+"22",color,border:`1px solid ${color}33`,fontFamily:"Arial,sans-serif",whiteSpace:"nowrap"}}>{label}</span>);
 
 // Helper: converte qualquer link externo para URL de embed
 const toEmbedUrl=(url)=>{
@@ -174,7 +180,7 @@ const WizStep1=({visible,planAtivo,setPlanAtivo,planGeoLoading,setPlanGeoLoading
   if(!visible)return null;
   return(
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.accent,fontSize:12,marginBottom:4}}>Etapa 1 — Cliente e Objetivo</div>
+      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,fontSize:12,marginBottom:4}}>Etapa 1 — Cliente e Objetivo</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
         {[["Nome do cliente","clienteNome"],["Segmento","clienteSegmento"],["Público-alvo","publicoAlvo"],["Faixa etária","faixaEtaria"],["Renda estimada","rendaEstimada"],["Prazo da campanha","prazo"]].map(([l,k])=>(
           <div key={k}>
@@ -198,7 +204,7 @@ const WizStep1=({visible,planAtivo,setPlanAtivo,planGeoLoading,setPlanGeoLoading
           </button>
         </div>
       </div>
-      {planAtivo.clienteLat&&<div style={{fontSize:9,color:T.accent,fontFamily:"'JetBrains Mono',monospace"}}>✓ {planAtivo.clienteLat.toFixed(4)}, {planAtivo.clienteLng.toFixed(4)}</div>}
+      {planAtivo.clienteLat&&<div style={{fontSize:9,color:T.accent,fontFamily:"Arial,sans-serif"}}>✓ {planAtivo.clienteLat.toFixed(4)}, {planAtivo.clienteLng.toFixed(4)}</div>}
       <div>
         <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Preferência de segmento de parceiro <span style={{color:T.accent,fontWeight:700}}>(opcional)</span></div>
         <input value={planAtivo.preferenciaParceiro||""} onChange={e=>setPlanAtivo(p=>({...p,preferenciaParceiro:e.target.value}))} placeholder="Ex: restaurantes japoneses, hamburguerias artesanais · Deixe em branco para a IA identificar" style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
@@ -224,13 +230,13 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
   if(!visible)return null;
   return(
     <div>
-      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.purple,fontSize:12,marginBottom:14}}>Etapa 2 — Análise da Região com IA</div>
+      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.purple,fontSize:12,marginBottom:14}}>Etapa 2 — Análise da Região com IA</div>
       {!planAnalise&&!planLoading&&(
         <div style={{textAlign:"center",padding:"40px 20px",background:T.surface,borderRadius:12,marginBottom:16}}>
           <div style={{fontSize:32,marginBottom:12}}>🤖</div>
-          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,marginBottom:8}}>Análise demográfica por IA</div>
+          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,marginBottom:8}}>Análise demográfica por IA</div>
           <div style={{fontSize:11,color:T.muted,marginBottom:20}}>Com base na região e perfil do cliente, a IA gera dados demográficos, perfil de delivery e análise estratégica.</div>
-          <button onClick={()=>gerarAnaliseIA(planAtivo)} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.purple},#7B5FE0)`,color:"#fff",borderRadius:9,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,border:"none"}}>
+          <button onClick={()=>gerarAnaliseIA(planAtivo)} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.purple},#7B5FE0)`,color:"#fff",borderRadius:9,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,border:"none"}}>
             Analisar: {planAtivo.regiao||"(preencha a região)"}
           </button>
         </div>
@@ -410,11 +416,11 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
 
   return(
     <div>
-      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.info,fontSize:12,marginBottom:14}}>Etapa 3 — Parceiros e Mapa de Calor</div>
+      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.info,fontSize:12,marginBottom:14}}>Etapa 3 — Parceiros e Mapa de Calor</div>
 
       {/* CALCULADORA */}
       <div style={{background:T.surface,borderRadius:12,padding:14,marginBottom:16,border:`1px solid ${T.warn}44`}}>
-        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10,color:T.warn,marginBottom:10}}>🧮 Calculadora de Campanha</div>
+        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,color:T.warn,marginBottom:10}}>🧮 Calculadora de Campanha</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:cValorProposta>0&&cValorTabela>0?10:0}}>
           {[["Valor da proposta (R$)","valorProposta","Ex: 50.000,00"],["Valor tabela (R$/emb)","valorTabela","Ex: 12,00"],["Desconto (%)","desconto","Ex: 50"]].map(([l,k,ph])=>(
             <div key={k}>
@@ -468,7 +474,7 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
                   :`✓ ${parc.length} selecionado(s) · ${cEmbPorParc.toLocaleString("pt-BR")} emb. por parceiro · total R$ ${(cTotalEmb*cValorBruto).toLocaleString("pt-BR",{minimumFractionDigits:0})}`
                 }
               </div>
-              {parc.length>0&&<button onClick={distribuir} style={{padding:"6px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,border:"none",color:"#000",borderRadius:6,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:9}}>✓ Distribuir automaticamente</button>}
+              {parc.length>0&&<button onClick={distribuir} style={{padding:"6px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,border:"none",color:"#000",borderRadius:6,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:9}}>✓ Distribuir automaticamente</button>}
             </div>
           </div>
         )}
@@ -640,13 +646,13 @@ const WizStep4=({visible,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCu
 
   return(
     <div>
-      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.warn,fontSize:12,marginBottom:14}}>Etapa 4 — Resumo e Proposta</div>
+      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.warn,fontSize:12,marginBottom:14}}>Etapa 4 — Resumo e Proposta</div>
 
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
         {[["Investimento",fmtCur(total),T.accent],["Embalagens",totalEmb.toLocaleString("pt-BR"),T.purple],["Impactos",totalImpactos.toLocaleString("pt-BR"),T.info],["Custo/impacto",`R$ ${custoImp}`,T.warn]].map(([l,v,c])=>(
           <div key={l} style={{background:T.surface,borderRadius:10,padding:14,textAlign:"center",border:`1px solid ${c}33`}}>
-            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:c,marginBottom:3}}>{v}</div>
+            <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:c,marginBottom:3}}>{v}</div>
             <div style={{fontSize:9,color:T.muted}}>{l}</div>
           </div>
         ))}
@@ -674,15 +680,15 @@ const WizStep4=({visible,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCu
               </tr>
             );})}
             <tr style={{background:T.accentDim}}>
-              <td colSpan={4} style={{padding:"10px 12px",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12}}>TOTAL</td>
-              <td style={{padding:"10px 12px",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,color:T.accent,textAlign:"right"}}>{fmtCur(total)}</td>
+              <td colSpan={4} style={{padding:"10px 12px",fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:12}}>TOTAL</td>
+              <td style={{padding:"10px 12px",fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,color:T.accent,textAlign:"right"}}>{fmtCur(total)}</td>
             </tr>
           </tbody>
         </table>
       </div>
       <div style={{display:"flex",gap:10}}>
-        <button onClick={async()=>{const s=await salvarPlano({...planAtivo,analise:planAnalise||planAtivo.analise});setPlanAtivo(s);}} style={{padding:"10px 20px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:9,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>💾 Salvar plano</button>
-        <button onClick={async()=>{const s=await salvarPlano({...planAtivo,analise:planAnalise||planAtivo.analise});gerarPropostaPDF(s,s.analise);}} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:9,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,border:"none"}}>📄 Gerar Proposta PDF</button>
+        <button onClick={async()=>{const s=await salvarPlano({...planAtivo,analise:planAnalise||planAtivo.analise});setPlanAtivo(s);}} style={{padding:"10px 20px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:9,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>💾 Salvar plano</button>
+        <button onClick={async()=>{const s=await salvarPlano({...planAtivo,analise:planAnalise||planAtivo.analise});gerarPropostaPDF(s,s.analise);}} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:9,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:12,border:"none"}}>📄 Gerar Proposta PDF</button>
       </div>
     </div>
   );
@@ -692,7 +698,7 @@ const WizStep4=({visible,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCu
 const PlanWizard=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,setShowPlanWizard,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCur,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,sugerirParceiros,user,basePartners,projects})=>(
   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden"}}>
     <div style={{padding:"16px 24px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15}}>{planAtivo.clienteNome||"Novo Planejamento"}</div>
+      <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:15}}>{planAtivo.clienteNome||"Novo Planejamento"}</div>
       <div style={{display:"flex",gap:6,alignItems:"center"}}>
         {["Cliente","Região","Parceiros","Proposta"].map((s,i)=>(
           <div key={i} onClick={()=>setPlanStep(i+1)} style={{width:24,height:24,borderRadius:"50%",background:planStep===i+1?T.accent:planStep>i+1?T.accentDim:T.surface,border:`2px solid ${planStep>=i+1?T.accent:T.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:planStep===i+1?"#000":planStep>i+1?T.accent:T.muted,cursor:"pointer"}}>{i+1}</div>
@@ -708,7 +714,7 @@ const PlanWizard=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPl
     </div>
     <div style={{padding:"14px 24px",borderTop:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between"}}>
       <button onClick={()=>planStep>1?setPlanStep(s=>s-1):setShowPlanWizard(false)} style={{padding:"8px 16px",background:T.surface,border:`1px solid ${T.border}`,color:T.muted,borderRadius:8,cursor:"pointer",fontSize:11}}>{planStep>1?"← Voltar":"Cancelar"}</button>
-      {planStep<4&&<button onClick={()=>setPlanStep(s=>s+1)} style={{padding:"8px 20px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,border:"none"}}>Próximo →</button>}
+      {planStep<4&&<button onClick={()=>setPlanStep(s=>s+1)} style={{padding:"8px 20px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,border:"none"}}>Próximo →</button>}
     </div>
   </div>
 );
@@ -735,10 +741,10 @@ const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanA
     <div style={{padding:2}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <div>
-          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:T.text}}>Planejamento de Mídia</div>
+          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:T.text}}>Planejamento de Mídia</div>
           <div style={{fontSize:10,color:T.muted,marginTop:2}}>Pense como planejador. Monte o plano antes de gerar a proposta.</div>
         </div>
-        <button onClick={doNewPlan} style={{padding:"9px 18px",background:"#00E5A0",color:"#000",borderRadius:9,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:11,border:"none"}}>
+        <button onClick={doNewPlan} style={{padding:"9px 18px",background:"#00E5A0",color:"#000",borderRadius:9,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:11,border:"none"}}>
           + Novo Planejamento
         </button>
       </div>
@@ -746,7 +752,7 @@ const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanA
       {pl.length===0&&!showPlanWizard&&(
         <div style={{textAlign:"center",padding:"60px 20px"}}>
           <div style={{fontSize:40,marginBottom:12}}>📋</div>
-          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:16,color:T.soft,marginBottom:6}}>Nenhum planejamento ainda</div>
+          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:16,color:T.soft,marginBottom:6}}>Nenhum planejamento ainda</div>
           <div style={{fontSize:11,color:T.muted}}>Crie um plano de mídia antes de gerar sua proposta</div>
         </div>
       )}
@@ -754,7 +760,7 @@ const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanA
       {!showPlanWizard&&pl.map((p,idx)=>(
         <div key={p.id||idx} style={{background:T.card,border:"1px solid "+T.border,borderRadius:12,padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
-            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,marginBottom:3,color:T.text}}>{p.clienteNome||"Sem nome"}</div>
+            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,marginBottom:3,color:T.text}}>{p.clienteNome||"Sem nome"}</div>
             <div style={{fontSize:10,color:T.muted}}>{p.regiao||"—"} · {(p.parceiros||[]).length} parceiros</div>
             <div style={{fontSize:9,color:T.muted,marginTop:2}}>{p.createdBy}</div>
           </div>
@@ -843,7 +849,7 @@ const GaleriaItem=({g,onRemove,editable=false})=>{
             {embed.thumb
               ?<img src={embed.thumb} alt="" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>
               :<div style={{position:'absolute',inset:0,background:'#0d1117',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                 <span style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{embed.type==='drive'?'Google Drive':'Vídeo'}</span>
+                 <span style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{embed.type==='drive'?'Google Drive':'Vídeo'}</span>
                </div>
             }
             {/* Play button overlay */}
@@ -863,8 +869,8 @@ const GaleriaItem=({g,onRemove,editable=false})=>{
   );
 };
 const PBar=({pct,color,h=5})=>(<div style={{height:h,background:T.border,borderRadius:h}}><div style={{height:"100%",width:`${Math.min(100,pct)}%`,background:color||T.accent,borderRadius:h,transition:"width 0.4s ease"}}/></div>);
-const KCard=({label,value,sub,color,icon,onClick,hint})=>(<div onClick={onClick} style={{background:T.card,border:`1px solid ${onClick?color+"44":T.border}`,borderRadius:12,padding:"16px 18px",cursor:onClick?"pointer":"default",transition:"all 0.15s",position:"relative"}} onMouseEnter={e=>{if(onClick)e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";}}>  <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1.5}}>{label}</span>{icon&&<span style={{fontSize:14}}>{icon}</span>}</div><div style={{fontFamily:"'Syne',sans-serif",fontSize:24,fontWeight:800,color,marginBottom:3}}>{value}</div>{sub&&<div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{sub}</div>}{onClick&&<div style={{fontSize:8,color:color,marginTop:5,fontFamily:"'JetBrains Mono',monospace",opacity:0.7}}>{hint||"Ver detalhes -"}</div>}</div>);
-const inpS={width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,fontFamily:"'JetBrains Mono',monospace",outline:"none"};
+const KCard=({label,value,sub,color,icon,onClick,hint})=>(<div onClick={onClick} style={{background:T.card,border:`1px solid ${onClick?color+"44":T.border}`,borderRadius:12,padding:"16px 18px",cursor:onClick?"pointer":"default",transition:"all 0.15s",position:"relative"}} onMouseEnter={e=>{if(onClick)e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";}}>  <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1.5}}>{label}</span>{icon&&<span style={{fontSize:14}}>{icon}</span>}</div><div style={{fontFamily:"Arial,sans-serif",fontSize:24,fontWeight:800,color,marginBottom:3}}>{value}</div>{sub&&<div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{sub}</div>}{onClick&&<div style={{fontSize:8,color:color,marginTop:5,fontFamily:"Arial,sans-serif",opacity:0.7}}>{hint||"Ver detalhes -"}</div>}</div>);
+const inpS={width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,fontFamily:"Arial,sans-serif",outline:"none"};
 const selS={...inpS};
 const tasksDone=(tasks)=>{const all=Object.values(tasks).flat();return{done:all.filter(t=>t.done).length,total:all.length};};
 
@@ -918,7 +924,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
               <Badge label={camp.project} color={T.purple}/>
               <Badge label={camp.client} color={T.info}/>
             </div>
-            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:17}}>{camp.name}</div>
+            <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:17}}>{camp.name}</div>
             <div style={{fontSize:10,color:T.muted,marginTop:2}}>{camp.startDate} - {camp.endDate} · {camp.region} · {camp.parceiros} parceiros</div>
           </div>
           <div onClick={onClose} style={{cursor:"pointer",color:T.muted,fontSize:20,flexShrink:0}}>×</div>
@@ -939,8 +945,8 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
               <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:12}}>
                 {[{l:"Parceiros",v:camp.parceiros,c:T.accent},{l:"Embalagens",v:(camp.sacolas||0).toLocaleString("pt-BR"),c:T.purple},{l:"Tarefas",v:`${td.done}/${td.total}`,c:td.done===td.total?T.accent:T.info}].map((k,i)=>(
                   <div key={i} style={{background:T.card,borderRadius:10,padding:"12px 14px",border:`1px solid ${T.border}`}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontSize:20,fontWeight:800,color:k.c}}>{k.v}</div>
-                    <div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{k.l}</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontSize:20,fontWeight:800,color:k.c}}>{k.v}</div>
+                    <div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{k.l}</div>
                   </div>
                 ))}
               </div>
@@ -948,8 +954,8 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
               {/* Bloco Operacional */}
               <div style={{background:T.card,border:`1px solid ${camp.graficaFornecedor?T.purple+"44":T.warn+"44"}`,borderLeft:`3px solid ${camp.graficaFornecedor?T.purple:T.warn}`,borderRadius:10,padding:"12px 16px",marginBottom:14}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:camp.graficaFornecedor?T.purple:T.warn}}>Operacional</div>
-                  {!camp.graficaFornecedor&&<div style={{fontSize:8,color:T.warn,background:T.warnDim,padding:"2px 8px",borderRadius:4,fontFamily:"'JetBrains Mono',monospace"}}>Pendente — preencha na aba Editar</div>}
+                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:camp.graficaFornecedor?T.purple:T.warn}}>Operacional</div>
+                  {!camp.graficaFornecedor&&<div style={{fontSize:8,color:T.warn,background:T.warnDim,padding:"2px 8px",borderRadius:4,fontFamily:"Arial,sans-serif"}}>Pendente — preencha na aba Editar</div>}
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
                   {[
@@ -961,22 +967,22 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                     {l:"Prazo Logística",v:camp.logisticaPrazo,c:T.info},
                   ].map(({l,v,c})=>(
                     <div key={l}>
-                      <div style={{fontSize:8,color:T.muted,marginBottom:3,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
-                      <div style={{fontSize:11,color:v?c:T.border,fontFamily:"'JetBrains Mono',monospace"}}>{v||"—"}</div>
+                      <div style={{fontSize:8,color:T.muted,marginBottom:3,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+                      <div style={{fontSize:11,color:v?c:T.border,fontFamily:"Arial,sans-serif"}}>{v||"—"}</div>
                     </div>
                   ))}
                 </div>
                 {(camp.valorLiquido>0||camp.numPI||camp.agencia)&&(
                   <div style={{display:"flex",gap:16,marginTop:10,paddingTop:10,borderTop:`1px solid ${T.border}`}}>
-                    {camp.numPI&&<div><div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Nº PI</div><div style={{fontSize:11,color:T.text}}>{camp.numPI}</div></div>}
-                    {camp.agencia&&<div><div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Agência</div><div style={{fontSize:11,color:T.text}}>{camp.agencia}</div></div>}
-                    {camp.valorLiquido>0&&<div><div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Valor Líquido</div><div style={{fontSize:12,color:T.accent,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>R$ {camp.valorLiquido.toLocaleString("pt-BR")}</div></div>}
+                    {camp.numPI&&<div><div style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Nº PI</div><div style={{fontSize:11,color:T.text}}>{camp.numPI}</div></div>}
+                    {camp.agencia&&<div><div style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Agência</div><div style={{fontSize:11,color:T.text}}>{camp.agencia}</div></div>}
+                    {camp.valorLiquido>0&&<div><div style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Valor Líquido</div><div style={{fontSize:12,color:T.accent,fontWeight:700,fontFamily:"Arial,sans-serif"}}>R$ {camp.valorLiquido.toLocaleString("pt-BR")}</div></div>}
                   </div>
                 )}
                 {camp.briefing&&(
                   <div style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${T.border}`}}>
-                    <div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Briefing</div>
-                    <div style={{fontSize:10,color:T.soft,lineHeight:1.6,fontFamily:"'JetBrains Mono',monospace"}}>{camp.briefing}</div>
+                    <div style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Briefing</div>
+                    <div style={{fontSize:10,color:T.soft,lineHeight:1.6,fontFamily:"Arial,sans-serif"}}>{camp.briefing}</div>
                   </div>
                 )}
               </div>
@@ -986,8 +992,8 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                   return(
                     <div key={sec} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden"}}>
                       <div style={{padding:"10px 14px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                        <span style={{fontSize:12,fontFamily:"'Syne',sans-serif",fontWeight:700,color:SEC_COLOR[sec]||T.muted}}>{SEC_LABEL[sec]||sec}</span>
-                        <span style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{done}/{tasks.length}</span>
+                        <span style={{fontSize:12,fontFamily:"Arial,sans-serif",fontWeight:700,color:SEC_COLOR[sec]||T.muted}}>{SEC_LABEL[sec]||sec}</span>
+                        <span style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{done}/{tasks.length}</span>
                       </div>
                       <div style={{padding:"10px 12px"}}>
                         <PBar pct={Math.round((done/tasks.length)*100)} color={SEC_COLOR[sec]||T.muted} h={4}/>
@@ -996,7 +1002,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                             <div key={t.id} onClick={()=>onToggleTask(camp.id,sec,t.id,user)} style={{display:"flex",gap:8,alignItems:"flex-start",cursor:"pointer",padding:"5px 6px",borderRadius:6}}>
                               <div style={{width:15,height:15,borderRadius:4,border:`2px solid ${t.done?SEC_COLOR[sec]||T.accent:T.border}`,background:t.done?(SEC_COLOR[sec]||T.accent)+"33":"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:SEC_COLOR[sec]||T.accent,flexShrink:0,marginTop:1}}>{t.done&&"-"}</div>
                               <div style={{flex:1}}>
-                                <div style={{fontSize:11,color:t.done?T.muted:T.text,textDecoration:t.done?"line-through":"none",fontFamily:"'JetBrains Mono',monospace"}}>{t.label}</div>
+                                <div style={{fontSize:11,color:t.done?T.muted:T.text,textDecoration:t.done?"line-through":"none",fontFamily:"Arial,sans-serif"}}>{t.label}</div>
                                 {t.done&&t.doneAt&&<div style={{fontSize:8,color:T.muted,marginTop:2}}>{t.doneAt} · {t.doneBy}</div>}
                               </div>
                             </div>
@@ -1021,12 +1027,12 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                       <div style={{width:26,height:26,borderRadius:"50%",background:isDone?T.accent+"33":isCur?s.color+"33":T.border,border:`2px solid ${isDone?T.accent:isCur?s.color:T.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:isDone?T.accent:isCur?s.color:T.muted,flexShrink:0}}>{isDone?"-":s.id}</div>
                       <div style={{flex:1}}>
                         <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginBottom:4}}>
-                          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:isCur?s.color:isDone?T.soft:T.muted}}>{s.label}</span>
+                          <span style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:isCur?s.color:isDone?T.soft:T.muted}}>{s.label}</span>
                           {isCur&&<Badge label="Em andamento" color={s.color}/>}
                           {isDone&&<Badge label="Concluída" color={T.accent}/>}
                         </div>
-                        {s.id===2&&(camp.graficaFornecedor||camp.material)&&<div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{camp.graficaFornecedor} · {camp.material}{camp.graficaPrazo&&` · Prazo: ${camp.graficaPrazo}`}</div>}
-                        {s.id===3&&(camp.logistica||camp.logisticaFornecedor)&&<div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{camp.logistica} · {camp.logisticaFornecedor}{camp.logisticaPrazo&&` · Prazo: ${camp.logisticaPrazo}`}</div>}
+                        {s.id===2&&(camp.graficaFornecedor||camp.material)&&<div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>{camp.graficaFornecedor} · {camp.material}{camp.graficaPrazo&&` · Prazo: ${camp.graficaPrazo}`}</div>}
+                        {s.id===3&&(camp.logistica||camp.logisticaFornecedor)&&<div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>{camp.logistica} · {camp.logisticaFornecedor}{camp.logisticaPrazo&&` · Prazo: ${camp.logisticaPrazo}`}</div>}
                       </div>
                     </div>
                   </div>
@@ -1048,11 +1054,11 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4,flexWrap:"wrap",gap:4}}>
                         <div style={{display:"flex",gap:6,alignItems:"center"}}>
                           <div style={{width:6,height:6,borderRadius:"50%",background:e.color,flexShrink:0}}/>
-                          <span style={{fontSize:10,color:e.color,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:0.5}}>
+                          <span style={{fontSize:10,color:e.color,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:0.5}}>
                             {e.type==="stage"?"Etapa":e.type==="task"?"Tarefa":e.type==="comment"?"Comentário":"Arquivo"}
                           </span>
                         </div>
-                        <span style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{e.at} · {e.user}</span>
+                        <span style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{e.at} · {e.user}</span>
                       </div>
                       <div style={{fontSize:12,color:e.type==="comment"?T.soft:T.text,fontStyle:e.type==="comment"?"italic":"normal"}}>{e.text}</div>
                     </div>
@@ -1061,10 +1067,10 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
               </div>
               {/* Add comment */}
               <div style={{marginTop:8,background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:14}}>
-                <div style={{fontSize:9,color:T.muted,marginBottom:8,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Adicionar comentário</div>
+                <div style={{fontSize:9,color:T.muted,marginBottom:8,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Adicionar comentário</div>
                 <div style={{display:"flex",gap:8}}>
                   <input value={comment} onChange={e=>setComment(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleComment()} placeholder="Digite uma observação... (@menção)" style={{...inpS,flex:1}}/>
-                  <button onClick={handleComment} style={{padding:"8px 14px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,border:"none",cursor:"pointer"}}>Enviar</button>
+                  <button onClick={handleComment} style={{padding:"8px 14px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,border:"none",cursor:"pointer"}}>Enviar</button>
                 </div>
               </div>
             </div>
@@ -1079,13 +1085,13 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                 {uploading?(
                   <div>
                     <div style={{fontSize:22,marginBottom:6}}>-</div>
-                    <div style={{fontSize:11,color:T.accent,fontFamily:"'JetBrains Mono',monospace"}}>Enviando arquivo...</div>
+                    <div style={{fontSize:11,color:T.accent,fontFamily:"Arial,sans-serif"}}>Enviando arquivo...</div>
                   </div>
                 ):(
                   <div>
                     <div style={{fontSize:22,marginBottom:6}}>-</div>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,marginBottom:3,fontSize:13}}>Subir arquivo</div>
-                    <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>PDF · DOC · JPG · PNG · MP4 · Qualquer formato</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,marginBottom:3,fontSize:13}}>Subir arquivo</div>
+                    <div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>PDF · DOC · JPG · PNG · MP4 · Qualquer formato</div>
                   </div>
                 )}
               </div>
@@ -1101,18 +1107,18 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
               </div>
 
               {camp.files.length===0?(
-                <div style={{textAlign:"center",padding:"40px 20px",color:T.muted,fontSize:12,fontFamily:"'JetBrains Mono',monospace"}}>Nenhum arquivo ainda. Suba o primeiro acima.</div>
+                <div style={{textAlign:"center",padding:"40px 20px",color:T.muted,fontSize:12,fontFamily:"Arial,sans-serif"}}>Nenhum arquivo ainda. Suba o primeiro acima.</div>
               ):(
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
                   {camp.files.map((f,i)=>(
                     <div key={f.id} style={{display:"flex",gap:12,alignItems:"center",padding:"12px 16px",background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${FILE_COLOR[f.type]||T.soft}`,borderRadius:10}}>
                       <div style={{fontSize:20,flexShrink:0}}>{f.icon}</div>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif",marginBottom:2}}>{f.url?<a href={f.url} target="_blank" rel="noreferrer" style={{color:T.accent,textDecoration:"none"}}>{f.name} -</a>:f.name}</div>
-                        <div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{f.size} · por {f.uploadedBy} · {f.at}</div>
+                        <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif",marginBottom:2}}>{f.url?<a href={f.url} target="_blank" rel="noreferrer" style={{color:T.accent,textDecoration:"none"}}>{f.name} -</a>:f.name}</div>
+                        <div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{f.size} · por {f.uploadedBy} · {f.at}</div>
                       </div>
                       <Badge label={f.type} color={FILE_COLOR[f.type]||T.soft}/>
-                      <div style={{fontSize:10,color:T.accent,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}}>- Baixar</div>
+                      <div style={{fontSize:10,color:T.accent,cursor:"pointer",fontFamily:"Arial,sans-serif"}}>- Baixar</div>
                     </div>
                   ))}
                 </div>
@@ -1131,32 +1137,32 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                 {[["Nome","name"],["Cliente","client"],["Agência","agencia"],["Nº PI","numPI"],["Região","region"],["Responsável","responsavel"]].map(([l,k])=>(
                   <div key={k}>
-                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
-                    <input value={editData[k]||""} onChange={e=>setEditData(p=>({...p,[k]:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,fontFamily:"'JetBrains Mono',monospace",outline:"none"}}/>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+                    <input value={editData[k]||""} onChange={e=>setEditData(p=>({...p,[k]:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,fontFamily:"Arial,sans-serif",outline:"none"}}/>
                   </div>
                 ))}
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
                 <div>
-                  <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Projeto</div>
+                  <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Projeto</div>
                   <select value={editData.project||""} onChange={e=>setEditData(p=>({...p,project:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}>
                     {(projects||[]).map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Data início</div>
+                  <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Data início</div>
                   <input type="date" value={editData.startDate||""} onChange={e=>setEditData(p=>({...p,startDate:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
                 </div>
                 <div>
-                  <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Data fim</div>
+                  <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Data fim</div>
                   <input type="date" value={editData.endDate||""} onChange={e=>setEditData(p=>({...p,endDate:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
                 </div>
               </div>
               <div style={{borderTop:`1px solid ${T.border}`,paddingTop:14}}>
-                <div style={{fontSize:10,color:T.purple,fontFamily:"'Syne',sans-serif",fontWeight:700,marginBottom:10}}>Operacional</div>
+                <div style={{fontSize:10,color:T.purple,fontFamily:"Arial,sans-serif",fontWeight:700,marginBottom:10}}>Operacional</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
                   <div>
-                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Gráfica</div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Gráfica</div>
                     <select value={editData.graficaFornecedor||""} onChange={e=>setEditData(p=>({...p,graficaFornecedor:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}>
                       <option value="">Selecione...</option>
                       {(suppliers||[]).filter(s=>s.type==="grafica").map(s=><option key={s.id} value={s.name}>{s.name}</option>)}
@@ -1164,15 +1170,15 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                     </select>
                   </div>
                   <div>
-                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Material</div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Material</div>
                     <input value={editData.material||""} onChange={e=>setEditData(p=>({...p,material:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
                   </div>
                   <div>
-                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Prazo gráfica</div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Prazo gráfica</div>
                     <input type="date" value={editData.graficaPrazo||""} onChange={e=>setEditData(p=>({...p,graficaPrazo:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
                   </div>
                   <div>
-                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Logística</div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Logística</div>
                     <select value={editData.logistica||""} onChange={e=>setEditData(p=>({...p,logistica:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}>
                       <option value="">Selecione...</option>
                       {(suppliers||[]).filter(s=>s.type==="logistica").map(s=><option key={s.id} value={s.name}>{s.name}</option>)}
@@ -1180,32 +1186,32 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                     </select>
                   </div>
                   <div>
-                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Fornecedor logística</div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Fornecedor logística</div>
                     <input value={editData.logisticaFornecedor||""} onChange={e=>setEditData(p=>({...p,logisticaFornecedor:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
                   </div>
                   <div>
-                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Prazo logística</div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Prazo logística</div>
                     <input type="date" value={editData.logisticaPrazo||""} onChange={e=>setEditData(p=>({...p,logisticaPrazo:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
                   </div>
                   <div>
-                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Nº parceiros</div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Nº parceiros</div>
                     <input type="number" value={editData.parceiros||""} onChange={e=>setEditData(p=>({...p,parceiros:Number(e.target.value)}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
                   </div>
                   <div>
-                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Qtd embalagens</div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Qtd embalagens</div>
                     <input type="number" value={editData.sacolas||""} onChange={e=>setEditData(p=>({...p,sacolas:Number(e.target.value)}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
                   </div>
                   <div>
-                    <div style={{fontSize:9,color:T.accent,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Valor líquido (R$)</div>
+                    <div style={{fontSize:9,color:T.accent,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Valor líquido (R$)</div>
                     <input type="number" value={editData.valorLiquido||""} onChange={e=>setEditData(p=>({...p,valorLiquido:Number(e.target.value)}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
                   </div>
                 </div>
               </div>
               <div style={{borderTop:`1px solid ${T.border}`,paddingTop:14}}>
-                <div style={{fontSize:9,color:T.muted,marginBottom:6,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Briefing</div>
-                <textarea value={editData.briefing||""} onChange={e=>setEditData(p=>({...p,briefing:e.target.value}))} rows={4} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none",resize:"vertical",lineHeight:1.6,fontFamily:"'JetBrains Mono',monospace"}}/>
+                <div style={{fontSize:9,color:T.muted,marginBottom:6,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Briefing</div>
+                <textarea value={editData.briefing||""} onChange={e=>setEditData(p=>({...p,briefing:e.target.value}))} rows={4} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none",resize:"vertical",lineHeight:1.6,fontFamily:"Arial,sans-serif"}}/>
               </div>
-              <button onClick={()=>{onEditCamp(camp.id,editData);setITab("tarefas");}} style={{padding:"10px 20px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,alignSelf:"flex-start"}}>
+              <button onClick={()=>{onEditCamp(camp.id,editData);setITab("tarefas");}} style={{padding:"10px 20px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,alignSelf:"flex-start"}}>
                 Salvar alterações ✓
               </button>
             </div>
@@ -1216,24 +1222,24 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
             <div>
               {/* Admin override control */}
               <div style={{background:T.card,border:`1px solid ${T.purple}44`,borderLeft:`3px solid ${T.purple}`,borderRadius:10,padding:"14px 18px",marginBottom:16}}>
-                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.purple,marginBottom:10}}>- Controle do Administrador</div>
+                <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.purple,marginBottom:10}}>- Controle do Administrador</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:10}}>
                   <div>
-                    <div style={{fontSize:9,color:T.muted,marginBottom:5,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Volume padrão (gráfica)</div>
-                    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:12,color:T.soft,fontFamily:"'JetBrains Mono',monospace"}}>{camp.sacolas.toLocaleString()} embalagens</div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:5,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Volume padrão (gráfica)</div>
+                    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:12,color:T.soft,fontFamily:"Arial,sans-serif"}}>{camp.sacolas.toLocaleString()} embalagens</div>
                   </div>
                   <div>
-                    <div style={{fontSize:9,color:T.purple,marginBottom:5,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Override - exibido ao cliente</div>
+                    <div style={{fontSize:9,color:T.purple,marginBottom:5,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Override - exibido ao cliente</div>
                     <input
                       type="number"
                       placeholder={`${camp.sacolas.toLocaleString()} (padrão)`}
                       value={camp.sacolasDistribuidas||""}
                       onChange={e=>onUpdateSacolas(camp.id,e.target.value?Number(e.target.value):null)}
-                      style={{width:"100%",background:T.surface,border:`1px solid ${T.purple}66`,borderRadius:7,padding:"8px 12px",fontSize:12,color:T.text,fontFamily:"'JetBrains Mono',monospace",outline:"none"}}
+                      style={{width:"100%",background:T.surface,border:`1px solid ${T.purple}66`,borderRadius:7,padding:"8px 12px",fontSize:12,color:T.text,fontFamily:"Arial,sans-serif",outline:"none"}}
                     />
                   </div>
                 </div>
-                <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>
+                <div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>
                   {camp.sacolasDistribuidas
                     ? <span style={{color:T.purple}}>Override ativo: cliente verá <strong style={{color:T.text}}>{Number(camp.sacolasDistribuidas).toLocaleString()}</strong> embalagens</span>
                     : <span>Sem override - cliente verá o volume padrão: <strong style={{color:T.text}}>{camp.sacolas.toLocaleString()}</strong></span>
@@ -1244,18 +1250,18 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
               {/* Link */}
               <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"14px 18px",marginBottom:16,display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Link do cliente</div>
-                  <div style={{fontSize:11,color:T.soft,fontFamily:"'JetBrains Mono',monospace",wordBreak:"break-all"}}>
+                  <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Link do cliente</div>
+                  <div style={{fontSize:11,color:T.soft,fontFamily:"Arial,sans-serif",wordBreak:"break-all"}}>
                     https://ecodely.com.br/cliente/{camp.id}/{camp.client.toLowerCase().replace(/\s/g,"-")}
                   </div>
                 </div>
-                <button className="btn" onClick={()=>onOpenClientPanel(camp)} style={{padding:"8px 16px",background:`linear-gradient(135deg,${T.purple},${T.purple}AA)`,color:"#fff",borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,whiteSpace:"nowrap"}}>
+                <button className="btn" onClick={()=>onOpenClientPanel(camp)} style={{padding:"8px 16px",background:`linear-gradient(135deg,${T.purple},${T.purple}AA)`,color:"#fff",borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,whiteSpace:"nowrap"}}>
                   - Visualizar painel
                 </button>
-                <button className="btn" onClick={()=>onGerarCheckin&&onGerarCheckin(camp)} style={{padding:"8px 16px",background:"linear-gradient(135deg,#1a3a1a,#3a7a1a)",color:"#A8E633",borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,whiteSpace:"nowrap",border:"none"}}>
+                <button className="btn" onClick={()=>onGerarCheckin&&onGerarCheckin(camp)} style={{padding:"8px 16px",background:"linear-gradient(135deg,#1a3a1a,#3a7a1a)",color:"#A8E633",borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,whiteSpace:"nowrap",border:"none"}}>
                   📍 Check-in PDF
                 </button>
-                <button className="btn" onClick={()=>onGerarPosVenda&&onGerarPosVenda(camp)} style={{padding:"8px 16px",background:"linear-gradient(135deg,#A8E633,#3a7a1a)",color:"#000",borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,whiteSpace:"nowrap",border:"none"}}>
+                <button className="btn" onClick={()=>onGerarPosVenda&&onGerarPosVenda(camp)} style={{padding:"8px 16px",background:"linear-gradient(135deg,#A8E633,#3a7a1a)",color:"#000",borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,whiteSpace:"nowrap",border:"none"}}>
                   📋 Pós-venda PDF
                 </button>
               </div>
@@ -1263,7 +1269,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
               {/* Preview mini */}
               <div style={{border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden",opacity:0.85}}>
                 <div style={{background:`linear-gradient(135deg,${T.accent}22,${T.purple}11)`,padding:"16px 20px",borderBottom:`1px solid ${T.border}`,display:"flex",gap:12,alignItems:"center"}}>
-                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:T.accent}}>ECODELY</div>
+                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:T.accent}}>ECODELY</div>
                   <div style={{width:1,height:20,background:T.border}}/>
                   <div>
                     <div style={{fontSize:12,fontWeight:700}}>{camp.name}</div>
@@ -1278,7 +1284,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                       {l:"Progresso",v:`${camp.progress}%`,c:camp.stage===5?T.accent:T.info},
                     ].map((k,i)=>(
                       <div key={i} style={{background:T.surface,borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:k.c}}>{k.v}</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:k.c}}>{k.v}</div>
                         <div style={{fontSize:9,color:T.muted}}>{k.l}</div>
                       </div>
                     ))}
@@ -1292,7 +1298,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                       <div style={{height:"100%",width:`${camp.progress}%`,background:`linear-gradient(90deg,${T.accent},${T.purple})`,borderRadius:4}}/>
                     </div>
                   </div>
-                  <div style={{fontSize:9,color:T.muted,textAlign:"center",marginTop:8,fontFamily:"'JetBrains Mono',monospace"}}>Preview do painel - dados visíveis ao cliente</div>
+                  <div style={{fontSize:9,color:T.muted,textAlign:"center",marginTop:8,fontFamily:"Arial,sans-serif"}}>Preview do painel - dados visíveis ao cliente</div>
                 </div>
               </div>
             </div>
@@ -1386,11 +1392,11 @@ const ImpactosTab=({camp,allPartners,onUpdate})=>{
       {/* Totais */}
       <div style={{background:"linear-gradient(135deg,#00E5A015,#9B7FFF10)",border:"1px solid #00E5A040",borderRadius:12,padding:"18px 20px",marginBottom:16}}>
         <div style={{fontSize:9,color:T.accent,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Total de impactos</div>
-        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:36,color:T.accent,marginBottom:8}}>{total.toLocaleString()}</div>
+        <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:36,color:T.accent,marginBottom:8}}>{total.toLocaleString()}</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
           {[{l:"Offline",v:offline,c:T.purple},{l:"Stories",v:stTotal,c:"#E1306C"},{l:"Influencer",v:inTotal,c:T.warn}].map((k,i)=>(
             <div key={i} style={{background:"#06070D",borderRadius:8,padding:"8px 10px",textAlign:"center"}}>
-              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:k.c}}>{k.v.toLocaleString()}</div>
+              <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:k.c}}>{k.v.toLocaleString()}</div>
               <div style={{fontSize:8,color:T.muted}}>{k.l}</div>
             </div>
           ))}
@@ -1399,12 +1405,12 @@ const ImpactosTab=({camp,allPartners,onUpdate})=>{
 
       {/* Stories dos parceiros */}
       <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:10,padding:"12px 16px",marginBottom:10}}>
-        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:"#E1306C",marginBottom:10}}>Stories dos Parceiros</div>
+        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:"#E1306C",marginBottom:10}}>Stories dos Parceiros</div>
         {imp.stories.map((s,i)=>(
           <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid "+T.border}}>
             <div style={{fontSize:11}}>{s.parceiro}</div>
             <div style={{display:"flex",gap:10,alignItems:"center"}}>
-              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:"#E1306C"}}>{Number(s.impressoes).toLocaleString()}</span>
+              <span style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#E1306C"}}>{Number(s.impressoes).toLocaleString()}</span>
               <button onClick={()=>upd("stories",imp.stories.filter((_,j)=>j!==i))} style={{background:"transparent",border:"none",color:T.danger,cursor:"pointer",fontSize:12}}>×</button>
             </div>
           </div>
@@ -1421,7 +1427,7 @@ const ImpactosTab=({camp,allPartners,onUpdate})=>{
 
       {/* Influenciador */}
       <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:10,padding:"12px 16px",marginBottom:10}}>
-        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.warn,marginBottom:10}}>Influenciador</div>
+        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.warn,marginBottom:10}}>Influenciador</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:8}}>
           {[["visualizacoes","Visualizações"],["alcance","Alcance"],["comentarios","Comentários"]].map(([k,l])=>(
             <div key={k}>
@@ -1433,11 +1439,11 @@ const ImpactosTab=({camp,allPartners,onUpdate})=>{
       </div>
 
       {/* Galeria por parceiro */}
-      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:T.text,marginBottom:10,marginTop:8}}>Evidências por Parceiro</div>
+      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.text,marginBottom:10,marginTop:8}}>Evidências por Parceiro</div>
       {parceiros.length===0&&<div style={{fontSize:10,color:T.muted,padding:"12px 0"}}>Nenhum parceiro vinculado à campanha.</div>}
       {parceiros.map(p=>(
         <div key={p.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"14px 16px",marginBottom:10}}>
-          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.text,marginBottom:12}}>{p.name} <span style={{fontSize:9,color:T.muted,fontWeight:400}}>· {p.city}/{p.state}</span></div>
+          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.text,marginBottom:12}}>{p.name} <span style={{fontSize:9,color:T.muted,fontWeight:400}}>· {p.city}/{p.state}</span></div>
           {CATS.map(cat=>{
             const fotos=(ev[p.id]||{})[cat.key]||[];
             const uploading=uploadingKey===`${p.id}_${cat.key}`;
@@ -1472,7 +1478,7 @@ const ImpactosTab=({camp,allPartners,onUpdate})=>{
 
       {/* Influenciador — galeria */}
       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"14px 16px",marginBottom:10}}>
-        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.warn,marginBottom:12}}>📢 Conteúdo de Influenciador</div>
+        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.warn,marginBottom:12}}>📢 Conteúdo de Influenciador</div>
         {(ev["influencer"]?.conteudo||[]).map((f,fi)=>(
           <div key={fi} style={{position:"relative",display:"inline-block",marginRight:8,marginBottom:8}}>
             <img src={f.url} style={{width:80,height:80,objectFit:"cover",borderRadius:7,border:`1px solid ${T.warn}44`}} alt={f.legenda}/>
@@ -1504,16 +1510,16 @@ const ClientPanel=({camp,allPartners,onClose,onPDF})=>{
   const pieData=[{name:'Offline',value:offline,color:'#00C48C'},{name:'Stories',value:stTotal,color:'#E1306C'},{name:'Influencer',value:inTotal,color:'#F5A623'},{name:'Impulsionado',value:imTotal,color:'#3D9EFF'}].filter(d=>d.value>0);
   const barData=campPartners.map(p=>{const st=imp.stories.find(s=>s.parceiro===p.name);return{name:p.name.split(' ').slice(0,2).join(' '),entregas:p.deliveries,stories:st?Number(st.impressoes):0};});
   return(
-    <div style={{position:'fixed',inset:0,zIndex:400,background:'#04060E',color:'#fff',fontFamily:"'JetBrains Mono',monospace",overflow:'auto'}}>
+    <div style={{position:'fixed',inset:0,zIndex:400,background:'#04060E',color:'#fff',fontFamily:"Arial,sans-serif",overflow:'auto'}}>
       <style>{'@import url(https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;500&display=swap);.leaflet-container{font-family:sans-serif;}.cp-card{background:linear-gradient(135deg,#0E1020,#0A0C18);border:1px solid #1E2240;border-radius:16px;}'}</style>
       <div style={{background:'#080A14',borderBottom:'1px solid #1A1E30',padding:'14px 28px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:10}}>
         <div style={{display:'flex',gap:14,alignItems:'center'}}>
-          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:20,color:'#00C48C',letterSpacing:-0.5}}>ECODELY</div>
+          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:20,color:'#00C48C',letterSpacing:-0.5}}>ECODELY</div>
           <div style={{width:1,height:18,background:'#1A1E30'}}/>
           <div style={{fontSize:11,color:'#556'}}>{camp.client} - Painel da Campanha</div>
         </div>
         <div style={{display:'flex',gap:10}}>
-          {isFin&&<button onClick={onPDF} style={{padding:'8px 16px',background:'linear-gradient(135deg,#00C48C,#00A070)',color:'#000',borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:11,border:'none',cursor:'pointer'}}>PDF</button>}
+          {isFin&&<button onClick={onPDF} style={{padding:'8px 16px',background:'linear-gradient(135deg,#00C48C,#00A070)',color:'#000',borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:11,border:'none',cursor:'pointer'}}>PDF</button>}
           <button onClick={onClose} style={{padding:'8px 14px',background:'#0E1020',color:'#556',borderRadius:8,fontSize:11,border:'1px solid #1E2240',cursor:'pointer'}}>x Fechar</button>
         </div>
       </div>
@@ -1524,14 +1530,14 @@ const ClientPanel=({camp,allPartners,onClose,onPDF})=>{
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:20,marginBottom:28}}>
               <div>
                 <div style={{fontSize:9,color:'#00C48C',letterSpacing:3,textTransform:'uppercase',marginBottom:8}}>{camp.client} - {camp.project}</div>
-                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:28,color:'#fff',marginBottom:6,lineHeight:1.1}}>{camp.name}</div>
+                <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:28,color:'#fff',marginBottom:6,lineHeight:1.1}}>{camp.name}</div>
                 <div style={{fontSize:12,color:'#778'}}>{camp.startDate} - {camp.endDate} - {camp.region}</div>
               </div>
               <div style={{textAlign:'right'}}>
                 <div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'8px 16px',background:isFin?'#00C48C22':'#3D9EFF18',border:'1px solid '+(isFin?'#00C48C55':'#3D9EFF44'),borderRadius:10,marginBottom:12}}>
                   <span style={{fontSize:11,color:isFin?'#00C48C':'#3D9EFF',fontWeight:700}}>{isFin?'Finalizada':stage.label+' - Em andamento'}</span>
                 </div>
-                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:42,color:'#00C48C',lineHeight:1}}>{total.toLocaleString()}</div>
+                <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:42,color:'#00C48C',lineHeight:1}}>{total.toLocaleString()}</div>
                 <div style={{fontSize:11,color:'#556',marginTop:4}}>impactos totais</div>
               </div>
             </div>
@@ -1552,14 +1558,14 @@ const ClientPanel=({camp,allPartners,onClose,onPDF})=>{
           {[{l:'Embalagens',v:sacolas.toLocaleString(),c:'#00C48C',sub:'distribuidas'},{l:'Parceiros',v:camp.parceiros,c:'#3D9EFF',sub:'ativos em campo'},{l:'Segmentos',v:camp.segments.length,c:'#9B7FFF',sub:'de delivery'},{l:'Progresso',v:camp.progress+'%',c:camp.progress===100?'#00C48C':'#F5A623',sub:'da campanha'}].map((k,i)=>(
             <div key={i} className="cp-card" style={{padding:'20px 18px',position:'relative',overflow:'hidden'}}>
               <div style={{fontSize:9,color:'#556',textTransform:'uppercase',letterSpacing:1.5,marginBottom:8}}>{k.l}</div>
-              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:26,color:k.c,marginBottom:3}}>{k.v}</div>
+              <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:26,color:k.c,marginBottom:3}}>{k.v}</div>
               <div style={{fontSize:9,color:'#445'}}>{k.sub}</div>
             </div>
           ))}
         </div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:20}}>
           <div className="cp-card" style={{padding:'24px',boxShadow:'0 0 40px #00C48C18'}}>
-            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:'#fff',marginBottom:4}}>Distribuicao de Impactos</div>
+            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:'#fff',marginBottom:4}}>Distribuicao de Impactos</div>
             <div style={{fontSize:10,color:'#556',marginBottom:16}}>Total: {total.toLocaleString()}</div>
             {total>0?(
               <ResponsiveContainer width="100%" height={180}>
@@ -1578,13 +1584,13 @@ const ClientPanel=({camp,allPartners,onClose,onPDF})=>{
               {[{l:'Offline (sacolas)',v:offline,c:'#00C48C'},{l:'Stories',v:stTotal,c:'#E1306C'},{l:'Influencer',v:inTotal,c:'#F5A623'},{l:'Impulsionado',v:imTotal,c:'#3D9EFF'}].map((k,i)=>(
                 <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <div style={{display:'flex',gap:7,alignItems:'center'}}><div style={{width:7,height:7,borderRadius:'50%',background:k.c}}/><span style={{fontSize:10,color:'#778'}}>{k.l}</span></div>
-                  <span style={{fontSize:11,fontWeight:700,color:k.c,fontFamily:"'Syne',sans-serif"}}>{k.v.toLocaleString()}</span>
+                  <span style={{fontSize:11,fontWeight:700,color:k.c,fontFamily:"Arial,sans-serif"}}>{k.v.toLocaleString()}</span>
                 </div>
               ))}
             </div>
           </div>
           <div className="cp-card" style={{padding:'24px'}}>
-            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:'#fff',marginBottom:4}}>Entregas por Parceiro</div>
+            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:'#fff',marginBottom:4}}>Entregas por Parceiro</div>
             <div style={{fontSize:10,color:'#556',marginBottom:16}}>Volume mensal</div>
             {barData.length>0?(
               <ResponsiveContainer width="100%" height={220}>
@@ -1603,7 +1609,7 @@ const ClientPanel=({camp,allPartners,onClose,onPDF})=>{
         <div className="cp-card" style={{overflow:'hidden',marginBottom:20}}>
           <div style={{padding:'20px 24px',borderBottom:'1px solid #1E2240',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
             <div>
-              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:'#fff'}}>Mapa de cobertura</div>
+              <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:'#fff'}}>Mapa de cobertura</div>
               <div style={{fontSize:10,color:'#556',marginTop:2}}>Raio de 5km por parceiro - {campPartners.filter(p=>p.endereco&&p.endereco.lat).length} pontos ativos</div>
             </div>
             <div style={{display:'flex',gap:14}}>
@@ -1617,7 +1623,7 @@ const ClientPanel=({camp,allPartners,onClose,onPDF})=>{
           }
         </div>
         <div className="cp-card" style={{padding:'20px 24px',marginBottom:20}}>
-          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:'#fff',marginBottom:12}}>Segmentos alcancados</div>
+          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:'#fff',marginBottom:12}}>Segmentos alcancados</div>
           <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
             {camp.segments.map((s,i)=>{
               const colors=['#00C48C','#3D9EFF','#9B7FFF','#F5A623','#E1306C','#F472B6'];
@@ -1628,7 +1634,7 @@ const ClientPanel=({camp,allPartners,onClose,onPDF})=>{
         </div>
         {imp.galeria.length>0&&(
           <div className="cp-card" style={{padding:'20px 24px',marginBottom:20}}>
-            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:'#fff',marginBottom:14}}>Campanha em campo</div>
+            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:'#fff',marginBottom:14}}>Campanha em campo</div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))',gap:10}}>
               {imp.galeria.map((g,i)=>(
                 <GaleriaItem key={i} g={g}/>
@@ -1656,29 +1662,29 @@ const PDFReport=({camp,onClose})=>{
       <style>{'@import url(https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;500&display=swap);@media print{.no-print{display:none!important}}'}</style>
       <div className="no-print" style={{background:'#333',padding:'12px 24px',display:'flex',gap:10,alignItems:'center',position:'sticky',top:0,zIndex:10}}>
         <div style={{flex:1,fontSize:12,color:'#fff'}}>Relatorio - {camp.name}</div>
-        <button onClick={()=>window.print()} style={{padding:'8px 18px',background:'#00C48C',color:'#fff',borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,border:'none',cursor:'pointer'}}>Imprimir / Salvar PDF</button>
+        <button onClick={()=>window.print()} style={{padding:'8px 18px',background:'#00C48C',color:'#fff',borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,border:'none',cursor:'pointer'}}>Imprimir / Salvar PDF</button>
         <button onClick={onClose} style={{padding:'8px 14px',background:'#555',color:'#fff',borderRadius:8,fontSize:12,border:'none',cursor:'pointer'}}>x Fechar</button>
       </div>
-      <div style={{width:794,minHeight:1123,background:'#fff',margin:'20px auto',borderRadius:8,overflow:'hidden',fontFamily:"'JetBrains Mono',monospace"}}>
+      <div style={{width:794,minHeight:1123,background:'#fff',margin:'20px auto',borderRadius:8,overflow:'hidden',fontFamily:"Arial,sans-serif"}}>
         <div style={{background:'linear-gradient(135deg,#0A0F1E,#1A2040)',padding:'56px 56px 40px',color:'#fff'}}>
-          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:32,color:'#00C48C',letterSpacing:-1,marginBottom:4}}>ECODELY</div>
+          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:32,color:'#00C48C',letterSpacing:-1,marginBottom:4}}>ECODELY</div>
           <div style={{fontSize:10,color:'#667',letterSpacing:3,textTransform:'uppercase',marginBottom:48}}>Relatorio de Campanha</div>
-          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:26,color:'#fff',marginBottom:8,lineHeight:1.2}}>{camp.name}</div>
+          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:26,color:'#fff',marginBottom:8,lineHeight:1.2}}>{camp.name}</div>
           <div style={{fontSize:13,color:'#889',marginBottom:32}}>{camp.client} - {camp.startDate} - {camp.endDate}</div>
         </div>
         <div style={{padding:'36px 56px 28px',borderBottom:'1px solid #EEF'}}>
-          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15,color:'#1A1A2E',marginBottom:20}}>Resumo Executivo</div>
+          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:15,color:'#1A1A2E',marginBottom:20}}>Resumo Executivo</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16}}>
             {[{l:'Embalagens distribuidas',v:sacolas,c:'#00C48C'},{l:'Parceiros ativos',v:camp.parceiros,c:'#3D9EFF'},{l:'Total de impactos',v:total.toLocaleString(),c:'#9B7FFF'},{l:'Impacto offline',v:offline.toLocaleString(),c:'#F5A623'},{l:'Regiao',v:camp.region,c:'#F472B6',small:true},{l:'Segmentos',v:camp.segments.join(', '),c:'#888',small:true}].map((k,i)=>(
               <div key={i} style={{background:'#F8FAFF',borderRadius:10,padding:'16px',border:'1px solid #E8EBF4'}}>
                 <div style={{fontSize:9,color:'#999',textTransform:'uppercase',letterSpacing:1,marginBottom:6}}>{k.l}</div>
-                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:k.small?13:20,color:k.c,lineHeight:1.3}}>{k.v}</div>
+                <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:k.small?13:20,color:k.c,lineHeight:1.3}}>{k.v}</div>
               </div>
             ))}
           </div>
         </div>
         <div style={{padding:'28px 56px',borderBottom:'1px solid #EEF'}}>
-          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15,color:'#1A1A2E',marginBottom:16}}>Linha do Tempo</div>
+          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:15,color:'#1A1A2E',marginBottom:16}}>Linha do Tempo</div>
           {camp.timeline.filter(e=>e.type==='stage').map((e,i)=>(
             <div key={i} style={{display:'flex',gap:16,alignItems:'flex-start',paddingBottom:14}}>
               <div style={{width:22,height:22,borderRadius:'50%',background:'#00C48C',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
@@ -1692,7 +1698,7 @@ const PDFReport=({camp,onClose})=>{
           ))}
         </div>
         <div style={{padding:'28px 56px 48px'}}>
-          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15,color:'#1A1A2E',marginBottom:14}}>Proximos Passos</div>
+          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:15,color:'#1A1A2E',marginBottom:14}}>Proximos Passos</div>
           <div style={{background:'linear-gradient(135deg,#00C48C11,#3D9EFF08)',border:'1px solid #00C48C33',borderRadius:10,padding:'16px 20px'}}>
             <div style={{fontSize:12,color:'#333',lineHeight:1.9}}>Relatorio de desempenho entregue ao cliente<br/>Agendar reuniao de resultado com {camp.client}<br/>Proposta para proxima campanha<br/>Renovacao dos contratos de exclusividade</div>
           </div>
@@ -1712,12 +1718,12 @@ const Toast=({notifs,onDismiss})=>{
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:5}}>
           <div style={{display:"flex",gap:6,alignItems:"center"}}>
             <div style={{width:6,height:6,borderRadius:"50%",background:n.color}}/>
-            <span style={{fontSize:9,color:n.color,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{n.title}</span>
+            <span style={{fontSize:9,color:n.color,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{n.title}</span>
           </div>
           <div onClick={onDismiss} style={{cursor:"pointer",color:T.muted,fontSize:14}}>×</div>
         </div>
         <div style={{fontSize:12,color:T.text,lineHeight:1.5}}>{n.msg}</div>
-        <div style={{fontSize:9,color:T.muted,marginTop:6,fontFamily:"'JetBrains Mono',monospace"}}>{n.at}</div>
+        <div style={{fontSize:9,color:T.muted,marginTop:6,fontFamily:"Arial,sans-serif"}}>{n.at}</div>
       </div>
     </div>
   );
@@ -1751,6 +1757,9 @@ export default function App(){
   const[dashPeriod,setDashPeriod]=useState("mes");
   // Financial module state
   const[finTab,setFinTab]=useState("visao");
+  const[tema,setTema]=useState(()=>localStorage.getItem("ecodely_tema")||"escuro");
+  T=THEMES[tema]||THEMES.escuro;
+  useEffect(()=>{localStorage.setItem("ecodely_tema",tema);document.body.style.background=T.bg;},[tema]);
   const[editLanc,setEditLanc]=useState(null);
   const[colWidths,setColWidths]=useState([90,340,120,120,110,110,130,36]);
   const[relTab,setRelTab]=useState("gerencial");
@@ -1981,6 +1990,11 @@ export default function App(){
   const forecastTotal=prospects.reduce((a,p)=>{const s=PIPE_STAGES.find(x=>x.id===p.stage);return a+(p.value||0)*(s?.prob||0)/100;},0);
 
   const nav=user?getNav(user.role,pendingQueue.length,0,user.extraRoles||[]):[];
+  const TemaSelector=()=>(<div style={{display:"flex",gap:4,alignItems:"center"}}>
+    {Object.entries(THEMES).map(([k,v])=>(
+      <button key={k} onClick={()=>setTema(k)} title={v.name} style={{width:20,height:20,borderRadius:"50%",border:tema===k?"3px solid #fff":"2px solid transparent",cursor:"pointer",background:v.bg==="transparent"?v.surface:v.bg,outline:tema===k?"2px solid "+v.accent:"none",outlineOffset:1,transition:"all .2s"}}/>
+    ))}
+  </div>);
 
   // --- HANDLERS ------------------------------------------------------------
   const handleLogin=()=>{
@@ -3022,11 +3036,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
   // -- LOGIN ------------------------------------------------------------------
   if(!user)return(
-    <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'JetBrains Mono',monospace"}}>
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Arial,sans-serif"}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;}input{outline:none;}input::placeholder{color:#2A2E45;}`}</style>
       <div style={{width:"100%",maxWidth:400,padding:24}}>
         <div style={{textAlign:"center",marginBottom:36}}>
-          <div style={{fontFamily:"'Syne',sans-serif",fontSize:36,fontWeight:800,color:T.accent,letterSpacing:-1}}>ECODELY</div>
+          <div style={{fontFamily:"Arial,sans-serif",fontSize:36,fontWeight:800,color:T.accent,letterSpacing:-1}}>ECODELY</div>
           <div style={{fontSize:9,color:T.muted,letterSpacing:3,marginTop:4}}>SISTEMA DE GESTÃO</div>
         </div>
         <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:16,padding:30}}>
@@ -3035,11 +3049,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               <div style={{fontSize:9,color:T.muted,marginBottom:6,letterSpacing:1.5,textTransform:"uppercase"}}>{l}</div>
               <input type={t} value={loginForm[k]} onChange={e=>setLoginForm(p=>({...p,[k]:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&handleLogin()}
                 placeholder={k==="email"?"seu@ecodely.com.br":"--------"}
-                style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"11px 14px",fontSize:13,color:T.text,fontFamily:"'JetBrains Mono',monospace",outline:"none"}}/>
+                style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"11px 14px",fontSize:13,color:T.text,fontFamily:"Arial,sans-serif",outline:"none"}}/>
             </div>
           ))}
           {loginErr&&<div style={{fontSize:11,color:T.danger,marginBottom:10}}>{loginErr}</div>}
-          <button onClick={handleLogin} style={{width:"100%",padding:"13px",borderRadius:10,background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,border:"none",cursor:"pointer",marginTop:8}}>Entrar</button>
+          <button onClick={handleLogin} style={{width:"100%",padding:"13px",borderRadius:10,background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,border:"none",cursor:"pointer",marginTop:8}}>Entrar</button>
           <div style={{marginTop:18,padding:"12px",background:T.card,borderRadius:8,fontSize:10,color:T.muted,lineHeight:2}}>
             <div style={{color:T.accent,fontWeight:700,marginBottom:4}}>Login rápido:</div>
             a · 1 (Admin Teste)<br/>
@@ -3083,10 +3097,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
       {/* DRAG GHOST (mobile touch) */}
       {touchDrag&&ghostPos&&(
         <div style={{position:"fixed",left:ghostPos.x-90,top:ghostPos.y-36,width:180,background:T.card,border:`2px solid ${T.accent}`,borderRadius:12,padding:"10px 14px",zIndex:9999,opacity:0.92,pointerEvents:"none",boxShadow:`0 16px 40px ${T.accent}44`,transform:"rotate(2deg) scale(1.04)",transition:"none"}}>
-          <div style={{fontSize:11,fontWeight:700,color:T.text,fontFamily:"'Syne',sans-serif",marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+          <div style={{fontSize:11,fontWeight:700,color:T.text,fontFamily:"Arial,sans-serif",marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
             {touchDrag.type==="camp"?camps.find(c=>c.id===touchDrag.id)?.name:prospects.find(p=>p.id===touchDrag.id)?.name}
           </div>
-          <div style={{fontSize:9,color:T.accent,fontFamily:"'JetBrains Mono',monospace"}}>
+          <div style={{fontSize:9,color:T.accent,fontFamily:"Arial,sans-serif"}}>
             {touchOverStage
               ?(touchDrag.type==="camp"?STAGES_CAMP.find(s=>s.id===Number(touchOverStage))?.label:PIPE_STAGES.find(s=>s.id===touchOverStage)?.label)||"Soltar aqui -"
               :"Arraste para uma coluna"}
@@ -3108,18 +3122,18 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
         <div style={{position:"fixed",inset:0,background:"#000000BB",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setSelProsp(null)}>
           <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:16,width:"100%",maxWidth:460,padding:24}} onClick={e=>e.stopPropagation()}>
             <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}>
-              <div><div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,marginBottom:5}}>{selProsp.name}</div><div style={{display:"flex",gap:5}}><Badge label={selProsp.segment} color={T.purple}/><Badge label={PIPE_STAGES.find(s=>s.id===selProsp.stage)?.label||""} color={PIPE_STAGES.find(s=>s.id===selProsp.stage)?.color||T.muted}/></div></div>
+              <div><div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,marginBottom:5}}>{selProsp.name}</div><div style={{display:"flex",gap:5}}><Badge label={selProsp.segment} color={T.purple}/><Badge label={PIPE_STAGES.find(s=>s.id===selProsp.stage)?.label||""} color={PIPE_STAGES.find(s=>s.id===selProsp.stage)?.color||T.muted}/></div></div>
               <div onClick={()=>setSelProsp(null)} style={{cursor:"pointer",color:T.muted,fontSize:20}}>×</div>
             </div>
             {[["Contato",selProsp.contact],["E-mail",selProsp.email||"-"],["Responsável",selProsp.owner],["Valor estimado",fmtK(selProsp.value||selProsp.ltv||0)]].map(([l,v])=>(
               <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"9px 0",borderBottom:`1px solid ${T.border}`}}>
-                <span style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{l}</span>
+                <span style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>{l}</span>
                 <span style={{fontSize:11}}>{v}</span>
               </div>
             ))}
             {selProsp.notes&&<div style={{marginTop:12,padding:"10px",background:T.card,borderRadius:8,fontSize:11,color:T.soft,fontStyle:"italic"}}>"{selProsp.notes}"</div>}
             {["negociacao","fechado"].includes(selProsp.stage)&&(
-              <button className="btn" onClick={()=>{addProspectToBase(selProsp);setSelProsp(null);}} style={{width:"100%",marginTop:14,padding:"10px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12}}>- Adicionar à Base de Parceiros</button>
+              <button className="btn" onClick={()=>{addProspectToBase(selProsp);setSelProsp(null);}} style={{width:"100%",marginTop:14,padding:"10px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12}}>- Adicionar à Base de Parceiros</button>
             )}
           </div>
         </div>
@@ -3128,14 +3142,14 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
       {/* SIDEBAR */}
       <div style={{width:210,background:T.surface,borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",flexShrink:0}}>
         <div style={{padding:"20px 16px 14px",borderBottom:`1px solid ${T.border}`}}>
-          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:17,color:T.accent,letterSpacing:-0.5}}>ECODELY</div>
-          <div style={{fontSize:8,color:T.muted,letterSpacing:2.5,marginTop:2,fontFamily:"'JetBrains Mono',monospace"}}>SISTEMA DE GESTÃO</div>
+          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:17,color:T.accent,letterSpacing:-0.5}}>ECODELY</div>
+          <div style={{fontSize:8,color:T.muted,letterSpacing:2.5,marginTop:2,fontFamily:"Arial,sans-serif"}}>SISTEMA DE GESTÃO</div>
         </div>
         <div style={{flex:1,padding:"10px 8px",overflowY:"auto"}}>
           {nav.map(n=>(
             <div key={n.id} className="nb" onClick={()=>setTab(n.id)} style={{display:"flex",alignItems:"center",gap:9,padding:"9px 10px",borderRadius:7,marginBottom:1,background:tab===n.id?T.accentDim:"transparent",border:`1px solid ${tab===n.id?T.accentBorder:"transparent"}`}}>
               <span style={{fontSize:12,color:tab===n.id?T.accent:T.muted,width:16,textAlign:"center"}}>{n.icon}</span>
-              <span style={{fontSize:11,color:tab===n.id?T.text:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{n.label}</span>
+              <span style={{fontSize:11,color:tab===n.id?T.text:T.muted,fontFamily:"Arial,sans-serif"}}>{n.label}</span>
               {n.badge&&<div style={{marginLeft:"auto",background:T.danger,borderRadius:8,padding:"1px 5px",fontSize:8,color:"#fff",fontWeight:700}}>{n.badge}</div>}
             </div>
           ))}
@@ -3150,20 +3164,31 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             <div onClick={()=>setUser(null)} style={{fontSize:13,color:T.muted,cursor:"pointer"}} title="Sair">-</div>
           </div>
         </div>
+        {/* Seletor de Tema */}
+        <div style={{padding:"8px 12px",borderTop:`1px solid ${T.border}`}}>
+          <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Tema</div>
+          <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+            {Object.entries(THEMES).map(([k,v])=>(
+              <button key={k} onClick={()=>setTema(k)} title={v.name} style={{padding:"4px 8px",borderRadius:5,border:tema===k?`2px solid ${T.accent}`:`1px solid ${T.border}`,cursor:"pointer",background:k===tema?T.accentDim:"transparent",fontSize:8,color:k===tema?T.accent:T.muted,fontWeight:k===tema?700:400,fontFamily:"Arial,sans-serif"}}>
+                {v.name}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* CONTENT */}
       <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column"}}>
         <div style={{padding:"13px 24px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",background:T.surface,flexShrink:0}}>
           <div>
-            <div style={{fontFamily:"'Syne',sans-serif",fontSize:15,fontWeight:700}}>{nav.find(n=>n.id===tab)?.label||"Ecodely"}</div>
-            <div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace",marginTop:1}}>{new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
+            <div style={{fontFamily:"Arial,sans-serif",fontSize:15,fontWeight:700}}>{nav.find(n=>n.id===tab)?.label||"Ecodely"}</div>
+            <div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif",marginTop:1}}>{new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
           </div>
           <div style={{display:"flex",gap:10,alignItems:"center"}}>
             {pendingQueue.length>0&&tab!=="minha-fila"&&(
               <div onClick={()=>setTab("minha-fila")} style={{display:"flex",gap:8,alignItems:"center",padding:"7px 12px",background:T.dangerDim,border:`1px solid ${T.danger}44`,borderRadius:8,cursor:"pointer"}}>
                 <div className="pulse" style={{width:6,height:6,borderRadius:"50%",background:T.danger}}/>
-                <span style={{fontSize:10,color:T.danger,fontFamily:"'JetBrains Mono',monospace"}}>{pendingQueue.length} pendente{pendingQueue.length>1?"s":""}</span>
+                <span style={{fontSize:10,color:T.danger,fontFamily:"Arial,sans-serif"}}>{pendingQueue.length} pendente{pendingQueue.length>1?"s":""}</span>
               </div>
             )}
             {/* Bell */}
@@ -3181,11 +3206,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 <div style={{position:"absolute",top:42,right:0,width:360,background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,boxShadow:"0 8px 32px #00000060",zIndex:500,overflow:"hidden"}} onClick={e=>e.stopPropagation()}>
                   <div style={{padding:"14px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                     <div>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Notificações</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Notificações</div>
                       {inbox.filter(n=>!n.read).length>0&&<div style={{fontSize:9,color:T.muted,marginTop:1}}>{inbox.filter(n=>!n.read).length} não lida{inbox.filter(n=>!n.read).length>1?"s":""}</div>}
                     </div>
                     <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                      <div onClick={async()=>{setInbox(p=>p.map(n=>({...n,read:true})));if(user?.id)await supabase.from("notificacoes").update({lida:true}).eq("user_id",user.id);}} style={{fontSize:9,color:T.accent,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}}>Marcar todas lidas</div>
+                      <div onClick={async()=>{setInbox(p=>p.map(n=>({...n,read:true})));if(user?.id)await supabase.from("notificacoes").update({lida:true}).eq("user_id",user.id);}} style={{fontSize:9,color:T.accent,cursor:"pointer",fontFamily:"Arial,sans-serif"}}>Marcar todas lidas</div>
                       <div onClick={()=>setInboxOpen(false)} style={{fontSize:18,color:T.muted,cursor:"pointer",lineHeight:1}}>×</div>
                     </div>
                   </div>
@@ -3212,10 +3237,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <div style={{flex:1,minWidth:0}}>
                               <div style={{display:"flex",justifyContent:"space-between",gap:8,marginBottom:2}}>
                                 <div style={{fontSize:11,fontWeight:n.read?500:700,color:n.read?T.soft:T.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.title}</div>
-                                <div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",flexShrink:0}}>{n.at}</div>
+                                <div style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif",flexShrink:0}}>{n.at}</div>
                               </div>
                               <div style={{fontSize:10,color:T.muted,lineHeight:1.4,marginBottom:n.tab?3:0}}>{n.msg}</div>
-                              {n.tab&&<div style={{fontSize:8,color:n.color,fontFamily:"'JetBrains Mono',monospace"}}>→ Ir para {n.tab}</div>}
+                              {n.tab&&<div style={{fontSize:8,color:n.color,fontFamily:"Arial,sans-serif"}}>→ Ir para {n.tab}</div>}
                             </div>
                             {!n.read&&<div style={{width:7,height:7,borderRadius:"50%",background:n.color,flexShrink:0,marginTop:5}}/>}
                           </div>
@@ -3224,7 +3249,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     })}
                   </div>
                   {inbox.length>0&&<div style={{padding:"8px 16px",borderTop:`1px solid ${T.border}`,textAlign:"center"}}>
-                    <div onClick={()=>setInbox(p=>p.filter(n=>!n.auto))} style={{fontSize:9,color:T.muted,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}}>Limpar automáticas</div>
+                    <div onClick={()=>setInbox(p=>p.filter(n=>!n.auto))} style={{fontSize:9,color:T.muted,cursor:"pointer",fontFamily:"Arial,sans-serif"}}>Limpar automáticas</div>
                   </div>}
                 </div>
               )}
@@ -3291,7 +3316,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:12}}>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Meu pipeline</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Meu pipeline</div>
                     {PIPE_STAGES.map(stage=>{
                       const items=myProspects.filter(p=>p.stage===stage.id);
                       if(!items.length)return null;
@@ -3299,22 +3324,22 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:10,color:stage.color}}>{stage.label}</span><span style={{fontSize:10,color:T.muted}}>{items.length} · {fmtK(items.reduce((a,p)=>a+(p.value||0),0))}</span></div>
                         {items.map(p=><div key={p.id} className="hr" onClick={()=>setSelProsp(p)} style={{padding:"6px 8px",borderRadius:7,display:"flex",justifyContent:"space-between",marginBottom:3}}>
                           <span style={{fontSize:11}}>{p.name}</span>
-                          <span style={{fontSize:11,color:stage.color,fontFamily:"'Syne',sans-serif",fontWeight:700}}>{fmtK(p.value)}</span>
+                          <span style={{fontSize:11,color:stage.color,fontFamily:"Arial,sans-serif",fontWeight:700}}>{fmtK(p.value)}</span>
                         </div>)}
                       </div>);
                     })}
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:12}}>
                     <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:10}}>Meta do mês</div>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:26,color:T.accent,marginBottom:4}}>{fmtK(myPipeTotal)}</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:10}}>Meta do mês</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:26,color:T.accent,marginBottom:4}}>{fmtK(myPipeTotal)}</div>
                       <div style={{fontSize:9,color:T.muted,marginBottom:8}}>Meta: {user.meta>0?fmtK(user.meta):<span style={{color:T.warn}}>não definida</span>}</div>
                       {user.meta>0&&<><PBar pct={(myPipeTotal/user.meta)*100} color={myPipeTotal>=user.meta?T.accent:T.info}/>
                       <div style={{fontSize:9,color:T.muted,marginTop:4}}>{Math.round((myPipeTotal/user.meta)*100)}% da meta</div></>}
                       {!user.meta&&<div style={{fontSize:9,color:T.warn,marginTop:4}}>Solicite ao gestor definir sua meta</div>}
                     </div>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Próximos follow-ups</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Próximos follow-ups</div>
                       {myProspects.slice(0,3).map((p,i)=><div key={i} style={{padding:"6px 0",borderBottom:`1px solid ${T.border}`}}>
                         <div style={{fontSize:11,fontWeight:600}}>{p.name}</div>
                         <div style={{fontSize:9,color:T.muted}}>{p.segment} · {p.owner}</div>
@@ -3324,8 +3349,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 </div>
                 <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16,marginBottom:12}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Meta do mês vs Realizado</div>
-                    {user.meta>0&&<div style={{fontSize:11,color:myPipeTotal>=user.meta?T.accent:T.info,fontFamily:"'Syne',sans-serif",fontWeight:700}}>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Meta do mês vs Realizado</div>
+                    {user.meta>0&&<div style={{fontSize:11,color:myPipeTotal>=user.meta?T.accent:T.info,fontFamily:"Arial,sans-serif",fontWeight:700}}>
                       {Math.round((myPipeTotal/user.meta)*100)}% atingido
                     </div>}
                   </div>
@@ -3339,7 +3364,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         ].map((k,i)=>(
                           <div key={i} style={{background:T.surface,borderRadius:8,padding:"10px 14px",textAlign:"center"}}>
                             <div style={{fontSize:9,color:T.muted,marginBottom:3}}>{k.l}</div>
-                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:k.c}}>{k.v}</div>
+                            <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:k.c}}>{k.v}</div>
                           </div>
                         ))}
                       </div>
@@ -3354,12 +3379,12 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   )}
                 </div>
                 <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
-                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.purple,marginBottom:10}}>Simulador de receita por campanha</div>
+                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.purple,marginBottom:10}}>Simulador de receita por campanha</div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
                     {[{l:"500 sacolas",v:fmtK(500*2.5)},{l:"5.000 sacolas",v:fmtK(5000*2.5)},{l:"20.000 sacolas",v:fmtK(20000*2.5)}].map((k,i)=>(
                       <div key={i} style={{background:T.surface,borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
                         <div style={{fontSize:9,color:T.muted,marginBottom:4}}>{k.l}</div>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:T.purple}}>{k.v}</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:T.purple}}>{k.v}</div>
                       </div>
                     ))}
                   </div>
@@ -3382,21 +3407,21 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Campanhas no ar</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Campanhas no ar</div>
                       {campsAtivas.map(c=>{
                         const imp=c.impactos||{};
                         const total=Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3)+(imp.stories||[]).reduce((a,s)=>a+Number(s.impressoes),0)+(imp.influencer||[]).reduce((a,s)=>a+Number(s.alcance),0)+(imp.impulsionado||[]).reduce((a,s)=>a+Number(s.alcance),0);
                         return(<div key={c.id} className="hr" onClick={()=>setSelCamp(c)} style={{padding:"8px 6px",borderRadius:8,marginBottom:4}}>
                           <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                            <div style={{fontSize:11,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{c.name}</div>
-                            <div style={{fontSize:10,color:T.accent,fontFamily:"'Syne',sans-serif",fontWeight:700}}>{total.toLocaleString()} impactos</div>
+                            <div style={{fontSize:11,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{c.name}</div>
+                            <div style={{fontSize:10,color:T.accent,fontFamily:"Arial,sans-serif",fontWeight:700}}>{total.toLocaleString()} impactos</div>
                           </div>
                           <PBar pct={c.progress} color={STAGES_CAMP.find(s=>s.id===c.stage)?.color||T.accent} h={4}/>
                         </div>);
                       })}
                     </div>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Impactos por canal</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Impactos por canal</div>
                       {[{l:"Offline (sacolas)",v:camps.reduce((a,c)=>a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3),0),c:T.purple},
                         {l:"Stories parceiros",v:camps.flatMap(c=>(c.impactos?.stories||[])).reduce((a,s)=>a+Number(s.impressoes),0),c:"#E1306C"},
                         {l:"Influenciadores",v:camps.flatMap(c=>(c.impactos?.influencer||[])).reduce((a,s)=>a+Number(s.alcance),0),c:T.warn},
@@ -3407,14 +3432,14 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <div style={{width:8,height:8,borderRadius:"50%",background:k.c}}/>
                             <span style={{fontSize:10,color:T.soft}}>{k.l}</span>
                           </div>
-                          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:k.c,fontSize:13}}>{k.v.toLocaleString()}</span>
+                          <span style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:k.c,fontSize:13}}>{k.v.toLocaleString()}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.pink,marginBottom:10}}>Posts por campanha ativa</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.pink,marginBottom:10}}>Posts por campanha ativa</div>
                       {campsAtivas.slice(0,4).map((c,i)=>{
                         const mkt=c.tasks?.marketing||[];
                         const posts=mkt.filter(t=>t.label.toLowerCase().includes("post")&&t.done).length;
@@ -3422,14 +3447,14 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         return(
                           <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${T.border}`}}>
                             <span style={{fontSize:10,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</span>
-                            <span style={{fontSize:10,color:posts===total&&total>0?T.accent:T.muted,fontFamily:"'JetBrains Mono',monospace",flexShrink:0,marginLeft:8}}>{posts}/{total} posts</span>
+                            <span style={{fontSize:10,color:posts===total&&total>0?T.accent:T.muted,fontFamily:"Arial,sans-serif",flexShrink:0,marginLeft:8}}>{posts}/{total} posts</span>
                           </div>
                         );
                       })}
                       {campsAtivas.length===0&&<div style={{fontSize:11,color:T.muted}}>Nenhuma campanha ativa</div>}
                     </div>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.warn,marginBottom:10}}>Projetos em andamento</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.warn,marginBottom:10}}>Projetos em andamento</div>
                       {campsAtivas.map((c,i)=>(
                         <div key={i} style={{padding:"6px 0",borderBottom:`1px solid ${T.border}`}}>
                           <div style={{fontSize:11,fontWeight:600}}>{c.name}</div>
@@ -3438,8 +3463,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       ))}
                     </div>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.info,marginBottom:10}}>Minhas tarefas</div>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:32,color:pendingQueue.length>0?T.danger:T.accent,marginBottom:4}}>{pendingQueue.length}</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.info,marginBottom:10}}>Minhas tarefas</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:32,color:pendingQueue.length>0?T.danger:T.accent,marginBottom:4}}>{pendingQueue.length}</div>
                       <div style={{fontSize:9,color:T.muted,marginBottom:8}}>tarefas pendentes</div>
                       <button onClick={()=>setTab("minha-fila")} className="btn" style={{width:"100%",padding:"7px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10}}>Ver fila -</button>
                     </div>
@@ -3459,28 +3484,28 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Faturamento por cliente</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Faturamento por cliente</div>
                     {fatPorCliente.length>0?fatPorCliente.slice(0,5).map((c,i)=>(
                       <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}>
                         <div><div style={{fontSize:11,fontWeight:600}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.campanhas} campanha{c.campanhas!==1?"s":""}</div></div>
                         <div style={{textAlign:"right"}}>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmtK(c.faturado)}</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmtK(c.faturado)}</div>
                         </div>
                       </div>
                     )):<div style={{fontSize:11,color:T.muted}}>Nenhuma campanha com valor líquido cadastrado</div>}
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:12}}>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>DRE — {mesAtual}</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>DRE — {mesAtual}</div>
                       {[{l:"Receita bruta",v:receitaReal,c:T.accent},{l:"Despesas totais",v:-despesaReal,c:T.danger},{l:"Resultado líquido",v:receitaReal-despesaReal,c:receitaReal>despesaReal?T.accent:T.danger}].map((k,i)=>(
                         <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}>
                           <span style={{fontSize:10,color:T.soft}}>{k.l}</span>
-                          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:k.c,fontSize:12}}>{k.v<0?"-":""}{fmtK(Math.abs(k.v))}</span>
+                          <span style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:k.c,fontSize:12}}>{k.v<0?"-":""}{fmtK(Math.abs(k.v))}</span>
                         </div>
                       ))}
                     </div>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Pagamento por fornecedor</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Pagamento por fornecedor</div>
                       {suppliers.map((s,i)=>(
                         <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:`1px solid ${T.border}`}}>
                           <span style={{fontSize:10}}>{s.name}</span>
@@ -3491,13 +3516,13 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   </div>
                 </div>
                 <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
-                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Pipeline de receita (prospects)</div>
+                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Pipeline de receita (prospects)</div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
                     {[{l:"Em negociação",stages:["negociacao"],c:T.warn},{l:"Propostas enviadas",stages:["proposta"],c:T.info},{l:"Total pipeline",stages:["lead","qualificado","proposta","negociacao"],c:T.accent}].map((k,i)=>{
                       const v=prospects.filter(p=>k.stages.includes(p.stage)).reduce((a,p)=>a+(p.value||0),0);
                       return(<div key={i} style={{background:T.surface,borderRadius:8,padding:"12px",textAlign:"center"}}>
                         <div style={{fontSize:9,color:T.muted,marginBottom:4}}>{k.l}</div>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:k.c}}>{fmtK(v)}</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:k.c}}>{fmtK(v)}</div>
                       </div>);
                     })}
                   </div>
@@ -3520,10 +3545,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                     {[{title:"Na Gráfica",camps:campsGrafica,color:T.purple},{title:"Na Logística",camps:campsLogistica,color:T.warn}].map((g,gi)=>(
                       <div key={gi} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:g.color,marginBottom:12}}>{g.title}</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:g.color,marginBottom:12}}>{g.title}</div>
                         {g.camps.length===0?<div style={{fontSize:11,color:T.muted}}>Nenhuma campanha</div>:g.camps.map(c=>(
                           <div key={c.id} className="hr" onClick={()=>setSelCamp(c)} style={{padding:"8px 6px",borderRadius:8,marginBottom:6}}>
-                            <div style={{fontSize:11,fontWeight:700,fontFamily:"'Syne',sans-serif",marginBottom:3}}>{c.name}</div>
+                            <div style={{fontSize:11,fontWeight:700,fontFamily:"Arial,sans-serif",marginBottom:3}}>{c.name}</div>
                             <div style={{fontSize:9,color:T.muted,marginBottom:5}}>{c.graficaFornecedor||c.logisticaFornecedor||"Fornecedor não definido"}{(c.graficaPrazo||c.logisticaPrazo)&&` · Prazo: ${c.graficaPrazo||c.logisticaPrazo}`}</div>
                             <PBar pct={c.progress} color={g.color} h={4}/>
                           </div>
@@ -3532,7 +3557,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     ))}
                   </div>
                   <div style={{background:T.card,border:`1px solid ${T.warnDim}`,borderLeft:`3px solid ${T.warn}`,borderRadius:12,padding:16}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.warn,marginBottom:10}}>Prazos críticos</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.warn,marginBottom:10}}>Prazos críticos</div>
                     {prazos.length===0?<div style={{fontSize:11,color:T.accent}}>Nenhum prazo cadastrado</div>:prazos.map((a,i)=>(
                       <div key={i} onClick={()=>{const c=camps.find(x=>x.id===a.id);if(c)setSelCamp(c);}} className="hr" style={{padding:"6px 4px",borderRadius:6,cursor:"pointer",marginBottom:6}}>
                         <div style={{fontSize:11,fontWeight:600}}>{a.camp}</div>
@@ -3560,7 +3585,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:12}}>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Parceiros por campanha</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Parceiros por campanha</div>
                       {campsAtivas.map(c=>(
                         <div key={c.id} style={{marginBottom:10}}>
                           <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
@@ -3573,7 +3598,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:12}}>
                       <div style={{background:T.card,border:`1px solid ${T.danger}33`,borderRadius:12,padding:16}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.danger,marginBottom:10}}>Contratos expirando</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.danger,marginBottom:10}}>Contratos expirando</div>
                         {basePartners.filter(p=>p.contrato.status==="expirando").map((p,i)=>(
                           <div key={i} style={{padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
                             <div style={{fontSize:11,fontWeight:600}}>{p.name}</div>
@@ -3583,21 +3608,21 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         {basePartners.filter(p=>p.contrato.status==="expirando").length===0&&<div style={{fontSize:11,color:T.accent}}>Nenhum expirando</div>}
                       </div>
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,marginBottom:8}}>Minha fila</div>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:28,color:pendingQueue.length>0?T.danger:T.accent}}>{pendingQueue.length}</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,marginBottom:8}}>Minha fila</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:28,color:pendingQueue.length>0?T.danger:T.accent}}>{pendingQueue.length}</div>
                         <div style={{fontSize:9,color:T.muted,marginBottom:8}}>tarefas pendentes</div>
                         <button onClick={()=>setTab("minha-fila")} className="btn" style={{width:"100%",padding:"7px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10}}>Ver fila -</button>
                       </div>
                     </div>
                   </div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Ranking de parceiros</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Ranking de parceiros</div>
                     <div style={{display:"flex",flexDirection:"column",gap:6}}>
                       {[...basePartners].sort((a,b)=>b.score-a.score).slice(0,5).map((p,i)=>(
                         <div key={i} style={{display:"flex",gap:12,alignItems:"center"}}>
                           <div style={{width:22,height:22,borderRadius:"50%",background:i<3?[T.warn+"33",T.soft+"22",T.soft+"15"][i]:T.border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:T.soft,fontWeight:700,flexShrink:0}}>{i+1}</div>
                           <div style={{flex:1}}><div style={{fontSize:11,fontWeight:600}}>{p.name}</div><div style={{fontSize:9,color:T.muted}}>{p.category}</div></div>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:p.score>80?T.accent:T.warn}}>{p.score}</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:p.score>80?T.accent:T.warn}}>{p.score}</div>
                         </div>
                       ))}
                     </div>
@@ -3610,7 +3635,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               <div>
                 {/* Period selector */}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
-                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14}}>Visão geral</div>
+                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14}}>Visão geral</div>
                   <div style={{display:"flex",gap:6}}>
                     {[["mes","Mês atual"],["trim","Trimestre"],["ano","Ano"],["custom","Período"]].map(([id,l])=>(
                       <button key={id} onClick={()=>setDashPeriod(id)} className="btn" style={{padding:"5px 12px",fontSize:10,borderRadius:7,background:dashPeriod===id?T.accentDim:"transparent",border:`1px solid ${dashPeriod===id?T.accentBorder:T.border}`,color:dashPeriod===id?T.accent:T.muted,cursor:"pointer"}}>{l}</button>
@@ -3632,11 +3657,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:12}}>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Campanhas em andamento</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Campanhas em andamento</div>
                     {campsAtivas.map(c=>{const td=tasksDone(c.tasks);const s=STAGES_CAMP.find(x=>x.id===c.stage);return(
                       <div key={c.id} className="hr" onClick={()=>setSelCamp(c)} style={{padding:"10px 8px",borderRadius:8,marginBottom:4}}>
                         <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-                          <div><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.region} · {c.project}</div></div>
+                          <div><div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.region} · {c.project}</div></div>
                           <Badge label={s.label} color={s.color}/>
                         </div>
                         <div style={{display:"flex",gap:10,alignItems:"center"}}>
@@ -3648,7 +3673,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:12}}>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Pendências por setor</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Pendências por setor</div>
                       {Object.keys(SEC_LABEL).filter(s=>["comercial","financeiro","marketing","base"].includes(s)).map(s=>{
                         const pend=camps.flatMap(c=>c.tasks[s]?.filter(t=>!t.done)||[]).length;
                         return(
@@ -3660,7 +3685,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       })}
                     </div>
                     <div style={{background:T.card,border:`1px solid ${T.warnDim}`,borderLeft:`3px solid ${T.warn}`,borderRadius:12,padding:16}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,color:T.warn,marginBottom:10}}>Prazos próximos</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,color:T.warn,marginBottom:10}}>Prazos próximos</div>
                       {[{camp:"T4F - Maio 2025",prazo:"Gráfica: 08/05",dias:5,id:4},{camp:"O Boticário - Maio",prazo:"Logística: 02/05",dias:1,id:1}].map((a,i)=>(
                         <div key={i} onClick={()=>{const c=camps.find(x=>x.id===a.id);if(c)setSelCamp(c);}} className="hr" style={{marginBottom:8,padding:"5px 4px",borderRadius:6,cursor:"pointer"}}>
                           <div style={{fontSize:11,fontWeight:600}}>{a.camp}</div>
@@ -3680,8 +3705,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 {users.filter(u=>["comercial","admin"].includes(u.role)&&u.active&&u.meta>0).length>0&&(
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:12}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Metas do time comercial</div>
-                      <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{new Date().toLocaleDateString("pt-BR",{month:"long",year:"numeric"})}</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Metas do time comercial</div>
+                      <div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>{new Date().toLocaleDateString("pt-BR",{month:"long",year:"numeric"})}</div>
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:10}}>
                       {users.filter(u=>["comercial","admin"].includes(u.role)&&u.active).map(u=>{
@@ -3698,9 +3723,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                               <div style={{display:"flex",gap:16,alignItems:"center"}}>
                                 {meta>0?(
                                   <>
-                                    <span style={{fontSize:10,color:T.info,fontFamily:"'JetBrains Mono',monospace"}}>{fmtK(pipeline)}</span>
+                                    <span style={{fontSize:10,color:T.info,fontFamily:"Arial,sans-serif"}}>{fmtK(pipeline)}</span>
                                     <span style={{fontSize:9,color:T.muted}}>/</span>
-                                    <span style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{fmtK(meta)}</span>
+                                    <span style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>{fmtK(meta)}</span>
                                     <div style={{width:42,height:20,background:pct>=100?T.accent:pct>=70?T.info:pct>=40?T.warn:T.danger,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center"}}>
                                       <span style={{fontSize:9,color:"#000",fontWeight:700}}>{pct}%</span>
                                     </div>
@@ -3728,9 +3753,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <div style={{marginTop:14,paddingTop:14,borderTop:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                           <div style={{fontSize:10,color:T.muted}}>Time completo</div>
                           <div style={{display:"flex",gap:12,alignItems:"center"}}>
-                            <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:T.info}}>{fmtK(totalReal)}</span>
+                            <span style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:T.info}}>{fmtK(totalReal)}</span>
                             <span style={{fontSize:9,color:T.muted}}>de</span>
-                            <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:T.muted}}>{fmtK(totalMeta)}</span>
+                            <span style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:T.muted}}>{fmtK(totalMeta)}</span>
                             <div style={{width:52,height:24,background:pctTotal>=100?T.accent:pctTotal>=70?T.info:T.warn,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center"}}>
                               <span style={{fontSize:11,color:"#000",fontWeight:800}}>{pctTotal}%</span>
                             </div>
@@ -3743,8 +3768,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 {/* Receita mensal com valores */}
                 <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Receita mensal</div>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:T.accent}}>{fmtK(MONTHLY_DATA.reduce((a,d)=>a+d.receita,0))}</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Receita mensal</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:T.accent}}>{fmtK(MONTHLY_DATA.reduce((a,d)=>a+d.receita,0))}</div>
                   </div>
                   <div style={{display:"flex",gap:6,alignItems:"flex-end",height:100}}>
                     {MONTHLY_DATA.map((d,i)=>{
@@ -3752,7 +3777,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       const h=d.receita>0?Math.round((d.receita/maxVal)*75):4;
                       return(
                         <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                          {d.receita>0&&<div style={{fontSize:7,color:T.accent,fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap"}}>{fmtK(d.receita)}</div>}
+                          {d.receita>0&&<div style={{fontSize:7,color:T.accent,fontFamily:"Arial,sans-serif",whiteSpace:"nowrap"}}>{fmtK(d.receita)}</div>}
                           <div style={{width:"70%",background:d.receita>0?`linear-gradient(180deg,${T.accent},${T.accent}88)`:T.border,borderRadius:"3px 3px 0 0",height:`${h}px`,transition:"height 0.4s"}}/>
                           <div style={{fontSize:7,color:T.muted,whiteSpace:"nowrap"}}>{d.month}</div>
                         </div>
@@ -3798,15 +3823,15 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               {/* Summary header */}
               <div style={{background:`linear-gradient(135deg,${SEC_COLOR[sec]||T.accent}15,${SEC_COLOR[sec]||T.accent}08)`,border:`1px solid ${(SEC_COLOR[sec]||T.accent)}40`,borderRadius:14,padding:"20px 24px",marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:14}}>
                 <div>
-                  <div style={{fontSize:10,color:SEC_COLOR[sec]||T.accent,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>{ROLE_LABELS[user.role]} · Fila de hoje</div>
-                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:28,color:SEC_COLOR[sec]||T.accent,marginBottom:2}}>{pendingQueue.length} tarefa{pendingQueue.length!==1?"s":""} pendente{pendingQueue.length!==1?"s":""}</div>
+                  <div style={{fontSize:10,color:SEC_COLOR[sec]||T.accent,fontFamily:"Arial,sans-serif",letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>{ROLE_LABELS[user.role]} · Fila de hoje</div>
+                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:28,color:SEC_COLOR[sec]||T.accent,marginBottom:2}}>{pendingQueue.length} tarefa{pendingQueue.length!==1?"s":""} pendente{pendingQueue.length!==1?"s":""}</div>
                   <div style={{fontSize:11,color:T.soft}}>{doneQueue.length} concluída{doneQueue.length!==1?"s":""} hoje · {myQueue.length} total</div>
                 </div>
                 <div style={{display:"flex",gap:16}}>
                   {[{l:"Pendentes",v:pendingQueue.length,c:pendingQueue.length>0?T.danger:T.accent},{l:"Concluídas",v:doneQueue.length,c:T.accent},{l:"Campanhas",v:new Set(myQueue.map(t=>t.campId)).size,c:T.info}].map((k,i)=>(
                     <div key={i} style={{textAlign:"center"}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:k.c}}>{k.v}</div>
-                      <div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{k.l}</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:22,color:k.c}}>{k.v}</div>
+                      <div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{k.l}</div>
                     </div>
                   ))}
                 </div>
@@ -3817,15 +3842,15 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 {[["todos","Todas"],["pendentes","Pendentes"],["concluidas","Concluídas"]].map(([v,l])=>(
                   <div key={v} onClick={()=>setQueueFilter(v)} className="tb" style={{padding:"6px 12px",borderRadius:6,fontSize:10,background:queueFilter===v?(SEC_COLOR[sec]||T.accent)+"22":T.card,border:`1px solid ${queueFilter===v?(SEC_COLOR[sec]||T.accent)+"55":T.border}`,color:queueFilter===v?SEC_COLOR[sec]||T.accent:T.muted}}>{l}</div>
                 ))}
-                <div style={{marginLeft:"auto",fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{visibleQueue.length} tarefa{visibleQueue.length!==1?"s":""}</div>
+                <div style={{marginLeft:"auto",fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>{visibleQueue.length} tarefa{visibleQueue.length!==1?"s":""}</div>
               </div>
 
               {/* Queue items */}
               {visibleQueue.length===0?(
                 <div style={{textAlign:"center",padding:"60px 20px",background:T.card,border:`1px solid ${T.border}`,borderRadius:12}}>
                   <div style={{fontSize:40,marginBottom:12}}>-</div>
-                  <div style={{fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800,color:T.accent,marginBottom:6}}>Fila limpa!</div>
-                  <div style={{fontSize:11,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>Todas as suas tarefas estão concluídas.</div>
+                  <div style={{fontFamily:"Arial,sans-serif",fontSize:18,fontWeight:800,color:T.accent,marginBottom:6}}>Fila limpa!</div>
+                  <div style={{fontSize:11,color:T.muted,fontFamily:"Arial,sans-serif"}}>Todas as suas tarefas estão concluídas.</div>
                 </div>
               ):(
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -3838,16 +3863,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           {t.done&&"-"}
                         </div>
                         <div style={{flex:1,minWidth:160}}>
-                          <div style={{fontSize:13,fontWeight:700,fontFamily:"'Syne',sans-serif",textDecoration:t.done?"line-through":"none",color:t.done?T.muted:T.text,marginBottom:4}}>{t.label}</div>
+                          <div style={{fontSize:13,fontWeight:700,fontFamily:"Arial,sans-serif",textDecoration:t.done?"line-through":"none",color:t.done?T.muted:T.text,marginBottom:4}}>{t.label}</div>
                           <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                             <Badge label={t.campName} color={campColor}/>
                             <Badge label={t.project} color={T.purple}/>
                           </div>
-                          {t.done&&t.doneAt&&<div style={{fontSize:9,color:T.muted,marginTop:4,fontFamily:"'JetBrains Mono',monospace"}}>Concluído em {t.doneAt}</div>}
+                          {t.done&&t.doneAt&&<div style={{fontSize:9,color:T.muted,marginTop:4,fontFamily:"Arial,sans-serif"}}>Concluído em {t.doneAt}</div>}
                         </div>
                         <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
                           {!t.done&&(
-                            <button onClick={()=>toggleTask(t.campId,t.sector,t.id,user)} className="btn" style={{padding:"6px 14px",background:`linear-gradient(135deg,${SEC_COLOR[t.sector]||T.accent},${SEC_COLOR[t.sector]||T.accent}AA)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10,whiteSpace:"nowrap"}}>
+                            <button onClick={()=>toggleTask(t.campId,t.sector,t.id,user)} className="btn" style={{padding:"6px 14px",background:`linear-gradient(135deg,${SEC_COLOR[t.sector]||T.accent},${SEC_COLOR[t.sector]||T.accent}AA)`,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,whiteSpace:"nowrap"}}>
                               - Concluir
                             </button>
                           )}
@@ -3875,7 +3900,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   ))}
                 </div>
                 {["admin","comercial","operacional"].includes(user.role)&&(
-                  <button className="btn" onClick={()=>{setShowNewCamp(true);setNewCampStep(1);}} style={{padding:"8px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>+ Nova Campanha</button>
+                  <button className="btn" onClick={()=>{setShowNewCamp(true);setNewCampStep(1);}} style={{padding:"8px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>+ Nova Campanha</button>
                 )}
               </div>
 
@@ -3887,8 +3912,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     {/* Header */}
                     <div style={{padding:"18px 24px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
                       <div>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16}}>Nova Campanha</div>
-                        <div style={{fontSize:9,color:T.muted,marginTop:2,fontFamily:"'JetBrains Mono',monospace"}}>Etapa {newCampStep} de 3</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16}}>Nova Campanha</div>
+                        <div style={{fontSize:9,color:T.muted,marginTop:2,fontFamily:"Arial,sans-serif"}}>Etapa {newCampStep} de 3</div>
                       </div>
                       <div style={{display:"flex",gap:6}}>
                         {[1,2,3].map(s=>(
@@ -3904,42 +3929,42 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {/* ETAPA 1 — BÁSICO */}
                       {newCampStep===1&&(
                         <div style={{display:"flex",flexDirection:"column",gap:14}}>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.accent,fontSize:12,marginBottom:2}}>Informações básicas</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,fontSize:12,marginBottom:2}}>Informações básicas</div>
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                             {[["Nome da campanha","name","text",true],["Cliente","client","text",true],["Agência","agencia","text",false],["Nº PI","numPI","text",false]].map(([l,k,t,req])=>(
                               <div key={k}>
-                                <div style={{fontSize:9,color:req?T.accent:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{l}{req&&" *"}</div>
+                                <div style={{fontSize:9,color:req?T.accent:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}{req&&" *"}</div>
                                 <input type={t} value={newCamp[k]} onChange={e=>setNewCamp(p=>({...p,[k]:e.target.value}))} style={inpS}/>
                               </div>
                             ))}
                           </div>
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Projeto</div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Projeto</div>
                               <select value={newCamp.project} onChange={e=>setNewCamp(p=>({...p,project:e.target.value}))} style={selS}>
                                 <option value="">Selecione...</option>
                                 {projects.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
                               </select>
                             </div>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Comercial Responsável</div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Comercial Responsável</div>
                               <select value={newCamp.responsavel} onChange={e=>setNewCamp(p=>({...p,responsavel:e.target.value}))} style={selS}>
                                 <option value="">Selecione...</option>
                                 {users.filter(u=>["admin","comercial"].includes(u.role)&&u.active).map(u=><option key={u.id} value={u.name}>{u.name}</option>)}
                               </select>
                             </div>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Região</div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Região</div>
                               <input value={newCamp.region} onChange={e=>setNewCamp(p=>({...p,region:e.target.value}))} placeholder="Ex: São Paulo · SP" style={inpS}/>
                             </div>
                           </div>
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Data início</div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Data início</div>
                               <input type="date" value={newCamp.startDate} onChange={e=>setNewCamp(p=>({...p,startDate:e.target.value}))} style={inpS}/>
                             </div>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Data fim</div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Data fim</div>
                               <input type="date" value={newCamp.endDate} onChange={e=>setNewCamp(p=>({...p,endDate:e.target.value}))} style={inpS}/>
                             </div>
                           </div>
@@ -3949,10 +3974,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {/* ETAPA 2 — OPERACIONAL */}
                       {newCampStep===2&&(
                         <div style={{display:"flex",flexDirection:"column",gap:14}}>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.purple,fontSize:12,marginBottom:2}}>Operacional & Produção</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.purple,fontSize:12,marginBottom:2}}>Operacional & Produção</div>
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Gráfica</div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Gráfica</div>
                               <select value={newCamp.graficaFornecedor} onChange={e=>setNewCamp(p=>({...p,graficaFornecedor:e.target.value}))} style={selS}>
                                 <option value="">Selecione...</option>
                                 {suppliers.filter(s=>s.type==="grafica").map(s=><option key={s.id} value={s.name}>{s.name}</option>)}
@@ -3960,17 +3985,17 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                               </select>
                             </div>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Material</div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Material</div>
                               <input value={newCamp.material} onChange={e=>setNewCamp(p=>({...p,material:e.target.value}))} placeholder="Ex: Sacola kraft 30x40" style={inpS}/>
                             </div>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Prazo gráfica</div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Prazo gráfica</div>
                               <input type="date" value={newCamp.graficaPrazo} onChange={e=>setNewCamp(p=>({...p,graficaPrazo:e.target.value}))} style={inpS}/>
                             </div>
                           </div>
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Logística</div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Logística</div>
                               <select value={newCamp.logistica} onChange={e=>setNewCamp(p=>({...p,logistica:e.target.value}))} style={selS}>
                                 <option value="">Selecione...</option>
                                 {suppliers.filter(s=>s.type==="logistica").map(s=><option key={s.id} value={s.name}>{s.name}</option>)}
@@ -3978,25 +4003,25 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                               </select>
                             </div>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Fornecedor logística</div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Fornecedor logística</div>
                               <input value={newCamp.logisticaFornecedor} onChange={e=>setNewCamp(p=>({...p,logisticaFornecedor:e.target.value}))} placeholder="Nome do fornecedor" style={inpS}/>
                             </div>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Prazo logística</div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Prazo logística</div>
                               <input type="date" value={newCamp.logisticaPrazo} onChange={e=>setNewCamp(p=>({...p,logisticaPrazo:e.target.value}))} style={inpS}/>
                             </div>
                           </div>
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Nº de parceiros</div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Nº de parceiros</div>
                               <input type="number" value={newCamp.parceiros} onChange={e=>setNewCamp(p=>({...p,parceiros:e.target.value}))} placeholder="0" style={inpS}/>
                             </div>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Qtd de embalagens</div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Qtd de embalagens</div>
                               <input type="number" value={newCamp.sacolas} onChange={e=>setNewCamp(p=>({...p,sacolas:e.target.value}))} placeholder="0" style={inpS}/>
                             </div>
                             <div>
-                              <div style={{fontSize:9,color:T.accent,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Valor Líquido (R$)</div>
+                              <div style={{fontSize:9,color:T.accent,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Valor Líquido (R$)</div>
                               <input type="number" value={newCamp.valorLiquido} onChange={e=>setNewCamp(p=>({...p,valorLiquido:e.target.value}))} placeholder="0,00" style={inpS}/>
                             </div>
                           </div>
@@ -4007,16 +4032,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {newCampStep===3&&(
                         <div style={{display:"flex",flexDirection:"column",gap:16}}>
                           <div>
-                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.warn,fontSize:12,marginBottom:10}}>Briefing da campanha</div>
+                            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.warn,fontSize:12,marginBottom:10}}>Briefing da campanha</div>
                             <textarea value={newCamp.briefing} onChange={e=>setNewCamp(p=>({...p,briefing:e.target.value}))} placeholder="Descreva o briefing completo da campanha — objetivos, público-alvo, diretrizes criativas, observações importantes..." rows={6} style={{...inpS,width:"100%",resize:"vertical",lineHeight:1.6}}/>
                           </div>
                           <div>
-                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.info,fontSize:12,marginBottom:10}}>Segmentos de parceiro</div>
+                            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.info,fontSize:12,marginBottom:10}}>Segmentos de parceiro</div>
                             <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
                               {["Hamburguer","Pizza","Japonesa","Açaí","Café","Padaria","Churrascaria","Regional","Sobremesa","Bar","Restaurante","Sorvete","Saudável","Petshop","Farmácia"].map(seg=>{
                                 const sel=newCamp.segments.includes(seg);
                                 return(
-                                  <div key={seg} onClick={()=>setNewCamp(p=>({...p,segments:sel?p.segments.filter(s=>s!==seg):[...p.segments,seg]}))} style={{padding:"6px 14px",borderRadius:20,cursor:"pointer",border:`1px solid ${sel?T.info+"88":T.border}`,background:sel?T.infoDim:T.surface,color:sel?T.info:T.muted,fontSize:11,fontFamily:"'JetBrains Mono',monospace",transition:"all 0.15s"}}>
+                                  <div key={seg} onClick={()=>setNewCamp(p=>({...p,segments:sel?p.segments.filter(s=>s!==seg):[...p.segments,seg]}))} style={{padding:"6px 14px",borderRadius:20,cursor:"pointer",border:`1px solid ${sel?T.info+"88":T.border}`,background:sel?T.infoDim:T.surface,color:sel?T.info:T.muted,fontSize:11,fontFamily:"Arial,sans-serif",transition:"all 0.15s"}}>
                                     {seg}
                                   </div>
                                 );
@@ -4033,10 +4058,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         {newCampStep>1?"← Voltar":"Cancelar"}
                       </button>
                       {newCampStep<3
-                        ?<button onClick={()=>{if(newCampStep===1&&(!newCamp.name||!newCamp.client))return;setNewCampStep(s=>s+1);}} style={{padding:"8px 20px",background:newCampStep===1&&(!newCamp.name||!newCamp.client)?T.border:`linear-gradient(135deg,${T.accent},#00B87A)`,color:newCampStep===1&&(!newCamp.name||!newCamp.client)?T.muted:"#000",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,border:"none"}}>
+                        ?<button onClick={()=>{if(newCampStep===1&&(!newCamp.name||!newCamp.client))return;setNewCampStep(s=>s+1);}} style={{padding:"8px 20px",background:newCampStep===1&&(!newCamp.name||!newCamp.client)?T.border:`linear-gradient(135deg,${T.accent},#00B87A)`,color:newCampStep===1&&(!newCamp.name||!newCamp.client)?T.muted:"#000",borderRadius:8,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,border:"none"}}>
                             Próximo →
                           </button>
-                        :<button onClick={createCamp} style={{padding:"8px 20px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,border:"none"}}>
+                        :<button onClick={createCamp} style={{padding:"8px 20px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,border:"none"}}>
                             Criar Campanha ✓
                           </button>
                       }
@@ -4057,7 +4082,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       style={{padding:"6px",minHeight:120}}>
                       <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:8,padding:"0 2px"}}>
                         <div style={{width:6,height:6,borderRadius:"50%",background:stage.color}}/>
-                        <span style={{fontSize:9,color:stage.color,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase"}}>{stage.label}</span>
+                        <span style={{fontSize:9,color:stage.color,fontFamily:"Arial,sans-serif",textTransform:"uppercase"}}>{stage.label}</span>
                         <span style={{fontSize:8,color:T.muted,marginLeft:"auto"}}>{camps.filter(c=>c.stage===stage.id).length}</span>
                         {dragOverCampStage===stage.id&&<span style={{fontSize:8,color:stage.color,animation:"pl 1s infinite"}}>-</span>}
                       </div>
@@ -4076,17 +4101,17 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             onClick={()=>!isDragging&&setSelCamp(c)}
                             style={{background:T.card,border:`1px solid ${isDragging?stage.color+"88":T.border}`,borderLeft:`3px solid ${stage.color}`,borderRadius:10,padding:"12px 13px",marginBottom:8,boxShadow:isDragging?`0 8px 24px ${stage.color}33`:"none",userSelect:"none",touchAction:"none"}}>
                             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
-                              <div style={{fontSize:9,color:T.purple,fontFamily:"'JetBrains Mono',monospace",flex:1}}>{c.project||"—"}</div>
+                              <div style={{fontSize:9,color:T.purple,fontFamily:"Arial,sans-serif",flex:1}}>{c.project||"—"}</div>
                               {!c.graficaFornecedor&&<div title="Operacional pendente" style={{fontSize:8,color:T.warn,background:T.warnDim,padding:"1px 5px",borderRadius:3,whiteSpace:"nowrap"}}>Op. pendente</div>}
                             </div>
-                            <div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif",marginBottom:2,lineHeight:1.3}}>{c.name}</div>
+                            <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif",marginBottom:2,lineHeight:1.3}}>{c.name}</div>
                             <div style={{fontSize:9,color:T.soft,marginBottom:1}}>{c.client}</div>
-                            {c.agencia&&<div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",marginBottom:6}}>{c.agencia}</div>}
+                            {c.agencia&&<div style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif",marginBottom:6}}>{c.agencia}</div>}
                             {!c.agencia&&<div style={{marginBottom:4}}/>}
 
                             {/* Bloco operacional */}
                             {(c.graficaFornecedor||c.material||c.logistica||c.sacolas)?(
-                              <div style={{background:T.surface,borderRadius:6,padding:"7px 8px",marginBottom:7,fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace",display:"flex",flexDirection:"column",gap:3}}>
+                              <div style={{background:T.surface,borderRadius:6,padding:"7px 8px",marginBottom:7,fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif",display:"flex",flexDirection:"column",gap:3}}>
                                 {c.graficaFornecedor&&<div style={{display:"flex",gap:4}}><span style={{color:T.purple}}>Grá:</span><span style={{color:T.soft}}>{c.graficaFornecedor}</span></div>}
                                 {c.material&&<div style={{display:"flex",gap:4}}><span style={{color:T.purple}}>Mat:</span><span style={{color:T.soft,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.material}</span></div>}
                                 {c.logistica&&<div style={{display:"flex",gap:4}}><span style={{color:T.info}}>Log:</span><span style={{color:T.soft}}>{c.logistica}</span></div>}
@@ -4094,14 +4119,14 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                 {c.valorLiquido>0&&<div style={{display:"flex",gap:4}}><span style={{color:T.accent}}>Val:</span><span style={{color:T.accent,fontWeight:700}}>R${c.valorLiquido.toLocaleString("pt-BR")}</span></div>}
                               </div>
                             ):(
-                              <div style={{background:T.warnDim,border:`1px solid ${T.warn}33`,borderRadius:6,padding:"5px 8px",marginBottom:7,fontSize:8,color:T.warn,fontFamily:"'JetBrains Mono',monospace"}}>
+                              <div style={{background:T.warnDim,border:`1px solid ${T.warn}33`,borderRadius:6,padding:"5px 8px",marginBottom:7,fontSize:8,color:T.warn,fontFamily:"Arial,sans-serif"}}>
                                 Operacional não preenchido
                               </div>
                             )}
 
                             <PBar pct={c.progress} color={stage.color} h={4}/>
                             <div style={{display:"flex",justifyContent:"space-between",marginTop:5,gap:6}}>
-                              <span style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{td.done}/{td.total} tarefas</span>
+                              <span style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif"}}>{td.done}/{td.total} tarefas</span>
                               <div style={{display:"flex",gap:4}}>
                                 {c.files.length>0&&<span style={{fontSize:8,color:T.purple}}>-{c.files.length}</span>}
                                 {c.timeline.length>0&&<span style={{fontSize:8,color:T.soft}}>-{c.timeline.length}</span>}
@@ -4122,17 +4147,17 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                   <div style={{display:"grid",gridTemplateColumns:"2fr 0.8fr 1fr 1fr 0.8fr 0.7fr 0.6fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:8}}>
                     {["Campanha","Projeto","Região","Etapa","Progresso","Tarefas","Arquivos"].map(h=>(
-                      <div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"'JetBrains Mono',monospace"}}>{h}</div>
+                      <div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"Arial,sans-serif"}}>{h}</div>
                     ))}
                   </div>
                   {camps.map(c=>{const s=STAGES_CAMP.find(x=>x.id===c.stage);const td=tasksDone(c.tasks);return(
                     <div key={c.id} className="hr" onClick={()=>setSelCamp(c)} style={{display:"grid",gridTemplateColumns:"2fr 0.8fr 1fr 1fr 0.8fr 0.7fr 0.6fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
-                      <div><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.client}</div></div>
+                      <div><div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.client}</div></div>
                       <Badge label={c.project} color={T.purple}/>
-                      <div style={{fontSize:10,color:T.soft,fontFamily:"'JetBrains Mono',monospace"}}>{c.region}</div>
+                      <div style={{fontSize:10,color:T.soft,fontFamily:"Arial,sans-serif"}}>{c.region}</div>
                       <Badge label={s.label} color={s.color}/>
                       <div><PBar pct={c.progress} color={s.color}/><div style={{fontSize:8,color:T.muted,marginTop:2}}>{c.progress}%</div></div>
-                      <div style={{fontSize:10,color:td.done===td.total?T.accent:T.muted,fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{td.done}/{td.total}</div>
+                      <div style={{fontSize:10,color:td.done===td.total?T.accent:T.muted,fontFamily:"Arial,sans-serif",fontWeight:700}}>{td.done}/{td.total}</div>
                       <div style={{fontSize:10,color:T.purple}}>- {c.files.length}</div>
                     </div>
                   );})}
@@ -4152,8 +4177,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <div key={proj.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"16px 18px",cursor:"pointer"}} onClick={()=>{setCampView("kanban");}}>
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                             <div>
-                              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,marginBottom:3}}>{proj.name}</div>
-                              <div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{projCamps.length} campanha{projCamps.length!==1?"s":""}</div>
+                              <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,marginBottom:3}}>{proj.name}</div>
+                              <div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{projCamps.length} campanha{projCamps.length!==1?"s":""}</div>
                             </div>
                             <div style={{fontSize:9,padding:"3px 8px",borderRadius:4,background:proj.active?T.accentDim:T.border,color:proj.active?T.accent:T.muted,border:`1px solid ${proj.active?T.accentBorder:T.border}`}}>
                               {proj.active?"Ativo":"Inativo"}
@@ -4162,12 +4187,12 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
                             {[["Em andamento",emAndamento,T.info],["Finalizadas",done,T.accent],["Pendentes",projCamps.filter(c=>c.stage===1).length,T.warn]].map(([l,v,c])=>(
                               <div key={l} style={{background:T.surface,borderRadius:8,padding:"8px 10px",textAlign:"center"}}>
-                                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:c}}>{v}</div>
+                                <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:c}}>{v}</div>
                                 <div style={{fontSize:8,color:T.muted}}>{l}</div>
                               </div>
                             ))}
                           </div>
-                          {totalVal>0&&<div style={{fontSize:10,color:T.accent,fontFamily:"'JetBrains Mono',monospace",marginBottom:8}}>R$ {totalVal.toLocaleString("pt-BR")} em valor líquido</div>}
+                          {totalVal>0&&<div style={{fontSize:10,color:T.accent,fontFamily:"Arial,sans-serif",marginBottom:8}}>R$ {totalVal.toLocaleString("pt-BR")} em valor líquido</div>}
                           <div style={{display:"flex",flexDirection:"column",gap:4}}>
                             {projCamps.slice(0,3).map(c=>{
                               const s=STAGES_CAMP.find(x=>x.id===c.stage);
@@ -4180,7 +4205,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             })}
                             {projCamps.length>3&&<div style={{fontSize:9,color:T.muted,textAlign:"center"}}>+{projCamps.length-3} mais</div>}
                           </div>
-                          <button onClick={e=>{e.stopPropagation();setNewCamp(p=>({...p,project:proj.name}));setShowNewCamp(true);setNewCampStep(1);}} style={{marginTop:10,width:"100%",padding:"7px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>
+                          <button onClick={e=>{e.stopPropagation();setNewCamp(p=>({...p,project:proj.name}));setShowNewCamp(true);setNewCampStep(1);}} style={{marginTop:10,width:"100%",padding:"7px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700,fontFamily:"Arial,sans-serif"}}>
                             + Nova campanha neste projeto
                           </button>
                         </div>
@@ -4190,7 +4215,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     <div style={{background:"transparent",border:`2px dashed ${T.border}`,borderRadius:12,padding:"16px 18px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,minHeight:120,cursor:"pointer"}}
                          onClick={()=>{const n=prompt("Nome do novo projeto:");if(n?.trim()){const rec={id:Date.now(),name:n.trim(),active:true};setProjects(p=>[...p,rec]);supabase.from("projects").insert(rec);}}}>
                       <div style={{fontSize:24,color:T.muted}}>+</div>
-                      <div style={{fontSize:11,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>Novo projeto</div>
+                      <div style={{fontSize:11,color:T.muted,fontFamily:"Arial,sans-serif"}}>Novo projeto</div>
                     </div>
                   </div>
                 </div>
@@ -4238,9 +4263,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
                   <div style={{display:"flex",gap:10,alignItems:"center"}}>
                     <button onClick={prevMonth} className="btn" style={{width:32,height:32,background:T.card,border:`1px solid ${T.border}`,borderRadius:8,color:T.soft,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>{"<"}</button>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:20,minWidth:180,textAlign:"center"}}>{MONTHS_PT[calMonth]} {calYear}</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:20,minWidth:180,textAlign:"center"}}>{MONTHS_PT[calMonth]} {calYear}</div>
                     <button onClick={nextMonth} className="btn" style={{width:32,height:32,background:T.card,border:`1px solid ${T.border}`,borderRadius:8,color:T.soft,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>{">"}</button>
-                    <button onClick={()=>{setCalMonth(new Date().getMonth());setCalYear(new Date().getFullYear());}} className="btn" style={{padding:"6px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,borderRadius:7,fontSize:10,color:T.accent,fontFamily:"'JetBrains Mono',monospace"}}>Hoje</button>
+                    <button onClick={()=>{setCalMonth(new Date().getMonth());setCalYear(new Date().getFullYear());}} className="btn" style={{padding:"6px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,borderRadius:7,fontSize:10,color:T.accent,fontFamily:"Arial,sans-serif"}}>Hoje</button>
                   </div>
                   {/* Legend */}
                   <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
@@ -4266,8 +4291,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     {l:"Conflitos de prazo",v:conflicts.length,c:conflicts.length>0?T.danger:T.accent},
                   ].map((k,i)=>(
                     <div key={i} style={{background:T.card,border:`1px solid ${k.c}33`,borderRadius:10,padding:"14px 16px"}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:k.c}}>{k.v}</div>
-                      <div style={{fontSize:9,color:T.muted,marginTop:2,fontFamily:"'JetBrains Mono',monospace"}}>{k.l}</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:22,color:k.c}}>{k.v}</div>
+                      <div style={{fontSize:9,color:T.muted,marginTop:2,fontFamily:"Arial,sans-serif"}}>{k.l}</div>
                     </div>
                   ))}
                 </div>
@@ -4277,7 +4302,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   {/* Day headers */}
                   <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",borderBottom:`1px solid ${T.border}`}}>
                     {DAYS_PT.map(d=>(
-                      <div key={d} style={{padding:"10px 0",textAlign:"center",fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1,background:T.surface}}>{d}</div>
+                      <div key={d} style={{padding:"10px 0",textAlign:"center",fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1,background:T.surface}}>{d}</div>
                     ))}
                   </div>
                   {/* Day cells */}
@@ -4300,9 +4325,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           onMouseEnter={()=>setCalHover(day)} onMouseLeave={()=>setCalHover(null)}>
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
                             <div style={{width:22,height:22,borderRadius:"50%",background:isToday?T.accent:"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                              <span style={{fontSize:11,fontWeight:isToday?800:400,color:isToday?"#000":T.soft,fontFamily:"'Syne',sans-serif"}}>{day}</span>
+                              <span style={{fontSize:11,fontWeight:isToday?800:400,color:isToday?"#000":T.soft,fontFamily:"Arial,sans-serif"}}>{day}</span>
                             </div>
-                            {dayCamps.length>2&&<span style={{fontSize:7,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>+{dayCamps.length-2}</span>}
+                            {dayCamps.length>2&&<span style={{fontSize:7,color:T.muted,fontFamily:"Arial,sans-serif"}}>+{dayCamps.length-2}</span>}
                           </div>
                           {/* Campaign bars */}
                           <div style={{display:"flex",flexDirection:"column",gap:2}}>
@@ -4334,7 +4359,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
                 {/* List view - all campaigns */}
                 <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,overflow:"hidden"}}>
-                  <div style={{padding:"14px 18px",borderBottom:`1px solid ${T.border}`,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Todas as campanhas</div>
+                  <div style={{padding:"14px 18px",borderBottom:`1px solid ${T.border}`,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Todas as campanhas</div>
                   {sortedCamps.map(c=>{
                     const stg=STAGES_CAMP.find(s=>s.id===c.stage);
                     const hasConflict=conflicts.includes(c.id);
@@ -4347,7 +4372,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         style={{display:"flex",gap:14,alignItems:"center",padding:"13px 18px",borderBottom:`1px solid ${T.border}`,borderLeft:`4px solid ${hasConflict?T.danger:stg?.color}`,flexWrap:"wrap"}}>
                         <div style={{flex:1,minWidth:160}}>
                           <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:4,flexWrap:"wrap"}}>
-                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12}}>{c.name}</div>
+                            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12}}>{c.name}</div>
                             {hasConflict&&<span style={{fontSize:8,padding:"1px 6px",borderRadius:4,background:T.danger+"22",color:T.danger,border:`1px solid ${T.danger}44`}}>Conflito de prazo</span>}
                           </div>
                           <div style={{fontSize:10,color:T.muted}}>{c.startDate} - {c.endDate} · {dur} dias · {c.region}</div>
@@ -4364,8 +4389,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             </div>
                           </div>
                           <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                            <span style={{fontSize:9,padding:"3px 8px",borderRadius:5,background:stg?.color+"22",color:stg?.color,border:`1px solid ${stg?.color}44`,fontFamily:"'JetBrains Mono',monospace"}}>{stg?.label}</span>
-                            <span style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{c.progress}%</span>
+                            <span style={{fontSize:9,padding:"3px 8px",borderRadius:5,background:stg?.color+"22",color:stg?.color,border:`1px solid ${stg?.color}44`,fontFamily:"Arial,sans-serif"}}>{stg?.label}</span>
+                            <span style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{c.progress}%</span>
                           </div>
                         </div>
                       </div>
@@ -4383,7 +4408,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             // Modal de edição de lançamento
             const EditLancModal=editLanc?(<div style={{position:"fixed",inset:0,background:"#00000088",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setEditLanc(null)}>
               <div style={{background:"#fff",borderRadius:12,padding:24,width:520,maxWidth:"95vw",boxShadow:"0 20px 60px #00000033"}} onClick={e=>e.stopPropagation()}>
-                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:"#1a1a2e",marginBottom:16}}>Editar Lançamento</div>
+                <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:"#1a1a2e",marginBottom:16}}>Editar Lançamento</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
                   {[["Data","data"],["Descrição","descricao"],["Entrada (R$)","entrada"],["Saída (R$)","saida"],["Categoria","categoria"],["Centro de custo","centrosCusto"]].map(([l,k])=>(
                     <div key={k} style={{gridColumn:k==="descricao"?"1/3":"auto"}}>
@@ -4441,7 +4466,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
                 {/* MES SELECTOR */}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
-                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14}}>Referencia: {finMesRef}</div>
+                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14}}>Referencia: {finMesRef}</div>
                   <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                     {["01","02","03","04","05","06","07","08","09","10","11","12"].map(m=>{
                       const yr=finMesRef.split("/")[1]||"2026";
@@ -4466,7 +4491,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:16}}>
                       {/* Contas bancarias */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Contas Bancarias</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Contas Bancarias</div>
                         {contas.map(c=>(
                           <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}>
                             <div style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -4476,33 +4501,33 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                 <div style={{fontSize:8,color:T.muted}}>{c.tipo}</div>
                               </div>
                             </div>
-                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,color:c.saldo>=0?T.accent:T.danger}}>{fmt(c.saldo)}</div>
+                            <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:c.saldo>=0?T.accent:T.danger}}>{fmt(c.saldo)}</div>
                           </div>
                         ))}
                         <div style={{display:"flex",justifyContent:"space-between",paddingTop:8}}>
                           <span style={{fontSize:10,color:T.muted,fontWeight:600}}>TOTAL</span>
-                          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,color:T.accent}}>{fmt(saldoTotal)}</span>
+                          <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,color:T.accent}}>{fmt(saldoTotal)}</span>
                         </div>
                       </div>
                       {/* Custos fixos do mes */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Custos Fixos do Mes</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Custos Fixos do Mes</div>
                         <div style={{maxHeight:200,overflowY:"auto"}}>
                           {custosFix.filter(c=>c.ativo).map(c=>(
                             <div key={c.id} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
                               <div style={{fontSize:10,color:T.soft,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.descricao}</div>
-                              <div style={{fontSize:10,color:T.danger,fontFamily:"'JetBrains Mono',monospace",flexShrink:0}}>{fmt(c.valor)}</div>
+                              <div style={{fontSize:10,color:T.danger,fontFamily:"Arial,sans-serif",flexShrink:0}}>{fmt(c.valor)}</div>
                             </div>
                           ))}
                         </div>
                         <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:`1px solid ${T.border}`,marginTop:4}}>
                           <span style={{fontSize:10,color:T.muted,fontWeight:600}}>TOTAL FIXO</span>
-                          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,color:T.danger}}>{fmt(custosFix.filter(c=>c.ativo).reduce((a,c)=>a+c.valor,0))}</span>
+                          <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.danger}}>{fmt(custosFix.filter(c=>c.ativo).reduce((a,c)=>a+c.valor,0))}</span>
                         </div>
                       </div>
                       {/* Cartoes resumo */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Cartoes</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Cartoes</div>
                         {cartoes.map(c=>{
                           const parcMes=comprasCartao.filter(p=>p.cartaoId===c.id&&p.parcelaAtual<=p.parcelas);
                           const totalMes=parcMes.reduce((a,p)=>a+p.valorParcela,0);
@@ -4512,7 +4537,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <div key={c.id} style={{padding:"7px 0",borderBottom:`1px solid ${T.border}`}}>
                               <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
                                 <span style={{fontSize:10,color:c.cor||T.warn}}>{c.nome}</span>
-                                <span style={{fontSize:10,color:T.danger,fontFamily:"'JetBrains Mono',monospace"}}>{fmt(totalMes)}/mes</span>
+                                <span style={{fontSize:10,color:T.danger,fontFamily:"Arial,sans-serif"}}>{fmt(totalMes)}/mes</span>
                               </div>
                               <div style={{fontSize:8,color:T.muted}}>Saldo devedor: {fmt(totalDev)}</div>
                             </div>
@@ -4520,7 +4545,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         })}
                         <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:`1px solid ${T.border}`,marginTop:4}}>
                           <span style={{fontSize:10,color:T.muted}}>Proximo mes</span>
-                          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,color:T.warn}}>{fmt(proximoMesCartao)}</span>
+                          <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.warn}}>{fmt(proximoMesCartao)}</span>
                         </div>
                       </div>
                     </div>
@@ -4528,10 +4553,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18,marginBottom:16}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
                         <div>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:4}}>DAS estimado - {finMesRef}</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:4}}>DAS estimado - {finMesRef}</div>
                           <div style={{fontSize:10,color:T.muted}}>RBT12: {fmt(rbt12)} - {faixa.label} - Aliquota efetiva: {aliqDisplay}%</div>
                         </div>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:24,color:T.accent}}>{fmt(totalEntradas*aliqVal)}</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:24,color:T.accent}}>{fmt(totalEntradas*aliqVal)}</div>
                       </div>
                     </div>
                   </div>
@@ -4559,15 +4584,15 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
                         <div style={{background:T.card,border:`1px solid ${T.accent}33`,borderRadius:10,padding:"12px 16px",textAlign:"center"}}>
                           <div style={{fontSize:9,color:T.accent,marginBottom:4}}>TOTAL ENTRADAS</div>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:T.accent}}>{fmt(totalEntradas)}</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:T.accent}}>{fmt(totalEntradas)}</div>
                         </div>
                         <div style={{background:T.card,border:`1px solid ${T.danger}33`,borderRadius:10,padding:"12px 16px",textAlign:"center"}}>
                           <div style={{fontSize:9,color:T.danger,marginBottom:4}}>TOTAL SAIDAS</div>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:T.danger}}>{fmt(totalSaidas)}</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:T.danger}}>{fmt(totalSaidas)}</div>
                         </div>
                         <div style={{background:T.card,border:`1px solid ${lucroMes>=0?T.accent:T.danger}33`,borderRadius:10,padding:"12px 16px",textAlign:"center"}}>
                           <div style={{fontSize:9,color:lucroMes>=0?T.accent:T.danger,marginBottom:4}}>RESULTADO</div>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:lucroMes>=0?T.accent:T.danger}}>{fmt(lucroMes)}</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:lucroMes>=0?T.accent:T.danger}}>{fmt(lucroMes)}</div>
                         </div>
                       </div>
                       {/* Add button */}
@@ -4577,7 +4602,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {/* Add form */}
                       {showAdd&&(
                         <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16,marginBottom:16}}>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:12}}>Novo Lancamento</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:12}}>Novo Lancamento</div>
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
                             {[["data","Data","date"],["descricao","Descricao","text"],["projeto","Projeto/NF","text"]].map(([k,ph,tp])=>(
                               <div key={k}>
@@ -4696,9 +4721,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
                         <div style={{display:"grid",gridTemplateColumns:colWidths.slice(0,7).map(w=>w+"px").join(" "),padding:"10px 0",gap:0,background:"#1a4a7a",borderTop:"2px solid #1a4a7a"}}>
                           <div style={{fontSize:9,color:"#fff",gridColumn:"1/3",fontWeight:800,textTransform:"uppercase",letterSpacing:1}}>TOTAL DO MÊS</div>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,color:"#90ee90",textAlign:"right"}}>{fmt(totalEntradas)}</div>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,color:"#ff9999",textAlign:"right"}}>{fmt(totalSaidas)}</div>
-                          <div style={{gridColumn:"5/8",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,color:lucroMes>=0?"#90ee90":"#ff9999",textAlign:"right"}}>{fmt(lucroMes)}</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:12,color:"#90ee90",textAlign:"right"}}>{fmt(totalEntradas)}</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:12,color:"#ff9999",textAlign:"right"}}>{fmt(totalSaidas)}</div>
+                          <div style={{gridColumn:"5/8",fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:lucroMes>=0?"#90ee90":"#ff9999",textAlign:"right"}}>{fmt(lucroMes)}</div>
                         </div>
                       </div>
                     </div>
@@ -4711,7 +4736,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   return(
                     <div>
                       <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14}}>Controle de Cartoes</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14}}>Controle de Cartoes</div>
                         <div style={{display:"flex",gap:8}}>
                           <button onClick={()=>setShowAddCompra(p=>!p)} className="btn" style={{padding:"7px 14px",background:T.warnDim,border:`1px solid ${T.warn}44`,color:T.warn,borderRadius:8,fontSize:10,fontWeight:700}}>+ Compra Parcelada</button>
                           <button onClick={()=>setShowAddCartao(p=>!p)} className="btn" style={{padding:"7px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:10,fontWeight:700}}>+ Novo Cartao</button>
@@ -4720,7 +4745,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {/* Add cartao form */}
                       {showAddCartao&&(
                         <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:14,marginBottom:14}}>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:10}}>Novo Cartao</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:10}}>Novo Cartao</div>
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
                             {[["nome","Nome do cartao"],["titular","Titular"],["banco","Banco"]].map(([k,ph])=>(
                               <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:2}}>{ph}</div>
@@ -4742,7 +4767,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {/* Add compra form */}
                       {showAddCompra&&(
                         <div style={{background:T.card,border:`1px solid ${T.warn}44`,borderRadius:12,padding:14,marginBottom:14}}>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.warn,marginBottom:10}}>Nova Compra Parcelada</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.warn,marginBottom:10}}>Nova Compra Parcelada</div>
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
                             <div><div style={{fontSize:9,color:T.muted,marginBottom:2}}>Cartao</div>
                             <select value={novaCompra.cartaoId} onChange={e=>setNovaCompra(p=>({...p,cartaoId:Number(e.target.value)}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}>
@@ -4781,12 +4806,12 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <div key={c.id} style={{background:T.card,border:`1px solid ${c.cor}44`,borderRadius:14,padding:18}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
                                 <div>
-                                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:c.cor}}>{c.nome}</div>
+                                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:c.cor}}>{c.nome}</div>
                                   <div style={{fontSize:9,color:T.muted,marginTop:2}}>{c.titular} - Vencimento dia {c.vencimento} - {c.banco}</div>
                                 </div>
                                 <div style={{textAlign:"right"}}>
                                   <div style={{fontSize:9,color:T.muted}}>Limite</div>
-                                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:c.cor}}>{fmt(c.limite)}</div>
+                                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:c.cor}}>{fmt(c.limite)}</div>
                                 </div>
                               </div>
                               <div style={{marginBottom:8}}>
@@ -4801,11 +4826,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
                                 <div style={{background:T.surface,borderRadius:8,padding:"8px 10px"}}>
                                   <div style={{fontSize:8,color:T.muted,marginBottom:2}}>Saldo devedor</div>
-                                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:T.danger}}>{fmt(totalDevedor)}</div>
+                                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:T.danger}}>{fmt(totalDevedor)}</div>
                                 </div>
                                 <div style={{background:T.surface,borderRadius:8,padding:"8px 10px"}}>
                                   <div style={{fontSize:8,color:T.muted,marginBottom:2}}>Parcela do mes</div>
-                                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:T.warn}}>{fmt(parcelaMes)}</div>
+                                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:T.warn}}>{fmt(parcelaMes)}</div>
                                 </div>
                               </div>
                               {compras.length>0&&(
@@ -4817,7 +4842,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                         <div style={{fontSize:10,fontWeight:600}}>{cp.projeto}</div>
                                         <div style={{fontSize:8,color:T.muted}}>{cp.parcelaAtual}/{cp.parcelas} parcelas - {fmt(cp.valorParcela)}/mes</div>
                                       </div>
-                                      <div style={{fontSize:10,color:T.warn,fontFamily:"'JetBrains Mono',monospace"}}>{fmt(cp.valorParcela*(cp.parcelas-cp.parcelaAtual+1))}</div>
+                                      <div style={{fontSize:10,color:T.warn,fontFamily:"Arial,sans-serif"}}>{fmt(cp.valorParcela*(cp.parcelas-cp.parcelaAtual+1))}</div>
                                     </div>
                                   ))}
                                 </div>
@@ -4839,25 +4864,25 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
                         {/* RBT12 */}
                         <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Faturamento dos ultimos 12 meses (RBT12)</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Faturamento dos ultimos 12 meses (RBT12)</div>
                           <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:280,overflowY:"auto",marginBottom:12}}>
                             {fatMensais.map((f,i)=>(
                               <div key={i} style={{display:"flex",gap:8,alignItems:"center"}}>
                                 <span style={{fontSize:9,color:T.muted,width:60,flexShrink:0}}>{f.mes}</span>
                                 <input type="number" value={f.fat} onChange={async e=>{const v=Number(e.target.value);setFatMensais(p=>p.map((x,j)=>j===i?{...x,fat:v}:x));await supabase.from("fat_mensais").update({fat:v}).eq("mes",f.mes);}} style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"4px 8px",fontSize:11,color:T.text,outline:"none"}}/>
-                                <span style={{fontSize:9,color:T.accent,fontFamily:"'JetBrains Mono',monospace",width:80,textAlign:"right",flexShrink:0}}>{fmt(f.fat)}</span>
+                                <span style={{fontSize:9,color:T.accent,fontFamily:"Arial,sans-serif",width:80,textAlign:"right",flexShrink:0}}>{fmt(f.fat)}</span>
                               </div>
                             ))}
                           </div>
                           <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderTop:`1px solid ${T.border}`}}>
                             <span style={{fontWeight:700,fontSize:11}}>RBT12 Total</span>
-                            <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:T.accent}}>{fmt(rbt12)}</span>
+                            <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:T.accent}}>{fmt(rbt12)}</span>
                           </div>
                         </div>
                         {/* Simples */}
                         <div style={{display:"flex",flexDirection:"column",gap:12}}>
                           <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18}}>
-                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:10}}>Faixa atual - Simples Nacional Anexo III</div>
+                            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:10}}>Faixa atual - Simples Nacional Anexo III</div>
                             {SIMPLES_ANEXO_III.map(f=>{
                               const isAtual=rbt12>=f.min&&rbt12<f.max;
                               return(
@@ -4869,8 +4894,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             })}
                           </div>
                           <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:10}}>Aliquota efetiva calculada</div>
-                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:32,color:T.accent,marginBottom:4}}>{aliqDisplay}%</div>
+                            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:10}}>Aliquota efetiva calculada</div>
+                            <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:32,color:T.accent,marginBottom:4}}>{aliqDisplay}%</div>
                             <div style={{fontSize:9,color:T.muted,marginBottom:12}}>{faixa.label} - ({fmt(rbt12)} x {(faixa.aliquota*100).toFixed(1)}% - {fmt(faixa.deducao)}) / {fmt(rbt12)}</div>
                             <div style={{fontSize:10,color:T.warn,marginBottom:6}}>Ajuste manual (se contador informar diferente):</div>
                             <div style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -4883,7 +4908,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       </div>
                       {/* DAS calculator */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:14}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Calculadora DAS</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Calculadora DAS</div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,alignItems:"center"}}>
                           <div>
                             <div style={{fontSize:9,color:T.muted,marginBottom:4}}>Valor da NF</div>
@@ -4895,7 +4920,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           </div>
                           <div>
                             <div style={{fontSize:9,color:T.muted,marginBottom:4}}>DAS a pagar</div>
-                            <div style={{background:dasCalcNf>0?T.accentDim:T.surface,border:`1px solid ${T.accentBorder}`,borderRadius:7,padding:"8px 12px",fontSize:18,color:T.accent,fontWeight:800,fontFamily:"'Syne',sans-serif"}}>{fmt(dasCalcNf)}</div>
+                            <div style={{background:dasCalcNf>0?T.accentDim:T.surface,border:`1px solid ${T.accentBorder}`,borderRadius:7,padding:"8px 12px",fontSize:18,color:T.accent,fontWeight:800,fontFamily:"Arial,sans-serif"}}>{fmt(dasCalcNf)}</div>
                           </div>
                         </div>
                       </div>
@@ -4908,11 +4933,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   <div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Resultado de {finMesRef}</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Resultado de {finMesRef}</div>
                         {[{l:"Total entradas",v:totalEntradas,c:T.accent},{l:"Total saidas",v:totalSaidas,c:T.danger},{l:"Resultado bruto",v:lucroMes,c:lucroMes>=0?T.accent:T.danger}].map((k,i)=>(
                           <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}>
                             <span style={{fontSize:11,color:T.soft}}>{k.l}</span>
-                            <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:k.c}}>{fmt(k.v)}</span>
+                            <span style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:k.c}}>{fmt(k.v)}</span>
                           </div>
                         ))}
                         <div style={{marginTop:14}}>
@@ -4921,17 +4946,17 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <div style={{display:"flex",gap:6,alignItems:"center"}}>
                               <input type="number" min="0" max="100" value={reservaCaixaPct} onChange={async e=>{const v=Number(e.target.value);setReservaCaixaPct(v);await supabase.from("configuracoes").upsert({chave:"reservaCaixaPct",valor:v});}} style={{width:50,background:T.surface,border:`1px solid ${T.warn}44`,borderRadius:5,padding:"3px 6px",fontSize:12,color:T.text,outline:"none",textAlign:"center"}}/>
                               <span style={{fontSize:11,color:T.muted}}>%</span>
-                              <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.warn,fontSize:13}}>{fmt(reserva)}</span>
+                              <span style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.warn,fontSize:13}}>{fmt(reserva)}</span>
                             </div>
                           </div>
                           <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderTop:`1px solid ${T.border}`}}>
                             <span style={{fontWeight:700,fontSize:12}}>Para distribuir</span>
-                            <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:T.accent}}>{fmt(paraDividir)}</span>
+                            <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:T.accent}}>{fmt(paraDividir)}</span>
                           </div>
                         </div>
                       </div>
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Distribuicao por socio</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Distribuicao por socio</div>
                         {socios.map((s,i)=>{
                           const valor=paraDividir*(s.pct/100);
                           return(
@@ -4943,7 +4968,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                   <span style={{fontSize:10,color:T.muted}}>%</span>
                                 </div>
                               </div>
-                              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:28,color:T.accent}}>{fmt(valor)}</div>
+                              <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:28,color:T.accent}}>{fmt(valor)}</div>
                               <div style={{fontSize:9,color:T.muted,marginTop:2}}>Pro-labore ja incluido no total de saidas</div>
                             </div>
                           );
@@ -4961,7 +4986,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {/* Custos fixos */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:14}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Custos Fixos Mensais</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Custos Fixos Mensais</div>
                           <button onClick={()=>setShowAddFixo(p=>!p)} className="btn" style={{padding:"6px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700}}>+ Adicionar</button>
                         </div>
                         {showAddFixo&&(
@@ -4985,7 +5010,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                               <div style={{fontSize:11}}>{c.descricao}</div>
                               <div style={{fontSize:8,color:T.muted}}>{c.categoria} - {c.centrosCusto}</div>
                             </div>
-                            <span style={{fontSize:11,color:T.danger,fontFamily:"'JetBrains Mono',monospace"}}>{fmt(c.valor)}</span>
+                            <span style={{fontSize:11,color:T.danger,fontFamily:"Arial,sans-serif"}}>{fmt(c.valor)}</span>
                             <Badge label={c.ativo?"Ativo":"Inativo"} color={c.ativo?T.accent:T.muted}/>
                             <div onClick={async()=>{const novoAtivo=!c.ativo;setCustosFix(p=>p.map(x=>x.id===c.id?{...x,ativo:novoAtivo}:x));await supabase.from("custos_fixos").update({ativo:novoAtivo}).eq("id",c.id);}} style={{fontSize:9,color:T.muted,cursor:"pointer",textAlign:"center"}}>Toggle</div>
                           </div>
@@ -4994,7 +5019,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {/* Contas bancarias */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:14}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Contas Bancarias</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Contas Bancarias</div>
                           <button onClick={()=>setShowAddConta(p=>!p)} className="btn" style={{padding:"6px 12px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:7,fontSize:10,fontWeight:700}}>+ Adicionar Conta</button>
                         </div>
                         {showAddConta&&(
@@ -5031,7 +5056,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {/* Centros de custo */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Centros de Custo</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Centros de Custo</div>
                         </div>
                         <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
                           {centrosCusto.map(c=>(
@@ -5079,23 +5104,23 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       <option value="todos">Todos segmentos</option>
                       {["Beleza","Automotivo","Energia","Entretenimento","Alimentação","Tecnologia","Moda"].map(s=><option key={s}>{s}</option>)}
                     </select>
-                    <button className="btn" onClick={()=>setShowNewProsp(true)} style={{marginLeft:"auto",padding:"7px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10}}>+ Prospect</button>
+                    <button className="btn" onClick={()=>setShowNewProsp(true)} style={{marginLeft:"auto",padding:"7px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10}}>+ Prospect</button>
                   </div>
                   {showNewProsp&&(
                     <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18,marginBottom:14}} className="fade">
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.accent,marginBottom:12}}>+ Novo Prospect</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,marginBottom:12}}>+ Novo Prospect</div>
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
                         {[["Empresa","name","text"],["Contato","contact","text"],["E-mail","email","email"],["Valor Est.","value","number"]].map(([l,k,t])=>(
-                          <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+                          <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
                           <input type={t} value={newProsp[k]} onChange={e=>setNewProsp(p=>({...p,[k]:e.target.value}))} style={inpS}/></div>
                         ))}
-                        <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Etapa</div>
+                        <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Etapa</div>
                         <select value={newProsp.stage} onChange={e=>setNewProsp(p=>({...p,stage:e.target.value}))} style={selS}>{PIPE_STAGES.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select></div>
-                        <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Responsável</div>
+                        <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Responsável</div>
                         <select value={newProsp.owner} onChange={e=>setNewProsp(p=>({...p,owner:e.target.value}))} style={selS}><option>Rodrigo Bem</option><option>Ana Lima</option></select></div>
                       </div>
                       <div style={{display:"flex",gap:8}}>
-                        <button className="btn" onClick={addProsp} style={{padding:"8px 16px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>Salvar</button>
+                        <button className="btn" onClick={addProsp} style={{padding:"8px 16px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>Salvar</button>
                         <button className="btn" onClick={()=>setShowNewProsp(false)} style={{padding:"8px 12px",background:T.card,border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:11}}>Cancelar</button>
                       </div>
                     </div>
@@ -5114,7 +5139,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             style={{padding:"6px",minHeight:100}}>
                             <div style={{display:"flex",gap:5,alignItems:"center",marginBottom:8,padding:"0 2px"}}>
                               <div style={{width:6,height:6,borderRadius:"50%",background:stage.color}}/>
-                              <span style={{fontSize:9,color:stage.color,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase"}}>{stage.label}</span>
+                              <span style={{fontSize:9,color:stage.color,fontFamily:"Arial,sans-serif",textTransform:"uppercase"}}>{stage.label}</span>
                               <span style={{fontSize:8,color:T.muted,marginLeft:"auto"}}>{items.length}</span>
                               {dragOverPipeStage===stage.id&&<span style={{fontSize:8,color:stage.color,animation:"pl 1s infinite"}}>-</span>}
                             </div>
@@ -5132,10 +5157,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                   onClick={()=>!isDragging&&setSelProsp(p)}
                                   style={{background:T.card,border:`1px solid ${isDragging?stage.color+"88":T.border}`,borderLeft:`3px solid ${stage.color}`,borderRadius:10,padding:"11px 13px",marginBottom:8,boxShadow:isDragging?`0 8px 24px ${stage.color}33`:"none",userSelect:"none",touchAction:"none"}}>
                                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:3}}>
-                                    <div style={{fontSize:11,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{p.name}</div>
+                                    <div style={{fontSize:11,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div>
                                     <div style={{fontSize:9,color:T.muted,opacity:0.5}}>-</div>
                                   </div>
-                                  <div style={{fontSize:10,fontWeight:700,color:stage.color,fontFamily:"'Syne',sans-serif",marginBottom:3}}>{fmtK(p.value)}</div>
+                                  <div style={{fontSize:10,fontWeight:700,color:stage.color,fontFamily:"Arial,sans-serif",marginBottom:3}}>{fmtK(p.value)}</div>
                                   <div style={{fontSize:9,color:T.muted,marginBottom:4}}>{p.segment} · {p.owner}</div>
                                   {p.notes&&<div style={{fontSize:9,color:T.soft,fontStyle:"italic",lineHeight:1.4}}>"{p.notes}"</div>}
                                 </div>
@@ -5156,9 +5181,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       </div>
                       {(filterSeg==="todos"?prospects:prospects.filter(p=>p.segment===filterSeg)).map((p,i)=>{const s=PIPE_STAGES.find(x=>x.id===p.stage);return(
                         <div key={i} className="hr" onClick={()=>setSelProsp(p)} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
-                          <div><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{p.name}</div><div style={{fontSize:9,color:T.muted}}>{p.email}</div></div>
+                          <div><div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div><div style={{fontSize:9,color:T.muted}}>{p.email}</div></div>
                           <Badge label={p.segment} color={T.purple}/>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:s.color}}>{fmtK(p.value)}</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:s.color}}>{fmtK(p.value)}</div>
                           <Badge label={s.label} color={s.color}/>
                           <div style={{fontSize:10,color:T.soft}}>{p.owner}</div>
                         </div>
@@ -5171,10 +5196,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 <div>
                   <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap",alignItems:"flex-end"}}>
                     {[["De",filterFrom,setFilterFrom],["Até",filterTo,setFilterTo]].map(([l,val,fn])=>(
-                      <div key={l}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+                      <div key={l}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
                       <input type="month" value={val} onChange={e=>fn(e.target.value)} style={{...inpS,width:"auto"}}/></div>
                     ))}
-                    <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Segmento</div>
+                    <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Segmento</div>
                     <select value={filterSeg} onChange={e=>setFilterSeg(e.target.value)} style={{...selS,width:"auto"}}><option value="todos">Todos</option>{["Beleza","Automotivo","Energia","Entretenimento"].map(s=><option key={s}>{s}</option>)}</select></div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
@@ -5185,29 +5210,29 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Receita mensal</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Receita mensal</div>
                       <div style={{display:"flex",gap:3,alignItems:"flex-end",height:110}}>
                         {MONTHLY_DATA.map((d,i)=>(
                           <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                            {d.receita>0&&<div style={{fontSize:7,color:T.soft,fontFamily:"'JetBrains Mono',monospace"}}>{fmtK(d.receita)}</div>}
+                            {d.receita>0&&<div style={{fontSize:7,color:T.soft,fontFamily:"Arial,sans-serif"}}>{fmtK(d.receita)}</div>}
                             <div style={{width:"65%",background:d.receita>0?`linear-gradient(180deg,${T.accent},${T.accent}88)`:T.border,borderRadius:"3px 3px 0 0",height:`${d.receita>0?(d.receita/42100)*80:6}px`,transition:"height 0.4s"}}/>
                             <div style={{width:"65%",height:3,background:T.warn+"55",borderRadius:"0 0 2px 2px"}}/>
-                            <div style={{fontSize:7,color:T.muted,fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap"}}>{d.month}</div>
+                            <div style={{fontSize:7,color:T.muted,fontFamily:"Arial,sans-serif",whiteSpace:"nowrap"}}>{d.month}</div>
                           </div>
                         ))}
                       </div>
                     </div>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Por vendedor</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Por vendedor</div>
                       {USER_BILLING.map((u,i)=>(
                         <div key={i} style={{marginBottom:16}}>
                           <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
                             <div style={{display:"flex",gap:8,alignItems:"center"}}>
                               <div style={{width:26,height:26,borderRadius:"50%",background:u.color+"22",border:`1px solid ${u.color}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:u.color,fontWeight:700}}>{u.avatar}</div>
-                              <div style={{fontSize:11,fontFamily:"'Syne',sans-serif",fontWeight:700}}>{u.user}</div>
+                              <div style={{fontSize:11,fontFamily:"Arial,sans-serif",fontWeight:700}}>{u.user}</div>
                             </div>
                             <div style={{textAlign:"right"}}>
-                              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,color:u.color}}>{fmtK(u.faturado)}</div>
+                              <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,color:u.color}}>{fmtK(u.faturado)}</div>
                               <div style={{fontSize:8,color:u.faturado>=u.meta?T.accent:T.muted}}>{u.faturado>=u.meta?"- Meta":"falta "+fmtK(u.meta-u.faturado)}</div>
                             </div>
                           </div>
@@ -5217,17 +5242,17 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     </div>
                   </div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
-                    <div style={{padding:"12px 18px",borderBottom:`1px solid ${T.border}`,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Faturamento por cliente</div>
+                    <div style={{padding:"12px 18px",borderBottom:`1px solid ${T.border}`,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Faturamento por cliente</div>
                     <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 0.8fr 1fr 1fr 1fr",padding:"10px 18px",borderBottom:`1px solid ${T.border}`,gap:8}}>
                       {["Cliente","Segmento","Camps.","Faturado","Pendente","Última"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
                     </div>
                     {(filterSeg==="todos"?CLIENT_BILLING:CLIENT_BILLING.filter(c=>c.segment===filterSeg)).map((c,i)=>(
                       <div key={i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1fr 0.8fr 1fr 1fr 1fr",padding:"12px 18px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
-                        <div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{c.name}</div>
+                        <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{c.name}</div>
                         <Badge label={c.segment} color={T.purple}/>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:T.info}}>{c.campanhas}</div>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmtK(c.faturado)}</div>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:c.pendente>0?T.danger:T.muted}}>{c.pendente>0?fmtK(c.pendente):"-"}</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:T.info}}>{c.campanhas}</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmtK(c.faturado)}</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:c.pendente>0?T.danger:T.muted}}>{c.pendente>0?fmtK(c.pendente):"-"}</div>
                         <div style={{fontSize:10,color:T.soft}}>{c.ultima}</div>
                       </div>
                     ))}
@@ -5237,20 +5262,20 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               {commTab==="clientes"&&(
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Clientes Ativos</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Clientes Ativos</div>
                     {CLIENTS_LIST.map((c,i)=>(
                       <div key={i} className="hr" style={{padding:"10px 8px",borderRadius:8,display:"flex",gap:12,alignItems:"center",marginBottom:4}}>
-                        <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.segment} · {c.owner}</div></div>
-                        <div style={{textAlign:"right"}}><div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,color:T.accent}}>{fmtK(c.ltv)}</div><div style={{fontSize:9,color:T.muted}}>{c.campaigns} camps.</div></div>
+                        <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.segment} · {c.owner}</div></div>
+                        <div style={{textAlign:"right"}}><div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.accent}}>{fmtK(c.ltv)}</div><div style={{fontSize:9,color:T.muted}}>{c.campaigns} camps.</div></div>
                       </div>
                     ))}
                   </div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Prospects</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Prospects</div>
                     {prospects.map((p,i)=>{const s=PIPE_STAGES.find(x=>x.id===p.stage);return(
                       <div key={i} className="hr" onClick={()=>setSelProsp(p)} style={{padding:"10px 8px",borderRadius:8,display:"flex",gap:12,alignItems:"center",marginBottom:4}}>
-                        <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{p.name}</div><div style={{fontSize:9,color:T.muted}}>{p.segment}</div></div>
-                        <div style={{display:"flex",gap:6,alignItems:"center"}}><Badge label={s.label} color={s.color}/><div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,color:s.color}}>{fmtK(p.value)}</div></div>
+                        <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div><div style={{fontSize:9,color:T.muted}}>{p.segment}</div></div>
+                        <div style={{display:"flex",gap:6,alignItems:"center"}}><Badge label={s.label} color={s.color}/><div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,color:s.color}}>{fmtK(p.value)}</div></div>
                       </div>
                     );})}
                   </div>
@@ -5261,7 +5286,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               {commTab==="metas"&&(
                 <div style={{display:"flex",flexDirection:"column",gap:12}}>
                   <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderLeft:`3px solid ${T.accent}`,borderRadius:12,padding:"14px 18px"}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:T.accent,marginBottom:4}}>Metas do time comercial</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent,marginBottom:4}}>Metas do time comercial</div>
                     <div style={{fontSize:10,color:T.muted}}>Defina a meta mensal de cada membro. Clique no valor para editar.</div>
                   </div>
                   {users.filter(u=>["comercial","admin"].includes(u.role)&&u.active).map(u=>{
@@ -5274,14 +5299,14 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           <div style={{display:"flex",gap:10,alignItems:"center"}}>
                             <div style={{width:32,height:32,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",border:`2px solid ${ROLE_COLOR[u.role]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:ROLE_COLOR[u.role],fontWeight:700}}>{u.avatar}</div>
                             <div>
-                              <div style={{fontSize:13,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{u.name}</div>
+                              <div style={{fontSize:13,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{u.name}</div>
                               <div style={{fontSize:9,color:T.muted}}>{ROLE_LABELS[u.role]}</div>
                             </div>
                           </div>
                           <div style={{display:"flex",gap:12,alignItems:"center"}}>
                             <div style={{textAlign:"right"}}>
                               <div style={{fontSize:9,color:T.muted,marginBottom:2}}>Pipeline atual</div>
-                              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:T.info}}>{fmtK(pipeline)}</div>
+                              <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:T.info}}>{fmtK(pipeline)}</div>
                             </div>
                             <div style={{textAlign:"right"}}>
                               <div style={{fontSize:9,color:T.muted,marginBottom:2}}>Meta mensal</div>
@@ -5293,7 +5318,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                   setUsers(p=>p.map(x=>x.id===u.id?{...x,meta:v}:x));
                                   await supabase.from("usuarios").update({meta:v}).eq("id",u.id);
                                 }}
-                                style={{width:100,background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"4px 8px",fontSize:13,color:T.accent,fontWeight:700,fontFamily:"'Syne',sans-serif",outline:"none",textAlign:"right"}}
+                                style={{width:100,background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"4px 8px",fontSize:13,color:T.accent,fontWeight:700,fontFamily:"Arial,sans-serif",outline:"none",textAlign:"right"}}
                               />
                             </div>
                           </div>
@@ -5340,9 +5365,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         return(
                           <div key={i} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16,marginBottom:10,display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
                             <div style={{width:34,height:34,borderRadius:"50%",background:colors[i]+"22",border:`1px solid ${colors[i]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:colors[i],fontWeight:700,flexShrink:0}}>{avs[i]}</div>
-                            <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{name}</div><div style={{fontSize:9,color:T.muted}}>{uc.length} fechamentos · {uc.filter(c=>c.status==="pendente").length} aguardando</div></div>
+                            <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{name}</div><div style={{fontSize:9,color:T.muted}}>{uc.length} fechamentos · {uc.filter(c=>c.status==="pendente").length} aguardando</div></div>
                             {[["aprovado",uA,T.accent],["pago",uP,T.green],["a pagar",uA-uP,T.danger]].map(([l,v,c])=>(
-                              <div key={l} style={{textAlign:"center"}}><div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:c}}>{fmt(v)}</div><div style={{fontSize:8,color:T.muted}}>{l}</div></div>
+                              <div key={l} style={{textAlign:"center"}}><div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:c}}>{fmt(v)}</div><div style={{fontSize:8,color:T.muted}}>{l}</div></div>
                             ))}
                           </div>
                         );
@@ -5351,14 +5376,14 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   )}
                   {commAdminTab==="aprovacoes"&&(
                     <div>
-                      {allPendingComm.length===0?(<div style={{textAlign:"center",padding:"60px",color:T.accent,fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:700}}>- Tudo em dia!</div>):(
+                      {allPendingComm.length===0?(<div style={{textAlign:"center",padding:"60px",color:T.accent,fontFamily:"Arial,sans-serif",fontSize:18,fontWeight:700}}>- Tudo em dia!</div>):(
                         <div style={{display:"flex",flexDirection:"column",gap:10}}>
                           {allPendingComm.map((c,i)=>(
                             <div key={i} style={{background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${T.warn}`,borderRadius:10,padding:"16px 20px",display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
-                              <div style={{flex:1}}><div style={{display:"flex",gap:5,marginBottom:5}}><Badge label={c.type} color={T.purple}/><Badge label={c.project} color={T.info}/></div><div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14}}>{c.partner}</div><div style={{fontSize:10,color:T.muted}}>por {c.user} · {c.date}</div></div>
-                              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:T.warn}}>{fmt(c.value)}</div>
+                              <div style={{flex:1}}><div style={{display:"flex",gap:5,marginBottom:5}}><Badge label={c.type} color={T.purple}/><Badge label={c.project} color={T.info}/></div><div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14}}>{c.partner}</div><div style={{fontSize:10,color:T.muted}}>por {c.user} · {c.date}</div></div>
+                              <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:22,color:T.warn}}>{fmt(c.value)}</div>
                               <div style={{display:"flex",gap:8}}>
-                                <button className="btn" onClick={async()=>{setClosings(p=>p.map(x=>x.id===c.id?{...x,status:"aprovado"}:x));await supabase.from("closings").update({status:"aprovado"}).eq("id",c.id);pushNotif("Comissão aprovada",`${c.partner} · ${fmt(c.value)}`,T.accent);}} style={{padding:"8px 14px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>- Aprovar</button>
+                                <button className="btn" onClick={async()=>{setClosings(p=>p.map(x=>x.id===c.id?{...x,status:"aprovado"}:x));await supabase.from("closings").update({status:"aprovado"}).eq("id",c.id);pushNotif("Comissão aprovada",`${c.partner} · ${fmt(c.value)}`,T.accent);}} style={{padding:"8px 14px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>- Aprovar</button>
                                 <button className="btn" onClick={async()=>{setClosings(p=>p.map(x=>x.id===c.id?{...x,status:"reprovado"}:x));await supabase.from("closings").update({status:"reprovado"}).eq("id",c.id);}} style={{padding:"8px 12px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:7,fontSize:11}}>-</button>
                               </div>
                             </div>
@@ -5370,10 +5395,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   {commAdminTab==="config"&&(
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Projetos</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Projetos</div>
                         <div style={{display:"flex",gap:8,marginBottom:10}}>
                           <input value={newProject} onChange={e=>setNewProject(e.target.value)} placeholder="Nome..." style={{...inpS,flex:1}} onKeyDown={e=>e.key==="Enter"&&newProject.trim()&&(setProjects(p=>{const rec={id:Date.now(),name:newProject.trim(),active:true};supabase.from("projects").insert(rec);return[...p,rec];}),setNewProject(""))}/>
-                          <button className="btn" onClick={()=>newProject.trim()&&(setProjects(p=>{const rec={id:Date.now(),name:newProject.trim(),active:true};supabase.from("projects").insert(rec);return[...p,rec];}),setNewProject(""))} style={{padding:"8px 12px",background:T.accent,color:"#000",borderRadius:7,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>+</button>
+                          <button className="btn" onClick={()=>newProject.trim()&&(setProjects(p=>{const rec={id:Date.now(),name:newProject.trim(),active:true};supabase.from("projects").insert(rec);return[...p,rec];}),setNewProject(""))} style={{padding:"8px 12px",background:T.accent,color:"#000",borderRadius:7,fontWeight:700,fontFamily:"Arial,sans-serif"}}>+</button>
                         </div>
                         {projects.map(p=>(<div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 12px",background:T.surface,borderRadius:8,marginBottom:5,border:`1px solid ${T.border}`}}>
                           <span style={{fontSize:12}}>{p.name}</span>
@@ -5381,30 +5406,30 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         </div>))}
                       </div>
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Tipos de Parceiro</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Tipos de Parceiro</div>
                         <div style={{display:"flex",gap:8,marginBottom:10}}>
                           <input value={newPtype} onChange={e=>setNewPtype(e.target.value)} placeholder="Ex: Sorveteria..." style={{...inpS,flex:1}} onKeyDown={e=>e.key==="Enter"&&newPtype.trim()&&(setPtypes(p=>{const rec={id:Date.now(),name:newPtype.trim()};supabase.from("ptypes").insert(rec);return[...p,rec];}),setNewPtype(""))}/>
-                          <button className="btn" onClick={()=>newPtype.trim()&&(setPtypes(p=>{const rec={id:Date.now(),name:newPtype.trim()};supabase.from("ptypes").insert(rec);return[...p,rec];}),setNewPtype(""))} style={{padding:"8px 12px",background:T.accent,color:"#000",borderRadius:7,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>+</button>
+                          <button className="btn" onClick={()=>newPtype.trim()&&(setPtypes(p=>{const rec={id:Date.now(),name:newPtype.trim()};supabase.from("ptypes").insert(rec);return[...p,rec];}),setNewPtype(""))} style={{padding:"8px 12px",background:T.accent,color:"#000",borderRadius:7,fontWeight:700,fontFamily:"Arial,sans-serif"}}>+</button>
                         </div>
                         <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{ptypes.map(t=><div key={t.id} style={{padding:"5px 11px",background:T.purpleDim,border:`1px solid ${T.purple}44`,borderRadius:6,fontSize:11,color:T.purple}}>{t.name}</div>)}</div>
                       </div>
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,gridColumn:"1 / -1"}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Tabela de Comissões · Tipo × Projeto</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Tabela de Comissões · Tipo × Projeto</div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,marginBottom:12,padding:"12px",background:T.surface,borderRadius:10,border:`1px solid ${T.border}`}}>
                           {[["Tipo","typeId",ptypes],["Projeto","projectId",projects]].map(([l,k,opts])=>(
-                            <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+                            <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
                             <select value={newComm[k]} onChange={e=>setNewComm(p=>({...p,[k]:e.target.value}))} style={selS}><option value="">Selecione...</option>{opts.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></div>
                           ))}
-                          <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Valor (R$)</div>
+                          <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Valor (R$)</div>
                           <input type="number" value={newComm.value} onChange={e=>setNewComm(p=>({...p,value:e.target.value}))} placeholder="80" style={inpS}/></div>
-                          <div style={{display:"flex",alignItems:"flex-end"}}><button className="btn" onClick={addCommEntry} style={{padding:"8px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>Salvar</button></div>
+                          <div style={{display:"flex",alignItems:"flex-end"}}><button className="btn" onClick={addCommEntry} style={{padding:"8px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>Salvar</button></div>
                         </div>
                         <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden"}}>
                           {commTable.map((c,i)=>(
                             <div key={i} className="hr" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 0.5fr",padding:"10px 14px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
                               <Badge label={c.typeName} color={T.purple}/>
                               <Badge label={c.projectName} color={T.info}/>
-                              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15,color:T.accent}}>{fmt(c.value)}</div>
+                              <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:15,color:T.accent}}>{fmt(c.value)}</div>
                               <div onClick={async()=>{setCommTable(p=>p.filter(x=>x.id!==c.id));await supabase.from("comm_table").delete().eq("id",c.id);}} style={{fontSize:9,color:T.danger,cursor:"pointer"}}>remover</div>
                             </div>
                           ))}
@@ -5419,11 +5444,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       </div>
                       {closings.map((c,i)=>(
                         <div key={i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1fr 1fr",padding:"11px 16px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
-                          <div><div style={{fontSize:11,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{c.partner}</div><div style={{fontSize:8,color:T.muted}}>{c.date}</div></div>
+                          <div><div style={{fontSize:11,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{c.partner}</div><div style={{fontSize:8,color:T.muted}}>{c.date}</div></div>
                           <div style={{fontSize:10,color:T.soft}}>{c.user.split(" ")[0]}</div>
                           <Badge label={c.type} color={T.purple}/>
                           <Badge label={c.project.split(" ")[0]} color={T.info}/>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmt(c.value)}</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmt(c.value)}</div>
                           <Badge label={c.status} color={c.status==="aprovado"?T.accent:c.status==="pendente"?T.warn:T.danger}/>
                           <div>{c.status==="aprovado"&&!c.pago?(<button className="btn" onClick={async()=>{setClosings(p=>p.map(x=>x.id===c.id?{...x,pago:true}:x));await supabase.from("closings").update({pago:true}).eq("id",c.id);}} style={{padding:"3px 8px",background:T.greenDim,border:`1px solid ${T.green}44`,color:T.green,borderRadius:5,fontSize:9}}>Marcar pago</button>):(<span style={{fontSize:9,color:c.pago?T.green:T.muted}}>{c.pago?"- Pago":"-"}</span>)}</div>
                         </div>
@@ -5436,8 +5461,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 <div>
                   <div style={{background:`linear-gradient(135deg,${T.green}15,${T.green}08)`,border:`1px solid ${T.green}40`,borderRadius:14,padding:"22px 24px",marginBottom:18}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:16}}>
-                      <div><div style={{fontSize:10,color:T.green,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1.5,textTransform:"uppercase",marginBottom:5}}>Abril 2025 · Sua comissão</div><div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:38,color:T.green,lineHeight:1,marginBottom:3}}>{fmt(myTotal)}</div><div style={{fontSize:11,color:T.soft}}>{myApproved.length} fechamentos aprovados</div></div>
-                      <div style={{textAlign:"right"}}><div style={{fontSize:10,color:T.muted,marginBottom:3}}>Meta do mês</div><div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:myTotal>=META_COMM?T.accent:T.warn}}>{fmt(META_COMM)}</div><div style={{fontSize:10,color:myTotal>=META_COMM?T.accent:T.muted,marginTop:3}}>{myTotal>=META_COMM?"- Meta atingida!":`faltam ${fmt(META_COMM-myTotal)}`}</div></div>
+                      <div><div style={{fontSize:10,color:T.green,fontFamily:"Arial,sans-serif",letterSpacing:1.5,textTransform:"uppercase",marginBottom:5}}>Abril 2025 · Sua comissão</div><div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:38,color:T.green,lineHeight:1,marginBottom:3}}>{fmt(myTotal)}</div><div style={{fontSize:11,color:T.soft}}>{myApproved.length} fechamentos aprovados</div></div>
+                      <div style={{textAlign:"right"}}><div style={{fontSize:10,color:T.muted,marginBottom:3}}>Meta do mês</div><div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:22,color:myTotal>=META_COMM?T.accent:T.warn}}>{fmt(META_COMM)}</div><div style={{fontSize:10,color:myTotal>=META_COMM?T.accent:T.muted,marginTop:3}}>{myTotal>=META_COMM?"- Meta atingida!":`faltam ${fmt(META_COMM-myTotal)}`}</div></div>
                     </div>
                     <PBar pct={(myTotal/META_COMM)*100} color={myTotal>=META_COMM?T.accent:T.warn} h={10}/>
                     <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}><span style={{fontSize:9,color:T.muted}}>{fmt(0)}</span><span style={{fontSize:9,color:T.soft}}>{Math.round((myTotal/META_COMM)*100)}%</span><span style={{fontSize:9,color:T.muted}}>{fmt(META_COMM)}</span></div>
@@ -5448,43 +5473,43 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     <KCard label="Já recebido" value={fmt(myPago)} sub="pago" color={T.green} icon="-"/>
                   </div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:14}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:10}}>Comissões vigentes</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:10}}>Comissões vigentes</div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
                       {commTable.filter(c=>projects.find(p=>p.id===c.projectId)?.active).map((c,i)=>(
                         <div key={i} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                           <div><div style={{fontSize:11,fontWeight:600}}>{c.typeName}</div><div style={{fontSize:9,color:T.muted,marginTop:1}}>{c.projectName}</div></div>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15,color:T.accent}}>{fmt(c.value)}</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:15,color:T.accent}}>{fmt(c.value)}</div>
                         </div>
                       ))}
                     </div>
                   </div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:showNewClosing?14:0}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Registrar fechamento</div>
-                      {!showNewClosing&&<button className="btn" onClick={()=>setShowNewClosing(true)} style={{padding:"8px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>+ Registrar</button>}
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Registrar fechamento</div>
+                      {!showNewClosing&&<button className="btn" onClick={()=>setShowNewClosing(true)} style={{padding:"8px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>+ Registrar</button>}
                     </div>
                     {showNewClosing&&(
                       <div className="fade">
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
-                          <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Nome do parceiro</div><input value={newClosing.partner} onChange={e=>setNewClosing(p=>({...p,partner:e.target.value}))} placeholder="Ex: Bar do Alemão" style={inpS}/></div>
-                          <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Tipo</div><select value={newClosing.typeId} onChange={e=>setNewClosing(p=>({...p,typeId:e.target.value}))} style={selS}><option value="">Selecione...</option>{ptypes.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
-                          <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Projeto</div><select value={newClosing.projectId} onChange={e=>setNewClosing(p=>({...p,projectId:e.target.value}))} style={selS}><option value="">Selecione...</option>{projects.filter(p=>p.active).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+                          <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Nome do parceiro</div><input value={newClosing.partner} onChange={e=>setNewClosing(p=>({...p,partner:e.target.value}))} placeholder="Ex: Bar do Alemão" style={inpS}/></div>
+                          <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Tipo</div><select value={newClosing.typeId} onChange={e=>setNewClosing(p=>({...p,typeId:e.target.value}))} style={selS}><option value="">Selecione...</option>{ptypes.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
+                          <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Projeto</div><select value={newClosing.projectId} onChange={e=>setNewClosing(p=>({...p,projectId:e.target.value}))} style={selS}><option value="">Selecione...</option>{projects.filter(p=>p.active).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
                         </div>
-                        {newClosing.typeId&&newClosing.projectId&&(()=>{const comm=commTable.find(c=>c.typeId===Number(newClosing.typeId)&&c.projectId===Number(newClosing.projectId));return comm?(<div style={{padding:"10px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,borderRadius:8,marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:11,color:T.soft}}>Comissão por este fechamento:</span><span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:17,color:T.accent}}>{fmt(comm.value)}</span></div>):(<div style={{padding:"10px 14px",background:T.warnDim,border:`1px solid ${T.warn}44`,borderRadius:8,marginBottom:10,fontSize:11,color:T.warn}}>-- Sem comissão configurada.</div>);})()}
+                        {newClosing.typeId&&newClosing.projectId&&(()=>{const comm=commTable.find(c=>c.typeId===Number(newClosing.typeId)&&c.projectId===Number(newClosing.projectId));return comm?(<div style={{padding:"10px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,borderRadius:8,marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:11,color:T.soft}}>Comissão por este fechamento:</span><span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:17,color:T.accent}}>{fmt(comm.value)}</span></div>):(<div style={{padding:"10px 14px",background:T.warnDim,border:`1px solid ${T.warn}44`,borderRadius:8,marginBottom:10,fontSize:11,color:T.warn}}>-- Sem comissão configurada.</div>);})()}
                         <div style={{display:"flex",gap:8}}>
-                          <button className="btn" onClick={submitClosing} style={{padding:"9px 16px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>Enviar para aprovação</button>
+                          <button className="btn" onClick={submitClosing} style={{padding:"9px 16px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>Enviar para aprovação</button>
                           <button className="btn" onClick={()=>setShowNewClosing(false)} style={{padding:"9px 12px",background:T.card,border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:11}}>Cancelar</button>
                         </div>
                       </div>
                     )}
                     {myClosings.length>0&&!showNewClosing&&(
                       <div style={{marginTop:14}}>
-                        <div style={{fontSize:9,color:T.muted,marginBottom:6,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Meus fechamentos</div>
+                        <div style={{fontSize:9,color:T.muted,marginBottom:6,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Meus fechamentos</div>
                         {myClosings.map((c,i)=>(
                           <div key={i} style={{display:"flex",gap:10,alignItems:"center",padding:"9px 0",borderBottom:`1px solid ${T.border}`,flexWrap:"wrap"}}>
-                            <div style={{flex:1}}><div style={{fontSize:11,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{c.partner}</div><div style={{fontSize:9,color:T.muted}}>{c.type} · {c.project}</div></div>
+                            <div style={{flex:1}}><div style={{fontSize:11,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{c.partner}</div><div style={{fontSize:9,color:T.muted}}>{c.type} · {c.project}</div></div>
                             <Badge label={c.status} color={c.status==="aprovado"?T.accent:c.status==="pendente"?T.warn:T.danger}/>
-                            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmt(c.value)}</div>
+                            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmt(c.value)}</div>
                             <div style={{fontSize:9,color:c.pago?T.green:T.muted}}>{c.pago?"- Pago":"-"}</div>
                           </div>
                         ))}
@@ -5502,13 +5527,13 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           {tab==="parceiros"&&(
             <div style={{maxWidth:620}}>
               <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18,marginBottom:16}}>
-                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,marginBottom:5}}>Automação de Prospecção</div>
-                <div style={{fontSize:11,color:T.muted,lineHeight:1.7,fontFamily:"'JetBrains Mono',monospace"}}>IA gera CSV com @perfis - suba aqui - disparo automático DM + WhatsApp.</div>
+                <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,marginBottom:5}}>Automação de Prospecção</div>
+                <div style={{fontSize:11,color:T.muted,lineHeight:1.7,fontFamily:"Arial,sans-serif"}}>IA gera CSV com @perfis - suba aqui - disparo automático DM + WhatsApp.</div>
               </div>
               <div style={{border:`2px dashed ${T.border}`,borderRadius:12,padding:"32px",textAlign:"center",cursor:"pointer",marginBottom:16}}>
                 <div style={{fontSize:26,marginBottom:7}}>-</div>
-                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,marginBottom:3}}>Subir CSV de leads</div>
-                <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>instagram_handle · nome · cidade</div>
+                <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,marginBottom:3}}>Subir CSV de leads</div>
+                <div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>instagram_handle · nome · cidade</div>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                 {[
@@ -5520,9 +5545,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   <div key={i} onClick={k.action} className="hr" style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"13px 15px",cursor:"pointer",borderLeft:`3px solid ${k.c}`,transition:"all 0.15s"}}
                     onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
                     onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontSize:22,fontWeight:800,color:k.c,marginBottom:3}}>{k.v}</div>
-                    <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace",marginBottom:5}}>{k.l}</div>
-                    <div style={{fontSize:8,color:k.c,fontFamily:"'JetBrains Mono',monospace",opacity:0.7}}>{k.hint}</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontSize:22,fontWeight:800,color:k.c,marginBottom:3}}>{k.v}</div>
+                    <div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif",marginBottom:5}}>{k.l}</div>
+                    <div style={{fontSize:8,color:k.c,fontFamily:"Arial,sans-serif",opacity:0.7}}>{k.hint}</div>
                   </div>
                 ))}
               </div>
@@ -5540,7 +5565,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:16,width:"100%",maxWidth:540,maxHeight:"88vh",overflow:"auto"}} onClick={e=>e.stopPropagation()}>
                     <div style={{padding:"18px 22px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                       <div>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:17,marginBottom:5}}>{selPartner.name||"Novo Parceiro"}</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:17,marginBottom:5}}>{selPartner.name||"Novo Parceiro"}</div>
                         <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
                           <Badge label={selPartner.category||"Sem categoria"} color={T.purple}/>
                           <Badge label={selPartner.status} color={STATUS_PARTNER[selPartner.status]||T.muted}/>
@@ -5552,7 +5577,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     <div style={{padding:"18px 22px"}}>
                       {/* Dados básicos */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:16,marginBottom:14}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Dados Básicos</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Dados Básicos</div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
                           <div>
                             <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Nome do estabelecimento *</div>
@@ -5608,11 +5633,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           });
                           await supabase.from("parceiros").upsert({id:upd.id,data:upd});
                           pushNotif("Parceiro salvo",upd.name,"Dados atualizados",T.accent);
-                        }} style={{width:"100%",padding:"9px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11,border:"none",cursor:"pointer"}}>💾 Salvar dados básicos</button>
+                        }} style={{width:"100%",padding:"9px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,border:"none",cursor:"pointer"}}>💾 Salvar dados básicos</button>
                       </div>
                       {/* Score breakdown */}
                       <div style={{marginBottom:18}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Score Detalhado</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Score Detalhado</div>
                         <div style={{display:"flex",flexDirection:"column",gap:8}}>
                           {[
                             {l:"Volume de entregas",v:Math.min(Math.round(selPartner.deliveries/500*30),30),max:30,hint:`${selPartner.deliveries} entregas/mês`},
@@ -5624,7 +5649,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <div key={i}>
                               <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                                 <span style={{fontSize:11,color:T.soft}}>{s.l}</span>
-                                <span style={{fontSize:11,color:T.text,fontFamily:"'JetBrains Mono',monospace"}}>{s.v}/{s.max} · <span style={{color:T.muted,fontSize:9}}>{s.hint}</span></span>
+                                <span style={{fontSize:11,color:T.text,fontFamily:"Arial,sans-serif"}}>{s.v}/{s.max} · <span style={{color:T.muted,fontSize:9}}>{s.hint}</span></span>
                               </div>
                               <PBar pct={(s.v/s.max)*100} color={s.v===s.max?T.accent:T.info} h={5}/>
                             </div>
@@ -5632,13 +5657,13 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         </div>
                         <div style={{marginTop:12,padding:"10px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                           <span style={{fontSize:12,color:T.soft}}>Score total</span>
-                          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:selPartner.score>80?T.accent:selPartner.score>60?T.warn:T.danger}}>{selPartner.score}/100</span>
+                          <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:22,color:selPartner.score>80?T.accent:selPartner.score>60?T.warn:T.danger}}>{selPartner.score}/100</span>
                         </div>
                       </div>
                       {/* Endereço */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:16,marginBottom:14}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Endereço</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Endereço</div>
                           <button className="btn" onClick={()=>{
                             if(!selPartner.endereco?.rua)return;
                             const addr=`${selPartner.endereco.rua} ${selPartner.endereco.numero}, ${selPartner.endereco.bairro}, ${selPartner.city}`;
@@ -5658,35 +5683,35 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 0.4fr",gap:8,marginBottom:8}}>
                           <div>
-                            <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Rua</div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Rua</div>
                             <input value={selPartner.endereco?.rua||""} onChange={e=>setSelPartner(p=>({...p,endereco:{...p.endereco,rua:e.target.value}}))} placeholder="Ex: Rua Augusta" style={inpS}/>
                           </div>
                           <div>
-                            <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Nº</div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Nº</div>
                             <input value={selPartner.endereco?.numero||""} onChange={e=>setSelPartner(p=>({...p,endereco:{...p.endereco,numero:e.target.value}}))} placeholder="123" style={inpS}/>
                           </div>
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
                           <div>
-                            <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Bairro</div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Bairro</div>
                             <input value={selPartner.endereco?.bairro||""} onChange={e=>setSelPartner(p=>({...p,endereco:{...p.endereco,bairro:e.target.value}}))} placeholder="Centro" style={inpS}/>
                           </div>
                           <div>
-                            <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>CEP</div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>CEP</div>
                             <input value={selPartner.endereco?.cep||""} onChange={e=>setSelPartner(p=>({...p,endereco:{...p.endereco,cep:e.target.value}}))} placeholder="00000-000" style={inpS}/>
                           </div>
                         </div>
                         {selPartner.endereco?.lat&&(
-                          <div style={{padding:"8px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,borderRadius:7,fontSize:10,color:T.accent,fontFamily:"'JetBrains Mono',monospace"}}>
+                          <div style={{padding:"8px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,borderRadius:7,fontSize:10,color:T.accent,fontFamily:"Arial,sans-serif"}}>
                             - Coordenadas: {selPartner.endereco.lat.toFixed(4)}, {selPartner.endereco.lng.toFixed(4)}
                           </div>
                         )}
-                        <button className="btn" onClick={async()=>{let upd=null;setBasePartners(prev=>prev.map(p=>{if(p.id!==selPartner.id)return p;upd={...p,endereco:selPartner.endereco};return upd;}));if(upd)await supabase.from("parceiros").upsert({id:upd.id,data:upd});}} style={{width:"100%",marginTop:10,padding:"8px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>- Salvar endereço</button>
+                        <button className="btn" onClick={async()=>{let upd=null;setBasePartners(prev=>prev.map(p=>{if(p.id!==selPartner.id)return p;upd={...p,endereco:selPartner.endereco};return upd;}));if(upd)await supabase.from("parceiros").upsert({id:upd.id,data:upd});}} style={{width:"100%",marginTop:10,padding:"8px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>- Salvar endereço</button>
                       </div>
 
                       {/* WhatsApp + Instagram + Fachada */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:16,marginBottom:14}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Contato Digital</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Contato Digital</div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
                           <div>
                             <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>WhatsApp</div>
@@ -5702,12 +5727,12 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           <input value={selPartner.foto_fachada||""} onChange={e=>setSelPartner(p=>({...p,foto_fachada:e.target.value}))} placeholder="https://... ou cole URL da imagem" style={inpS}/>
                           {selPartner.foto_fachada&&<img src={selPartner.foto_fachada} style={{width:"100%",height:100,objectFit:"cover",borderRadius:7,marginTop:6}} alt="Fachada" onError={e=>e.target.style.display="none"}/>}
                         </div>
-                        <button className="btn" onClick={async()=>{let upd=null;setBasePartners(prev=>prev.map(p=>{if(p.id!==selPartner.id)return p;upd={...p,whatsapp:selPartner.whatsapp,instagram_seguidores:selPartner.instagram_seguidores,foto_fachada:selPartner.foto_fachada};return upd;}));if(upd)await supabase.from("parceiros").upsert({id:upd.id,data:upd});}} style={{width:"100%",padding:"8px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>Salvar contato digital</button>
+                        <button className="btn" onClick={async()=>{let upd=null;setBasePartners(prev=>prev.map(p=>{if(p.id!==selPartner.id)return p;upd={...p,whatsapp:selPartner.whatsapp,instagram_seguidores:selPartner.instagram_seguidores,foto_fachada:selPartner.foto_fachada};return upd;}));if(upd)await supabase.from("parceiros").upsert({id:upd.id,data:upd});}} style={{width:"100%",padding:"8px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>Salvar contato digital</button>
                       </div>
 
                       {/* Contract */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:16}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Contrato de Exclusividade</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Contrato de Exclusividade</div>
                         {[
                           ["Status", selPartner.contrato.status],
                           ["Enviado em", selPartner.contrato.enviadoEm||"-"],
@@ -5715,7 +5740,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           ["Expira em", selPartner.contrato.expiraEm||"-"],
                         ].map(([l,v])=>(
                           <div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}>
-                            <span style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{l}</span>
+                            <span style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>{l}</span>
                             {l==="Status"
                               ? <Badge label={v} color={CONTRATO_COLOR[v]||T.muted}/>
                               : <span style={{fontSize:11,color:T.text}}>{v}</span>
@@ -5724,13 +5749,13 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         ))}
                         <div style={{marginTop:12,display:"flex",gap:8}}>
                           {selPartner.contrato.status==="sem contrato"&&(
-                            <button className="btn" onClick={()=>{enviarContrato(selPartner.id);setSelPartner(p=>({...p,contrato:{...p.contrato,status:"pendente",enviadoEm:new Date().toLocaleDateString("pt-BR")}}));}} style={{flex:1,padding:"9px",background:`linear-gradient(135deg,${T.warn},${T.warn}AA)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>- Enviar Contrato</button>
+                            <button className="btn" onClick={()=>{enviarContrato(selPartner.id);setSelPartner(p=>({...p,contrato:{...p.contrato,status:"pendente",enviadoEm:new Date().toLocaleDateString("pt-BR")}}));}} style={{flex:1,padding:"9px",background:`linear-gradient(135deg,${T.warn},${T.warn}AA)`,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>- Enviar Contrato</button>
                           )}
                           {selPartner.contrato.status==="pendente"&&(
-                            <button className="btn" onClick={()=>assinarContrato(selPartner.id)} style={{flex:1,padding:"9px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>- Marcar como Assinado</button>
+                            <button className="btn" onClick={()=>assinarContrato(selPartner.id)} style={{flex:1,padding:"9px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>- Marcar como Assinado</button>
                           )}
                           {(selPartner.contrato.status==="expirando"||selPartner.contrato.status==="expirado")&&(
-                            <button className="btn" onClick={()=>{enviarContrato(selPartner.id);setSelPartner(p=>({...p,contrato:{...p.contrato,status:"pendente",enviadoEm:new Date().toLocaleDateString("pt-BR")}}));}} style={{flex:1,padding:"9px",background:`linear-gradient(135deg,${T.danger},${T.danger}AA)`,color:"#fff",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>- Renovar Contrato</button>
+                            <button className="btn" onClick={()=>{enviarContrato(selPartner.id);setSelPartner(p=>({...p,contrato:{...p.contrato,status:"pendente",enviadoEm:new Date().toLocaleDateString("pt-BR")}}));}} style={{flex:1,padding:"9px",background:`linear-gradient(135deg,${T.danger},${T.danger}AA)`,color:"#fff",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>- Renovar Contrato</button>
                           )}
                         </div>
                       </div>
@@ -5771,11 +5796,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {["assinado","pendente","expirando","sem contrato"].map(s=><option key={s}>{s}</option>)}
                     </select>
                     </div>
-                    <button onClick={()=>setSelPartner({id:Date.now(),name:"",handle:"",city:"",state:"",category:"",deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:2,avaliacaoGoogle:0,avaliacaoIfood:0,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},whatsapp:"",instagram_seguidores:0,foto_fachada:"",address:"",_isNew:true})} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10,cursor:"pointer",whiteSpace:"nowrap"}}>+ Novo Parceiro</button>
+                    <button onClick={()=>setSelPartner({id:Date.now(),name:"",handle:"",city:"",state:"",category:"",deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:2,avaliacaoGoogle:0,avaliacaoIfood:0,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},whatsapp:"",instagram_seguidores:0,foto_fachada:"",address:"",_isNew:true})} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer",whiteSpace:"nowrap"}}>+ Novo Parceiro</button>
                   </div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                     <div style={{display:"grid",gridTemplateColumns:"2fr 1.1fr 0.9fr 0.7fr 0.7fr 0.9fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:8}}>
-                      {["Estabelecimento","Cidade","Categoria","Entrega/mês","Score","Contrato","Status"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"'JetBrains Mono',monospace"}}>{h}</div>)}
+                      {["Estabelecimento","Cidade","Categoria","Entrega/mês","Score","Contrato","Status"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"Arial,sans-serif"}}>{h}</div>)}
                     </div>
                     {basePartners.filter(p=>{
                       const ms=baseFilter==="todos"||p.status===baseFilter;
@@ -5786,14 +5811,14 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     }).map((p,i)=>(
                       <div key={i} className="hr" onClick={()=>setSelPartner(p)} style={{display:"grid",gridTemplateColumns:"2fr 1.1fr 0.9fr 0.7fr 0.7fr 0.9fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
                         <div>
-                          <div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{p.name}</div>
-                          <div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{p.handle}</div>
+                          <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div>
+                          <div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{p.handle}</div>
                         </div>
                         <div style={{fontSize:10,color:T.soft}}>{p.city} · {p.state}</div>
                         <div style={{fontSize:10,color:T.soft}}>{p.category}</div>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14}}>{p.deliveries}</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14}}>{p.deliveries}</div>
                         <div>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,color:p.score>80?T.accent:p.score>60?T.warn:T.danger}}>{p.score}</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,color:p.score>80?T.accent:p.score>60?T.warn:T.danger}}>{p.score}</div>
                           <PBar pct={p.score} color={p.score>80?T.accent:p.score>60?T.warn:T.danger} h={3}/>
                         </div>
                         <Badge label={p.contrato.status} color={CONTRATO_COLOR[p.contrato.status]||T.muted}/>
@@ -5808,24 +5833,24 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               {baseTab==="score"&&(
                 <div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20,marginBottom:14}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,marginBottom:6}}>Como o score é calculado</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:6}}>Como o score é calculado</div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8,marginTop:12}}>
                       {[{l:"Entregas/mês",pts:"até 30pts",icon:"--"},{l:"Campanhas",pts:"15pts cada",icon:"-"},{l:"Tempo na base",pts:"2pts/mês",icon:"-"},{l:"Contrato assinado",pts:"+20pts",icon:"-"},{l:"Engajamento",pts:"até 15pts",icon:"-"}].map((s,i)=>(
                         <div key={i} style={{background:T.surface,borderRadius:8,padding:"10px 12px",textAlign:"center",border:`1px solid ${T.border}`}}>
                           <div style={{fontSize:18,marginBottom:4}}>{s.icon}</div>
                           <div style={{fontSize:10,fontWeight:600,marginBottom:2}}>{s.l}</div>
-                          <div style={{fontSize:9,color:T.accent,fontFamily:"'JetBrains Mono',monospace"}}>{s.pts}</div>
+                          <div style={{fontSize:9,color:T.accent,fontFamily:"Arial,sans-serif"}}>{s.pts}</div>
                         </div>
                       ))}
                     </div>
                   </div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
-                    <div style={{padding:"12px 18px",borderBottom:`1px solid ${T.border}`,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13}}>Ranking da Base</div>
+                    <div style={{padding:"12px 18px",borderBottom:`1px solid ${T.border}`,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Ranking da Base</div>
                     {[...basePartners].sort((a,b)=>b.score-a.score).map((p,i)=>(
                       <div key={p.id} className="hr" onClick={()=>setSelPartner(p)} style={{display:"flex",gap:14,padding:"13px 18px",borderBottom:`1px solid ${T.border}`,alignItems:"center"}}>
                         <div style={{width:28,height:28,borderRadius:"50%",background:i<3?[T.warn+"33",T.soft+"22",T.soft+"15"][i]:T.border,border:`2px solid ${i<3?[T.warn,T.soft,T.soft][i]:T.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:i<3?[T.warn,T.soft,T.soft][i]:T.muted,fontWeight:700,flexShrink:0}}>{i+1}</div>
                         <div style={{flex:1}}>
-                          <div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif",marginBottom:2}}>{p.name}</div>
+                          <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif",marginBottom:2}}>{p.name}</div>
                           <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
                             <Badge label={p.category} color={T.purple}/>
                             <Badge label={p.contrato.status} color={CONTRATO_COLOR[p.contrato.status]||T.muted}/>
@@ -5834,7 +5859,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <div style={{width:120}}>
                           <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                             <span style={{fontSize:9,color:T.muted}}>Score</span>
-                            <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,color:p.score>80?T.accent:p.score>60?T.warn:T.danger}}>{p.score}</span>
+                            <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,color:p.score>80?T.accent:p.score>60?T.warn:T.danger}}>{p.score}</span>
                           </div>
                           <PBar pct={p.score} color={p.score>80?T.accent:p.score>60?T.warn:T.danger} h={6}/>
                         </div>
@@ -5860,9 +5885,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <div key={i} onClick={()=>setContratoTableFilter(isActive?"todos":k.k)}
                           className="hr"
                           style={{background:isActive?k.c+"22":T.card,border:`2px solid ${isActive?k.c:k.c+"33"}`,borderRadius:10,padding:"14px 16px",cursor:"pointer",transition:"all 0.15s"}}>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:k.c}}>{k.v}</div>
-                          <div style={{fontSize:10,color:isActive?k.c:T.muted,fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>{k.l}</div>
-                          {isActive&&<div style={{fontSize:8,color:k.c,marginTop:4,fontFamily:"'JetBrains Mono',monospace"}}>Filtrando - · clique para limpar</div>}
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:22,color:k.c}}>{k.v}</div>
+                          <div style={{fontSize:10,color:isActive?k.c:T.muted,fontFamily:"Arial,sans-serif",marginTop:2}}>{k.l}</div>
+                          {isActive&&<div style={{fontSize:8,color:k.c,marginTop:4,fontFamily:"Arial,sans-serif"}}>Filtrando - · clique para limpar</div>}
                         </div>
                       );
                     })}
@@ -5871,18 +5896,18 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   {/* Priority: needs action */}
                   {basePartners.filter(p=>["expirando","sem contrato"].includes(p.contrato.status)&&p.status==="ativo").length>0&&(
                     <div style={{background:T.card,border:`1px solid ${T.danger}44`,borderLeft:`3px solid ${T.danger}`,borderRadius:12,padding:16,marginBottom:14}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.danger,marginBottom:10}}>- Ação necessária</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.danger,marginBottom:10}}>- Ação necessária</div>
                       {basePartners.filter(p=>["expirando","sem contrato"].includes(p.contrato.status)&&p.status==="ativo").map((p,i)=>(
                         <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}`,gap:10,flexWrap:"wrap"}}>
                           <div>
-                            <div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{p.name}</div>
+                            <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div>
                             <div style={{fontSize:9,color:T.muted}}>{p.category} · {p.city}</div>
                           </div>
                           <Badge label={p.contrato.status} color={CONTRATO_COLOR[p.contrato.status]||T.muted}/>
-                          <button className="btn" onClick={()=>enviarContrato(p.id)} style={{padding:"6px 12px",background:`linear-gradient(135deg,${T.warn},${T.warn}AA)`,color:"#000",borderRadius:6,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10}}>- Enviar</button>
+                          <button className="btn" onClick={()=>enviarContrato(p.id)} style={{padding:"6px 12px",background:`linear-gradient(135deg,${T.warn},${T.warn}AA)`,color:"#000",borderRadius:6,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10}}>- Enviar</button>
                         </div>
                       ))}
-                      <button className="btn" onClick={()=>basePartners.filter(p=>["expirando","sem contrato"].includes(p.contrato.status)&&p.status==="ativo").forEach(p=>enviarContrato(p.id))} style={{width:"100%",marginTop:12,padding:"9px",background:T.surface,border:`1px solid ${T.border}`,color:T.warn,borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>- Enviar para todos de uma vez</button>
+                      <button className="btn" onClick={()=>basePartners.filter(p=>["expirando","sem contrato"].includes(p.contrato.status)&&p.status==="ativo").forEach(p=>enviarContrato(p.id))} style={{width:"100%",marginTop:12,padding:"9px",background:T.surface,border:`1px solid ${T.border}`,color:T.warn,borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>- Enviar para todos de uma vez</button>
                     </div>
                   )}
 
@@ -5890,10 +5915,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                     {/* Filter bar */}
                     <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                      <span style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Filtrar:</span>
+                      <span style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Filtrar:</span>
                       {[["todos","Todos"],["assinado","Assinados"],["pendente","Pendentes"],["expirando","Expirando"],["sem contrato","Sem contrato"]].map(([v,l])=>(
                         <div key={v} onClick={()=>setContratoTableFilter(v)} className="tb"
-                          style={{fontSize:9,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",
+                          style={{fontSize:9,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontFamily:"Arial,sans-serif",
                             background:contratoTableFilter===v?(CONTRATO_COLOR[v]||T.accent)+"22":T.surface,
                             border:`1px solid ${contratoTableFilter===v?(CONTRATO_COLOR[v]||T.accent)+"66":T.border}`,
                             color:contratoTableFilter===v?(CONTRATO_COLOR[v]||T.accent):T.muted}}>
@@ -5901,24 +5926,24 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         </div>
                       ))}
                       {contratoTableFilter!=="todos"&&(
-                        <div style={{marginLeft:"auto",fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>
+                        <div style={{marginLeft:"auto",fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>
                           {basePartners.filter(p=>p.contrato.status===contratoTableFilter).length} resultado(s)
                         </div>
                       )}
                     </div>
                     <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:8}}>
-                      {["Parceiro","Status","Enviado em","Assinado em","Expira em","Ação"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"'JetBrains Mono',monospace"}}>{h}</div>)}
+                      {["Parceiro","Status","Enviado em","Assinado em","Expira em","Ação"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"Arial,sans-serif"}}>{h}</div>)}
                     </div>
                     {basePartners.filter(p=>contratoTableFilter==="todos"||p.contrato.status===contratoTableFilter).map((p,i)=>(
                       <div key={i} className="hr" onClick={()=>setSelPartner(p)} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
                         <div>
-                          <div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{p.name}</div>
+                          <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div>
                           <div style={{fontSize:9,color:T.muted}}>{p.category}</div>
                         </div>
                         <Badge label={p.contrato.status} color={CONTRATO_COLOR[p.contrato.status]||T.muted}/>
-                        <div style={{fontSize:10,color:T.soft,fontFamily:"'JetBrains Mono',monospace"}}>{p.contrato.enviadoEm||"-"}</div>
-                        <div style={{fontSize:10,color:p.contrato.assinadoEm?T.accent:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{p.contrato.assinadoEm||"-"}</div>
-                        <div style={{fontSize:10,color:p.contrato.status==="expirando"?T.danger:T.soft,fontFamily:"'JetBrains Mono',monospace"}}>{p.contrato.expiraEm||"-"}</div>
+                        <div style={{fontSize:10,color:T.soft,fontFamily:"Arial,sans-serif"}}>{p.contrato.enviadoEm||"-"}</div>
+                        <div style={{fontSize:10,color:p.contrato.assinadoEm?T.accent:T.muted,fontFamily:"Arial,sans-serif"}}>{p.contrato.assinadoEm||"-"}</div>
+                        <div style={{fontSize:10,color:p.contrato.status==="expirando"?T.danger:T.soft,fontFamily:"Arial,sans-serif"}}>{p.contrato.expiraEm||"-"}</div>
                         <div onClick={e=>e.stopPropagation()}>
                           {p.contrato.status==="sem contrato"&&<button className="btn" onClick={()=>enviarContrato(p.id)} style={{fontSize:9,padding:"4px 8px",background:T.warnDim,border:`1px solid ${T.warn}44`,color:T.warn,borderRadius:5}}>Enviar</button>}
                           {p.contrato.status==="pendente"&&<button className="btn" onClick={()=>assinarContrato(p.id)} style={{fontSize:9,padding:"4px 8px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:5}}>Assinar</button>}
@@ -6072,7 +6097,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                    </div>)}
                    <div style={{display:"flex",justifyContent:"space-between",marginTop:10,paddingTop:10,borderTop:`1px solid ${T.border}`}}>
                      <span style={{fontSize:11,fontWeight:700}}>Total pessoal</span>
-                     <span style={{fontSize:13,fontWeight:800,color:T.danger,fontFamily:"'Syne',sans-serif"}}>{total.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</span>
+                     <span style={{fontSize:13,fontWeight:800,color:T.danger,fontFamily:"Arial,sans-serif"}}>{total.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</span>
                    </div>
                  </div>);
                }},
@@ -6089,7 +6114,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                    </div>)}
                    <div style={{display:"flex",justifyContent:"space-between",marginTop:10,paddingTop:10,borderTop:`1px solid ${T.border}`}}>
                      <span style={{fontSize:11,fontWeight:700}}>Total</span>
-                     <span style={{fontSize:14,fontWeight:800,color:T.accent,fontFamily:"'Syne',sans-serif"}}>{total.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</span>
+                     <span style={{fontSize:14,fontWeight:800,color:T.accent,fontFamily:"Arial,sans-serif"}}>{total.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</span>
                    </div>
                  </div>);
                }},
@@ -6252,7 +6277,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                  const rows=lancFilt.sort((a,b)=>{const pa=a.data?.split("/").reverse().join("-"),pb=b.data?.split("/").reverse().join("-");return pa<pb?-1:1;});
                  let saldo=0;
                  const TH=s=><th style={{padding:"6px 10px",fontSize:8,color:T.muted,fontWeight:700,textAlign:"left",borderBottom:`1px solid ${T.border}`,textTransform:"uppercase",letterSpacing:1,whiteSpace:"nowrap"}}>{s}</th>;
-                 const TD=(s,opts={})=><td style={{padding:"5px 10px",fontSize:9,fontFamily:"'JetBrains Mono',monospace",color:opts.color||T.text,textAlign:opts.right?"right":"left",fontWeight:opts.bold?"700":"400"}}>{s}</td>;
+                 const TD=(s,opts={})=><td style={{padding:"5px 10px",fontSize:9,fontFamily:"Arial,sans-serif",color:opts.color||T.text,textAlign:opts.right?"right":"left",fontWeight:opts.bold?"700":"400"}}>{s}</td>;
                  return(<div style={{overflowX:"auto",maxHeight:400,overflowY:"auto"}}>
                    <table style={{width:"100%",borderCollapse:"collapse"}}>
                      <thead style={{position:"sticky",top:0,background:T.card}}>
@@ -6273,9 +6298,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                      <tfoot>
                        <tr style={{borderTop:`2px solid ${T.border}`,background:T.card}}>
                          <td colSpan={3} style={{padding:"7px 10px",fontSize:9,fontWeight:700}}>TOTAL</td>
-                         <td style={{padding:"7px 10px",fontSize:10,fontWeight:800,color:T.accent,textAlign:"right",fontFamily:"'Syne',sans-serif"}}>{lancFilt.reduce((a,l)=>a+(l.entrada||0),0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
-                         <td style={{padding:"7px 10px",fontSize:10,fontWeight:800,color:T.danger,textAlign:"right",fontFamily:"'Syne',sans-serif"}}>{lancFilt.reduce((a,l)=>a+(l.saida||0),0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
-                         <td style={{padding:"7px 10px",fontSize:10,fontWeight:800,color:T.info,textAlign:"right",fontFamily:"'Syne',sans-serif"}}>{lancFilt.reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                         <td style={{padding:"7px 10px",fontSize:10,fontWeight:800,color:T.accent,textAlign:"right",fontFamily:"Arial,sans-serif"}}>{lancFilt.reduce((a,l)=>a+(l.entrada||0),0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                         <td style={{padding:"7px 10px",fontSize:10,fontWeight:800,color:T.danger,textAlign:"right",fontFamily:"Arial,sans-serif"}}>{lancFilt.reduce((a,l)=>a+(l.saida||0),0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                         <td style={{padding:"7px 10px",fontSize:10,fontWeight:800,color:T.info,textAlign:"right",fontFamily:"Arial,sans-serif"}}>{lancFilt.reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
                          <td/>
                        </tr>
                      </tfoot>
@@ -6299,9 +6324,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                  const pct=v=>rec>0?`${Math.round(v/rec*100)}%`:"—";
                  const Row=({label,v,color,bold,indent,separador})=>(
                    <tr style={{borderBottom:separador?`2px solid ${T.border}`:`1px solid ${T.border}22`,background:separador?T.surface:"transparent"}}>
-                     <td style={{padding:"7px 12px",fontSize:indent?10:11,fontWeight:bold?"800":"400",fontFamily:"'JetBrains Mono',monospace",color:color||T.text,paddingLeft:indent?24:12}}>{label}</td>
-                     <td style={{padding:"7px 12px",fontSize:11,fontWeight:bold?"800":"400",color:color||(v>=0?T.text:T.danger),textAlign:"right",fontFamily:"'Syne',sans-serif"}}>{v<0?"-":""}{Math.abs(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
-                     <td style={{padding:"7px 12px",fontSize:9,color:T.muted,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{pct(Math.abs(v))}</td>
+                     <td style={{padding:"7px 12px",fontSize:indent?10:11,fontWeight:bold?"800":"400",fontFamily:"Arial,sans-serif",color:color||T.text,paddingLeft:indent?24:12}}>{label}</td>
+                     <td style={{padding:"7px 12px",fontSize:11,fontWeight:bold?"800":"400",color:color||(v>=0?T.text:T.danger),textAlign:"right",fontFamily:"Arial,sans-serif"}}>{v<0?"-":""}{Math.abs(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
+                     <td style={{padding:"7px 12px",fontSize:9,color:T.muted,textAlign:"right",fontFamily:"Arial,sans-serif"}}>{pct(Math.abs(v))}</td>
                    </tr>
                  );
                  return(<table style={{width:"100%",borderCollapse:"collapse"}}>
@@ -6331,7 +6356,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                      {porTipo.slice(0,6).map(([tipo,d],i)=>(
                        <div key={i} style={{background:T.surface,borderRadius:8,padding:"10px 12px",borderLeft:`3px solid ${T.warn}`}}>
                          <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>{tipo}</div>
-                         <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15,color:T.warn}}>{d.total.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</div>
+                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:15,color:T.warn}}>{d.total.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</div>
                          <div style={{fontSize:8,color:T.muted,marginTop:2}}>{d.itens.length} lançamento{d.itens.length!==1?"s":""}</div>
                        </div>
                      ))}
@@ -6341,16 +6366,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                      <tbody>
                        {rows.sort((a,b)=>a.data<b.data?-1:1).map((l,i)=>(
                          <tr key={i} style={{background:i%2===0?T.surface:"transparent"}}>
-                           <td style={{padding:"5px 8px",fontSize:9,fontFamily:"'JetBrains Mono',monospace"}}>{l.data}</td>
+                           <td style={{padding:"5px 8px",fontSize:9,fontFamily:"Arial,sans-serif"}}>{l.data}</td>
                            <td style={{padding:"5px 8px",fontSize:9,color:T.soft}}>{l.descricao}</td>
                            <td style={{padding:"5px 8px"}}><span style={{fontSize:8,padding:"2px 6px",borderRadius:3,background:T.warnDim,color:T.warn}}>{l.categoria}</span></td>
-                           <td style={{padding:"5px 8px",fontSize:10,fontWeight:700,color:T.danger,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{(l.saida||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                           <td style={{padding:"5px 8px",fontSize:10,fontWeight:700,color:T.danger,textAlign:"right",fontFamily:"Arial,sans-serif"}}>{(l.saida||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
                          </tr>
                        ))}
                      </tbody>
                      <tfoot><tr style={{borderTop:`2px solid ${T.border}`}}>
                        <td colSpan={3} style={{padding:"6px 8px",fontSize:9,fontWeight:700}}>TOTAL IMPOSTOS E TAXAS</td>
-                       <td style={{padding:"6px 8px",fontSize:11,fontWeight:800,color:T.danger,textAlign:"right",fontFamily:"'Syne',sans-serif"}}>{rows.reduce((a,l)=>a+(l.saida||0),0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                       <td style={{padding:"6px 8px",fontSize:11,fontWeight:800,color:T.danger,textAlign:"right",fontFamily:"Arial,sans-serif"}}>{rows.reduce((a,l)=>a+(l.saida||0),0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
                      </tr></tfoot>
                    </table>
                  </div>);
@@ -6372,11 +6397,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                      <div key={forn} style={{background:T.surface,borderRadius:10,overflow:"hidden"}}>
                        <div style={{padding:"10px 14px",background:d.tipo==="Gráfica"?T.purple+"22":T.info+"22",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                          <div>
-                           <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12}}>{forn}</div>
+                           <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12}}>{forn}</div>
                            <div style={{fontSize:9,color:T.muted,marginTop:1}}>{d.camps.length} campanha{d.camps.length!==1?"s":" "} · {d.tipo}</div>
                          </div>
                          <div style={{textAlign:"right"}}>
-                           <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:d.tipo==="Gráfica"?T.purple:T.info}}>{d.camps.reduce((a,c)=>a+(c.emb||0),0).toLocaleString("pt-BR")} emb.</div>
+                           <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:d.tipo==="Gráfica"?T.purple:T.info}}>{d.camps.reduce((a,c)=>a+(c.emb||0),0).toLocaleString("pt-BR")} emb.</div>
                          </div>
                        </div>
                        <table style={{width:"100%",borderCollapse:"collapse"}}>
@@ -6385,8 +6410,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                            <tr key={i} style={{background:i%2===0?"transparent":T.bg}}>
                              <td style={{padding:"5px 10px",fontSize:10,fontWeight:600}}>{camp.nome}</td>
                              <td style={{padding:"5px 10px",fontSize:9,color:T.muted}}>{camp.cliente}</td>
-                             <td style={{padding:"5px 10px",fontSize:10,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{(camp.emb||0).toLocaleString("pt-BR")}</td>
-                             <td style={{padding:"5px 10px",fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{camp.prazo||"—"}</td>
+                             <td style={{padding:"5px 10px",fontSize:10,textAlign:"right",fontFamily:"Arial,sans-serif"}}>{(camp.emb||0).toLocaleString("pt-BR")}</td>
+                             <td style={{padding:"5px 10px",fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{camp.prazo||"—"}</td>
                              <td style={{padding:"5px 10px"}}>{s?<span style={{fontSize:8,padding:"2px 6px",borderRadius:3,background:s.color+"22",color:s.color}}>{s.label}</span>:"—"}</td>
                            </tr>
                          );})}
@@ -6421,9 +6446,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                          <td style={{padding:"6px 10px",fontSize:10,fontWeight:600}}>{r.name}</td>
                          <td style={{padding:"6px 10px",fontSize:9,color:T.muted}}>{r.client}</td>
                          <td style={{padding:"6px 10px"}}>{r.stageColor&&<span style={{fontSize:8,padding:"2px 6px",borderRadius:3,background:r.stageColor+"22",color:r.stageColor}}>{r.stageName}</span>}</td>
-                         <td style={{padding:"6px 10px",fontSize:10,color:T.accent,textAlign:"right",fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{r.valorLiquido>0?r.valorLiquido.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0}):"—"}</td>
-                         <td style={{padding:"6px 10px",fontSize:10,color:T.danger,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{r.custo>0?r.custo.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0}):"—"}</td>
-                         <td style={{padding:"6px 10px",fontSize:10,fontWeight:700,color:r.margem>=0?T.info:T.danger,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{r.valorLiquido>0?r.margem.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0}):"—"}</td>
+                         <td style={{padding:"6px 10px",fontSize:10,color:T.accent,textAlign:"right",fontFamily:"Arial,sans-serif",fontWeight:700}}>{r.valorLiquido>0?r.valorLiquido.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0}):"—"}</td>
+                         <td style={{padding:"6px 10px",fontSize:10,color:T.danger,textAlign:"right",fontFamily:"Arial,sans-serif"}}>{r.custo>0?r.custo.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0}):"—"}</td>
+                         <td style={{padding:"6px 10px",fontSize:10,fontWeight:700,color:r.margem>=0?T.info:T.danger,textAlign:"right",fontFamily:"Arial,sans-serif"}}>{r.valorLiquido>0?r.margem.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0}):"—"}</td>
                          <td style={{padding:"6px 10px",textAlign:"right"}}>{r.valorLiquido>0?<span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:4,background:r.pct>=60?T.accentDim:r.pct>=30?T.infoDim:T.dangerDim,color:r.pct>=60?T.accent:r.pct>=30?T.info:T.danger}}>{r.pct}%</span>:"—"}</td>
                        </tr>
                      ))}</tbody>
@@ -6453,7 +6478,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                      {cartTotais.map((cart,i)=>(
                        <div key={i} style={{background:T.surface,borderRadius:8,padding:"10px 12px",borderLeft:`3px solid ${cart.cor||T.warn}`}}>
                          <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cart.nome}</div>
-                         <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,color:cart.cor||T.warn}}>{cart.mensal.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}<span style={{fontSize:8,color:T.muted,fontWeight:400}}>/mês</span></div>
+                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,color:cart.cor||T.warn}}>{cart.mensal.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}<span style={{fontSize:8,color:T.muted,fontWeight:400}}>/mês</span></div>
                          <div style={{fontSize:8,color:T.muted,marginTop:2}}>Saldo: {cart.saldoDev.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</div>
                        </div>
                      ))}
@@ -6470,9 +6495,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                        <tr key={i} style={{background:i%2===0?T.surface:"transparent"}}>
                          <td style={{padding:"5px 10px",fontSize:10,fontWeight:600}}>{cc.projeto||cc.descricao}</td>
                          <td style={{padding:"5px 10px",fontSize:9,color:T.muted}}>{cart?.nome||"—"}</td>
-                         <td style={{padding:"5px 10px",fontSize:9,textAlign:"center",fontFamily:"'JetBrains Mono',monospace"}}>{cc.parcelaAtual||1}/{cc.parcelas}</td>
-                         <td style={{padding:"5px 10px",fontSize:10,textAlign:"right",fontFamily:"'JetBrains Mono',monospace",color:T.warn,fontWeight:700}}>{(cc.valorParcela||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
-                         <td style={{padding:"5px 10px",fontSize:10,textAlign:"right",fontFamily:"'JetBrains Mono',monospace",color:T.danger}}>{saldo.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                         <td style={{padding:"5px 10px",fontSize:9,textAlign:"center",fontFamily:"Arial,sans-serif"}}>{cc.parcelaAtual||1}/{cc.parcelas}</td>
+                         <td style={{padding:"5px 10px",fontSize:10,textAlign:"right",fontFamily:"Arial,sans-serif",color:T.warn,fontWeight:700}}>{(cc.valorParcela||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                         <td style={{padding:"5px 10px",fontSize:10,textAlign:"right",fontFamily:"Arial,sans-serif",color:T.danger}}>{saldo.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
                        </tr>
                      );})}
                      </tbody>
@@ -6506,8 +6531,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                              <span style={{fontSize:10,fontWeight:600}}>{r.cat}</span>
                            </div>
                          </td>
-                         {meses.slice(-6).map(m=><td key={m} style={{padding:"5px 8px",fontSize:9,textAlign:"right",fontFamily:"'JetBrains Mono',monospace",color:r.porMes[m]>0?T.text:T.border}}>{r.porMes[m]>0?r.porMes[m].toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0}):"—"}</td>)}
-                         <td style={{padding:"5px 8px",fontSize:10,fontWeight:700,textAlign:"right",fontFamily:"'JetBrains Mono',monospace",color:CORES[i%CORES.length]}}>{r.total.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
+                         {meses.slice(-6).map(m=><td key={m} style={{padding:"5px 8px",fontSize:9,textAlign:"right",fontFamily:"Arial,sans-serif",color:r.porMes[m]>0?T.text:T.border}}>{r.porMes[m]>0?r.porMes[m].toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0}):"—"}</td>)}
+                         <td style={{padding:"5px 8px",fontSize:10,fontWeight:700,textAlign:"right",fontFamily:"Arial,sans-serif",color:CORES[i%CORES.length]}}>{r.total.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
                        </tr>
                      ))}</tbody>
                    </table>
@@ -6525,12 +6550,12 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                      <thead style={{position:"sticky",top:0,background:T.card}}><tr>{["Data","Parceiro","Tipo","Projeto","Usuário","Valor","Status","Pago"].map(h=><th key={h} style={{padding:"5px 8px",fontSize:8,color:T.muted,textAlign:["Valor"].includes(h)?"right":"left",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>{h}</th>)}</tr></thead>
                      <tbody>{[...closings].sort((a,b)=>a.date<b.date?1:-1).map((c,i)=>(
                        <tr key={i} style={{background:i%2===0?T.surface:"transparent"}}>
-                         <td style={{padding:"5px 8px",fontSize:9,fontFamily:"'JetBrains Mono',monospace"}}>{c.date}</td>
+                         <td style={{padding:"5px 8px",fontSize:9,fontFamily:"Arial,sans-serif"}}>{c.date}</td>
                          <td style={{padding:"5px 8px",fontSize:10,fontWeight:600}}>{c.partner}</td>
                          <td style={{padding:"5px 8px"}}><span style={{fontSize:8,padding:"2px 5px",borderRadius:3,background:T.purpleDim,color:T.purple}}>{c.type}</span></td>
                          <td style={{padding:"5px 8px",fontSize:9,color:T.muted}}>{c.project}</td>
                          <td style={{padding:"5px 8px",fontSize:9,color:T.soft}}>{c.user}</td>
-                         <td style={{padding:"5px 8px",fontSize:10,fontWeight:700,color:T.accent,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{(c.value||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                         <td style={{padding:"5px 8px",fontSize:10,fontWeight:700,color:T.accent,textAlign:"right",fontFamily:"Arial,sans-serif"}}>{(c.value||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
                          <td style={{padding:"5px 8px"}}><span style={{fontSize:8,padding:"2px 5px",borderRadius:3,background:c.status==="aprovado"?T.accentDim:c.status==="reprovado"?T.dangerDim:T.warnDim,color:c.status==="aprovado"?T.accent:c.status==="reprovado"?T.danger:T.warn}}>{c.status}</span></td>
                          <td style={{padding:"5px 8px",textAlign:"center"}}><span style={{fontSize:10}}>{c.pago?"✓":"○"}</span></td>
                        </tr>
@@ -6552,12 +6577,12 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                    {porResp.map(([resp,d])=>(
                      <div key={resp} style={{background:T.surface,borderRadius:10,overflow:"hidden"}}>
                        <div style={{padding:"10px 14px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                         <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12}}>{resp}</div>
+                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12}}>{resp}</div>
                          <div style={{display:"flex",gap:12}}>
-                           <div style={{textAlign:"center"}}><div style={{fontSize:14,fontWeight:800,color:T.info,fontFamily:"'Syne',sans-serif"}}>{d.itens.length}</div><div style={{fontSize:8,color:T.muted}}>prospects</div></div>
-                           <div style={{textAlign:"center"}}><div style={{fontSize:14,fontWeight:800,color:T.accent,fontFamily:"'Syne',sans-serif"}}>{d.fechados}</div><div style={{fontSize:8,color:T.muted}}>fechados</div></div>
-                           <div style={{textAlign:"center"}}><div style={{fontSize:14,fontWeight:800,color:T.purple,fontFamily:"'Syne',sans-serif"}}>{d.itens.length>0?Math.round(d.fechados/d.itens.length*100):0}%</div><div style={{fontSize:8,color:T.muted}}>conversão</div></div>
-                           <div style={{textAlign:"right"}}><div style={{fontSize:16,fontWeight:800,color:T.accent,fontFamily:"'Syne',sans-serif"}}>{(d.total/1000).toFixed(0)}k</div><div style={{fontSize:8,color:T.muted}}>pipeline</div></div>
+                           <div style={{textAlign:"center"}}><div style={{fontSize:14,fontWeight:800,color:T.info,fontFamily:"Arial,sans-serif"}}>{d.itens.length}</div><div style={{fontSize:8,color:T.muted}}>prospects</div></div>
+                           <div style={{textAlign:"center"}}><div style={{fontSize:14,fontWeight:800,color:T.accent,fontFamily:"Arial,sans-serif"}}>{d.fechados}</div><div style={{fontSize:8,color:T.muted}}>fechados</div></div>
+                           <div style={{textAlign:"center"}}><div style={{fontSize:14,fontWeight:800,color:T.purple,fontFamily:"Arial,sans-serif"}}>{d.itens.length>0?Math.round(d.fechados/d.itens.length*100):0}%</div><div style={{fontSize:8,color:T.muted}}>conversão</div></div>
+                           <div style={{textAlign:"right"}}><div style={{fontSize:16,fontWeight:800,color:T.accent,fontFamily:"Arial,sans-serif"}}>{(d.total/1000).toFixed(0)}k</div><div style={{fontSize:8,color:T.muted}}>pipeline</div></div>
                          </div>
                        </div>
                        <table style={{width:"100%",borderCollapse:"collapse"}}>
@@ -6567,7 +6592,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                              <td style={{padding:"4px 10px",fontSize:10,fontWeight:600}}>{p.name}</td>
                              <td style={{padding:"4px 10px",fontSize:9,color:T.muted}}>{p.segment}</td>
                              <td style={{padding:"4px 10px"}}>{s&&<span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:s.color+"22",color:s.color}}>{s.label}</span>}</td>
-                             <td style={{padding:"4px 10px",fontSize:10,fontWeight:700,color:T.info,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{(p.value||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
+                             <td style={{padding:"4px 10px",fontSize:10,fontWeight:700,color:T.info,textAlign:"right",fontFamily:"Arial,sans-serif"}}>{(p.value||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0})}</td>
                            </tr>
                          );})}
                          </tbody>
@@ -6593,8 +6618,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                          <td style={{padding:"5px 8px"}}>{s&&<span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:s.color+"22",color:s.color}}>{s.label}</span>}</td>
                          <td style={{padding:"5px 8px",fontSize:9,color:c.graficaFornecedor?T.purple:T.danger}}>{c.graficaFornecedor||"—"}</td>
                          <td style={{padding:"5px 8px",fontSize:9,color:c.logistica?T.info:T.danger}}>{c.logistica||"—"}</td>
-                         <td style={{padding:"5px 8px",fontSize:9,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{(c.sacolas||0).toLocaleString("pt-BR")}</td>
-                         <td style={{padding:"5px 8px",fontSize:9,textAlign:"right",color:td.done===td.total&&td.total>0?T.accent:T.muted,fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>{td.done}/{td.total}</td>
+                         <td style={{padding:"5px 8px",fontSize:9,textAlign:"right",fontFamily:"Arial,sans-serif"}}>{(c.sacolas||0).toLocaleString("pt-BR")}</td>
+                         <td style={{padding:"5px 8px",fontSize:9,textAlign:"right",color:td.done===td.total&&td.total>0?T.accent:T.muted,fontFamily:"Arial,sans-serif",fontWeight:700}}>{td.done}/{td.total}</td>
                          <td style={{padding:"5px 8px"}}>{diasPrazo!==null?<span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:diasPrazo<=0?T.dangerDim:diasPrazo<=7?T.warnDim:T.accentDim,color:diasPrazo<=0?T.danger:diasPrazo<=7?T.warn:T.accent}}>{diasPrazo<=0?"Vencido":diasPrazo+"d"}</span>:<span style={{fontSize:9,color:T.muted}}>—</span>}</td>
                        </tr>
                      );})}
@@ -6618,10 +6643,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                          <td style={{padding:"5px 8px",fontSize:9,color:T.muted}}>{p.city}/{p.state}</td>
                          <td style={{padding:"5px 8px"}}><span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:T.infoDim,color:T.info}}>{p.category}</span></td>
                          <td style={{padding:"5px 8px",fontSize:10,fontWeight:700,textAlign:"right",color:p.score>=80?T.accent:p.score>=50?T.info:T.warn}}>{p.score}</td>
-                         <td style={{padding:"5px 8px",fontSize:9,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{(p.deliveries||0).toLocaleString("pt-BR")}</td>
-                         <td style={{padding:"5px 8px",fontSize:9,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{p.campanhas||0}</td>
+                         <td style={{padding:"5px 8px",fontSize:9,textAlign:"right",fontFamily:"Arial,sans-serif"}}>{(p.deliveries||0).toLocaleString("pt-BR")}</td>
+                         <td style={{padding:"5px 8px",fontSize:9,textAlign:"right",fontFamily:"Arial,sans-serif"}}>{p.campanhas||0}</td>
                          <td style={{padding:"5px 8px"}}><span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:CONTRATO_COLOR[p.contrato?.status]+"22"||T.border,color:CONTRATO_COLOR[p.contrato?.status]||T.muted}}>{p.contrato?.status||"—"}</span></td>
-                         <td style={{padding:"5px 8px",fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{p.contrato?.expiraEm||"—"}</td>
+                         <td style={{padding:"5px 8px",fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{p.contrato?.expiraEm||"—"}</td>
                        </tr>
                      ))}</tbody>
                    </table>
@@ -6641,14 +6666,14 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                        <tr key={i} style={{background:i%2===0?T.surface:"transparent"}}>
                          <td style={{padding:"5px 8px",fontSize:10,fontWeight:600,maxWidth:130,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</td>
                          <td style={{padding:"5px 8px",fontSize:9,color:T.muted}}>{c.client}</td>
-                         {[offline,stories,infl,impul,total].map((v,j)=><td key={j} style={{padding:"5px 8px",fontSize:v===total?11:9,fontWeight:v===total?800:400,textAlign:"right",fontFamily:"'JetBrains Mono',monospace",color:v===total?T.pink:v>0?T.text:T.border}}>{v>0?v.toLocaleString("pt-BR"):"—"}</td>)}
+                         {[offline,stories,infl,impul,total].map((v,j)=><td key={j} style={{padding:"5px 8px",fontSize:v===total?11:9,fontWeight:v===total?800:400,textAlign:"right",fontFamily:"Arial,sans-serif",color:v===total?T.pink:v>0?T.text:T.border}}>{v>0?v.toLocaleString("pt-BR"):"—"}</td>)}
                        </tr>
                      );})}
                      </tbody>
                      <tfoot><tr style={{borderTop:`2px solid ${T.border}`,background:T.card}}>
                        <td colSpan={2} style={{padding:"5px 8px",fontSize:9,fontWeight:700}}>TOTAL</td>
-                       {[camps.reduce((a,c)=>a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3),0),camps.flatMap(c=>c.impactos?.stories||[]).reduce((a,s)=>a+Number(s.impressoes),0),camps.flatMap(c=>c.impactos?.influencer||[]).reduce((a,s)=>a+Number(s.alcance),0),camps.flatMap(c=>c.impactos?.impulsionado||[]).reduce((a,s)=>a+Number(s.alcance),0)].map((v,i)=>{const t=camps.reduce((a,c)=>{const imp=c.impactos||{};return a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3)+(imp.stories||[]).reduce((s,x)=>s+Number(x.impressoes),0)+(imp.influencer||[]).reduce((s,x)=>s+Number(x.alcance),0)+(imp.impulsionado||[]).reduce((s,x)=>s+Number(x.alcance),0);},0);return<td key={i} style={{padding:"5px 8px",fontSize:10,fontWeight:700,textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{v.toLocaleString("pt-BR")}</td>;})}
-                       <td style={{padding:"5px 8px",fontSize:11,fontWeight:800,color:T.pink,textAlign:"right",fontFamily:"'Syne',sans-serif"}}>{camps.reduce((a,c)=>{const imp=c.impactos||{};return a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3)+(imp.stories||[]).reduce((s,x)=>s+Number(x.impressoes),0)+(imp.influencer||[]).reduce((s,x)=>s+Number(x.alcance),0)+(imp.impulsionado||[]).reduce((s,x)=>s+Number(x.alcance),0);},0).toLocaleString("pt-BR")}</td>
+                       {[camps.reduce((a,c)=>a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3),0),camps.flatMap(c=>c.impactos?.stories||[]).reduce((a,s)=>a+Number(s.impressoes),0),camps.flatMap(c=>c.impactos?.influencer||[]).reduce((a,s)=>a+Number(s.alcance),0),camps.flatMap(c=>c.impactos?.impulsionado||[]).reduce((a,s)=>a+Number(s.alcance),0)].map((v,i)=>{const t=camps.reduce((a,c)=>{const imp=c.impactos||{};return a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3)+(imp.stories||[]).reduce((s,x)=>s+Number(x.impressoes),0)+(imp.influencer||[]).reduce((s,x)=>s+Number(x.alcance),0)+(imp.impulsionado||[]).reduce((s,x)=>s+Number(x.alcance),0);},0);return<td key={i} style={{padding:"5px 8px",fontSize:10,fontWeight:700,textAlign:"right",fontFamily:"Arial,sans-serif"}}>{v.toLocaleString("pt-BR")}</td>;})}
+                       <td style={{padding:"5px 8px",fontSize:11,fontWeight:800,color:T.pink,textAlign:"right",fontFamily:"Arial,sans-serif"}}>{camps.reduce((a,c)=>{const imp=c.impactos||{};return a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3)+(imp.stories||[]).reduce((s,x)=>s+Number(x.impressoes),0)+(imp.influencer||[]).reduce((s,x)=>s+Number(x.alcance),0)+(imp.impulsionado||[]).reduce((s,x)=>s+Number(x.alcance),0);},0).toLocaleString("pt-BR")}</td>
                      </tr></tfoot>
                    </table>
                  </div>
@@ -6664,7 +6689,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                        {porParc.slice(0,3).map(([p,d],i)=>(
                          <div key={i} style={{background:T.surface,borderRadius:8,padding:"10px 12px",borderLeft:`3px solid #E1306C`}}>
                            <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p}</div>
-                           <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:"#E1306C"}}>{d.total.toLocaleString("pt-BR")}</div>
+                           <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:"#E1306C"}}>{d.total.toLocaleString("pt-BR")}</div>
                            <div style={{fontSize:8,color:T.muted,marginTop:2}}>{d.itens.length} post{d.itens.length!==1?"s":""}</div>
                          </div>
                        ))}
@@ -6675,8 +6700,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                          <tr key={i} style={{background:i%2===0?T.surface:"transparent"}}>
                            <td style={{padding:"4px 8px",fontSize:10,fontWeight:600}}>{s.parceiro}</td>
                            <td style={{padding:"4px 8px",fontSize:9,color:T.muted}}>{s.campanha}</td>
-                           <td style={{padding:"4px 8px",fontSize:10,fontWeight:700,color:"#E1306C",textAlign:"right",fontFamily:"'JetBrains Mono',monospace"}}>{Number(s.impressoes).toLocaleString("pt-BR")}</td>
-                           <td style={{padding:"4px 8px",fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{s.at}</td>
+                           <td style={{padding:"4px 8px",fontSize:10,fontWeight:700,color:"#E1306C",textAlign:"right",fontFamily:"Arial,sans-serif"}}>{Number(s.impressoes).toLocaleString("pt-BR")}</td>
+                           <td style={{padding:"4px 8px",fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{s.at}</td>
                          </tr>
                        ))}</tbody>
                      </table>
@@ -6696,7 +6721,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
                 {/* ── PAINEL ESQUERDO — Seletor de blocos ── */}
                 <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16,height:"fit-content",position:"sticky",top:0}}>
-                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,marginBottom:4}}>Construtor</div>
+                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,marginBottom:4}}>Construtor</div>
                   <div style={{fontSize:9,color:T.muted,marginBottom:14}}>Escolha os blocos do relatório</div>
 
                   {/* Título */}
@@ -6710,7 +6735,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     <div style={{fontSize:9,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Período</div>
                     <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}}>
                       {[["mes","Este mês"],["mes_ant","Mês ant."],["trim","Trimestre"],["ano","Este ano"],["tudo","Tudo"]].map(([tipo,label])=>(
-                        <div key={tipo} onClick={()=>aplicarFiltro(tipo)} style={{padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:9,background:T.surface,border:`1px solid ${T.border}`,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>
+                        <div key={tipo} onClick={()=>aplicarFiltro(tipo)} style={{padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:9,background:T.surface,border:`1px solid ${T.border}`,color:T.muted,fontFamily:"Arial,sans-serif"}}>
                           {label}
                         </div>
                       ))}
@@ -6725,13 +6750,13 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <input type="date" value={relDateEnd} onChange={e=>{setRelDateEnd(e.target.value);setRelPeriodo("Personalizado");}} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 6px",fontSize:10,color:T.text,outline:"none"}}/>
                       </div>
                     </div>
-                    {relPeriodo&&<div style={{fontSize:9,color:T.accent,marginTop:5,fontFamily:"'JetBrains Mono',monospace"}}>↳ {relPeriodo}</div>}
+                    {relPeriodo&&<div style={{fontSize:9,color:T.accent,marginTop:5,fontFamily:"Arial,sans-serif"}}>↳ {relPeriodo}</div>}
                   </div>
 
                   {/* Blocos por categoria */}
                   {cats.map(cat=>(
                     <div key={cat} style={{marginBottom:14}}>
-                      <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6,fontFamily:"'JetBrains Mono',monospace"}}>{cat}</div>
+                      <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6,fontFamily:"Arial,sans-serif"}}>{cat}</div>
                       {disponiveis.filter(b=>b.cat===cat).map(b=>{
                         const sel=relSelecionados.includes(b.id);
                         return(
@@ -6746,7 +6771,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
                   {relSelecionados.length>0&&(
                     <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:6}}>
-                      <button onClick={()=>gerarPDF()} style={{width:"100%",padding:"9px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:11,border:"none"}}>
+                      <button onClick={()=>gerarPDF()} style={{width:"100%",padding:"9px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:11,border:"none"}}>
                         Exportar PDF
                       </button>
                       <button onClick={()=>setRelSelecionados([])} style={{width:"100%",padding:"7px",background:"transparent",color:T.muted,borderRadius:8,cursor:"pointer",fontSize:10,border:`1px solid ${T.border}`}}>
@@ -6761,7 +6786,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   {blocosSel.length===0?(
                     <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"60vh",gap:12,color:T.muted}}>
                       <div style={{fontSize:40}}>📊</div>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:16,color:T.soft}}>Seu relatório aparece aqui</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:16,color:T.soft}}>Seu relatório aparece aqui</div>
                       <div style={{fontSize:11,color:T.muted}}>Selecione os blocos no painel ao lado</div>
                     </div>
                   ):(
@@ -6769,13 +6794,13 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {/* Cabeçalho do relatório */}
                       <div style={{background:`linear-gradient(135deg,${T.accent}22,${T.purple}11)`,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:"20px 24px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                         <div>
-                          <div style={{fontSize:8,color:T.accent,fontFamily:"'JetBrains Mono',monospace",letterSpacing:3,textTransform:"uppercase",marginBottom:4}}>ECODELY · MÍDIA IN-HOME</div>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,marginBottom:2}}>{relTitulo}</div>
+                          <div style={{fontSize:8,color:T.accent,fontFamily:"Arial,sans-serif",letterSpacing:3,textTransform:"uppercase",marginBottom:4}}>ECODELY · MÍDIA IN-HOME</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:22,marginBottom:2}}>{relTitulo}</div>
                           <div style={{fontSize:10,color:T.muted}}>{relPeriodo} · Gerado em {new Date().toLocaleDateString("pt-BR")}</div>
                         </div>
                         <div style={{textAlign:"right"}}>
                           <div style={{fontSize:9,color:T.muted,marginBottom:4}}>{blocosSel.length} bloco{blocosSel.length!==1?"s":""} selecionado{blocosSel.length!==1?"s":""}</div>
-                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:T.accent}}>{user.name}</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.accent}}>{user.name}</div>
                           <div style={{fontSize:9,color:T.muted}}>{ROLE_LABELS[user.role]}</div>
                         </div>
                       </div>
@@ -6785,7 +6810,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         {blocosSel.map(b=>(
                           <div key={b.id} style={{background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${b.color}`,borderRadius:12,padding:"16px 18px",position:"relative"}}>
                             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                              <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:12,color:b.color}}>{b.label}</div>
+                              <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:b.color}}>{b.label}</div>
                               <div onClick={()=>toggle(b.id)} style={{cursor:"pointer",color:T.muted,fontSize:14,lineHeight:1}}>×</div>
                             </div>
                             {b.render()}
@@ -6810,14 +6835,14 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     <div key={v} onClick={()=>setCadTab(v)} className="tb" style={{padding:"7px 12px",borderRadius:6,fontSize:10,background:cadTab===v?T.accentDim:T.card,border:`1px solid ${cadTab===v?T.accentBorder:T.border}`,color:cadTab===v?T.accent:T.muted,cursor:"pointer"}}>{l}</div>
                   ))}
                 </div>
-                {cadTab==="clientes"&&<button onClick={()=>setShowNewCliente(v=>!v)} style={{padding:"7px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>+ Novo Cliente</button>}
+                {cadTab==="clientes"&&<button onClick={()=>setShowNewCliente(v=>!v)} style={{padding:"7px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>+ Novo Cliente</button>}
               </div>
 
               {cadTab==="clientes"&&(
                 <div>
                   {showNewCliente&&(
                     <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16,marginBottom:12}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.accent,marginBottom:12,fontSize:12}}>Novo Cliente</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,marginBottom:12,fontSize:12}}>Novo Cliente</div>
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
                         {[["Nome *","name","Ex: Selfit Academias"],["Contato","contact","Nome do responsável"],["Email","email","email@empresa.com"],["Telefone","phone","(11) 99999-9999"],["Segmento","segment","Ex: Academia, Varejo"],["Agência","agency","Nome da agência (opcional)"]].map(([l,k,ph])=>(
                           <div key={k}>
@@ -6827,7 +6852,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         ))}
                       </div>
                       <div style={{display:"flex",gap:8}}>
-                        <button onClick={()=>{if(!novoCliente.name)return;setShowNewCliente(false);setNovoCliente({name:"",contact:"",email:"",phone:"",segment:"",agency:""});pushNotif("Cliente cadastrado",novoCliente.name,"Novo cliente adicionado",T.accent);}} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>Salvar</button>
+                        <button onClick={()=>{if(!novoCliente.name)return;setShowNewCliente(false);setNovoCliente({name:"",contact:"",email:"",phone:"",segment:"",agency:""});pushNotif("Cliente cadastrado",novoCliente.name,"Novo cliente adicionado",T.accent);}} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>Salvar</button>
                         <button onClick={()=>setShowNewCliente(false)} style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10,cursor:"pointer"}}>Cancelar</button>
                       </div>
                     </div>
@@ -6837,11 +6862,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {["Cliente","Contato","Segmento","Campanhas","LTV"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
                     </div>
                     {CLIENTS_LIST.map((c,i)=>(<div key={i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 0.8fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
-                      <div><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.email}</div></div>
+                      <div><div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.email}</div></div>
                       <div style={{fontSize:11,color:T.soft}}>{c.contact}</div>
                       <Badge label={c.segment} color={T.purple}/>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:18,color:T.info}}>{c.campaigns}</div>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmtK(c.ltv)}</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:T.info}}>{c.campaigns}</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmtK(c.ltv)}</div>
                     </div>))}
                   </div>
                 </div>
@@ -6850,7 +6875,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               {cadTab==="fornecedores"&&(
                 <div>
                   <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16,marginBottom:12}}>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.accent,marginBottom:12,fontSize:11}}>Novo Fornecedor</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,marginBottom:12,fontSize:11}}>Novo Fornecedor</div>
                     <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr",gap:8,marginBottom:8}}>
                       <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Nome *</div><input placeholder="Ex: Gráfica Rápida" value={nf.name} onChange={e=>setNf(p=>({...p,name:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}/></div>
                       <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Tipo</div><select value={nf.type} onChange={e=>setNf(p=>({...p,type:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}><option value="grafica">Gráfica</option><option value="logistica">Logística</option></select></div>
@@ -6858,7 +6883,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Email</div><input placeholder="email@fornecedor.com" value={nf.email} onChange={e=>setNf(p=>({...p,email:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}/></div>
                       <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Prazo</div><input placeholder="7 dias" value={nf.leadTime} onChange={e=>setNf(p=>({...p,leadTime:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}/></div>
                     </div>
-                    <button onClick={async()=>{if(!nf.name)return;const rec={...nf,id:Date.now(),campaigns:0};setSuppliers(p=>[...p,rec]);setNf({name:"",type:"grafica",contact:"",phone:"",email:"",leadTime:"7 dias",rating:4});await supabase.from("fornecedores").insert(rec);pushNotif("Fornecedor cadastrado",rec.name,"Adicionado com sucesso",T.accent);}} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>+ Adicionar Fornecedor</button>
+                    <button onClick={async()=>{if(!nf.name)return;const rec={...nf,id:Date.now(),campaigns:0};setSuppliers(p=>[...p,rec]);setNf({name:"",type:"grafica",contact:"",phone:"",email:"",leadTime:"7 dias",rating:4});await supabase.from("fornecedores").insert(rec);pushNotif("Fornecedor cadastrado",rec.name,"Adicionado com sucesso",T.accent);}} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>+ Adicionar Fornecedor</button>
                   </div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                     <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 0.8fr 0.6fr 0.3fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
@@ -6866,10 +6891,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     </div>
                     {suppliers.length===0&&<div style={{padding:"20px 16px",fontSize:11,color:T.muted,textAlign:"center"}}>Nenhum fornecedor cadastrado ainda.</div>}
                     {suppliers.map((s,i)=>(<div key={i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 0.8fr 0.6fr 0.3fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
-                      <div><div style={{fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{s.name}</div><div style={{fontSize:9,color:T.muted}}>{s.email}</div></div>
+                      <div><div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{s.name}</div><div style={{fontSize:9,color:T.muted}}>{s.email}</div></div>
                       <Badge label={s.type==="grafica"?"Gráfica":"Logística"} color={s.type==="grafica"?T.purple:T.warn}/>
                       <div style={{fontSize:11,color:T.soft}}>{s.contact}</div>
-                      <div style={{fontSize:10,color:T.soft,fontFamily:"'JetBrains Mono',monospace"}}>{s.leadTime}</div>
+                      <div style={{fontSize:10,color:T.soft,fontFamily:"Arial,sans-serif"}}>{s.leadTime}</div>
                       <div style={{fontSize:11,color:T.warn}}>{"★".repeat(s.rating||0)}</div>
                       <div onClick={async()=>{setSuppliers(p=>p.filter(x=>x.id!==s.id));await supabase.from("fornecedores").delete().eq("id",s.id);}} style={{fontSize:9,color:T.danger,cursor:"pointer",textAlign:"center"}}>✕</div>
                     </div>))}
@@ -6886,16 +6911,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           {tab==="usuarios"&&user.role==="admin"&&(
             <div>
               <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
-                <button className="btn" onClick={()=>setShowNewUser(true)} style={{padding:"8px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>+ Novo Usuário</button>
+                <button className="btn" onClick={()=>setShowNewUser(true)} style={{padding:"8px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>+ Novo Usuário</button>
               </div>
               {showNewUser&&(
                 <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18,marginBottom:12}} className="fade">
-                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,color:T.accent,marginBottom:12}}>Novo Usuário</div>
+                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,marginBottom:12}}>Novo Usuário</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
-                    {[["Nome","name","text"],["E-mail","email","email"],["Senha","pass","password"]].map(([l,k,t])=>(<div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>{l}</div><input type={t} value={newUser[k]} onChange={e=>setNewUser(p=>({...p,[k]:e.target.value}))} style={inpS}/></div>))}
-                    <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Perfil</div><select value={newUser.role} onChange={e=>setNewUser(p=>({...p,role:e.target.value}))} style={selS}>{Object.entries(ROLE_LABELS).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
+                    {[["Nome","name","text"],["E-mail","email","email"],["Senha","pass","password"]].map(([l,k,t])=>(<div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}</div><input type={t} value={newUser[k]} onChange={e=>setNewUser(p=>({...p,[k]:e.target.value}))} style={inpS}/></div>))}
+                    <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Perfil</div><select value={newUser.role} onChange={e=>setNewUser(p=>({...p,role:e.target.value}))} style={selS}>{Object.entries(ROLE_LABELS).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
                   </div>
-                  <div style={{display:"flex",gap:8}}><button className="btn" onClick={addUser} style={{padding:"8px 16px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:11}}>Criar</button><button className="btn" onClick={()=>setShowNewUser(false)} style={{padding:"8px 12px",background:T.card,border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:11}}>Cancelar</button></div>
+                  <div style={{display:"flex",gap:8}}><button className="btn" onClick={addUser} style={{padding:"8px 16px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>Criar</button><button className="btn" onClick={()=>setShowNewUser(false)} style={{padding:"8px 12px",background:T.card,border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:11}}>Cancelar</button></div>
                 </div>
               )}
               <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
@@ -6904,8 +6929,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 </div>
                 {users.map((u,i)=>(
                   <div key={i} style={{display:"grid",gridTemplateColumns:"2fr 2fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"start",opacity:u.active?1:0.5}}>
-                    <div style={{display:"flex",gap:8,alignItems:"center"}}><div style={{width:26,height:26,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",border:`1px solid ${ROLE_COLOR[u.role]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:ROLE_COLOR[u.role],fontWeight:700,flexShrink:0}}>{u.avatar}</div><span style={{fontSize:12,fontWeight:600,fontFamily:"'Syne',sans-serif"}}>{u.name}</span></div>
-                    <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{u.email}</div>
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}><div style={{width:26,height:26,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",border:`1px solid ${ROLE_COLOR[u.role]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:ROLE_COLOR[u.role],fontWeight:700,flexShrink:0}}>{u.avatar}</div><span style={{fontSize:12,fontWeight:600,fontFamily:"Arial,sans-serif"}}>{u.name}</span></div>
+                    <div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>{u.email}</div>
                     <Badge label={ROLE_LABELS[u.role]} color={ROLE_COLOR[u.role]}/>
                     {/* Acessos extras — só aparece para não-admin */}
                     <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
@@ -6918,7 +6943,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             setUsers(p=>p.map(x=>x.id===u.id?{...x,extraRoles:novas}:x));
                             if(u.id===user.id)setUser(p=>({...p,extraRoles:novas}));
                             await supabase.from("usuarios").update({extraRoles:novas}).eq("id",u.id);
-                          }} style={{fontSize:8,padding:"2px 7px",borderRadius:4,cursor:"pointer",border:`1px solid ${tem?ROLE_COLOR[r]+"66":T.border}`,background:tem?ROLE_COLOR[r]+"22":T.surface,color:tem?ROLE_COLOR[r]:T.muted,fontFamily:"'JetBrains Mono',monospace",transition:"all 0.15s"}}>
+                          }} style={{fontSize:8,padding:"2px 7px",borderRadius:4,cursor:"pointer",border:`1px solid ${tem?ROLE_COLOR[r]+"66":T.border}`,background:tem?ROLE_COLOR[r]+"22":T.surface,color:tem?ROLE_COLOR[r]:T.muted,fontFamily:"Arial,sans-serif",transition:"all 0.15s"}}>
                             {l}
                           </div>
                         );
@@ -6927,7 +6952,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     </div>
                     <div style={{display:"flex",gap:6,alignItems:"center"}}>
                       <div style={{width:7,height:7,borderRadius:"50%",background:u.active?T.accent:T.danger}}/>
-                      {u.id!==user.id&&<div onClick={async()=>{const na=!u.active;setUsers(p=>p.map(x=>x.id===u.id?{...x,active:na}:x));await supabase.from("usuarios").update({active:na}).eq("id",u.id);}} style={{fontSize:9,color:u.active?T.danger:T.accent,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}}>{u.active?"Aposentar":"Reativar"}</div>}
+                      {u.id!==user.id&&<div onClick={async()=>{const na=!u.active;setUsers(p=>p.map(x=>x.id===u.id?{...x,active:na}:x));await supabase.from("usuarios").update({active:na}).eq("id",u.id);}} style={{fontSize:9,color:u.active?T.danger:T.accent,cursor:"pointer",fontFamily:"Arial,sans-serif"}}>{u.active?"Aposentar":"Reativar"}</div>}
                     </div>
                   </div>
                 ))}
