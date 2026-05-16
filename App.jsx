@@ -6940,7 +6940,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
   );
 }{grupo.lancs.map((l,i)=>{
                               const rowBg=l.confirmado?"#d4edda":l.tipo==="Saldo Anterior"?"#f0e8ff":i%2===0?"#fff":"#f2f6fc";
-                              return(
+                              const row=(
                                 <div key={l.id||i} style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,borderBottom:"1px solid #888",background:rowBg,alignItems:"center",cursor:"pointer"}} onClick={()=>setEditLanc({...l})}>
                                   <div data-col="0" style={{fontSize:10,color:"#444",fontFamily:"Arial,sans-serif",padding:"7px 10px",borderRight:"1px solid #888",overflow:"hidden",whiteSpace:"nowrap",background:rowBg}}>{l.tipo==="Saldo Anterior"?"":l.data.slice(0,5)}</div>
                                   <div data-col="1" style={{padding:"7px 10px",borderRight:"2px solid #888",overflow:"hidden",background:rowBg}}>
@@ -6957,6 +6957,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                   </div>
                                 </div>
                               );
+                              return row;
                             })}from "react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { createClient } from "@supabase/supabase-js";
