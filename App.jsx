@@ -4646,7 +4646,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         {/* Header — Excel style com colunas redimensionáveis */}
                         <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),padding:"0",gap:0,background:"#1a4a7a",borderBottom:"2px solid #0f3460",position:"relative"}}>
                           {["DATA","DESCRIÇÃO","ENTRADA","SAÍDA","TOT. ENTRADA","TOT. SAÍDA","SALDO","✓"].map((h,i)=>(
-                            <div key={h} style={{fontSize:8,color:"#fff",textTransform:"uppercase",letterSpacing:1,fontWeight:700,textAlign:i<=1?"left":"right",padding:"9px 10px",position:"relative",userSelect:"none",overflow:"hidden",whiteSpace:"nowrap",background:"#1a4a7a",boxShadow:"inset -1px 0 0 #4a7aaa"}}>
+                            <div key={h} style={{fontSize:8,color:"#fff",textTransform:"uppercase",letterSpacing:1,fontWeight:700,textAlign:i===0?"left":i===1?"center":"right",padding:"9px 10px",position:"relative",userSelect:"none",overflow:"hidden",whiteSpace:"nowrap",background:"#1a4a7a",boxShadow:"inset -1px 0 0 #4a7aaa"}}>
                               {h}
                               {i<7&&<div
                                 style={{position:"absolute",right:0,top:0,bottom:0,width:6,cursor:"col-resize",zIndex:10}}
@@ -4667,7 +4667,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                               {grupo.lancs.map((l,i)=>{const rowBg=l.confirmado?"#d4edda":l.tipo==="Saldo Anterior"?"#f0e8ff":i%2===0?"#fff":"#f2f6fc";return(
                                 <div key={l.id||i} style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,background:rowBg,alignItems:"stretch",cursor:"pointer"}} onClick={()=>setEditLanc({...l})}>
                                   <div data-col="0" style={{fontSize:10,color:"#444",fontFamily:"Arial,sans-serif",padding:"7px 10px",overflow:"hidden",whiteSpace:"nowrap",background:rowBg,display:"flex",alignItems:"center",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}>{l.tipo==="Saldo Anterior"?"":l.data.slice(0,5)}</div>
-                                  <div data-col="1" style={{padding:"7px 10px",borderRight:"1px solid #888",overflow:"hidden",background:rowBg}}>
+                                  <div data-col="1" style={{padding:"7px 10px",borderRight:"1px solid #888",borderBottom:"1px solid #888",overflow:"hidden",background:rowBg}}>
                                     <div style={{fontSize:11,color:l.tipo==="Saldo Anterior"?"#7c3aed":"#1a1a2e",lineHeight:1.4}}>{l.descricao}</div>
                                     <span style={{fontSize:7,padding:"1px 5px",borderRadius:3,background:l.tipo==="Saldo Anterior"?"#ede9fe":l.tipo==="Receita"?"#dcfce7":"#fee2e2",color:l.tipo==="Saldo Anterior"?"#7c3aed":l.tipo==="Receita"?"#16a34a":"#dc2626"}}>{l.tipo==="Saldo Anterior"?"Saldo Ant.":l.categoria}</span>
                                   </div>
@@ -4680,7 +4680,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                 </div>
                               );})}
                               {/* Linha dedicada ao saldo do período */}
-                              <div style={{borderTop:"2px solid #555",borderBottom:"2px solid #555"}}><div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,alignItems:"stretch"}}>
+                              <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,alignItems:"stretch",borderTop:"2px solid #555",borderBottom:"2px solid #555"}}>
                                 <div style={{fontSize:9,color:"#2d6a4f",fontFamily:"Arial,sans-serif",fontWeight:700,padding:"6px 10px",background:"#d4edda",display:"flex",alignItems:"center",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}>{grupo.data.slice(0,5)}</div>
                                 <div style={{fontSize:9,color:"#2d6a4f",fontWeight:800,textTransform:"uppercase",letterSpacing:1,padding:"6px 10px",background:"#d4edda",display:"flex",alignItems:"center",boxShadow:"inset -2px 0 0 #888, inset 0 -1px 0 #888"}}>Saldo do período</div>
                                 <div style={{background:"#d4edda",minHeight:32,boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}/>
@@ -4689,7 +4689,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                 <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:800,textAlign:"right",padding:"6px 10px",background:"#d4edda",display:"flex",alignItems:"center",justifyContent:"flex-end",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}>{dSaidas>0?fmt(dSaidas):""}</div>
                                 <div style={{fontFamily:"Arial,sans-serif",fontSize:13,fontWeight:800,color:saldoDia>=0?"#16a34a":"#dc2626",textAlign:"right",padding:"6px 10px",background:"#d4edda",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{fmt(saldoDia)}</div>
                                 <div style={{background:"#d4edda",boxShadow:"inset 0 -1px 0 #888"}}/>
-                              </div></div>
+                              </div>
                             </div>
                           );
                         })}
