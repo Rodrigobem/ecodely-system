@@ -4618,6 +4618,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <div style={{display:"grid",gridTemplateColumns:"100px 1fr 120px 120px 120px",background:T.surface,padding:"8px 14px",gap:8}}>
                           {["Data","Descricao","Entrada","Saida","Saldo"].map(h=><div key={h} style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>{h}</div>)}
                         </div>
+                        {/* Header */}
+                        <div style={{display:"grid",gridTemplateColumns:"90px 1fr 130px 130px 130px",padding:"8px 14px",gap:8,background:T.surface,borderBottom:`1px solid ${T.border}`}}>
+                          {["DATA","DESCRIÇÃO","ENTRADA","SAÍDA","SALDO"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,textAlign:h==="DATA"||h==="DESCRIÇÃO"?"left":"right"}}>{h}</div>)}
+                        </div>
                         {grupos.length===0&&<div style={{padding:24,textAlign:"center",color:T.muted,fontSize:11}}>Nenhum lançamento em {finMesRef}</div>}
                         {grupos.map((grupo,gi)=>{
                           const dEntradas=grupo.lancs.reduce((a,l)=>a+(l.entrada||0),0);
@@ -4627,24 +4631,24 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           return(
                             <div key={gi}>
                               {grupo.lancs.map((l,i)=>(
-                                <div key={l.id||i} style={{display:"grid",gridTemplateColumns:"100px 1fr 120px 120px 120px",padding:"8px 14px",gap:8,borderBottom:`1px solid ${T.border}55`,background:l.tipo==="Saldo Anterior"?T.purpleDim:i%2===0?"transparent":T.surface+"55",alignItems:"center"}} onClick={()=>setEditLanc(l)}>
+                                <div key={l.id||i} style={{display:"grid",gridTemplateColumns:"90px 1fr 130px 130px 130px",padding:"8px 14px",gap:8,borderBottom:`1px solid ${T.border}22`,background:l.tipo==="Saldo Anterior"?T.purpleDim:i%2===0?"transparent":T.surface+"44",alignItems:"center",cursor:"pointer"}} onClick={()=>setEditLanc(l)}>
                                   <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{l.tipo==="Saldo Anterior"?"":l.data.slice(0,5)}</div>
                                   <div>
-                                    <div style={{fontSize:11,color:l.tipo==="Saldo Anterior"?T.purple:T.text}}>{l.descricao}</div>
+                                    <div style={{fontSize:11,color:l.tipo==="Saldo Anterior"?T.purple:T.text,lineHeight:1.4}}>{l.descricao}</div>
                                     <span style={{fontSize:7,padding:"1px 5px",borderRadius:3,background:l.tipo==="Saldo Anterior"?T.purpleDim:l.tipo==="Receita"?T.accentDim:T.dangerDim,color:l.tipo==="Saldo Anterior"?T.purple:l.tipo==="Receita"?T.accent:T.danger}}>{l.tipo==="Saldo Anterior"?"Saldo Ant.":l.categoria}</span>
                                   </div>
-                                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.accent,fontWeight:l.entrada>0?700:400,textAlign:"right"}}>{l.entrada>0?fmt(l.entrada):"—"}</div>
-                                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.danger,fontWeight:l.saida>0?700:400,textAlign:"right"}}>{l.saida>0?fmt(l.saida):"—"}</div>
-                                  <div style={{fontSize:10,color:T.muted,textAlign:"right"}}>—</div>
+                                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.accent,fontWeight:700,textAlign:"right"}}>{l.entrada>0?fmt(l.entrada):""}</div>
+                                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.danger,fontWeight:700,textAlign:"right"}}>{l.saida>0?fmt(l.saida):""}</div>
+                                  <div style={{textAlign:"right",fontSize:10,color:T.muted}}>—</div>
                                 </div>
                               ))}
-                              {/* SALDO DO DIA */}
-                              <div style={{display:"grid",gridTemplateColumns:"100px 1fr 120px 120px 120px",padding:"6px 14px",gap:8,background:T.surface,borderBottom:`2px solid ${T.border}`,alignItems:"center"}}>
-                                <div style={{fontSize:8,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{grupo.data.slice(0,5)}</div>
-                                <div style={{fontSize:9,color:T.muted,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Saldo</div>
-                                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.accent,textAlign:"right"}}>{dEntradas>0?fmt(dEntradas):"—"}</div>
-                                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:T.danger,textAlign:"right"}}>{dSaidas>0?fmt(dSaidas):"—"}</div>
-                                <div style={{fontFamily:"'Syne',sans-serif",fontSize:11,fontWeight:800,color:saldoDia>=0?T.accent:T.danger,textAlign:"right"}}>{fmt(saldoDia)}</div>
+                              {/* SALDO DO DIA — mesmo grid */}
+                              <div style={{display:"grid",gridTemplateColumns:"90px 1fr 130px 130px 130px",padding:"7px 14px",gap:8,background:T.surface,borderTop:`1px solid ${T.border}`,borderBottom:`2px solid ${T.border}`,alignItems:"center"}}>
+                                <div style={{fontSize:9,color:T.muted,fontFamily:"'JetBrains Mono',monospace"}}>{grupo.data.slice(0,5)}</div>
+                                <div style={{fontSize:9,color:T.muted,fontWeight:800,textTransform:"uppercase",letterSpacing:1}}>Saldo</div>
+                                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.accent,fontWeight:700,textAlign:"right"}}>{dEntradas>0?fmt(dEntradas):""}</div>
+                                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:T.danger,fontWeight:700,textAlign:"right"}}>{dSaidas>0?fmt(dSaidas):""}</div>
+                                <div style={{fontFamily:"'Syne',sans-serif",fontSize:12,fontWeight:800,color:saldoDia>=0?T.accent:T.danger,textAlign:"right"}}>{fmt(saldoDia)}</div>
                               </div>
                             </div>
                           );
