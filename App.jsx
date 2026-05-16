@@ -4679,7 +4679,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                   </div>
                                 </div>
                                 );})()}
-                              ))}
+                              )}
                               {/* Linha dedicada ao saldo do período */}
                               <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,background:"#d4edda",borderBottom:"2px solid #555",borderTop:"1px solid #888",alignItems:"center"}}>
                                 <div style={{fontSize:9,color:"#2d6a4f",fontFamily:"Arial,sans-serif",fontWeight:700,padding:"6px 10px",borderRight:"1px solid #888"}}>{grupo.data.slice(0,5)}</div>
