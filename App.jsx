@@ -4646,7 +4646,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         {/* Header — Excel style com colunas redimensionáveis */}
                         <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),padding:"0",gap:0,background:"#1a4a7a",borderBottom:"2px solid #0f3460",position:"relative"}}>
                           {["DATA","DESCRIÇÃO","ENTRADA","SAÍDA","TOT. ENTRADA","TOT. SAÍDA","SALDO","✓"].map((h,i)=>(
-                            <div key={h} style={{fontSize:8,color:"#fff",textTransform:"uppercase",letterSpacing:1,fontWeight:700,textAlign:i<=1?"left":"right",padding:"9px 10px",borderRight:"1px solid #888",position:"relative",userSelect:"none",overflow:"hidden",whiteSpace:"nowrap"}}>
+                            <div key={h} style={{fontSize:8,color:"#fff",textTransform:"uppercase",letterSpacing:1,fontWeight:700,textAlign:i<=1?"left":"right",padding:"9px 10px",borderRight:"1px solid #888",position:i<=1?"sticky":"relative",left:i===0?0:i===1?colWidths[0]+"px":undefined,zIndex:i<=1?2:undefined,background:"#1a4a7a",userSelect:"none",overflow:"hidden",whiteSpace:"nowrap"}}>
                               {h}
                               {i<7&&<div
                                 style={{position:"absolute",right:0,top:0,bottom:0,width:6,cursor:"col-resize",zIndex:10}}
@@ -4666,8 +4666,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <div key={gi}>
                               {grupo.lancs.map((l,i)=>(
                                 <div key={l.id||i} style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,borderBottom:"1px solid #888",background:l.confirmado?"#d4edda":l.tipo==="Saldo Anterior"?"#f0e8ff":i%2===0?"#fff":"#f2f6fc",alignItems:"center",cursor:"pointer"}} onClick={()=>setEditLanc({...l})}>
-                                  <div data-col="0" style={{fontSize:10,color:"#444",fontFamily:"Arial,sans-serif",padding:"7px 10px",borderRight:"1px solid #888",overflow:"hidden",whiteSpace:"nowrap"}}>{l.tipo==="Saldo Anterior"?"":l.data.slice(0,5)}</div>
-                                  <div data-col="1" style={{padding:"7px 10px",borderRight:"1px solid #888",overflow:"hidden"}}>
+                                  <div data-col="0" style={{fontSize:10,color:"#444",fontFamily:"Arial,sans-serif",padding:"7px 10px",borderRight:"1px solid #888",overflow:"hidden",whiteSpace:"nowrap",position:"sticky",left:0,zIndex:1,background:"inherit"}}>{l.tipo==="Saldo Anterior"?"":l.data.slice(0,5)}</div>
+                                  <div data-col="1" style={{padding:"7px 10px",borderRight:"2px solid #888",overflow:"hidden",position:"sticky",left:colWidths[0]+"px",zIndex:1,background:"inherit"}}>
                                     <div style={{fontSize:11,color:l.tipo==="Saldo Anterior"?"#7c3aed":"#1a1a2e",lineHeight:1.4}}>{l.descricao}</div>
                                     <span style={{fontSize:7,padding:"1px 5px",borderRadius:3,background:l.tipo==="Saldo Anterior"?"#ede9fe":l.tipo==="Receita"?"#dcfce7":"#fee2e2",color:l.tipo==="Saldo Anterior"?"#7c3aed":l.tipo==="Receita"?"#16a34a":"#dc2626"}}>{l.tipo==="Saldo Anterior"?"Saldo Ant.":l.categoria}</span>
                                   </div>
@@ -4681,8 +4681,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                               ))}
                               {/* Linha dedicada ao saldo do período */}
                               <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,background:"#d4edda",borderBottom:"2px solid #555",borderTop:"1px solid #888",alignItems:"center"}}>
-                                <div style={{fontSize:9,color:"#2d6a4f",fontFamily:"Arial,sans-serif",fontWeight:700,padding:"6px 10px",borderRight:"1px solid #888"}}>{grupo.data.slice(0,5)}</div>
-                                <div style={{fontSize:9,color:"#2d6a4f",fontWeight:800,textTransform:"uppercase",letterSpacing:1,padding:"6px 10px",borderRight:"1px solid #888"}}>Saldo do período</div>
+                                <div style={{fontSize:9,color:"#2d6a4f",fontFamily:"Arial,sans-serif",fontWeight:700,padding:"6px 10px",borderRight:"1px solid #888",position:"sticky",left:0,zIndex:1,background:"#d4edda"}}>{grupo.data.slice(0,5)}</div>
+                                <div style={{fontSize:9,color:"#2d6a4f",fontWeight:800,textTransform:"uppercase",letterSpacing:1,padding:"6px 10px",borderRight:"2px solid #888",position:"sticky",left:colWidths[0]+"px",zIndex:1,background:"#d4edda"}}>Saldo do período</div>
                                 <div style={{borderRight:"1px solid #888",padding:"6px 10px"}}/><div style={{borderRight:"1px solid #888",padding:"6px 10px"}}/>
                                 <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:800,textAlign:"right",padding:"6px 10px",borderRight:"1px solid #888"}}>{dEntradas>0?fmt(dEntradas):""}</div>
                                 <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:800,textAlign:"right",padding:"6px 10px",borderRight:"1px solid #888"}}>{dSaidas>0?fmt(dSaidas):""}</div>
