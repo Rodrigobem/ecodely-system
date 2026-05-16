@@ -4665,7 +4665,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           return(
                             <div key={gi}>
                               {grupo.lancs.map((l,i)=>{const rowBg=l.confirmado?"#d4edda":l.tipo==="Saldo Anterior"?"#f0e8ff":i%2===0?"#fff":"#f2f6fc";return(
-                                <div key={l.id||i} style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,borderBottom:"1px solid #888",background:rowBg,alignItems:"stretch",cursor:"pointer"}} onClick={()=>setEditLanc({...l})}>
+                                <div key={l.id||i} style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,background:rowBg,alignItems:"stretch",cursor:"pointer"}} onClick={()=>setEditLanc({...l})}>
                                   <div data-col="0" style={{fontSize:10,color:"#444",fontFamily:"Arial,sans-serif",padding:"7px 10px",borderRight:"1px solid #888",overflow:"hidden",whiteSpace:"nowrap",background:rowBg,display:"flex",alignItems:"center",borderBottom:"1px solid #888"}}>{l.tipo==="Saldo Anterior"?"":l.data.slice(0,5)}</div>
                                   <div data-col="1" style={{padding:"7px 10px",borderRight:"1px solid #888",overflow:"hidden",background:rowBg}}>
                                     <div style={{fontSize:11,color:l.tipo==="Saldo Anterior"?"#7c3aed":"#1a1a2e",lineHeight:1.4}}>{l.descricao}</div>
@@ -4680,16 +4680,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                 </div>
                               );})}
                               {/* Linha dedicada ao saldo do período */}
-                              <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,borderBottom:"2px solid #555",borderTop:"1px solid #888",alignItems:"stretch"}}>
-                                <div style={{fontSize:9,color:"#2d6a4f",fontFamily:"Arial,sans-serif",fontWeight:700,padding:"6px 10px",borderRight:"1px solid #888",borderBottom:"1px solid #555",background:"#d4edda",display:"flex",alignItems:"center"}}>{grupo.data.slice(0,5)}</div>
-                                <div style={{fontSize:9,color:"#2d6a4f",fontWeight:800,textTransform:"uppercase",letterSpacing:1,padding:"6px 10px",borderRight:"1px solid #888",borderBottom:"1px solid #555",background:"#d4edda",display:"flex",alignItems:"center"}}>Saldo do período</div>
-                                <div style={{borderRight:"1px solid #888",borderBottom:"1px solid #555",background:"#d4edda",minHeight:32}}/>
-                                <div style={{borderRight:"1px solid #888",borderBottom:"1px solid #555",background:"#d4edda",minHeight:32}}/>
-                                <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:800,textAlign:"right",padding:"6px 10px",borderRight:"1px solid #888",borderBottom:"1px solid #555",background:"#d4edda",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{dEntradas>0?fmt(dEntradas):""}</div>
-                                <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:800,textAlign:"right",padding:"6px 10px",borderRight:"1px solid #888",borderBottom:"1px solid #555",background:"#d4edda",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{dSaidas>0?fmt(dSaidas):""}</div>
-                                <div style={{fontFamily:"Arial,sans-serif",fontSize:13,fontWeight:800,color:saldoDia>=0?"#16a34a":"#dc2626",textAlign:"right",padding:"6px 10px",borderRight:"1px solid #888",borderBottom:"1px solid #555",background:"#d4edda",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{fmt(saldoDia)}</div>
-                                <div style={{background:"#d4edda",borderBottom:"1px solid #555"}}/>
-                              </div>
+                              <div style={{borderTop:"2px solid #555",borderBottom:"2px solid #555"}}><div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,alignItems:"stretch"}}>
+                                <div style={{fontSize:9,color:"#2d6a4f",fontFamily:"Arial,sans-serif",fontWeight:700,padding:"6px 10px",borderRight:"1px solid #888",borderBottom:"1px solid #888",background:"#d4edda",display:"flex",alignItems:"center"}}>{grupo.data.slice(0,5)}</div>
+                                <div style={{fontSize:9,color:"#2d6a4f",fontWeight:800,textTransform:"uppercase",letterSpacing:1,padding:"6px 10px",borderRight:"1px solid #888",borderBottom:"1px solid #888",background:"#d4edda",display:"flex",alignItems:"center"}}>Saldo do período</div>
+                                <div style={{borderRight:"1px solid #888",borderBottom:"1px solid #888",background:"#d4edda",minHeight:32}}/>
+                                <div style={{borderRight:"1px solid #888",borderBottom:"1px solid #888",background:"#d4edda",minHeight:32}}/>
+                                <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:800,textAlign:"right",padding:"6px 10px",borderRight:"1px solid #888",borderBottom:"1px solid #888",background:"#d4edda",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{dEntradas>0?fmt(dEntradas):""}</div>
+                                <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:800,textAlign:"right",padding:"6px 10px",borderRight:"1px solid #888",borderBottom:"1px solid #888",background:"#d4edda",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{dSaidas>0?fmt(dSaidas):""}</div>
+                                <div style={{fontFamily:"Arial,sans-serif",fontSize:13,fontWeight:800,color:saldoDia>=0?"#16a34a":"#dc2626",textAlign:"right",padding:"6px 10px",borderRight:"1px solid #888",borderBottom:"1px solid #888",background:"#d4edda",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{fmt(saldoDia)}</div>
+                                <div style={{background:"#d4edda",borderBottom:"1px solid #888"}}/>
+                              </div></div>
                             </div>
                           );
                         })}
