@@ -4646,7 +4646,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         {/* Header — Excel style com colunas redimensionáveis */}
                         <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),padding:"0",gap:0,background:"#1a4a7a",borderBottom:"2px solid #0f3460",position:"relative"}}>
                           {["DATA","DESCRIÇÃO","ENTRADA","SAÍDA","TOT. ENTRADA","TOT. SAÍDA","SALDO","✓"].map((h,i)=>(
-                            <div key={h} style={{fontSize:8,color:"#fff",textTransform:"uppercase",letterSpacing:1,fontWeight:700,textAlign:i<=1?"left":"right",padding:"9px 10px",borderRight:"1px solid #888",position:"relative",userSelect:"none",overflow:"hidden",whiteSpace:"nowrap"}}>
+                            <div key={h} style={{fontSize:8,color:"#fff",textTransform:"uppercase",letterSpacing:1,fontWeight:700,textAlign:i<=1?"left":"right",padding:"9px 10px",borderRight:"1px solid #888",position:"relative",userSelect:"none",overflow:"hidden",whiteSpace:"nowrap",background:"#1a4a7a"}}>
                               {h}
                               {i<7&&<div
                                 style={{position:"absolute",right:0,top:0,bottom:0,width:6,cursor:"col-resize",zIndex:10}}
