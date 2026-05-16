@@ -1751,6 +1751,7 @@ export default function App(){
   const[dashPeriod,setDashPeriod]=useState("mes");
   // Financial module state
   const[finTab,setFinTab]=useState("visao");
+  const[editLanc,setEditLanc]=useState(null);
   const[relTab,setRelTab]=useState("gerencial");
   const[relSelecionados,setRelSelecionados]=useState([]);
   const[relTitulo,setRelTitulo]=useState("Relatório Ecodely");
@@ -4378,6 +4379,31 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               MODULO FINANCEIRO COMPLETO
           -------------------------------------- */}
           {tab==="financeiro-modulo"&&(()=>{
+            // Modal de edição de lançamento
+            const EditLancModal=editLanc?(<div style={{position:"fixed",inset:0,background:"#00000088",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setEditLanc(null)}>
+              <div style={{background:"#fff",borderRadius:12,padding:24,width:520,maxWidth:"95vw",boxShadow:"0 20px 60px #00000033"}} onClick={e=>e.stopPropagation()}>
+                <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:"#1a1a2e",marginBottom:16}}>Editar Lançamento</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+                  {[["Data","data"],["Descrição","descricao"],["Entrada (R$)","entrada"],["Saída (R$)","saida"],["Categoria","categoria"],["Centro de custo","centrosCusto"]].map(([l,k])=>(
+                    <div key={k} style={{gridColumn:k==="descricao"?"1/3":"auto"}}>
+                      <div style={{fontSize:9,color:"#666",marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+                      <input value={editLanc[k]||""} onChange={e=>setEditLanc(p=>({...p,[k]:e.target.value}))} style={{width:"100%",border:"1px solid #ddd",borderRadius:6,padding:"7px 10px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none"}}/>
+                    </div>
+                  ))}
+                </div>
+                <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                  <button onClick={()=>setEditLanc(null)} style={{padding:"8px 16px",background:"#f0f0f0",border:"none",borderRadius:7,cursor:"pointer",fontSize:11}}>Cancelar</button>
+                  <button onClick={async()=>{
+                    const upd={...editLanc,entrada:Number(editLanc.entrada)||0,saida:Number(editLanc.saida)||0};
+                    setLancamentos(p=>p.map(x=>x.id===upd.id?upd:x));
+                    await supabase.from("lancamentos").update(upd).eq("id",upd.id);
+                    setEditLanc(null);
+                  }} style={{padding:"8px 20px",background:"#1a4a7a",color:"#fff",border:"none",borderRadius:7,cursor:"pointer",fontWeight:700,fontSize:11}}>Salvar</button>
+                  <button onClick={async()=>{if(!window.confirm("Excluir este lançamento?"))return;setLancamentos(p=>p.filter(x=>x.id!==editLanc.id));await supabase.from("lancamentos").delete().eq("id",editLanc.id);setEditLanc(null);}} style={{padding:"8px 16px",background:"#fee2e2",color:"#dc2626",border:"none",borderRadius:7,cursor:"pointer",fontSize:11}}>Excluir</button>
+                </div>
+              </div>
+            </div>):null;
+
             // Computed values
             const mesLanc=lancamentos.filter(l=>l.data.endsWith(finMesRef.replace("/","/2026").slice(-7))||l.data.slice(3).startsWith(finMesRef.split("/").reverse().join("/")));
             const lancMes=lancamentos.filter(l=>{ const parts=l.data.split("/"); return parts[1]+"/"+parts[2]===finMesRef.split("/")[0]+"/"+finMesRef.split("/")[1]||l.data.slice(3,10)===finMesRef.split("/").reverse().join("/"); });
@@ -4404,6 +4430,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
             return(
               <div>
+                {EditLancModal}
                 {/* Sub-tabs */}
                 <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid ${T.border}`,overflowX:"auto"}}>
                   {FIN_TABS.map(([id,l])=>(
@@ -4619,9 +4646,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           {["Data","Descricao","Entrada","Saida","Saldo"].map(h=><div key={h} style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>{h}</div>)}
                         </div>
                         {/* Header — Excel style */}
-                        <div style={{display:"grid",gridTemplateColumns:"90px 1fr 120px 120px 110px 110px 130px",padding:"0",gap:0,background:"#1a4a7a",borderBottom:"2px solid #0f3460"}}>
-                          {["DATA","DESCRIÇÃO","ENTRADA","SAÍDA","TOT. ENTRADA","TOT. SAÍDA","SALDO"].map((h,i)=>(
-                            <div key={h} style={{fontSize:8,color:"#fff",textTransform:"uppercase",letterSpacing:1,fontWeight:700,textAlign:h==="DATA"||h==="DESCRIÇÃO"?"left":"right",padding:"9px 10px",borderRight:i<6?"1px solid #2d6fad":"none"}}>{h}</div>
+                        <div style={{display:"grid",gridTemplateColumns:"90px 1fr 120px 120px 110px 110px 130px 36px",padding:"0",gap:0,background:"#1a4a7a",borderBottom:"2px solid #0f3460"}}>
+                          {["DATA","DESCRIÇÃO","ENTRADA","SAÍDA","TOT. ENTRADA","TOT. SAÍDA","SALDO","✓"].map((h,i)=>(
+                            <div key={h} style={{fontSize:8,color:"#fff",textTransform:"uppercase",letterSpacing:1,fontWeight:700,textAlign:h==="DATA"||h==="DESCRIÇÃO"?"left":"right",padding:"9px 10px",borderRight:i<6?"1px solid #0f3460":"none"}}>{h}</div>
                           ))}
                         </div>
                         {grupos.length===0&&<div style={{padding:24,textAlign:"center",color:"#888",fontSize:11,background:"#fff"}}>Nenhum lançamento em {finMesRef}</div>}
@@ -4633,19 +4660,22 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           return(
                             <div key={gi}>
                               {grupo.lancs.map((l,i)=>(
-                                <div key={l.id||i} style={{display:"grid",gridTemplateColumns:"90px 1fr 120px 120px 110px 110px 130px",gap:0,borderBottom:"1px solid #e0e0e0",background:l.tipo==="Saldo Anterior"?"#f0e8ff":i%2===0?"#fff":"#f2f6fc",alignItems:"center",cursor:"pointer"}} onClick={()=>setEditLanc(l)}>
-                                  <div style={{fontSize:10,color:"#444",fontFamily:"Arial,sans-serif",padding:"7px 10px",borderRight:"1px solid #ddd"}}>{l.tipo==="Saldo Anterior"?"":l.data.slice(0,5)}</div>
-                                  <div style={{padding:"7px 10px",borderRight:"1px solid #ddd"}}>
+                                <div key={l.id||i} style={{display:"grid",gridTemplateColumns:"90px 1fr 120px 120px 110px 110px 130px 36px",gap:0,borderBottom:"1px solid #bbb",background:l.confirmado?"#d4edda":l.tipo==="Saldo Anterior"?"#f0e8ff":i%2===0?"#fff":"#f2f6fc",alignItems:"center",cursor:"pointer"}} onClick={()=>setEditLanc({...l})}>
+                                  <div style={{fontSize:10,color:"#444",fontFamily:"Arial,sans-serif",padding:"7px 10px",borderRight:"1px solid #bbb"}}>{l.tipo==="Saldo Anterior"?"":l.data.slice(0,5)}</div>
+                                  <div style={{padding:"7px 10px",borderRight:"1px solid #bbb"}}>
                                     <div style={{fontSize:11,color:l.tipo==="Saldo Anterior"?"#7c3aed":"#1a1a2e",lineHeight:1.4}}>{l.descricao}</div>
                                     <span style={{fontSize:7,padding:"1px 5px",borderRadius:3,background:l.tipo==="Saldo Anterior"?"#ede9fe":l.tipo==="Receita"?"#dcfce7":"#fee2e2",color:l.tipo==="Saldo Anterior"?"#7c3aed":l.tipo==="Receita"?"#16a34a":"#dc2626"}}>{l.tipo==="Saldo Anterior"?"Saldo Ant.":l.categoria}</span>
                                   </div>
-                                  <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:700,textAlign:"right",padding:"7px 10px",borderRight:"1px solid #ddd"}}>{l.entrada>0?fmt(l.entrada):""}</div>
-                                  <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:700,textAlign:"right",padding:"7px 10px",borderRight:"1px solid #ddd"}}>{l.saida>0?fmt(l.saida):""}</div>
-                                  <div style={{borderRight:"1px solid #ddd"}}/><div style={{borderRight:"1px solid #ddd"}}/><div/>
+                                  <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:700,textAlign:"right",padding:"7px 10px",borderRight:"1px solid #bbb"}}>{l.entrada>0?fmt(l.entrada):""}</div>
+                                  <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:700,textAlign:"right",padding:"7px 10px",borderRight:"1px solid #bbb"}}>{l.saida>0?fmt(l.saida):""}</div>
+                                  <div style={{borderRight:"1px solid #bbb"}}/><div style={{borderRight:"1px solid #bbb"}}/><div style={{borderRight:"1px solid #bbb"}}/>
+                                  <div onClick={async e=>{e.stopPropagation();const upd={...l,confirmado:!l.confirmado};setLancamentos(p=>p.map(x=>x.id===l.id?upd:x));await supabase.from("lancamentos").update({confirmado:!l.confirmado}).eq("id",l.id);}} style={{display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",height:"100%",background:l.confirmado?"#16a34a":"transparent"}} title={l.confirmado?"Marcar como pendente":"Confirmar pagamento"}>
+                                    <span style={{fontSize:14}}>{l.confirmado?"✓":"○"}</span>
+                                  </div>
                                 </div>
                               ))}
                               {/* Linha dedicada ao saldo do período */}
-                              <div style={{display:"grid",gridTemplateColumns:"90px 1fr 120px 120px 110px 110px 130px",gap:0,background:"#d4edda",borderBottom:"2px solid #aaa",borderTop:"1px solid #bbb",alignItems:"center"}}>
+                              <div style={{display:"grid",gridTemplateColumns:"90px 1fr 120px 120px 110px 110px 130px 36px",gap:0,background:"#d4edda",borderBottom:"2px solid #aaa",borderTop:"1px solid #bbb",alignItems:"center"}}>
                                 <div style={{fontSize:9,color:"#2d6a4f",fontFamily:"Arial,sans-serif",fontWeight:700,padding:"6px 10px",borderRight:"1px solid #bbb"}}>{grupo.data.slice(0,5)}</div>
                                 <div style={{fontSize:9,color:"#2d6a4f",fontWeight:800,textTransform:"uppercase",letterSpacing:1,padding:"6px 10px",borderRight:"1px solid #bbb"}}>Saldo do período</div>
                                 <div style={{borderRight:"1px solid #bbb",padding:"6px 0"}}/><div style={{borderRight:"1px solid #bbb",padding:"6px 0"}}/>
