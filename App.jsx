@@ -4436,9 +4436,19 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             // simpler: filter by MM/YYYY in data field
             const filterByMes=(arr)=>arr.filter(l=>{ const d=l.data; const mm=d.slice(3,5); const yy=d.slice(6,10); return mm+"/"+yy===finMesRef; });
             const lancMesFilt=filterByMes(lancamentos);
-            const totalEntradas=lancMesFilt.reduce((a,l)=>a+l.entrada,0);
-            const totalSaidas=lancMesFilt.reduce((a,l)=>a+l.saida,0);
+            const totalEntradas=lancMesFilt.filter(l=>l.tipo!=="Saldo Anterior").reduce((a,l)=>a+(l.entrada||0),0);
+            const totalSaidas=lancMesFilt.filter(l=>l.tipo!=="Saldo Anterior").reduce((a,l)=>a+(l.saida||0),0);
             const lucroMes=totalEntradas-totalSaidas;
+            // Saldo acumulado = tudo antes deste mês + movimento deste mês
+            const [mmRef,aaRef]=finMesRef.split("/");
+            const saldoAcumuladoAnterior=lancamentos
+              .filter(l=>l.tipo!=="Saldo Anterior")
+              .filter(l=>{const p=l.data.split("/");return p.length>=3&&(p[2]<aaRef||(p[2]===aaRef&&p[1]<mmRef));})
+              .reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0)
+              +lancamentos.filter(l=>l.tipo==="Saldo Anterior")
+              .filter(l=>{const p=l.data.split("/");return p.length>=3&&(p[2]<aaRef||(p[2]===aaRef&&p[1]<mmRef));})
+              .reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0);
+            const saldoMesFinal=saldoAcumuladoAnterior+lucroMes;
             const saldoTotal=contas.reduce((a,c)=>a+c.saldo,0);
             // RBT12 calc
             const rbt12=fatMensais.slice(-12).reduce((a,f)=>a+f.fat,0);
@@ -4486,7 +4496,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       <KCard label="Total entradas" value={fmt(totalEntradas)} sub={finMesRef} color={T.accent} icon="-"/>
                       <KCard label="Total saidas" value={fmt(totalSaidas)} sub={finMesRef} color={T.danger} icon="-"/>
                       <KCard label="Resultado do mes" value={fmt(lucroMes)} sub="entradas - saidas" color={lucroMes>=0?T.accent:T.danger} icon="-"/>
-                      <KCard label="Saldo em caixa" value={fmt(saldoTotal)} sub="todas as contas" color={T.info} icon="-"/>
+                      <KCard label="Saldo em caixa" value={fmt(saldoMesFinal)} sub="saldo acumulado" color={saldoMesFinal>=0?T.info:T.danger} icon="-"/>
                     </div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:16}}>
                       {/* Contas bancarias */}
@@ -4564,30 +4574,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
                 {/* FLUXO DE CAIXA */}
                 {finTab==="fluxo"&&(()=>{
-                  // Calcula saldo anterior automaticamente (soma de todos os meses anteriores)
                   const [mmAtual,aaAtual]=finMesRef.split("/");
-                  const saldoAnterior=lancamentos
-                    .filter(l=>l.tipo!=="Saldo Anterior")
-                    .filter(l=>{
-                      const p=l.data.split("/");
-                      if(p.length<3)return false;
-                      const mm=p[1],aa=p[2];
-                      return aa<aaAtual||(aa===aaAtual&&mm<mmAtual);
-                    })
-                    .reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0);
-                  // Adiciona também os Saldo Anterior entries históricos (ex: Dez/2024)
-                  const saldoAntHistorico=lancamentos
-                    .filter(l=>l.tipo==="Saldo Anterior")
-                    .filter(l=>{
-                      const p=l.data.split("/");
-                      if(p.length<3)return false;
-                      const mm=p[1],aa=p[2];
-                      return aa<aaAtual||(aa===aaAtual&&mm<mmAtual);
-                    })
-                    .reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0);
+                  const saldoAnterior=saldoAcumuladoAnterior-saldoAntHistorico;
+                  const saldoAntHistorico=0; // já incluído no saldoAcumuladoAnterior
                   const lancOrdenados=[...lancMesFilt].filter(l=>l.tipo!=="Saldo Anterior").sort((a,b)=>a.data.split("/").reverse().join("")-b.data.split("/").reverse().join(""));
-                  // Agrupar por dia com saldo acumulado
-                  let saldoAcum=saldoAnterior+saldoAntHistorico;
+                  let saldoAcum=saldoAcumuladoAnterior;
                   const grupos=[];
                   let diaAtual=null, grupoAtual=[];
                   lancOrdenados.forEach(l=>{
@@ -4701,16 +4692,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             </div>
                           ))}
                         </div>
-                        {grupos.length===0&&<div style={{padding:24,textAlign:"center",color:"#888",fontSize:11,background:"#fff"}}>Nenhum lançamento em {finMesRef}</div>}
+                        {grupos.length===0&&<div style={{padding:"16px 14px",textAlign:"center",color:"#888",fontSize:11,background:"#fff",borderBottom:"1px solid #e0e0e0"}}>Nenhum lançamento registrado em {finMesRef}</div>}
                         {/* Linha de saldo anterior automático */}
-                        {(saldoAnterior+saldoAntHistorico)!==0&&<div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,background:"#f0e8ff",alignItems:"stretch"}}>
-                          <div style={{fontSize:10,color:"#7c3aed",fontFamily:"Arial,sans-serif",padding:"7px 10px",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",display:"flex",alignItems:"center"}}>01/{mmAtual}</div>
+                        {saldoAcumuladoAnterior!==0&&<div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,background:"#f0e8ff",alignItems:"stretch"}}>
+                          <div style={{fontSize:10,color:"#7c3aed",fontFamily:"Arial,sans-serif",padding:"7px 10px",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",display:"flex",alignItems:"center"}}>01/{mmRef}</div>
                           <div style={{padding:"7px 10px",boxShadow:"inset -2px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff"}}>
                             <div style={{fontSize:11,color:"#7c3aed",fontWeight:700}}>SALDO ANTERIOR</div>
-                            <span style={{fontSize:7,padding:"1px 5px",borderRadius:3,background:"#ede9fe",color:"#7c3aed"}}>Automático</span>
+                            <span style={{fontSize:7,padding:"1px 5px",borderRadius:3,background:"#ede9fe",color:"#7c3aed"}}>Calculado automaticamente</span>
                           </div>
-                          <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:700,textAlign:"right",padding:"7px 10px",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{(saldoAnterior+saldoAntHistorico)>0?fmt(saldoAnterior+saldoAntHistorico):""}</div>
-                          <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:700,textAlign:"right",padding:"7px 10px",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{(saldoAnterior+saldoAntHistorico)<0?fmt(Math.abs(saldoAnterior+saldoAntHistorico)):""}</div>
+                          <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:700,textAlign:"right",padding:"7px 10px",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{saldoAcumuladoAnterior>0?fmt(saldoAcumuladoAnterior):""}</div>
+                          <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:700,textAlign:"right",padding:"7px 10px",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{saldoAcumuladoAnterior<0?fmt(Math.abs(saldoAcumuladoAnterior)):""}</div>
                           <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:38,alignSelf:"stretch"}}/>
                           <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:38,alignSelf:"stretch"}}/>
                           <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:38,alignSelf:"stretch"}}/>
