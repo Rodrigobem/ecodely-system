@@ -4664,35 +4664,39 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           const saldoDia=saldoAcum;
                           return(
                             <div key={gi}>
-                              {grupo.lancs.map((l,i)=>(
-                                <div key={l.id||i} style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,borderBottom:"1px solid #888",background:l.confirmado?"#d4edda":l.tipo==="Saldo Anterior"?"#f0e8ff":i%2===0?"#fff":"#f2f6fc",alignItems:"center",cursor:"pointer"}} onClick={()=>setEditLanc({...l})}>
-                                  <div data-col="0" style={{fontSize:10,color:"#444",fontFamily:"Arial,sans-serif",padding:"7px 10px",borderRight:"1px solid #888",overflow:"hidden",whiteSpace:"nowrap",}}>{l.tipo==="Saldo Anterior"?"":l.data.slice(0,5)}</div>
-                                  <div data-col="1" style={{padding:"7px 10px",borderRight:"2px solid #888",overflow:"hidden",}}>
-                                    <div style={{fontSize:11,color:l.tipo==="Saldo Anterior"?"#7c3aed":"#1a1a2e",lineHeight:1.4}}>{l.descricao}</div>
-                                    <span style={{fontSize:7,padding:"1px 5px",borderRadius:3,background:l.tipo==="Saldo Anterior"?"#ede9fe":l.tipo==="Receita"?"#dcfce7":"#fee2e2",color:l.tipo==="Saldo Anterior"?"#7c3aed":l.tipo==="Receita"?"#16a34a":"#dc2626"}}>{l.tipo==="Saldo Anterior"?"Saldo Ant.":l.categoria}</span>
+                              {grupo.lancs.map((l,i)=>{
+                                const rowBg=l.confirmado?"#d4edda":l.tipo==="Saldo Anterior"?"#f0e8ff":i%2===0?"#fff":"#f2f6fc";
+                                return(
+                                  <div key={l.id||i} style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,borderBottom:"1px solid #888",background:rowBg,alignItems:"center",cursor:"pointer"}} onClick={()=>setEditLanc({...l})}>
+                                    <div data-col="0" style={{fontSize:10,color:"#444",fontFamily:"Arial,sans-serif",padding:"7px 10px",borderRight:"1px solid #888",overflow:"hidden",whiteSpace:"nowrap",background:rowBg}}>{l.tipo==="Saldo Anterior"?"":l.data.slice(0,5)}</div>
+                                    <div data-col="1" style={{padding:"7px 10px",borderRight:"2px solid #888",overflow:"hidden",background:rowBg}}>
+                                      <div style={{fontSize:11,color:l.tipo==="Saldo Anterior"?"#7c3aed":"#1a1a2e",lineHeight:1.4}}>{l.descricao}</div>
+                                      <span style={{fontSize:7,padding:"1px 5px",borderRadius:3,background:l.tipo==="Saldo Anterior"?"#ede9fe":l.tipo==="Receita"?"#dcfce7":"#fee2e2",color:l.tipo==="Saldo Anterior"?"#7c3aed":l.tipo==="Receita"?"#16a34a":"#dc2626"}}>{l.tipo==="Saldo Anterior"?"Saldo Ant.":l.categoria}</span>
+                                    </div>
+                                    <div data-col="2" style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:700,textAlign:"right",padding:"7px 10px",borderRight:"1px solid #888",whiteSpace:"nowrap",background:rowBg}}>{l.entrada>0?fmt(l.entrada):""}</div>
+                                    <div data-col="3" style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:700,textAlign:"right",padding:"7px 10px",borderRight:"1px solid #888",whiteSpace:"nowrap",background:rowBg}}>{l.saida>0?fmt(l.saida):""}</div>
+                                    <div style={{borderRight:"1px solid #888",minHeight:38,background:rowBg}}/>
+                                    <div style={{borderRight:"1px solid #888",minHeight:38,background:rowBg}}/>
+                                    <div style={{borderRight:"1px solid #888",minHeight:38,background:rowBg}}/>
+                                    <div onClick={async e=>{e.stopPropagation();const upd={...l,confirmado:!l.confirmado};setLancamentos(p=>p.map(x=>x.id===l.id?upd:x));await supabase.from("lancamentos").update({confirmado:!l.confirmado}).eq("id",l.id);}} style={{display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",background:rowBg,minHeight:38}}>
+                                      <span style={{fontSize:14,color:l.confirmado?"#16a34a":"#bbb"}}>{l.confirmado?"✓":"○"}</span>
+                                    </div>
                                   </div>
-                                  <div data-col="2" style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:700,textAlign:"right",padding:"7px 10px",borderRight:"1px solid #888",whiteSpace:"nowrap",background:rowBg}}>{l.entrada>0?fmt(l.entrada):""}</div>
-                                  <div data-col="3" style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:700,textAlign:"right",padding:"7px 10px",borderRight:"1px solid #888",whiteSpace:"nowrap",background:rowBg}}>{l.saida>0?fmt(l.saida):""}</div>
-                                  <div style={{borderRight:"1px solid #888",minHeight:38,background:rowBg}}/><div style={{borderRight:"1px solid #888",minHeight:38,background:rowBg}}/><div style={{borderRight:"1px solid #888",minHeight:38,background:rowBg}}/>
-                                  <div onClick={async e=>{e.stopPropagation();const upd={...l,confirmado:!l.confirmado};setLancamentos(p=>p.map(x=>x.id===l.id?upd:x));await supabase.from("lancamentos").update({confirmado:!l.confirmado}).eq("id",l.id);}} style={{display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",background:rowBg,minHeight:38}} title={l.confirmado?"Marcar como pendente":"Confirmar pagamento"}>
-                                    <span style={{fontSize:14,color:l.confirmado?"#16a34a":"#aaa"}}>{l.confirmado?"✓":"○"}</span>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                              {/* Linha dedicada ao saldo do período */}
-                              <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,background:"#d4edda",borderBottom:"2px solid #555",borderTop:"1px solid #888",alignItems:"center"}}>
-                                <div style={{fontSize:9,color:"#2d6a4f",fontFamily:"Arial,sans-serif",fontWeight:700,padding:"6px 10px",borderRight:"1px solid #888"}}>{grupo.data.slice(0,5)}</div>
-                                <div style={{fontSize:9,color:"#2d6a4f",fontWeight:800,textTransform:"uppercase",letterSpacing:1,padding:"6px 10px",borderRight:"2px solid #888"}}>Saldo do período</div>
-                                <div style={{borderRight:"1px solid #888",padding:"6px 10px",background:"#d4edda"}}/><div style={{borderRight:"1px solid #888",padding:"6px 10px",background:"#d4edda"}}/>
-                                <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:800,textAlign:"right",padding:"6px 10px",borderRight:"1px solid #888"}}>{dEntradas>0?fmt(dEntradas):""}</div>
-                                <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:800,textAlign:"right",padding:"6px 10px",borderRight:"1px solid #888"}}>{dSaidas>0?fmt(dSaidas):""}</div>
-                                <div style={{fontFamily:"Arial,sans-serif",fontSize:13,fontWeight:800,color:saldoDia>=0?"#16a34a":"#dc2626",textAlign:"right",padding:"6px 10px"}}>{fmt(saldoDia)}</div>
+                                );
+                              })}
+                              <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,background:"#d4edda",borderBottom:"2px solid #888",borderTop:"1px solid #888",alignItems:"center"}}>
+                                <div style={{fontSize:9,color:"#2d6a4f",fontWeight:700,padding:"6px 10px",borderRight:"1px solid #888",background:"#d4edda"}}>{grupo.data.slice(0,5)}</div>
+                                <div style={{fontSize:9,color:"#2d6a4f",fontWeight:800,textTransform:"uppercase",letterSpacing:1,padding:"6px 10px",borderRight:"2px solid #888",background:"#d4edda"}}>Saldo do período</div>
+                                <div style={{borderRight:"1px solid #888",background:"#d4edda",padding:"6px 0"}}/>
+                                <div style={{borderRight:"1px solid #888",background:"#d4edda",padding:"6px 0"}}/>
+                                <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:800,textAlign:"right",padding:"6px 10px",borderRight:"1px solid #888",background:"#d4edda"}}>{dEntradas>0?fmt(dEntradas):""}</div>
+                                <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:800,textAlign:"right",padding:"6px 10px",borderRight:"1px solid #888",background:"#d4edda"}}>{dSaidas>0?fmt(dSaidas):""}</div>
+                                <div style={{fontFamily:"Arial,sans-serif",fontSize:13,fontWeight:800,color:saldoDia>=0?"#16a34a":"#dc2626",textAlign:"right",padding:"6px 10px",borderRight:"1px solid #888",background:"#d4edda"}}>{fmt(saldoDia)}</div>
+                                <div style={{background:"#d4edda"}}/>
                               </div>
                             </div>
                           );
                         })}
-
                         <div style={{display:"grid",gridTemplateColumns:colWidths.slice(0,7).map(w=>w+"px").join(" "),padding:"10px 0",gap:0,background:"#1a4a7a",borderTop:"2px solid #1a4a7a"}}>
                           <div style={{fontSize:9,color:"#fff",gridColumn:"1/3",fontWeight:800,textTransform:"uppercase",letterSpacing:1}}>TOTAL DO MÊS</div>
                           <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:12,color:"#90ee90",textAlign:"right"}}>{fmt(totalEntradas)}</div>
