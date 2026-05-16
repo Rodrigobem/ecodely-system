@@ -4439,15 +4439,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             const totalEntradas=lancMesFilt.filter(l=>l.tipo!=="Saldo Anterior").reduce((a,l)=>a+(l.entrada||0),0);
             const totalSaidas=lancMesFilt.filter(l=>l.tipo!=="Saldo Anterior").reduce((a,l)=>a+(l.saida||0),0);
             const lucroMes=totalEntradas-totalSaidas;
-            // Saldo acumulado = tudo antes deste mês + movimento deste mês
+            // Saldo acumulado = seed inicial (Saldo Anterior mais antigo) + todos lançamentos antes deste mês
             const [mmRef,aaRef]=finMesRef.split("/");
-            const saldoAcumuladoAnterior=lancamentos
+            const seedInicial=lancamentos
+              .filter(l=>l.tipo==="Saldo Anterior")
+              .reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0);
+            const movimentosAnteriores=lancamentos
               .filter(l=>l.tipo!=="Saldo Anterior")
               .filter(l=>{const p=l.data.split("/");return p.length>=3&&(p[2]<aaRef||(p[2]===aaRef&&p[1]<mmRef));})
-              .reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0)
-              +lancamentos.filter(l=>l.tipo==="Saldo Anterior")
-              .filter(l=>{const p=l.data.split("/");return p.length>=3&&(p[2]<aaRef||(p[2]===aaRef&&p[1]<mmRef));})
               .reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0);
+            const saldoAcumuladoAnterior=seedInicial+movimentosAnteriores;
             const saldoMesFinal=saldoAcumuladoAnterior+lucroMes;
             const saldoTotal=contas.reduce((a,c)=>a+c.saldo,0);
             // RBT12 calc
