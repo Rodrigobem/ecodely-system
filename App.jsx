@@ -4642,7 +4642,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         </div>
                       )}
                       {/* Transaction table */}
-                      <div style={{background:"#fff",border:"2px solid #555",borderRadius:4,overflow:"hidden",boxShadow:"0 1px 4px #00000022"}}>
+                      <div style={{background:"#fff",border:"2px solid #555",borderRadius:4,overflow:"auto",boxShadow:"0 1px 4px #00000022"}}>
                         {/* Header — Excel style com colunas redimensionáveis */}
                         <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),padding:"0",gap:0,background:"#1a4a7a",borderBottom:"2px solid #0f3460",position:"relative"}}>
                           {["DATA","DESCRIÇÃO","ENTRADA","SAÍDA","TOT. ENTRADA","TOT. SAÍDA","SALDO","✓"].map((h,i)=>(
