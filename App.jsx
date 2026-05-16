@@ -1756,7 +1756,8 @@ export default function App(){
   const[dashTab,setDashTab]=useState("geral");
   const[dashPeriod,setDashPeriod]=useState("mes");
   // Financial module state
-  const[finTab,setFinTab]=useState("visao");
+  const[finTab,setFinTab]=useState(()=>localStorage.getItem("ecodely_finTab")||"visao");
+  useEffect(()=>{localStorage.setItem("ecodely_finTab",finTab);},[finTab]);
   const[tema,setTema]=useState(()=>localStorage.getItem("ecodely_tema")||"escuro");
   useEffect(()=>{localStorage.setItem("ecodely_tab",tab);},[tab]);
   T=THEMES[tema]||THEMES.escuro;
@@ -1788,7 +1789,8 @@ export default function App(){
   const[reservaCaixaPct,setReservaCaixaPct]=useState(10);
   const[socios,setSocios]=useState([{id:1,nome:"Rodrigo Bem",pct:50},{id:2,nome:"Pedro",pct:50}]);
   const[dasAjuste,setDasAjuste]=useState(null); // manual override
-  const[finMesRef,setFinMesRef]=useState("04/2026"); // current view month
+  const[finMesRef,setFinMesRef]=useState(()=>{const s=localStorage.getItem("ecodely_finMes");return s||`${String(new Date().getMonth()+1).padStart(2,"0")}/${new Date().getFullYear()}`;});
+  useEffect(()=>{localStorage.setItem("ecodely_finMes",finMesRef);},[finMesRef]);
   const[clientPanelCamp,setClientPanelCamp]=useState(null);
   const[pdfCamp,setPdfCamp]=useState(null);
   // Notification center
@@ -1796,7 +1798,8 @@ export default function App(){
   const[inbox,setInbox]=useState([]);
   const[prospects,setProspects]=useState(PROSPECTS_INIT);
   const[pipeView,setPipeView]=useState("kanban");
-  const[commTab,setCommTab]=useState("pipeline");
+  const[commTab,setCommTab]=useState(()=>localStorage.getItem("ecodely_commTab")||"pipeline");
+  useEffect(()=>{localStorage.setItem("ecodely_commTab",commTab);},[commTab]);
   const[projects,setProjects]=useState(PROJECTS_INIT);
   const[ptypes,setPtypes]=useState(PTYPES_INIT);
   const[commTable,setCommTable]=useState(COMM_TABLE_INIT);
