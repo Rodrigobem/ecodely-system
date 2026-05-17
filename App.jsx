@@ -2026,6 +2026,256 @@ return(
 );
 }
 
+// ---------------------------------------------------------------------------
+// WHATSAPP PANEL — componente próprio (evita side effect em IIFE)
+// ---------------------------------------------------------------------------
+function WhatsAppPanel({supabase,waConversas,setWaConversas,waMensagens,setWaMensagens,waSelConv,setWaSelConv,waInput,setWaInput,waLoading,setWaLoading,waFiltro,setWaFiltro,waNovoNumero,setWaNovoNumero,waNovoModo,setWaNovoModo,simMsgs,setSimMsgs,simInput,setSimInput,simLoading,setSimLoading,simModo,setSimModo,simStarted,setSimStarted,T}){
+// Carregar conversas
+const loadConversas=async()=>{
+  setWaLoading(true);
+  const{data}=await supabase.from("wa_conversas").select("*").order("atualizado_em",{ascending:false});
+  setWaConversas(data||[]);
+  setWaLoading(false);
+};
+const loadMensagens=async(convId)=>{
+  const{data}=await supabase.from("wa_mensagens").select("*").eq("conversa_id",convId).order("criado_em",{ascending:true});
+  setWaMensagens(data||[]);
+};
+const selecionarConversa=(conv)=>{
+  setWaSelConv(conv);
+  loadMensagens(conv.id);
+};
+const enviarManual=async()=>{
+  if(!waInput.trim()||!waSelConv)return;
+  const msg=waInput.trim();
+  setWaInput("");
+  // Otimista: adicionar na tela
+  const temp={id:Date.now(),conversa_id:waSelConv.id,role:"assistant",conteudo:msg,criado_em:new Date().toISOString()};
+  setWaMensagens(p=>[...p,temp]);
+  await fetch("/api/whatsapp/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({numero:waSelConv.numero,mensagem:msg,conversa_id:waSelConv.id})});
+};
+const iniciarConversa=async()=>{
+  if(!waNovoNumero.trim())return;
+  const num=waNovoNumero.replace(/\D/g,"");
+  const{data}=await supabase.from("wa_conversas").upsert({numero:num,modo:waNovoModo,status:"novo"},{onConflict:"numero"}).select().single();
+  if(data){setWaConversas(p=>[data,...p.filter(c=>c.id!==data.id)]);selecionarConversa(data);}
+  setWaNovoNumero("");
+};
+
+const STATUS_COLOR={"novo":T.info,"em_andamento":T.warn,"aguardando":T.purple,"convertido":T.accent,"encerrado":T.muted};
+const STATUS_LABEL={"novo":"Novo","em_andamento":"Em andamento","aguardando":"Aguardando","convertido":"Convertido","encerrado":"Encerrado"};
+const MODO_COLOR={"prospecto":T.info,"parceiro":T.accent,"equipe":T.purple,"cobranca":T.warn};
+const convsFilt=waFiltro==="todos"?waConversas:waConversas.filter(c=>c.status===waFiltro);
+
+// Carregar ao montar
+if(waConversas.length===0&&!waLoading) loadConversas();
+
+return(
+<div style={{display:"grid",gridTemplateColumns:"300px 1fr",gap:0,height:"calc(100vh - 120px)",background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
+
+  {/* ── LISTA DE CONVERSAS ── */}
+  <div style={{borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column"}}>
+    {/* Header lista */}
+    <div style={{padding:"14px 16px",borderBottom:`1px solid ${T.border}`}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>WhatsApp IA</div>
+        <button onClick={loadConversas} style={{background:"none",border:"none",color:T.muted,cursor:"pointer",fontSize:14}}>↻</button>
+      </div>
+      {/* Sub-tabs */}
+      <div style={{display:"flex",gap:4,marginBottom:10}}>
+        {[["conversas","Conversas"],["simulador","🧪 Simulador"]].map(([v,l])=>(
+          <button key={v} onClick={()=>setWaFiltro(v==="simulador"?"simulador":waFiltro==="simulador"?"todos":waFiltro)} style={{padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:600,cursor:"pointer",border:`1px solid ${(v==="simulador"?waFiltro==="simulador":waFiltro!=="simulador")?T.accentBorder:T.border}`,background:(v==="simulador"?waFiltro==="simulador":waFiltro!=="simulador")?T.accentDim:"transparent",color:(v==="simulador"?waFiltro==="simulador":waFiltro!=="simulador")?T.accent:T.muted}}>{l}</button>
+        ))}
+      </div>
+      {/* Nova conversa */}
+      <div style={{display:"flex",gap:4,marginBottom:8}}>
+        <input value={waNovoNumero} onChange={e=>setWaNovoNumero(e.target.value)} placeholder="+5511999999999" onKeyDown={e=>e.key==="Enter"&&iniciarConversa()} style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"5px 8px",fontSize:10,color:T.text,outline:"none"}}/>
+        <select value={waNovoModo} onChange={e=>setWaNovoModo(e.target.value)} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"5px 6px",fontSize:10,color:T.text,outline:"none"}}>
+          <option value="prospecto">Prospec.</option>
+          <option value="parceiro">Parceiro</option>
+          <option value="equipe">Equipe</option>
+        </select>
+        <button onClick={iniciarConversa} style={{padding:"5px 10px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer"}}>+</button>
+      </div>
+      {/* Filtros */}
+      <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+        {[["todos","Todos"],["novo","Novos"],["em_andamento","Ativos"],["convertido","Convertidos"],["encerrado","Enc."]].map(([v,l])=>(
+          <button key={v} onClick={()=>setWaFiltro(v)} style={{padding:"3px 7px",borderRadius:4,fontSize:8,cursor:"pointer",border:`1px solid ${waFiltro===v?T.accentBorder:T.border}`,background:waFiltro===v?T.accentDim:"transparent",color:waFiltro===v?T.accent:T.muted}}>{l}</button>
+        ))}
+      </div>
+    </div>
+    {/* Lista */}
+    <div style={{flex:1,overflowY:"auto"}}>
+      {waLoading&&<div style={{padding:20,textAlign:"center",color:T.muted,fontSize:11}}>Carregando...</div>}
+      {!waLoading&&convsFilt.length===0&&<div style={{padding:20,textAlign:"center",color:T.muted,fontSize:11}}>Nenhuma conversa</div>}
+      {convsFilt.map(conv=>(
+        <div key={conv.id} onClick={()=>selecionarConversa(conv)} style={{padding:"12px 14px",borderBottom:`1px solid ${T.border}`,cursor:"pointer",background:waSelConv?.id===conv.id?T.surface:"transparent",transition:"background 0.1s"}}
+          onMouseEnter={e=>e.currentTarget.style.background=T.surface}
+          onMouseLeave={e=>e.currentTarget.style.background=waSelConv?.id===conv.id?T.surface:"transparent"}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:3}}>
+            <div style={{fontWeight:600,fontSize:11}}>{conv.nome||conv.numero}</div>
+            <div style={{width:7,height:7,borderRadius:"50%",background:STATUS_COLOR[conv.status]||T.muted,flexShrink:0,marginTop:3}}/>
+          </div>
+          <div style={{display:"flex",gap:4}}>
+            <span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:(MODO_COLOR[conv.modo]||T.muted)+"22",color:MODO_COLOR[conv.modo]||T.muted}}>{conv.modo}</span>
+            <span style={{fontSize:8,color:T.muted}}>{STATUS_LABEL[conv.status]||conv.status}</span>
+          </div>
+          {conv.dados_lead?.tipo&&<div style={{fontSize:9,color:T.muted,marginTop:2}}>{conv.dados_lead.tipo} · {conv.dados_lead.cidade}</div>}
+        </div>
+      ))}
+    </div>
+    {/* Stats */}
+    <div style={{padding:"10px 14px",borderTop:`1px solid ${T.border}`,display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+      {[["Convertidos",waConversas.filter(c=>c.status==="convertido").length,T.accent],["Ativos",waConversas.filter(c=>c.status==="em_andamento").length,T.warn]].map(([l,v,c])=>(
+        <div key={l} style={{background:T.surface,borderRadius:6,padding:"6px 8px",textAlign:"center"}}>
+          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:c}}>{v}</div>
+          <div style={{fontSize:8,color:T.muted}}>{l}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  {/* ── ÁREA DE CHAT / SIMULADOR ── */}
+  {waFiltro==="simulador"?(
+    // ── SIMULADOR ──
+    (()=>{
+      const enviarSim=async()=>{
+        if(!simInput.trim()||simLoading)return;
+        const texto=simInput.trim();
+        setSimInput("");
+        const userMsg={role:"user",content:texto};
+        setSimMsgs(p=>[...p,{role:"user",text:texto}]);
+        setSimLoading(true);
+        try{
+          const history=[...simMsgs.map(m=>({role:m.role==="user"?"user":"assistant",content:m.text})),userMsg];
+          const res=await fetch("/api/whatsapp/chat",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({messages:history,modo:simModo})
+          });
+          const data=await res.json();
+          const resposta=data.text||data.error||"(sem resposta)";
+          // Detectar ação JSON
+          let textoFinal=resposta;
+          let badge=null;
+          try{const j=JSON.parse(resposta.trim());if(j.acao){badge=j.acao;textoFinal=j.acao==="cadastrar_lead"?"✅ Lead cadastrado! Dados: "+JSON.stringify(j.dados):j.acao==="converter_parceiro"?"🎉 Parceiro convertido! Dados: "+JSON.stringify(j.dados):"👋 Conversa encerrada.";}}catch(e){}
+          setSimMsgs(p=>[...p,{role:"assistant",text:textoFinal,badge}]);
+        }catch(e){setSimMsgs(p=>[...p,{role:"assistant",text:"(erro: "+e.message+")"}]);}
+        setSimLoading(false);
+      };
+      const iniciarSim=async()=>{
+        setSimMsgs([]);setSimStarted(true);setSimLoading(true);
+        try{
+          const res=await fetch("/api/whatsapp/chat",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({messages:[{role:"user",content:"oi"}],modo:simModo})
+          });
+          const data=await res.json();
+          const resposta=data.text||"Olá! 👋";
+          setSimMsgs([{role:"user",text:"oi"},{role:"assistant",text:resposta}]);
+        }catch(e){setSimMsgs([{role:"assistant",text:"(configure VITE_ANTHROPIC_KEY no .env para testar)"}]);}
+        setSimLoading(false);
+      };
+      return(
+      <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+        {/* Header simulador */}
+        <div style={{padding:"14px 20px",borderBottom:`1px solid ${T.border}`,background:T.accentDim}}>
+          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent,marginBottom:8}}>🧪 Simulador do Agente</div>
+          <div style={{fontSize:10,color:T.muted,marginBottom:10}}>Simule uma conversa como se você fosse um estabelecimento. O agente responde com a IA real.</div>
+          <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+            <span style={{fontSize:10,color:T.muted}}>Modo:</span>
+            {[["prospecto","🎯 Prospecção"],["parceiro","🤝 Parceiro"],["cobranca","📸 Cobrança"]].map(([v,l])=>(
+              <button key={v} onClick={()=>{setSimModo(v);setSimMsgs([]);setSimStarted(false);}} style={{padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:600,cursor:"pointer",border:`1px solid ${simModo===v?T.accentBorder:T.border}`,background:simModo===v?T.accentDim:"transparent",color:simModo===v?T.accent:T.muted}}>{l}</button>
+            ))}
+            <button onClick={()=>{setSimMsgs([]);setSimStarted(false);}} style={{marginLeft:"auto",padding:"4px 10px",borderRadius:5,fontSize:10,cursor:"pointer",border:`1px solid ${T.border}`,background:"transparent",color:T.muted}}>↺ Reiniciar</button>
+          </div>
+        </div>
+        {/* Mensagens simulador */}
+        <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:10}}>
+          {!simStarted&&simMsgs.length===0&&(
+            <div style={{textAlign:"center",marginTop:40}}>
+              <div style={{fontSize:32,marginBottom:12}}>🤖</div>
+              <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,marginBottom:6}}>Agente Lena — Ecodely</div>
+              <div style={{fontSize:11,color:T.muted,marginBottom:20,maxWidth:320,margin:"0 auto 20px"}}>Modo: <strong>{simModo==="prospecto"?"Prospecção fria":simModo==="parceiro"?"Suporte ao parceiro":"Cobrança de postagem"}</strong><br/>Clique em iniciar para o agente mandar a primeira mensagem</div>
+              <button onClick={iniciarSim} style={{padding:"10px 24px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>▶ Iniciar simulação</button>
+            </div>
+          )}
+          {simMsgs.map((msg,i)=>(
+            <div key={i} style={{display:"flex",justifyContent:msg.role==="user"?"flex-end":"flex-start",gap:8,alignItems:"flex-end"}}>
+              {msg.role==="assistant"&&<div style={{width:28,height:28,borderRadius:"50%",background:T.accentDim,border:`1px solid ${T.accentBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>🤖</div>}
+              <div style={{maxWidth:"72%"}}>
+                <div style={{padding:"10px 14px",borderRadius:msg.role==="user"?"14px 4px 14px 14px":"4px 14px 14px 14px",background:msg.role==="user"?T.surface:T.card,border:`1px solid ${msg.role==="user"?T.border:T.accentBorder}`,fontSize:11,lineHeight:1.6,whiteSpace:"pre-wrap"}}>
+                  {msg.text}
+                </div>
+                {msg.badge&&<div style={{fontSize:8,color:T.accent,marginTop:3,textAlign:msg.role==="assistant"?"left":"right",fontWeight:700}}>⚡ AÇÃO: {msg.badge}</div>}
+              </div>
+              {msg.role==="user"&&<div style={{width:28,height:28,borderRadius:"50%",background:T.surface,border:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>🏪</div>}
+            </div>
+          ))}
+          {simLoading&&<div style={{display:"flex",gap:8,alignItems:"center"}}><div style={{width:28,height:28,borderRadius:"50%",background:T.accentDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>🤖</div><div style={{padding:"10px 14px",borderRadius:"4px 14px 14px 14px",background:T.card,border:`1px solid ${T.accentBorder}`,fontSize:11,color:T.muted}}>digitando...</div></div>}
+        </div>
+        {/* Input simulador */}
+        {simStarted&&<div style={{padding:"12px 16px",borderTop:`1px solid ${T.border}`,display:"flex",gap:8}}>
+          <input value={simInput} onChange={e=>setSimInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&enviarSim()} placeholder="Responda como se fosse o estabelecimento..." disabled={simLoading} style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"9px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+          <button onClick={enviarSim} disabled={simLoading} style={{padding:"9px 16px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Enviar</button>
+        </div>}
+      </div>
+      );
+    })()
+  ):!waSelConv?(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",color:T.muted,gap:10}}>
+      <div style={{fontSize:32}}>💬</div>
+      <div style={{fontSize:12}}>Selecione uma conversa ou inicie uma nova</div>
+      <div style={{fontSize:10,color:T.border,textAlign:"center",maxWidth:280}}>O agente usa Claude IA para responder automaticamente a prospecções e gerenciar a base de parceiros</div>
+    </div>
+  ):(
+    <div style={{display:"flex",flexDirection:"column"}}>
+      {/* Header chat */}
+      <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{fontWeight:700,fontSize:13}}>{waSelConv.nome||waSelConv.numero}</div>
+          <div style={{fontSize:10,color:T.muted}}>{waSelConv.numero} · <span style={{color:MODO_COLOR[waSelConv.modo]||T.muted}}>{waSelConv.modo}</span></div>
+        </div>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          <div style={{padding:"3px 10px",borderRadius:5,fontSize:9,background:(STATUS_COLOR[waSelConv.status]||T.muted)+"22",color:STATUS_COLOR[waSelConv.status]||T.muted,fontWeight:700}}>{STATUS_LABEL[waSelConv.status]}</div>
+          {waSelConv.status!=="convertido"&&["prospecto","parceiro"].includes(waSelConv.modo)&&(
+            <button onClick={async()=>{await supabase.from("wa_conversas").update({status:"convertido",modo:"parceiro"}).eq("id",waSelConv.id);setWaSelConv(p=>({...p,status:"convertido",modo:"parceiro"}));setWaConversas(p=>p.map(c=>c.id===waSelConv.id?{...c,status:"convertido",modo:"parceiro"}:c));}} style={{padding:"3px 10px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:5,fontSize:9,fontWeight:700,cursor:"pointer"}}>✓ Converter</button>
+          )}
+        </div>
+      </div>
+      {/* Dados do lead */}
+      {waSelConv.dados_lead&&Object.keys(waSelConv.dados_lead).length>0&&(
+        <div style={{padding:"8px 16px",background:T.accentDim,borderBottom:`1px solid ${T.accentBorder}`,display:"flex",gap:12,flexWrap:"wrap"}}>
+          {Object.entries(waSelConv.dados_lead).filter(([k,v])=>v).map(([k,v])=>(
+            <span key={k} style={{fontSize:9,color:T.accent}}><span style={{color:T.muted}}>{k}:</span> {v}</span>
+          ))}
+        </div>
+      )}
+      {/* Mensagens */}
+      <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:8}}>
+        {waMensagens.length===0&&<div style={{textAlign:"center",color:T.muted,fontSize:11,marginTop:20}}>Nenhuma mensagem ainda</div>}
+        {waMensagens.map(msg=>(
+          <div key={msg.id} style={{display:"flex",justifyContent:msg.role==="user"?"flex-start":"flex-end"}}>
+            <div style={{maxWidth:"70%",padding:"8px 12px",borderRadius:msg.role==="user"?"4px 12px 12px 12px":"12px 4px 12px 12px",background:msg.role==="user"?T.surface:T.accentDim,border:`1px solid ${msg.role==="user"?T.border:T.accentBorder}`,fontSize:11,lineHeight:1.5,color:msg.role==="user"?T.text:T.accent}}>
+              {msg.conteudo}
+              <div style={{fontSize:8,color:T.muted,marginTop:4,textAlign:"right"}}>{msg.role==="user"?"👤":"🤖"} {new Date(msg.criado_em).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* Input */}
+      <div style={{padding:"12px 16px",borderTop:`1px solid ${T.border}`,display:"flex",gap:8}}>
+        <input value={waInput} onChange={e=>setWaInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&enviarManual()} placeholder="Mensagem manual (Enter para enviar)..." style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"9px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+        <button onClick={enviarManual} style={{padding:"9px 16px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Enviar</button>
+      </div>
+    </div>
+  )}
+</div>
+);
+
+}
+
 export default function App(){
   const[user,setUser]=useState(()=>{try{const s=localStorage.getItem("ecodely_user");return s?JSON.parse(s):null;}catch{return null;}});
   const[loginForm,setLoginForm]=useState({email:"",pass:""});
@@ -7291,251 +7541,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           {/* --------------------------------------
               WHATSAPP IA
           -------------------------------------- */}
-          {tab==="whatsapp"&&(()=>{
-            // Carregar conversas
-            const loadConversas=async()=>{
-              setWaLoading(true);
-              const{data}=await supabase.from("wa_conversas").select("*").order("atualizado_em",{ascending:false});
-              setWaConversas(data||[]);
-              setWaLoading(false);
-            };
-            const loadMensagens=async(convId)=>{
-              const{data}=await supabase.from("wa_mensagens").select("*").eq("conversa_id",convId).order("criado_em",{ascending:true});
-              setWaMensagens(data||[]);
-            };
-            const selecionarConversa=(conv)=>{
-              setWaSelConv(conv);
-              loadMensagens(conv.id);
-            };
-            const enviarManual=async()=>{
-              if(!waInput.trim()||!waSelConv)return;
-              const msg=waInput.trim();
-              setWaInput("");
-              // Otimista: adicionar na tela
-              const temp={id:Date.now(),conversa_id:waSelConv.id,role:"assistant",conteudo:msg,criado_em:new Date().toISOString()};
-              setWaMensagens(p=>[...p,temp]);
-              await fetch("/api/whatsapp/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({numero:waSelConv.numero,mensagem:msg,conversa_id:waSelConv.id})});
-            };
-            const iniciarConversa=async()=>{
-              if(!waNovoNumero.trim())return;
-              const num=waNovoNumero.replace(/\D/g,"");
-              const{data}=await supabase.from("wa_conversas").upsert({numero:num,modo:waNovoModo,status:"novo"},{onConflict:"numero"}).select().single();
-              if(data){setWaConversas(p=>[data,...p.filter(c=>c.id!==data.id)]);selecionarConversa(data);}
-              setWaNovoNumero("");
-            };
-
-            const STATUS_COLOR={"novo":T.info,"em_andamento":T.warn,"aguardando":T.purple,"convertido":T.accent,"encerrado":T.muted};
-            const STATUS_LABEL={"novo":"Novo","em_andamento":"Em andamento","aguardando":"Aguardando","convertido":"Convertido","encerrado":"Encerrado"};
-            const MODO_COLOR={"prospecto":T.info,"parceiro":T.accent,"equipe":T.purple,"cobranca":T.warn};
-            const convsFilt=waFiltro==="todos"?waConversas:waConversas.filter(c=>c.status===waFiltro);
-
-            // Carregar ao montar
-            if(waConversas.length===0&&!waLoading) loadConversas();
-
-            return(
-            <div style={{display:"grid",gridTemplateColumns:"300px 1fr",gap:0,height:"calc(100vh - 120px)",background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
-
-              {/* ── LISTA DE CONVERSAS ── */}
-              <div style={{borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column"}}>
-                {/* Header lista */}
-                <div style={{padding:"14px 16px",borderBottom:`1px solid ${T.border}`}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>WhatsApp IA</div>
-                    <button onClick={loadConversas} style={{background:"none",border:"none",color:T.muted,cursor:"pointer",fontSize:14}}>↻</button>
-                  </div>
-                  {/* Sub-tabs */}
-                  <div style={{display:"flex",gap:4,marginBottom:10}}>
-                    {[["conversas","Conversas"],["simulador","🧪 Simulador"]].map(([v,l])=>(
-                      <button key={v} onClick={()=>setWaFiltro(v==="simulador"?"simulador":waFiltro==="simulador"?"todos":waFiltro)} style={{padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:600,cursor:"pointer",border:`1px solid ${(v==="simulador"?waFiltro==="simulador":waFiltro!=="simulador")?T.accentBorder:T.border}`,background:(v==="simulador"?waFiltro==="simulador":waFiltro!=="simulador")?T.accentDim:"transparent",color:(v==="simulador"?waFiltro==="simulador":waFiltro!=="simulador")?T.accent:T.muted}}>{l}</button>
-                    ))}
-                  </div>
-                  {/* Nova conversa */}
-                  <div style={{display:"flex",gap:4,marginBottom:8}}>
-                    <input value={waNovoNumero} onChange={e=>setWaNovoNumero(e.target.value)} placeholder="+5511999999999" onKeyDown={e=>e.key==="Enter"&&iniciarConversa()} style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"5px 8px",fontSize:10,color:T.text,outline:"none"}}/>
-                    <select value={waNovoModo} onChange={e=>setWaNovoModo(e.target.value)} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"5px 6px",fontSize:10,color:T.text,outline:"none"}}>
-                      <option value="prospecto">Prospec.</option>
-                      <option value="parceiro">Parceiro</option>
-                      <option value="equipe">Equipe</option>
-                    </select>
-                    <button onClick={iniciarConversa} style={{padding:"5px 10px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer"}}>+</button>
-                  </div>
-                  {/* Filtros */}
-                  <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
-                    {[["todos","Todos"],["novo","Novos"],["em_andamento","Ativos"],["convertido","Convertidos"],["encerrado","Enc."]].map(([v,l])=>(
-                      <button key={v} onClick={()=>setWaFiltro(v)} style={{padding:"3px 7px",borderRadius:4,fontSize:8,cursor:"pointer",border:`1px solid ${waFiltro===v?T.accentBorder:T.border}`,background:waFiltro===v?T.accentDim:"transparent",color:waFiltro===v?T.accent:T.muted}}>{l}</button>
-                    ))}
-                  </div>
-                </div>
-                {/* Lista */}
-                <div style={{flex:1,overflowY:"auto"}}>
-                  {waLoading&&<div style={{padding:20,textAlign:"center",color:T.muted,fontSize:11}}>Carregando...</div>}
-                  {!waLoading&&convsFilt.length===0&&<div style={{padding:20,textAlign:"center",color:T.muted,fontSize:11}}>Nenhuma conversa</div>}
-                  {convsFilt.map(conv=>(
-                    <div key={conv.id} onClick={()=>selecionarConversa(conv)} style={{padding:"12px 14px",borderBottom:`1px solid ${T.border}`,cursor:"pointer",background:waSelConv?.id===conv.id?T.surface:"transparent",transition:"background 0.1s"}}
-                      onMouseEnter={e=>e.currentTarget.style.background=T.surface}
-                      onMouseLeave={e=>e.currentTarget.style.background=waSelConv?.id===conv.id?T.surface:"transparent"}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:3}}>
-                        <div style={{fontWeight:600,fontSize:11}}>{conv.nome||conv.numero}</div>
-                        <div style={{width:7,height:7,borderRadius:"50%",background:STATUS_COLOR[conv.status]||T.muted,flexShrink:0,marginTop:3}}/>
-                      </div>
-                      <div style={{display:"flex",gap:4}}>
-                        <span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:(MODO_COLOR[conv.modo]||T.muted)+"22",color:MODO_COLOR[conv.modo]||T.muted}}>{conv.modo}</span>
-                        <span style={{fontSize:8,color:T.muted}}>{STATUS_LABEL[conv.status]||conv.status}</span>
-                      </div>
-                      {conv.dados_lead?.tipo&&<div style={{fontSize:9,color:T.muted,marginTop:2}}>{conv.dados_lead.tipo} · {conv.dados_lead.cidade}</div>}
-                    </div>
-                  ))}
-                </div>
-                {/* Stats */}
-                <div style={{padding:"10px 14px",borderTop:`1px solid ${T.border}`,display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                  {[["Convertidos",waConversas.filter(c=>c.status==="convertido").length,T.accent],["Ativos",waConversas.filter(c=>c.status==="em_andamento").length,T.warn]].map(([l,v,c])=>(
-                    <div key={l} style={{background:T.surface,borderRadius:6,padding:"6px 8px",textAlign:"center"}}>
-                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:c}}>{v}</div>
-                      <div style={{fontSize:8,color:T.muted}}>{l}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* ── ÁREA DE CHAT / SIMULADOR ── */}
-              {waFiltro==="simulador"?(
-                // ── SIMULADOR ──
-                (()=>{
-                  const enviarSim=async()=>{
-                    if(!simInput.trim()||simLoading)return;
-                    const texto=simInput.trim();
-                    setSimInput("");
-                    const userMsg={role:"user",content:texto};
-                    setSimMsgs(p=>[...p,{role:"user",text:texto}]);
-                    setSimLoading(true);
-                    try{
-                      const history=[...simMsgs.map(m=>({role:m.role==="user"?"user":"assistant",content:m.text})),userMsg];
-                      const res=await fetch("/api/whatsapp/chat",{
-                        method:"POST",
-                        headers:{"Content-Type":"application/json"},
-                        body:JSON.stringify({messages:history,modo:simModo})
-                      });
-                      const data=await res.json();
-                      const resposta=data.text||data.error||"(sem resposta)";
-                      // Detectar ação JSON
-                      let textoFinal=resposta;
-                      let badge=null;
-                      try{const j=JSON.parse(resposta.trim());if(j.acao){badge=j.acao;textoFinal=j.acao==="cadastrar_lead"?"✅ Lead cadastrado! Dados: "+JSON.stringify(j.dados):j.acao==="converter_parceiro"?"🎉 Parceiro convertido! Dados: "+JSON.stringify(j.dados):"👋 Conversa encerrada.";}}catch(e){}
-                      setSimMsgs(p=>[...p,{role:"assistant",text:textoFinal,badge}]);
-                    }catch(e){setSimMsgs(p=>[...p,{role:"assistant",text:"(erro: "+e.message+")"}]);}
-                    setSimLoading(false);
-                  };
-                  const iniciarSim=async()=>{
-                    setSimMsgs([]);setSimStarted(true);setSimLoading(true);
-                    try{
-                      const res=await fetch("/api/whatsapp/chat",{
-                        method:"POST",
-                        headers:{"Content-Type":"application/json"},
-                        body:JSON.stringify({messages:[{role:"user",content:"oi"}],modo:simModo})
-                      });
-                      const data=await res.json();
-                      const resposta=data.text||"Olá! 👋";
-                      setSimMsgs([{role:"user",text:"oi"},{role:"assistant",text:resposta}]);
-                    }catch(e){setSimMsgs([{role:"assistant",text:"(configure VITE_ANTHROPIC_KEY no .env para testar)"}]);}
-                    setSimLoading(false);
-                  };
-                  return(
-                  <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-                    {/* Header simulador */}
-                    <div style={{padding:"14px 20px",borderBottom:`1px solid ${T.border}`,background:T.accentDim}}>
-                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent,marginBottom:8}}>🧪 Simulador do Agente</div>
-                      <div style={{fontSize:10,color:T.muted,marginBottom:10}}>Simule uma conversa como se você fosse um estabelecimento. O agente responde com a IA real.</div>
-                      <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                        <span style={{fontSize:10,color:T.muted}}>Modo:</span>
-                        {[["prospecto","🎯 Prospecção"],["parceiro","🤝 Parceiro"],["cobranca","📸 Cobrança"]].map(([v,l])=>(
-                          <button key={v} onClick={()=>{setSimModo(v);setSimMsgs([]);setSimStarted(false);}} style={{padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:600,cursor:"pointer",border:`1px solid ${simModo===v?T.accentBorder:T.border}`,background:simModo===v?T.accentDim:"transparent",color:simModo===v?T.accent:T.muted}}>{l}</button>
-                        ))}
-                        <button onClick={()=>{setSimMsgs([]);setSimStarted(false);}} style={{marginLeft:"auto",padding:"4px 10px",borderRadius:5,fontSize:10,cursor:"pointer",border:`1px solid ${T.border}`,background:"transparent",color:T.muted}}>↺ Reiniciar</button>
-                      </div>
-                    </div>
-                    {/* Mensagens simulador */}
-                    <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:10}}>
-                      {!simStarted&&simMsgs.length===0&&(
-                        <div style={{textAlign:"center",marginTop:40}}>
-                          <div style={{fontSize:32,marginBottom:12}}>🤖</div>
-                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,marginBottom:6}}>Agente Lena — Ecodely</div>
-                          <div style={{fontSize:11,color:T.muted,marginBottom:20,maxWidth:320,margin:"0 auto 20px"}}>Modo: <strong>{simModo==="prospecto"?"Prospecção fria":simModo==="parceiro"?"Suporte ao parceiro":"Cobrança de postagem"}</strong><br/>Clique em iniciar para o agente mandar a primeira mensagem</div>
-                          <button onClick={iniciarSim} style={{padding:"10px 24px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>▶ Iniciar simulação</button>
-                        </div>
-                      )}
-                      {simMsgs.map((msg,i)=>(
-                        <div key={i} style={{display:"flex",justifyContent:msg.role==="user"?"flex-end":"flex-start",gap:8,alignItems:"flex-end"}}>
-                          {msg.role==="assistant"&&<div style={{width:28,height:28,borderRadius:"50%",background:T.accentDim,border:`1px solid ${T.accentBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>🤖</div>}
-                          <div style={{maxWidth:"72%"}}>
-                            <div style={{padding:"10px 14px",borderRadius:msg.role==="user"?"14px 4px 14px 14px":"4px 14px 14px 14px",background:msg.role==="user"?T.surface:T.card,border:`1px solid ${msg.role==="user"?T.border:T.accentBorder}`,fontSize:11,lineHeight:1.6,whiteSpace:"pre-wrap"}}>
-                              {msg.text}
-                            </div>
-                            {msg.badge&&<div style={{fontSize:8,color:T.accent,marginTop:3,textAlign:msg.role==="assistant"?"left":"right",fontWeight:700}}>⚡ AÇÃO: {msg.badge}</div>}
-                          </div>
-                          {msg.role==="user"&&<div style={{width:28,height:28,borderRadius:"50%",background:T.surface,border:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>🏪</div>}
-                        </div>
-                      ))}
-                      {simLoading&&<div style={{display:"flex",gap:8,alignItems:"center"}}><div style={{width:28,height:28,borderRadius:"50%",background:T.accentDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>🤖</div><div style={{padding:"10px 14px",borderRadius:"4px 14px 14px 14px",background:T.card,border:`1px solid ${T.accentBorder}`,fontSize:11,color:T.muted}}>digitando...</div></div>}
-                    </div>
-                    {/* Input simulador */}
-                    {simStarted&&<div style={{padding:"12px 16px",borderTop:`1px solid ${T.border}`,display:"flex",gap:8}}>
-                      <input value={simInput} onChange={e=>setSimInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&enviarSim()} placeholder="Responda como se fosse o estabelecimento..." disabled={simLoading} style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"9px 12px",fontSize:11,color:T.text,outline:"none"}}/>
-                      <button onClick={enviarSim} disabled={simLoading} style={{padding:"9px 16px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Enviar</button>
-                    </div>}
-                  </div>
-                  );
-                })()
-              ):!waSelConv?(
-                <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",color:T.muted,gap:10}}>
-                  <div style={{fontSize:32}}>💬</div>
-                  <div style={{fontSize:12}}>Selecione uma conversa ou inicie uma nova</div>
-                  <div style={{fontSize:10,color:T.border,textAlign:"center",maxWidth:280}}>O agente usa Claude IA para responder automaticamente a prospecções e gerenciar a base de parceiros</div>
-                </div>
-              ):(
-                <div style={{display:"flex",flexDirection:"column"}}>
-                  {/* Header chat */}
-                  <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div>
-                      <div style={{fontWeight:700,fontSize:13}}>{waSelConv.nome||waSelConv.numero}</div>
-                      <div style={{fontSize:10,color:T.muted}}>{waSelConv.numero} · <span style={{color:MODO_COLOR[waSelConv.modo]||T.muted}}>{waSelConv.modo}</span></div>
-                    </div>
-                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                      <div style={{padding:"3px 10px",borderRadius:5,fontSize:9,background:(STATUS_COLOR[waSelConv.status]||T.muted)+"22",color:STATUS_COLOR[waSelConv.status]||T.muted,fontWeight:700}}>{STATUS_LABEL[waSelConv.status]}</div>
-                      {waSelConv.status!=="convertido"&&["prospecto","parceiro"].includes(waSelConv.modo)&&(
-                        <button onClick={async()=>{await supabase.from("wa_conversas").update({status:"convertido",modo:"parceiro"}).eq("id",waSelConv.id);setWaSelConv(p=>({...p,status:"convertido",modo:"parceiro"}));setWaConversas(p=>p.map(c=>c.id===waSelConv.id?{...c,status:"convertido",modo:"parceiro"}:c));}} style={{padding:"3px 10px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:5,fontSize:9,fontWeight:700,cursor:"pointer"}}>✓ Converter</button>
-                      )}
-                    </div>
-                  </div>
-                  {/* Dados do lead */}
-                  {waSelConv.dados_lead&&Object.keys(waSelConv.dados_lead).length>0&&(
-                    <div style={{padding:"8px 16px",background:T.accentDim,borderBottom:`1px solid ${T.accentBorder}`,display:"flex",gap:12,flexWrap:"wrap"}}>
-                      {Object.entries(waSelConv.dados_lead).filter(([k,v])=>v).map(([k,v])=>(
-                        <span key={k} style={{fontSize:9,color:T.accent}}><span style={{color:T.muted}}>{k}:</span> {v}</span>
-                      ))}
-                    </div>
-                  )}
-                  {/* Mensagens */}
-                  <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:8}}>
-                    {waMensagens.length===0&&<div style={{textAlign:"center",color:T.muted,fontSize:11,marginTop:20}}>Nenhuma mensagem ainda</div>}
-                    {waMensagens.map(msg=>(
-                      <div key={msg.id} style={{display:"flex",justifyContent:msg.role==="user"?"flex-start":"flex-end"}}>
-                        <div style={{maxWidth:"70%",padding:"8px 12px",borderRadius:msg.role==="user"?"4px 12px 12px 12px":"12px 4px 12px 12px",background:msg.role==="user"?T.surface:T.accentDim,border:`1px solid ${msg.role==="user"?T.border:T.accentBorder}`,fontSize:11,lineHeight:1.5,color:msg.role==="user"?T.text:T.accent}}>
-                          {msg.conteudo}
-                          <div style={{fontSize:8,color:T.muted,marginTop:4,textAlign:"right"}}>{msg.role==="user"?"👤":"🤖"} {new Date(msg.criado_em).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {/* Input */}
-                  <div style={{padding:"12px 16px",borderTop:`1px solid ${T.border}`,display:"flex",gap:8}}>
-                    <input value={waInput} onChange={e=>setWaInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&enviarManual()} placeholder="Mensagem manual (Enter para enviar)..." style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"9px 12px",fontSize:11,color:T.text,outline:"none"}}/>
-                    <button onClick={enviarManual} style={{padding:"9px 16px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Enviar</button>
-                  </div>
-                </div>
-              )}
-            </div>
-            );
-          })()}
+          {tab==="whatsapp"&&<WhatsAppPanel supabase={supabase} waConversas={waConversas} setWaConversas={setWaConversas} waMensagens={waMensagens} setWaMensagens={setWaMensagens} waSelConv={waSelConv} setWaSelConv={setWaSelConv} waInput={waInput} setWaInput={setWaInput} waLoading={waLoading} setWaLoading={setWaLoading} waFiltro={waFiltro} setWaFiltro={setWaFiltro} waNovoNumero={waNovoNumero} setWaNovoNumero={setWaNovoNumero} waNovoModo={waNovoModo} setWaNovoModo={setWaNovoModo} simMsgs={simMsgs} setSimMsgs={setSimMsgs} simInput={simInput} setSimInput={setSimInput} simLoading={simLoading} setSimLoading={setSimLoading} simModo={simModo} setSimModo={setSimModo} simStarted={simStarted} setSimStarted={setSimStarted} T={T}/>}
 
           {/* --------------------------------------
               USUÁRIOS
