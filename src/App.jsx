@@ -1092,9 +1092,15 @@ export default function App(){
       .select("*")
       .order("data", { ascending: true });
     if (error) { setLancError(error.message); setLancLoading(false); return; }
-    // Normalizar: garantir entrada/saida como number
+    // Normalizar: converter data ISO → DD/MM/YYYY e garantir tipos
+    const toDataBR=(d)=>{
+      if(!d) return "";
+      if(/^\d{4}-\d{2}-\d{2}/.test(d)) return d.slice(8,10)+"/"+d.slice(5,7)+"/"+d.slice(0,4);
+      return d;
+    };
     const normalized = (data||[]).map(l => ({
       ...l,
+      data: toDataBR(l.data),
       entrada: Number(l.entrada)||0,
       saida: Number(l.saida)||0,
       confirmado: !!l.confirmado,
