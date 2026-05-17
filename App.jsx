@@ -1734,6 +1734,293 @@ const Toast=({notifs,onDismiss})=>{
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 // MAIN APP
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// VISÃO GERAL FINANCEIRA — componente próprio (evita useState em IIFE)
+// ---------------------------------------------------------------------------
+function VisaoGeralFin({lancamentos,finMesRef,contas,custosFix,cartoes,comprasCartao,proximoMesCartao,rbt12,faixa,aliqDisplay,aliqVal,saldoMesFinal,saldoTotal,totalEntradas,totalSaidas,lucroMes,aaRef,mmRef,lancFilt,resultado}){
+// Helpers de data DD/MM/YYYY <-> YYYY-MM-DD
+const brToIso=(br)=>{ if(!br||!br.includes("/"))return ""; const[d,m,y]=br.split("/"); return `${y}-${m}-${d}`; };
+const isoToBr=(iso)=>{ if(!iso||!iso.includes("-"))return ""; const[y,m,d]=iso.split("-"); return `${d}/${m}/${y}`; };
+const dataBrToNum=(br)=>{ if(!br)return 0; const[d,m,y]=br.split("/"); return Number(y)*10000+Number(m)*100+Number(d); };
+// Estado do range — armazenado em YYYY-MM-DD (formato input[type=date])
+const[rangeAtivo,_setRangeAtivo]=useState("mes");
+const[rangeDE,_setRangeDE]=useState(()=>{ const[m,y]=finMesRef.split("/"); return `${y}-${m}-01`; });
+const[rangeATE,_setRangeATE]=useState(()=>{ const[m,y]=finMesRef.split("/"); const last=new Date(Number(y),Number(m),0).getDate(); return `${y}-${m}-${String(last).padStart(2,"0")}`; });
+const setRangeAtivo=_setRangeAtivo;
+const setRangeDE=_setRangeDE;
+const setRangeATE=_setRangeATE;
+// Quando muda o mês de referência, atualiza o range do mês
+const deLabel=isoToBr(rangeDE); const ateLabel=isoToBr(rangeATE);
+const labelP=rangeAtivo==="mes"?finMesRef:`${deLabel} → ${ateLabel}`;
+// Filtro por dia exato
+const filtrarPeriodo=(arr)=>{
+  const base=arr.filter(l=>l.tipo!=="Saldo Anterior");
+  if(rangeAtivo==="mes") return base.filter(l=>{ const d=l.data||""; return d.slice(3,5)+"/"+d.slice(6,10)===finMesRef; });
+  const nDe=dataBrToNum(deLabel); const nAte=dataBrToNum(ateLabel);
+  return base.filter(l=>{ const n=dataBrToNum(l.data||""); return n>=nDe&&n<=nAte; });
+};
+const lancP=filtrarPeriodo(lancamentos);
+const entP=lancP.reduce((a,l)=>a+(l.entrada||0),0);
+const saidP=lancP.reduce((a,l)=>a+(l.saida||0),0);
+const resP=entP-saidP;
+// Agrupamento mensal para gráfico
+const mesesNoRange=[...new Set(lancP.map(l=>{ const d=l.data||""; return d.slice(3,5)+"/"+d.slice(6,10); }).filter(m=>m.length===7))].sort();
+const grafData=mesesNoRange.map(m=>{ const[mm,yy]=m.split("/"); const ls=lancamentos.filter(l=>{ const d=l.data||""; return d.slice(3,5)===mm&&d.slice(6,10)===yy&&l.tipo!=="Saldo Anterior"; }); return{mes:m,entradas:ls.reduce((a,l)=>a+(l.entrada||0),0),saidas:ls.reduce((a,l)=>a+(l.saida||0),0)}; });
+const dreRec=CAT_RECEITA.map(cat=>({cat,val:lancP.filter(l=>l.categoria===cat&&(l.entrada||0)>0).reduce((a,l)=>a+(l.entrada||0),0)})).filter(x=>x.val>0);
+const dreDes=CAT_DESPESA.map(cat=>({cat,val:lancP.filter(l=>l.categoria===cat&&(l.saida||0)>0).reduce((a,l)=>a+(l.saida||0),0)})).filter(x=>x.val>0).sort((a,b)=>b.val-a.val);
+const inpDate={background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"6px 10px",fontSize:11,color:T.text,outline:"none",colorScheme:"dark"};
+return(
+<div>
+  {/* Seletor de período */}
+  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"14px 18px",marginBottom:16,display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
+    <div style={{fontSize:9,color:T.muted,fontFamily:"monospace",textTransform:"uppercase",letterSpacing:1.5}}>Período</div>
+    {/* Botões rápidos */}
+    {[["mes","Mês"],["custom","Personalizado"]].map(([v,l])=>(
+      <button key={v} onClick={()=>{ setRangeAtivo(v); if(v==="mes"){ const[m,y]=finMesRef.split("/"); const last=new Date(Number(y),Number(m),0).getDate(); setRangeDE(`${y}-${m}-01`); setRangeATE(`${y}-${m}-${String(last).padStart(2,"0")}`); } }} style={{padding:"5px 13px",borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer",border:`1px solid ${rangeAtivo===v?T.accentBorder:T.border}`,background:rangeAtivo===v?T.accentDim:"transparent",color:rangeAtivo===v?T.accent:T.muted,transition:"all 0.15s"}}>{l}</button>
+    ))}
+    {/* Date range inputs */}
+    <div style={{display:"flex",alignItems:"center",gap:8,background:T.surface,border:`1px solid ${rangeAtivo==="custom"?T.accentBorder:T.border}`,borderRadius:8,padding:"6px 12px",transition:"border 0.15s"}}>
+      <span style={{fontSize:10,color:T.muted}}>De</span>
+      <input type="date" value={rangeDE} onChange={e=>{ setRangeDE(e.target.value); setRangeAtivo("custom"); }} style={inpDate}/>
+      <span style={{fontSize:10,color:T.muted,padding:"0 4px"}}>→</span>
+      <input type="date" value={rangeATE} onChange={e=>{ setRangeATE(e.target.value); setRangeAtivo("custom"); }} min={rangeDE} style={inpDate}/>
+    </div>
+    {/* Atalhos rápidos */}
+    <div style={{display:"flex",gap:4}}>
+      {[
+        ["7d","7 dias",()=>{ const t=new Date(); const d=new Date(t); d.setDate(d.getDate()-6); const iso=(x)=>x.toISOString().slice(0,10); setRangeDE(iso(d)); setRangeATE(iso(t)); setRangeAtivo("custom"); }],
+        ["30d","30 dias",()=>{ const t=new Date(); const d=new Date(t); d.setDate(d.getDate()-29); const iso=(x)=>x.toISOString().slice(0,10); setRangeDE(iso(d)); setRangeATE(iso(t)); setRangeAtivo("custom"); }],
+        ["ytd","Este ano",()=>{ const y=new Date().getFullYear(); setRangeDE(`${y}-01-01`); setRangeATE(new Date().toISOString().slice(0,10)); setRangeAtivo("custom"); }],
+      ].map(([k,l,fn])=>(
+        <button key={k} onClick={fn} style={{padding:"4px 9px",borderRadius:5,fontSize:9,fontWeight:600,cursor:"pointer",border:`1px solid ${T.border}`,background:"transparent",color:T.muted}}>{l}</button>
+      ))}
+    </div>
+    <div style={{marginLeft:"auto",fontSize:10,color:T.accent,fontFamily:"monospace"}}>{lancP.length} lançamentos · {labelP}</div>
+  </div>
+  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:16}}>
+    <KCard label="Total entradas" value={fmt(entP)} sub={labelP} color={T.accent} icon="-"/>
+    <KCard label="Total saidas" value={fmt(saidP)} sub={labelP} color={T.danger} icon="-"/>
+    <KCard label="Resultado" value={fmt(resP)} sub="entradas - saidas" color={resP>=0?T.accent:T.danger} icon="-"/>
+    <KCard label="Saldo em caixa" value={fmt(saldoMesFinal)} sub="saldo acumulado" color={saldoMesFinal>=0?T.info:T.danger} icon="-"/>
+  </div>
+  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:16}}>
+    {/* Contas bancarias */}
+    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
+      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Contas Bancarias</div>
+      {contas.map(c=>(
+        <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <div style={{width:8,height:8,borderRadius:"50%",background:c.cor||T.accent}}/>
+            <div>
+              <div style={{fontSize:11,fontWeight:600}}>{c.banco}</div>
+              <div style={{fontSize:8,color:T.muted}}>{c.tipo}</div>
+            </div>
+          </div>
+          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:c.saldo>=0?T.accent:T.danger}}>{fmt(c.saldo)}</div>
+        </div>
+      ))}
+      <div style={{display:"flex",justifyContent:"space-between",paddingTop:8}}>
+        <span style={{fontSize:10,color:T.muted,fontWeight:600}}>TOTAL</span>
+        <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,color:T.accent}}>{fmt(saldoTotal)}</span>
+      </div>
+    </div>
+    {/* Custos fixos do mes */}
+    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
+      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Custos Fixos do Mes</div>
+      <div style={{maxHeight:200,overflowY:"auto"}}>
+        {custosFix.filter(c=>c.ativo).map(c=>(
+          <div key={c.id} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
+            <div style={{fontSize:10,color:T.soft,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.descricao}</div>
+            <div style={{fontSize:10,color:T.danger,fontFamily:"Arial,sans-serif",flexShrink:0}}>{fmt(c.valor)}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:`1px solid ${T.border}`,marginTop:4}}>
+        <span style={{fontSize:10,color:T.muted,fontWeight:600}}>TOTAL FIXO</span>
+        <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.danger}}>{fmt(custosFix.filter(c=>c.ativo).reduce((a,c)=>a+c.valor,0))}</span>
+      </div>
+    </div>
+    {/* Cartoes resumo */}
+    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
+      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Cartoes</div>
+      {cartoes.map(c=>{
+        const parcMes=comprasCartao.filter(p=>p.cartaoId===c.id&&p.parcelaAtual<=p.parcelas);
+        const totalMes=parcMes.reduce((a,p)=>a+p.valorParcela,0);
+        const totalDev=comprasCartao.filter(p=>p.cartaoId===c.id).reduce((a,p)=>a+(p.valorParcela*(p.parcelas-p.parcelaAtual+1)),0);
+        if(totalDev===0)return null;
+        return(
+          <div key={c.id} style={{padding:"7px 0",borderBottom:`1px solid ${T.border}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
+              <span style={{fontSize:10,color:c.cor||T.warn}}>{c.nome}</span>
+              <span style={{fontSize:10,color:T.danger,fontFamily:"Arial,sans-serif"}}>{fmt(totalMes)}/mes</span>
+            </div>
+            <div style={{fontSize:8,color:T.muted}}>Saldo devedor: {fmt(totalDev)}</div>
+          </div>
+        );
+      })}
+      <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:`1px solid ${T.border}`,marginTop:4}}>
+        <span style={{fontSize:10,color:T.muted}}>Proximo mes</span>
+        <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.warn}}>{fmt(proximoMesCartao)}</span>
+      </div>
+    </div>
+  </div>
+  {/* DAS preview */}
+  <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18,marginBottom:16}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+      <div>
+        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:4}}>DAS estimado - {finMesRef}</div>
+        <div style={{fontSize:10,color:T.muted}}>RBT12: {fmt(rbt12)} - {faixa.label} - Aliquota efetiva: {aliqDisplay}%</div>
+      </div>
+      <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:24,color:T.accent}}>{fmt(totalEntradas*aliqVal)}</div>
+    </div>
+  </div>
+
+  {/* GRÁFICO DE EVOLUÇÃO MENSAL */}
+  {(()=>{
+    const mesesOrdem=["01","02","03","04","05","06","07","08","09","10","11","12"];
+    const anos=["2025","2026"];
+    const chartData=[];
+    let saldoAcum=seedInicial;
+    anos.forEach(ano=>{
+      mesesOrdem.forEach(mm=>{
+        const mesLancs=lancamentos.filter(l=>{
+          const p=l.data.split("/");
+          return p[1]===mm&&p[2]===ano&&l.tipo!=="Saldo Anterior";
+        });
+        const ent=mesLancs.reduce((a,l)=>a+(l.entrada||0),0);
+        const sai=mesLancs.reduce((a,l)=>a+(l.saida||0),0);
+        saldoAcum+=ent-sai;
+        const mesNome=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][Number(mm)-1];
+        chartData.push({mes:`${mesNome}/${ano.slice(2)}`,entradas:ent,saidas:sai,saldo:saldoAcum});
+      });
+    });
+    const fmtK=v=>{if(Math.abs(v)>=1000)return`R$${(v/1000).toFixed(0)}k`;return`R$${v.toFixed(0)}`;};
+    return(
+      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:16}}>
+        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:16}}>Evolução Mensal — Entradas / Saídas / Saldo</div>
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={chartData} margin={{top:0,right:16,left:0,bottom:20}}>
+            <XAxis dataKey="mes" tick={{fontSize:9,fill:T.muted}} tickLine={false} axisLine={false} angle={-45} textAnchor="end"/>
+            <YAxis tickFormatter={fmtK} tick={{fontSize:9,fill:T.muted}} tickLine={false} axisLine={false} width={52}/>
+            <Tooltip formatter={(v,n)=>[`R$ ${v.toLocaleString("pt-BR",{minimumFractionDigits:2})}`,n==="entradas"?"Entradas":n==="saidas"?"Saídas":"Saldo"]} contentStyle={{fontSize:11,borderRadius:8,border:`1px solid ${T.border}`,background:T.card,color:T.text}}/>
+            <Legend formatter={v=>v==="entradas"?"Entradas":v==="saidas"?"Saídas":"Saldo"} wrapperStyle={{fontSize:10,paddingTop:8}}/>
+            <Bar dataKey="entradas" fill="#16a34a" radius={[3,3,0,0]} maxBarSize={18}/>
+            <Bar dataKey="saidas" fill="#dc2626" radius={[3,3,0,0]} maxBarSize={18}/>
+            <Bar dataKey="saldo" fill={T.info} radius={[3,3,0,0]} maxBarSize={18}/>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  })()}
+
+  {/* DRE SIMPLIFICADO */}
+  {(()=>{
+    const catReceitas=CAT_RECEITA;
+    const catDespesas=CAT_DESPESA;
+    const lancAno=lancamentos.filter(l=>{
+      const p=l.data.split("/");
+      return p[2]===aaRef&&l.tipo!=="Saldo Anterior";
+    });
+    const totalRec=catReceitas.map(cat=>({cat,val:lancAno.filter(l=>l.categoria===cat&&l.entrada>0).reduce((a,l)=>a+(l.entrada||0),0)})).filter(x=>x.val>0);
+    const totalDesp=catDespesas.map(cat=>({cat,val:lancAno.filter(l=>l.categoria===cat&&l.saida>0).reduce((a,l)=>a+(l.saida||0),0)})).filter(x=>x.val>0).sort((a,b)=>b.val-a.val);
+    const totRec=totalRec.reduce((a,x)=>a+x.val,0);
+    const totDesp=totalDesp.reduce((a,x)=>a+x.val,0);
+    const resultado=totRec-totDesp;
+    return(
+      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:16}}>
+        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:16}}>DRE Simplificado — {aaRef}</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+          {/* Receitas */}
+          <div>
+            <div style={{fontSize:9,color:T.accent,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8,paddingBottom:6,borderBottom:`2px solid ${T.accent}44`}}>RECEITAS</div>
+            {totalRec.map(({cat,val})=>(
+              <div key={cat} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
+                <span style={{fontSize:11,color:T.soft}}>{cat}</span>
+                <span style={{fontSize:11,color:T.accent,fontFamily:"Arial,sans-serif",fontWeight:600}}>{fmt(val)}</span>
+              </div>
+            ))}
+            <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",marginTop:4}}>
+              <span style={{fontSize:11,fontWeight:700,color:T.text}}>TOTAL RECEITAS</span>
+              <span style={{fontSize:12,fontWeight:800,color:T.accent,fontFamily:"Arial,sans-serif"}}>{fmt(totRec)}</span>
+            </div>
+          </div>
+          {/* Despesas */}
+          <div>
+            <div style={{fontSize:9,color:T.danger,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8,paddingBottom:6,borderBottom:`2px solid ${T.danger}44`}}>DESPESAS</div>
+            {totalDesp.map(({cat,val})=>(
+              <div key={cat} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
+                <span style={{fontSize:11,color:T.soft}}>{cat}</span>
+                <span style={{fontSize:11,color:T.danger,fontFamily:"Arial,sans-serif",fontWeight:600}}>{fmt(val)}</span>
+              </div>
+            ))}
+            <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",marginTop:4}}>
+              <span style={{fontSize:11,fontWeight:700,color:T.text}}>TOTAL DESPESAS</span>
+              <span style={{fontSize:12,fontWeight:800,color:T.danger,fontFamily:"Arial,sans-serif"}}>{fmt(totDesp)}</span>
+            </div>
+          </div>
+        </div>
+        {/* Resultado */}
+        <div style={{borderTop:`2px solid ${T.border}`,marginTop:12,paddingTop:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.text}}>RESULTADO LÍQUIDO {aaRef}</span>
+          <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:resultado>=0?T.accent:T.danger}}>{fmt(resultado)}</span>
+        </div>
+      </div>
+    );
+  })()}
+
+  {/* Gráfico evolução por período */}
+  {grafData.length>1&&(
+    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:16}}>
+      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Evolução Mensal — {labelP}</div>
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart data={grafData} barSize={20}>
+          <XAxis dataKey="mes" tick={{fontSize:9,fill:T.muted}} axisLine={false} tickLine={false}/>
+          <YAxis tick={{fontSize:9,fill:T.muted}} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}k`}/>
+          <Tooltip formatter={(v,n)=>[fmt(v),n==="entradas"?"Entradas":"Saídas"]} contentStyle={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,fontSize:11}}/>
+          <Legend wrapperStyle={{fontSize:10}}/>
+          <Bar dataKey="entradas" fill={T.accent} radius={[4,4,0,0]} name="Entradas"/>
+          <Bar dataKey="saidas" fill={T.danger} radius={[4,4,0,0]} name="Saídas"/>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )}
+
+  {/* DRE por categoria no período */}
+  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+    <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18}}>
+      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:12}}>Receitas por Categoria — {labelP}</div>
+      {dreRec.length===0&&<div style={{fontSize:10,color:T.muted}}>Nenhuma receita no período</div>}
+      {dreRec.map(({cat,val})=>(
+        <div key={cat} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:2,background:T.accent}}/><span style={{fontSize:10,color:T.soft}}>{cat}</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{width:60,height:4,borderRadius:2,background:T.border,overflow:"hidden"}}><div style={{width:`${entP>0?Math.round((val/entP)*100):0}%`,height:"100%",background:T.accent}}/></div>
+            <span style={{fontSize:10,color:T.accent,fontFamily:"monospace",fontWeight:700,minWidth:80,textAlign:"right"}}>{fmt(val)}</span>
+          </div>
+        </div>
+      ))}
+      {dreRec.length>0&&<div style={{display:"flex",justifyContent:"space-between",paddingTop:8}}><span style={{fontSize:10,color:T.muted,fontWeight:700}}>TOTAL</span><span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.accent}}>{fmt(entP)}</span></div>}
+    </div>
+    <div style={{background:T.card,border:`1px solid ${T.danger}22`,borderRadius:12,padding:18}}>
+      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.danger,marginBottom:12}}>Despesas por Categoria — {labelP}</div>
+      {dreDes.length===0&&<div style={{fontSize:10,color:T.muted}}>Nenhuma despesa no período</div>}
+      {dreDes.map(({cat,val})=>(
+        <div key={cat} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:2,background:T.danger}}/><span style={{fontSize:10,color:T.soft}}>{cat}</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{width:60,height:4,borderRadius:2,background:T.border,overflow:"hidden"}}><div style={{width:`${saidP>0?Math.round((val/saidP)*100):0}%`,height:"100%",background:T.danger}}/></div>
+            <span style={{fontSize:10,color:T.danger,fontFamily:"monospace",fontWeight:700,minWidth:80,textAlign:"right"}}>{fmt(val)}</span>
+          </div>
+        </div>
+      ))}
+      {dreDes.length>0&&<div style={{display:"flex",justifyContent:"space-between",paddingTop:8}}><span style={{fontSize:10,color:T.muted,fontWeight:700}}>TOTAL</span><span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.danger}}>{fmt(saidP)}</span></div>}
+    </div>
+  </div>
+
+</div>
+);
+}
+
 export default function App(){
   const[user,setUser]=useState(()=>{try{const s=localStorage.getItem("ecodely_user");return s?JSON.parse(s):null;}catch{return null;}});
   const[loginForm,setLoginForm]=useState({email:"",pass:""});
@@ -4584,289 +4871,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 </div>
 
                 {/* VISAO GERAL */}
-                {finTab==="visao"&&(()=>{
-                  // Helpers de data DD/MM/YYYY <-> YYYY-MM-DD
-                  const brToIso=(br)=>{ if(!br||!br.includes("/"))return ""; const[d,m,y]=br.split("/"); return `${y}-${m}-${d}`; };
-                  const isoToBr=(iso)=>{ if(!iso||!iso.includes("-"))return ""; const[y,m,d]=iso.split("-"); return `${d}/${m}/${y}`; };
-                  const dataBrToNum=(br)=>{ if(!br)return 0; const[d,m,y]=br.split("/"); return Number(y)*10000+Number(m)*100+Number(d); };
-                  // Estado do range — armazenado em YYYY-MM-DD (formato input[type=date])
-                  const[rangeAtivo,_setRangeAtivo]=useState("mes");
-                  const[rangeDE,_setRangeDE]=useState(()=>{ const[m,y]=finMesRef.split("/"); return `${y}-${m}-01`; });
-                  const[rangeATE,_setRangeATE]=useState(()=>{ const[m,y]=finMesRef.split("/"); const last=new Date(Number(y),Number(m),0).getDate(); return `${y}-${m}-${String(last).padStart(2,"0")}`; });
-                  const setRangeAtivo=_setRangeAtivo;
-                  const setRangeDE=_setRangeDE;
-                  const setRangeATE=_setRangeATE;
-                  // Quando muda o mês de referência, atualiza o range do mês
-                  const deLabel=isoToBr(rangeDE); const ateLabel=isoToBr(rangeATE);
-                  const labelP=rangeAtivo==="mes"?finMesRef:`${deLabel} → ${ateLabel}`;
-                  // Filtro por dia exato
-                  const filtrarPeriodo=(arr)=>{
-                    const base=arr.filter(l=>l.tipo!=="Saldo Anterior");
-                    if(rangeAtivo==="mes") return base.filter(l=>{ const d=l.data||""; return d.slice(3,5)+"/"+d.slice(6,10)===finMesRef; });
-                    const nDe=dataBrToNum(deLabel); const nAte=dataBrToNum(ateLabel);
-                    return base.filter(l=>{ const n=dataBrToNum(l.data||""); return n>=nDe&&n<=nAte; });
-                  };
-                  const lancP=filtrarPeriodo(lancamentos);
-                  const entP=lancP.reduce((a,l)=>a+(l.entrada||0),0);
-                  const saidP=lancP.reduce((a,l)=>a+(l.saida||0),0);
-                  const resP=entP-saidP;
-                  // Agrupamento mensal para gráfico
-                  const mesesNoRange=[...new Set(lancP.map(l=>{ const d=l.data||""; return d.slice(3,5)+"/"+d.slice(6,10); }).filter(m=>m.length===7))].sort();
-                  const grafData=mesesNoRange.map(m=>{ const[mm,yy]=m.split("/"); const ls=lancamentos.filter(l=>{ const d=l.data||""; return d.slice(3,5)===mm&&d.slice(6,10)===yy&&l.tipo!=="Saldo Anterior"; }); return{mes:m,entradas:ls.reduce((a,l)=>a+(l.entrada||0),0),saidas:ls.reduce((a,l)=>a+(l.saida||0),0)}; });
-                  const dreRec=CAT_RECEITA.map(cat=>({cat,val:lancP.filter(l=>l.categoria===cat&&(l.entrada||0)>0).reduce((a,l)=>a+(l.entrada||0),0)})).filter(x=>x.val>0);
-                  const dreDes=CAT_DESPESA.map(cat=>({cat,val:lancP.filter(l=>l.categoria===cat&&(l.saida||0)>0).reduce((a,l)=>a+(l.saida||0),0)})).filter(x=>x.val>0).sort((a,b)=>b.val-a.val);
-                  const inpDate={background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"6px 10px",fontSize:11,color:T.text,outline:"none",colorScheme:"dark"};
-                  return(
-                  <div>
-                    {/* Seletor de período */}
-                    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"14px 18px",marginBottom:16,display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
-                      <div style={{fontSize:9,color:T.muted,fontFamily:"monospace",textTransform:"uppercase",letterSpacing:1.5}}>Período</div>
-                      {/* Botões rápidos */}
-                      {[["mes","Mês"],["custom","Personalizado"]].map(([v,l])=>(
-                        <button key={v} onClick={()=>{ setRangeAtivo(v); if(v==="mes"){ const[m,y]=finMesRef.split("/"); const last=new Date(Number(y),Number(m),0).getDate(); setRangeDE(`${y}-${m}-01`); setRangeATE(`${y}-${m}-${String(last).padStart(2,"0")}`); } }} style={{padding:"5px 13px",borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer",border:`1px solid ${rangeAtivo===v?T.accentBorder:T.border}`,background:rangeAtivo===v?T.accentDim:"transparent",color:rangeAtivo===v?T.accent:T.muted,transition:"all 0.15s"}}>{l}</button>
-                      ))}
-                      {/* Date range inputs */}
-                      <div style={{display:"flex",alignItems:"center",gap:8,background:T.surface,border:`1px solid ${rangeAtivo==="custom"?T.accentBorder:T.border}`,borderRadius:8,padding:"6px 12px",transition:"border 0.15s"}}>
-                        <span style={{fontSize:10,color:T.muted}}>De</span>
-                        <input type="date" value={rangeDE} onChange={e=>{ setRangeDE(e.target.value); setRangeAtivo("custom"); }} style={inpDate}/>
-                        <span style={{fontSize:10,color:T.muted,padding:"0 4px"}}>→</span>
-                        <input type="date" value={rangeATE} onChange={e=>{ setRangeATE(e.target.value); setRangeAtivo("custom"); }} min={rangeDE} style={inpDate}/>
-                      </div>
-                      {/* Atalhos rápidos */}
-                      <div style={{display:"flex",gap:4}}>
-                        {[
-                          ["7d","7 dias",()=>{ const t=new Date(); const d=new Date(t); d.setDate(d.getDate()-6); const iso=(x)=>x.toISOString().slice(0,10); setRangeDE(iso(d)); setRangeATE(iso(t)); setRangeAtivo("custom"); }],
-                          ["30d","30 dias",()=>{ const t=new Date(); const d=new Date(t); d.setDate(d.getDate()-29); const iso=(x)=>x.toISOString().slice(0,10); setRangeDE(iso(d)); setRangeATE(iso(t)); setRangeAtivo("custom"); }],
-                          ["ytd","Este ano",()=>{ const y=new Date().getFullYear(); setRangeDE(`${y}-01-01`); setRangeATE(new Date().toISOString().slice(0,10)); setRangeAtivo("custom"); }],
-                        ].map(([k,l,fn])=>(
-                          <button key={k} onClick={fn} style={{padding:"4px 9px",borderRadius:5,fontSize:9,fontWeight:600,cursor:"pointer",border:`1px solid ${T.border}`,background:"transparent",color:T.muted}}>{l}</button>
-                        ))}
-                      </div>
-                      <div style={{marginLeft:"auto",fontSize:10,color:T.accent,fontFamily:"monospace"}}>{lancP.length} lançamentos · {labelP}</div>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:16}}>
-                      <KCard label="Total entradas" value={fmt(entP)} sub={labelP} color={T.accent} icon="-"/>
-                      <KCard label="Total saidas" value={fmt(saidP)} sub={labelP} color={T.danger} icon="-"/>
-                      <KCard label="Resultado" value={fmt(resP)} sub="entradas - saidas" color={resP>=0?T.accent:T.danger} icon="-"/>
-                      <KCard label="Saldo em caixa" value={fmt(saldoMesFinal)} sub="saldo acumulado" color={saldoMesFinal>=0?T.info:T.danger} icon="-"/>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:16}}>
-                      {/* Contas bancarias */}
-                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Contas Bancarias</div>
-                        {contas.map(c=>(
-                          <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}>
-                            <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                              <div style={{width:8,height:8,borderRadius:"50%",background:c.cor||T.accent}}/>
-                              <div>
-                                <div style={{fontSize:11,fontWeight:600}}>{c.banco}</div>
-                                <div style={{fontSize:8,color:T.muted}}>{c.tipo}</div>
-                              </div>
-                            </div>
-                            <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:c.saldo>=0?T.accent:T.danger}}>{fmt(c.saldo)}</div>
-                          </div>
-                        ))}
-                        <div style={{display:"flex",justifyContent:"space-between",paddingTop:8}}>
-                          <span style={{fontSize:10,color:T.muted,fontWeight:600}}>TOTAL</span>
-                          <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,color:T.accent}}>{fmt(saldoTotal)}</span>
-                        </div>
-                      </div>
-                      {/* Custos fixos do mes */}
-                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Custos Fixos do Mes</div>
-                        <div style={{maxHeight:200,overflowY:"auto"}}>
-                          {custosFix.filter(c=>c.ativo).map(c=>(
-                            <div key={c.id} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
-                              <div style={{fontSize:10,color:T.soft,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.descricao}</div>
-                              <div style={{fontSize:10,color:T.danger,fontFamily:"Arial,sans-serif",flexShrink:0}}>{fmt(c.valor)}</div>
-                            </div>
-                          ))}
-                        </div>
-                        <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:`1px solid ${T.border}`,marginTop:4}}>
-                          <span style={{fontSize:10,color:T.muted,fontWeight:600}}>TOTAL FIXO</span>
-                          <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.danger}}>{fmt(custosFix.filter(c=>c.ativo).reduce((a,c)=>a+c.valor,0))}</span>
-                        </div>
-                      </div>
-                      {/* Cartoes resumo */}
-                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Cartoes</div>
-                        {cartoes.map(c=>{
-                          const parcMes=comprasCartao.filter(p=>p.cartaoId===c.id&&p.parcelaAtual<=p.parcelas);
-                          const totalMes=parcMes.reduce((a,p)=>a+p.valorParcela,0);
-                          const totalDev=comprasCartao.filter(p=>p.cartaoId===c.id).reduce((a,p)=>a+(p.valorParcela*(p.parcelas-p.parcelaAtual+1)),0);
-                          if(totalDev===0)return null;
-                          return(
-                            <div key={c.id} style={{padding:"7px 0",borderBottom:`1px solid ${T.border}`}}>
-                              <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                                <span style={{fontSize:10,color:c.cor||T.warn}}>{c.nome}</span>
-                                <span style={{fontSize:10,color:T.danger,fontFamily:"Arial,sans-serif"}}>{fmt(totalMes)}/mes</span>
-                              </div>
-                              <div style={{fontSize:8,color:T.muted}}>Saldo devedor: {fmt(totalDev)}</div>
-                            </div>
-                          );
-                        })}
-                        <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:`1px solid ${T.border}`,marginTop:4}}>
-                          <span style={{fontSize:10,color:T.muted}}>Proximo mes</span>
-                          <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.warn}}>{fmt(proximoMesCartao)}</span>
-                        </div>
-                      </div>
-                    </div>
-                    {/* DAS preview */}
-                    <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18,marginBottom:16}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
-                        <div>
-                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:4}}>DAS estimado - {finMesRef}</div>
-                          <div style={{fontSize:10,color:T.muted}}>RBT12: {fmt(rbt12)} - {faixa.label} - Aliquota efetiva: {aliqDisplay}%</div>
-                        </div>
-                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:24,color:T.accent}}>{fmt(totalEntradas*aliqVal)}</div>
-                      </div>
-                    </div>
-
-                    {/* GRÁFICO DE EVOLUÇÃO MENSAL */}
-                    {(()=>{
-                      const mesesOrdem=["01","02","03","04","05","06","07","08","09","10","11","12"];
-                      const anos=["2025","2026"];
-                      const chartData=[];
-                      let saldoAcum=seedInicial;
-                      anos.forEach(ano=>{
-                        mesesOrdem.forEach(mm=>{
-                          const mesLancs=lancamentos.filter(l=>{
-                            const p=l.data.split("/");
-                            return p[1]===mm&&p[2]===ano&&l.tipo!=="Saldo Anterior";
-                          });
-                          const ent=mesLancs.reduce((a,l)=>a+(l.entrada||0),0);
-                          const sai=mesLancs.reduce((a,l)=>a+(l.saida||0),0);
-                          saldoAcum+=ent-sai;
-                          const mesNome=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][Number(mm)-1];
-                          chartData.push({mes:`${mesNome}/${ano.slice(2)}`,entradas:ent,saidas:sai,saldo:saldoAcum});
-                        });
-                      });
-                      const fmtK=v=>{if(Math.abs(v)>=1000)return`R$${(v/1000).toFixed(0)}k`;return`R$${v.toFixed(0)}`;};
-                      return(
-                        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:16}}>
-                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:16}}>Evolução Mensal — Entradas / Saídas / Saldo</div>
-                          <ResponsiveContainer width="100%" height={220}>
-                            <BarChart data={chartData} margin={{top:0,right:16,left:0,bottom:20}}>
-                              <XAxis dataKey="mes" tick={{fontSize:9,fill:T.muted}} tickLine={false} axisLine={false} angle={-45} textAnchor="end"/>
-                              <YAxis tickFormatter={fmtK} tick={{fontSize:9,fill:T.muted}} tickLine={false} axisLine={false} width={52}/>
-                              <Tooltip formatter={(v,n)=>[`R$ ${v.toLocaleString("pt-BR",{minimumFractionDigits:2})}`,n==="entradas"?"Entradas":n==="saidas"?"Saídas":"Saldo"]} contentStyle={{fontSize:11,borderRadius:8,border:`1px solid ${T.border}`,background:T.card,color:T.text}}/>
-                              <Legend formatter={v=>v==="entradas"?"Entradas":v==="saidas"?"Saídas":"Saldo"} wrapperStyle={{fontSize:10,paddingTop:8}}/>
-                              <Bar dataKey="entradas" fill="#16a34a" radius={[3,3,0,0]} maxBarSize={18}/>
-                              <Bar dataKey="saidas" fill="#dc2626" radius={[3,3,0,0]} maxBarSize={18}/>
-                              <Bar dataKey="saldo" fill={T.info} radius={[3,3,0,0]} maxBarSize={18}/>
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      );
-                    })()}
-
-                    {/* DRE SIMPLIFICADO */}
-                    {(()=>{
-                      const catReceitas=CAT_RECEITA;
-                      const catDespesas=CAT_DESPESA;
-                      const lancAno=lancamentos.filter(l=>{
-                        const p=l.data.split("/");
-                        return p[2]===aaRef&&l.tipo!=="Saldo Anterior";
-                      });
-                      const totalRec=catReceitas.map(cat=>({cat,val:lancAno.filter(l=>l.categoria===cat&&l.entrada>0).reduce((a,l)=>a+(l.entrada||0),0)})).filter(x=>x.val>0);
-                      const totalDesp=catDespesas.map(cat=>({cat,val:lancAno.filter(l=>l.categoria===cat&&l.saida>0).reduce((a,l)=>a+(l.saida||0),0)})).filter(x=>x.val>0).sort((a,b)=>b.val-a.val);
-                      const totRec=totalRec.reduce((a,x)=>a+x.val,0);
-                      const totDesp=totalDesp.reduce((a,x)=>a+x.val,0);
-                      const resultado=totRec-totDesp;
-                      return(
-                        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:16}}>
-                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:16}}>DRE Simplificado — {aaRef}</div>
-                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-                            {/* Receitas */}
-                            <div>
-                              <div style={{fontSize:9,color:T.accent,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8,paddingBottom:6,borderBottom:`2px solid ${T.accent}44`}}>RECEITAS</div>
-                              {totalRec.map(({cat,val})=>(
-                                <div key={cat} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
-                                  <span style={{fontSize:11,color:T.soft}}>{cat}</span>
-                                  <span style={{fontSize:11,color:T.accent,fontFamily:"Arial,sans-serif",fontWeight:600}}>{fmt(val)}</span>
-                                </div>
-                              ))}
-                              <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",marginTop:4}}>
-                                <span style={{fontSize:11,fontWeight:700,color:T.text}}>TOTAL RECEITAS</span>
-                                <span style={{fontSize:12,fontWeight:800,color:T.accent,fontFamily:"Arial,sans-serif"}}>{fmt(totRec)}</span>
-                              </div>
-                            </div>
-                            {/* Despesas */}
-                            <div>
-                              <div style={{fontSize:9,color:T.danger,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8,paddingBottom:6,borderBottom:`2px solid ${T.danger}44`}}>DESPESAS</div>
-                              {totalDesp.map(({cat,val})=>(
-                                <div key={cat} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
-                                  <span style={{fontSize:11,color:T.soft}}>{cat}</span>
-                                  <span style={{fontSize:11,color:T.danger,fontFamily:"Arial,sans-serif",fontWeight:600}}>{fmt(val)}</span>
-                                </div>
-                              ))}
-                              <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",marginTop:4}}>
-                                <span style={{fontSize:11,fontWeight:700,color:T.text}}>TOTAL DESPESAS</span>
-                                <span style={{fontSize:12,fontWeight:800,color:T.danger,fontFamily:"Arial,sans-serif"}}>{fmt(totDesp)}</span>
-                              </div>
-                            </div>
-                          </div>
-                          {/* Resultado */}
-                          <div style={{borderTop:`2px solid ${T.border}`,marginTop:12,paddingTop:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                            <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.text}}>RESULTADO LÍQUIDO {aaRef}</span>
-                            <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:resultado>=0?T.accent:T.danger}}>{fmt(resultado)}</span>
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Gráfico evolução por período */}
-                    {grafData.length>1&&(
-                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:16}}>
-                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Evolução Mensal — {labelP}</div>
-                        <ResponsiveContainer width="100%" height={200}>
-                          <BarChart data={grafData} barSize={20}>
-                            <XAxis dataKey="mes" tick={{fontSize:9,fill:T.muted}} axisLine={false} tickLine={false}/>
-                            <YAxis tick={{fontSize:9,fill:T.muted}} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}k`}/>
-                            <Tooltip formatter={(v,n)=>[fmt(v),n==="entradas"?"Entradas":"Saídas"]} contentStyle={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,fontSize:11}}/>
-                            <Legend wrapperStyle={{fontSize:10}}/>
-                            <Bar dataKey="entradas" fill={T.accent} radius={[4,4,0,0]} name="Entradas"/>
-                            <Bar dataKey="saidas" fill={T.danger} radius={[4,4,0,0]} name="Saídas"/>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    )}
-
-                    {/* DRE por categoria no período */}
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
-                      <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18}}>
-                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:12}}>Receitas por Categoria — {labelP}</div>
-                        {dreRec.length===0&&<div style={{fontSize:10,color:T.muted}}>Nenhuma receita no período</div>}
-                        {dreRec.map(({cat,val})=>(
-                          <div key={cat} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
-                            <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:2,background:T.accent}}/><span style={{fontSize:10,color:T.soft}}>{cat}</span></div>
-                            <div style={{display:"flex",alignItems:"center",gap:8}}>
-                              <div style={{width:60,height:4,borderRadius:2,background:T.border,overflow:"hidden"}}><div style={{width:`${entP>0?Math.round((val/entP)*100):0}%`,height:"100%",background:T.accent}}/></div>
-                              <span style={{fontSize:10,color:T.accent,fontFamily:"monospace",fontWeight:700,minWidth:80,textAlign:"right"}}>{fmt(val)}</span>
-                            </div>
-                          </div>
-                        ))}
-                        {dreRec.length>0&&<div style={{display:"flex",justifyContent:"space-between",paddingTop:8}}><span style={{fontSize:10,color:T.muted,fontWeight:700}}>TOTAL</span><span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.accent}}>{fmt(entP)}</span></div>}
-                      </div>
-                      <div style={{background:T.card,border:`1px solid ${T.danger}22`,borderRadius:12,padding:18}}>
-                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.danger,marginBottom:12}}>Despesas por Categoria — {labelP}</div>
-                        {dreDes.length===0&&<div style={{fontSize:10,color:T.muted}}>Nenhuma despesa no período</div>}
-                        {dreDes.map(({cat,val})=>(
-                          <div key={cat} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
-                            <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:2,background:T.danger}}/><span style={{fontSize:10,color:T.soft}}>{cat}</span></div>
-                            <div style={{display:"flex",alignItems:"center",gap:8}}>
-                              <div style={{width:60,height:4,borderRadius:2,background:T.border,overflow:"hidden"}}><div style={{width:`${saidP>0?Math.round((val/saidP)*100):0}%`,height:"100%",background:T.danger}}/></div>
-                              <span style={{fontSize:10,color:T.danger,fontFamily:"monospace",fontWeight:700,minWidth:80,textAlign:"right"}}>{fmt(val)}</span>
-                            </div>
-                          </div>
-                        ))}
-                        {dreDes.length>0&&<div style={{display:"flex",justifyContent:"space-between",paddingTop:8}}><span style={{fontSize:10,color:T.muted,fontWeight:700}}>TOTAL</span><span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.danger}}>{fmt(saidP)}</span></div>}
-                      </div>
-                    </div>
-
-                  </div>
-                  );
-                })()}
+                {finTab==="visao"&&<VisaoGeralFin lancamentos={lancamentos} finMesRef={finMesRef} contas={contas} custosFix={custosFix} cartoes={cartoes} comprasCartao={comprasCartao} proximoMesCartao={proximoMesCartao} rbt12={rbt12} faixa={faixa} aliqDisplay={aliqDisplay} aliqVal={aliqVal} saldoMesFinal={saldoMesFinal} saldoTotal={saldoTotal} totalEntradas={totalEntradas} totalSaidas={totalSaidas} lucroMes={lucroMes} aaRef={aaRef} mmRef={mmRef} lancFilt={lancFilt} resultado={resultado}/> }
 
                 {/* FLUXO DE CAIXA */}
                 {finTab==="fluxo"&&(()=>{
