@@ -1738,6 +1738,10 @@ const Toast=({notifs,onDismiss})=>{
 // VISÃO GERAL FINANCEIRA — componente próprio (evita useState em IIFE)
 // ---------------------------------------------------------------------------
 function VisaoGeralFin({lancamentos,finMesRef,contas,custosFix,cartoes,comprasCartao,proximoMesCartao,rbt12,faixa,aliqDisplay,aliqVal,saldoMesFinal,saldoTotal,totalEntradas,totalSaidas,lucroMes,aaRef,mmRef}){
+  // Calcular seedInicial dentro do componente (não disponível via props)
+  const seedInicial=lancamentos.filter(l=>l.tipo==="Saldo Anterior").reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0);
+  const movimentosAnteriores=lancamentos.filter(l=>l.tipo!=="Saldo Anterior").filter(l=>{const p=(l.data||"").split("/");return p.length>=3&&(p[2]<aaRef||(p[2]===aaRef&&p[1]<mmRef));}).reduce((a,l)=>a+(l.entrada||0)-(l.saida||0),0);
+  const saldoAcumuladoAnterior=seedInicial+movimentosAnteriores;
 // Helpers de data DD/MM/YYYY <-> YYYY-MM-DD
 const brToIso=(br)=>{ if(!br||!br.includes("/"))return ""; const[d,m,y]=br.split("/"); return `${y}-${m}-${d}`; };
 const isoToBr=(iso)=>{ if(!iso||!iso.includes("-"))return ""; const[y,m,d]=iso.split("-"); return `${d}/${m}/${y}`; };
