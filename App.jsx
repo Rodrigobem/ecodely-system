@@ -141,6 +141,8 @@ const calcScore=(p)=>{
   return Math.min(Math.round(s1+s2+s3+s4+s5),100);
 };
 const BASE_PARTNERS_INIT=[];
+const CONTRATO_COLOR={"sem contrato":T.muted,"pendente":T.warn,"assinado":T.accent,"expirando":T.danger,"expirado":T.danger};
+const STATUS_PARTNER={"prospectado":T.info,"negociando":T.warn,"ativo":T.accent,"inativo":T.muted};
 
 // --- NAV ---------------------------------------------------------------------
 const getNav=(role,queueCount,notifCount,extraRoles=[])=>[
