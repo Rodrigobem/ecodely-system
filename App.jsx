@@ -4718,7 +4718,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         </div>
                         {grupos.length===0&&<div style={{padding:"16px 14px",textAlign:"center",color:"#888",fontSize:11,background:"#fff",borderBottom:"1px solid #e0e0e0"}}>Nenhum lançamento registrado em {finMesRef}</div>}
                         {/* Linha de saldo anterior automático */}
-                        {saldoAcumuladoAnterior!==0&&<div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,background:"#f0e8ff",alignItems:"stretch"}}>
+                        {saldoAcumuladoAnterior!==0&&<div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,background:"#f0e8ff",alignItems:"stretch",width:"100%",minWidth:"fit-content"}}>
                           <div style={{fontSize:10,color:"#7c3aed",fontFamily:"Arial,sans-serif",padding:"7px 10px",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",display:"flex",alignItems:"center"}}>01/{mmRef}</div>
                           <div style={{padding:"7px 10px",boxShadow:"inset -2px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff"}}>
                             <div style={{fontSize:11,color:"#7c3aed",fontWeight:700}}>SALDO ANTERIOR</div>
@@ -4763,7 +4763,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                 </div>
                               );})}
                               {/* Linha dedicada ao saldo do período */}
-                              <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,alignItems:"stretch",borderTop:"2px solid #555",borderBottom:"2px solid #555"}}>
+                              <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,alignItems:"stretch",borderTop:"2px solid #555",borderBottom:"2px solid #555",width:"100%",minWidth:"fit-content"}}>
                                 <div style={{fontSize:9,color:"#2d6a4f",fontFamily:"Arial,sans-serif",fontWeight:700,padding:"6px 10px",background:"#d4edda",display:"flex",alignItems:"center",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}>{grupo.data.slice(0,5)}</div>
                                 <div style={{fontSize:9,color:"#2d6a4f",fontWeight:800,textTransform:"uppercase",letterSpacing:1,padding:"6px 10px",background:"#d4edda",display:"flex",alignItems:"center",boxShadow:"inset -2px 0 0 #888, inset 0 -1px 0 #888"}}>Saldo do período</div>
                                 <div style={{background:"#d4edda",minHeight:32,boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}/>
