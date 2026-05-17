@@ -1737,7 +1737,7 @@ const Toast=({notifs,onDismiss})=>{
 // ---------------------------------------------------------------------------
 // VISÃO GERAL FINANCEIRA — componente próprio (evita useState em IIFE)
 // ---------------------------------------------------------------------------
-function VisaoGeralFin({lancamentos,finMesRef,contas,custosFix,cartoes,comprasCartao,proximoMesCartao,rbt12,faixa,aliqDisplay,aliqVal,saldoMesFinal,saldoTotal,totalEntradas,totalSaidas,lucroMes,aaRef,mmRef,lancFilt,resultado}){
+function VisaoGeralFin({lancamentos,finMesRef,contas,custosFix,cartoes,comprasCartao,proximoMesCartao,rbt12,faixa,aliqDisplay,aliqVal,saldoMesFinal,saldoTotal,totalEntradas,totalSaidas,lucroMes,aaRef,mmRef}){
 // Helpers de data DD/MM/YYYY <-> YYYY-MM-DD
 const brToIso=(br)=>{ if(!br||!br.includes("/"))return ""; const[d,m,y]=br.split("/"); return `${y}-${m}-${d}`; };
 const isoToBr=(iso)=>{ if(!iso||!iso.includes("-"))return ""; const[y,m,d]=iso.split("-"); return `${d}/${m}/${y}`; };
@@ -4871,7 +4871,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 </div>
 
                 {/* VISAO GERAL */}
-                {finTab==="visao"&&<VisaoGeralFin lancamentos={lancamentos} finMesRef={finMesRef} contas={contas} custosFix={custosFix} cartoes={cartoes} comprasCartao={comprasCartao} proximoMesCartao={proximoMesCartao} rbt12={rbt12} faixa={faixa} aliqDisplay={aliqDisplay} aliqVal={aliqVal} saldoMesFinal={saldoMesFinal} saldoTotal={saldoTotal} totalEntradas={totalEntradas} totalSaidas={totalSaidas} lucroMes={lucroMes} aaRef={aaRef} mmRef={mmRef} lancFilt={lancFilt} resultado={resultado}/> }
+                {finTab==="visao"&&<VisaoGeralFin lancamentos={lancamentos} finMesRef={finMesRef} contas={contas} custosFix={custosFix} cartoes={cartoes} comprasCartao={comprasCartao} proximoMesCartao={proximoMesCartao} rbt12={rbt12} faixa={faixa} aliqDisplay={aliqDisplay} aliqVal={aliqVal} saldoMesFinal={saldoMesFinal} saldoTotal={saldoTotal} totalEntradas={totalEntradas} totalSaidas={totalSaidas} lucroMes={lucroMes} aaRef={aaRef} mmRef={mmRef}/> }
 
                 {/* FLUXO DE CAIXA */}
                 {finTab==="fluxo"&&(()=>{
