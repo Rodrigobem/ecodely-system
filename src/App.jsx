@@ -970,8 +970,15 @@ function VisaoGeralFin({lancamentos,finMesRef,contas,custosFix,cartoes,comprasCa
 
   const selS2={background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"5px 8px",fontSize:11,color:T.text,outline:"none"};
 
+  // GUARD: se lancamentos não é array, evita crash
+  if(!Array.isArray(lancamentos)) return <div style={{color:"red",padding:20}}>Erro: lancamentos não é array</div>;
+
   return(
     <div>
+      {/* DEBUG temporário */}
+      <div style={{background:"#1a0a00",border:"1px solid #f5a623",borderRadius:8,padding:"8px 14px",marginBottom:12,fontSize:10,fontFamily:"monospace",color:"#f5a623"}}>
+        DEBUG — total: {lancamentos.length} | finMesRef: {finMesRef} | sample data[0]: {lancamentos[0]?.data||"(vazio)"} | filtrados: {lancamentos.filter(l=>{ const d=l.data||""; return d.slice(3,5)+"/"+d.slice(6,10)===finMesRef; }).length}
+      </div>
       {/* Barra de período */}
       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}>
         <div style={{fontSize:10,color:T.muted,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:1}}>Período</div>
