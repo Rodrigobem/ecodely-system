@@ -4702,9 +4702,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         </div>
                       </div>}
                       {/* Transaction table */}
-                      <div style={{background:"#fff",border:"2px solid #555",borderRadius:4,overflow:"auto",boxShadow:"0 1px 4px #00000022"}}>
+                      <div style={{background:"#fff",border:"2px solid #555",borderRadius:4,overflow:"auto",boxShadow:"0 1px 4px #00000022",paddingBottom:0}}>
                         {/* Header — Excel style com colunas redimensionáveis */}
-                        <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),padding:"0",gap:0,background:"#1a4a7a",borderBottom:"2px solid #0f3460",position:"relative"}}>
+                        <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),padding:"0",gap:0,background:"#1a4a7a",borderBottom:"2px solid #0f3460",position:"sticky",top:0,zIndex:5}}>
                           {["DATA","DESCRIÇÃO","ENTRADA","SAÍDA","TOT. ENTRADA","TOT. SAÍDA","SALDO","✓","OBS"].map((h,i)=>(
                             <div key={h} style={{fontSize:8,color:"#fff",textTransform:"uppercase",letterSpacing:1,fontWeight:700,textAlign:i===0?"left":i===1?"center":"right",padding:"9px 10px",position:"relative",userSelect:"none",overflow:"hidden",whiteSpace:"nowrap",background:"#1a4a7a",boxShadow:"inset -1px 0 0 #4a7aaa"}}>
                               {h}
@@ -4726,11 +4726,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           </div>
                           <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:700,textAlign:"right",padding:"7px 10px",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{saldoAcumuladoAnterior>0?fmt(saldoAcumuladoAnterior):""}</div>
                           <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:700,textAlign:"right",padding:"7px 10px",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{saldoAcumuladoAnterior<0?fmt(Math.abs(saldoAcumuladoAnterior)):""}</div>
-                          <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:38,alignSelf:"stretch"}}/>
-                          <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:38,alignSelf:"stretch"}}/>
-                          <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:38,alignSelf:"stretch"}}/>
-                          <div style={{background:"#f0e8ff",minHeight:38,boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}/>
-                          <div style={{background:"#f0e8ff",minHeight:38}}/>
+                          <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:32,alignSelf:"stretch"}}/>
+                          <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:32,alignSelf:"stretch"}}/>
+                          <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:32,alignSelf:"stretch"}}/>
+                          <div style={{background:"#f0e8ff",minHeight:32,boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}/>
+                          <div style={{background:"#f0e8ff",minHeight:32}}/>
                         </div>}
                         {grupos.map((grupo,gi)=>{
                           const dEntradas=grupo.lancs.reduce((a,l)=>a+(l.entrada||0),0);
@@ -4748,22 +4748,22 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                   </div>
                                   <div data-col="2" style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:700,textAlign:"right",padding:"7px 10px",whiteSpace:"nowrap",background:rowBg,display:"flex",alignItems:"center",justifyContent:"flex-end",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}>{l.entrada>0?fmt(l.entrada):""}</div>
                                   <div data-col="3" style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:700,textAlign:"right",padding:"7px 10px",whiteSpace:"nowrap",background:rowBg,display:"flex",alignItems:"center",justifyContent:"flex-end",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}>{l.saida>0?fmt(l.saida):""}</div>
-                                  <div style={{minHeight:38,background:rowBg,alignSelf:"stretch",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}/><div style={{minHeight:38,background:rowBg,alignSelf:"stretch",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}/><div style={{minHeight:38,background:rowBg,alignSelf:"stretch",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}/>
-                                  <div onClick={async e=>{e.stopPropagation();const upd={...l,confirmado:!l.confirmado};setLancamentos(p=>p.map(x=>x.id===l.id?upd:x));await supabase.from("lancamentos").update({confirmado:!l.confirmado}).eq("id",l.id);}} style={{display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",height:"100%",background:l.confirmado?"#16a34a":rowBg}} title={l.confirmado?"Marcar como pendente":"Confirmar pagamento"}>
-                                    <span style={{fontSize:14}}>{l.confirmado?"✓":"○"}</span>
+                                  <div style={{minHeight:32,background:rowBg,alignSelf:"stretch",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}/><div style={{minHeight:32,background:rowBg,alignSelf:"stretch",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}/><div style={{minHeight:32,background:rowBg,alignSelf:"stretch",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}/>
+                                  <div onClick={async e=>{e.stopPropagation();const upd={...l,confirmado:!l.confirmado};setLancamentos(p=>p.map(x=>x.id===l.id?upd:x));await supabase.from("lancamentos").update({confirmado:!l.confirmado}).eq("id",l.id);}} style={{display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",height:"100%",background:l.confirmado?"#16a34a":rowBg,transition:"background 0.15s"}} title={l.confirmado?"Marcar como pendente":"Confirmar pagamento"}>
+                                    <span style={{fontSize:15,color:l.confirmado?"#fff":"#aaa",fontWeight:700,lineHeight:1}}>{l.confirmado?"✓":"○"}</span>
                                   </div>
                                   <div data-col="8" style={{padding:"2px 6px",background:rowBg,display:"flex",alignItems:"center",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}} onClick={e=>e.stopPropagation()}>
                                     <input
                                       defaultValue={l.obs||""}
-                                      placeholder="obs..."
-                                      style={{width:"100%",border:"none",outline:"none",background:"transparent",fontSize:10,color:"#555",fontFamily:"Arial,sans-serif",resize:"none"}}
+                                      placeholder="—"
+                                      style={{width:"100%",border:"none",outline:"none",background:"transparent",fontSize:10,color:"#555",fontFamily:"Arial,sans-serif",resize:"none",cursor:"text","::placeholder":{color:"#ddd"}}}
                                       onBlur={async ev=>{const v=ev.target.value;if(v===(l.obs||""))return;const upd={...l,obs:v};setLancamentos(p=>p.map(x=>x.id===l.id?upd:x));await supabase.from("lancamentos").update({obs:v}).eq("id",l.id);}}
                                     />
                                   </div>
                                 </div>
                               );})}
                               {/* Linha dedicada ao saldo do período */}
-                              <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,alignItems:"stretch",borderTop:"2px solid #555",borderBottom:"2px solid #555",width:"100%",minWidth:"fit-content"}}>
+                              <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,alignItems:"stretch",borderTop:"2px solid #2d6a4f",borderBottom:"2px solid #2d6a4f",width:"100%",minWidth:"fit-content"}}>
                                 <div style={{fontSize:9,color:"#2d6a4f",fontFamily:"Arial,sans-serif",fontWeight:700,padding:"6px 10px",background:"#d4edda",display:"flex",alignItems:"center",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}>{grupo.data.slice(0,5)}</div>
                                 <div style={{fontSize:9,color:"#2d6a4f",fontWeight:800,textTransform:"uppercase",letterSpacing:1,padding:"6px 10px",background:"#d4edda",display:"flex",alignItems:"center",boxShadow:"inset -2px 0 0 #888, inset 0 -1px 0 #888"}}>Saldo do período</div>
                                 <div style={{background:"#d4edda",minHeight:32,boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}/>
@@ -4778,7 +4778,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           );
                         })}
 
-                        <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),padding:"10px 0",gap:0,background:"#1a4a7a",borderTop:"2px solid #1a4a7a"}}>
+                        <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),padding:"10px 0",gap:0,background:"#1a4a7a",borderTop:"3px solid #0f3460",position:"sticky",bottom:0,zIndex:4}}>
                           <div style={{fontSize:9,color:"#fff",gridColumn:"1/3",fontWeight:800,textTransform:"uppercase",letterSpacing:1,padding:"0 10px"}}>TOTAL DO MÊS</div>
                           <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:12,color:"#90ee90",textAlign:"right",padding:"0 10px"}}>{fmt(totalEntradas)}</div>
                           <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:12,color:"#ff9999",textAlign:"right",padding:"0 10px"}}>{fmt(totalSaidas)}</div>
