@@ -4410,29 +4410,116 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           -------------------------------------- */}
           {tab==="financeiro-modulo"&&(()=>{
             // Modal de edição de lançamento
-            const EditLancModal=editLanc?(<div style={{position:"fixed",inset:0,background:"#00000088",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setEditLanc(null)}>
-              <div style={{background:"#fff",borderRadius:12,padding:24,width:520,maxWidth:"95vw",boxShadow:"0 20px 60px #00000033"}} onClick={e=>e.stopPropagation()}>
-                <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:"#1a1a2e",marginBottom:16}}>Editar Lançamento</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
-                  {[["Data","data"],["Descrição","descricao"],["Entrada (R$)","entrada"],["Saída (R$)","saida"],["Categoria","categoria"],["Centro de custo","centrosCusto"]].map(([l,k])=>(
-                    <div key={k} style={{gridColumn:k==="descricao"?"1/3":"auto"}}>
-                      <div style={{fontSize:9,color:"#666",marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
-                      <input value={editLanc[k]||""} onChange={e=>setEditLanc(p=>({...p,[k]:e.target.value}))} style={{width:"100%",border:"1px solid #ddd",borderRadius:6,padding:"7px 10px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none"}}/>
+            const EditLancModal=editLanc?(()=>{
+              const inp={width:"100%",border:"1px solid #ddd",borderRadius:6,padding:"7px 10px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"};
+              const lbl={fontSize:9,color:"#666",marginBottom:3,textTransform:"uppercase",letterSpacing:1,display:"block"};
+              const dataToInput=d=>{if(!d)return"";const p=d.split("/");return p.length===3?`${p[2]}-${p[1]}-${p[0]}`:"";};
+              const inputToData=v=>{if(!v)return"";const p=v.split("-");return`${p[2]}/${p[1]}/${p[0]}`;};
+              const catOpts=editLanc.tipo==="Receita"?CAT_RECEITA:CAT_DESPESA;
+              return(
+              <div style={{position:"fixed",inset:0,background:"#00000088",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setEditLanc(null)}>
+                <div style={{background:"#fff",borderRadius:14,padding:28,width:560,maxWidth:"95vw",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 24px 64px #00000044"}} onClick={e=>e.stopPropagation()}>
+                  {/* Header */}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:"#1a1a2e"}}>Editar Lançamento</div>
+                    <div style={{fontSize:9,color:"#999",background:"#f5f5f5",padding:"3px 8px",borderRadius:4}}>ID #{editLanc.id}</div>
+                  </div>
+                  {/* Grid de campos */}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+                    {/* Descrição — full width */}
+                    <div style={{gridColumn:"1/3"}}>
+                      <label style={lbl}>Descrição *</label>
+                      <input value={editLanc.descricao||""} onChange={e=>setEditLanc(p=>({...p,descricao:e.target.value}))} style={inp}/>
                     </div>
-                  ))}
-                </div>
-                <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-                  <button onClick={()=>setEditLanc(null)} style={{padding:"8px 16px",background:"#f0f0f0",border:"none",borderRadius:7,cursor:"pointer",fontSize:11}}>Cancelar</button>
-                  <button onClick={async()=>{
-                    const upd={...editLanc,entrada:Number(editLanc.entrada)||0,saida:Number(editLanc.saida)||0};
-                    setLancamentos(p=>p.map(x=>x.id===upd.id?upd:x));
-                    await supabase.from("lancamentos").update(upd).eq("id",upd.id);
-                    setEditLanc(null);
-                  }} style={{padding:"8px 20px",background:"#1a4a7a",color:"#fff",border:"none",borderRadius:7,cursor:"pointer",fontWeight:700,fontSize:11}}>Salvar</button>
-                  <button onClick={async()=>{if(!window.confirm("Excluir este lançamento?"))return;setLancamentos(p=>p.filter(x=>x.id!==editLanc.id));await supabase.from("lancamentos").delete().eq("id",editLanc.id);setEditLanc(null);}} style={{padding:"8px 16px",background:"#fee2e2",color:"#dc2626",border:"none",borderRadius:7,cursor:"pointer",fontSize:11}}>Excluir</button>
+                    {/* Data */}
+                    <div>
+                      <label style={lbl}>Data *</label>
+                      <input type="date" value={dataToInput(editLanc.data)} onChange={e=>setEditLanc(p=>({...p,data:inputToData(e.target.value)}))} style={inp}/>
+                    </div>
+                    {/* Tipo */}
+                    <div>
+                      <label style={lbl}>Tipo</label>
+                      <select value={editLanc.tipo||"Despesa"} onChange={e=>setEditLanc(p=>({...p,tipo:e.target.value,categoria:e.target.value==="Receita"?CAT_RECEITA[0]:CAT_DESPESA[0]}))} style={inp}>
+                        <option>Receita</option><option>Despesa</option>
+                      </select>
+                    </div>
+                    {/* Entrada */}
+                    <div>
+                      <label style={lbl}>Entrada (R$)</label>
+                      <input type="number" value={editLanc.entrada||""} onChange={e=>setEditLanc(p=>({...p,entrada:Number(e.target.value),saida:0,tipo:"Receita"}))} placeholder="0,00" style={{...inp,color:"#16a34a",fontWeight:700}}/>
+                    </div>
+                    {/* Saída */}
+                    <div>
+                      <label style={lbl}>Saída (R$)</label>
+                      <input type="number" value={editLanc.saida||""} onChange={e=>setEditLanc(p=>({...p,saida:Number(e.target.value),entrada:0,tipo:"Despesa"}))} placeholder="0,00" style={{...inp,color:"#dc2626",fontWeight:700}}/>
+                    </div>
+                    {/* Categoria */}
+                    <div>
+                      <label style={lbl}>Categoria</label>
+                      <select value={editLanc.categoria||""} onChange={e=>setEditLanc(p=>({...p,categoria:e.target.value}))} style={inp}>
+                        {catOpts.map(c=><option key={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    {/* Centro de Custo */}
+                    <div>
+                      <label style={lbl}>Centro de Custo</label>
+                      <select value={editLanc.centrosCusto||""} onChange={e=>setEditLanc(p=>({...p,centrosCusto:e.target.value}))} style={inp}>
+                        {centrosCusto.map(c=><option key={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    {/* Forma de Pagamento */}
+                    <div>
+                      <label style={lbl}>Forma de Pagamento</label>
+                      <select value={editLanc.forma||""} onChange={e=>setEditLanc(p=>({...p,forma:e.target.value}))} style={inp}>
+                        {FORMAS_PAG.map(f=><option key={f}>{f}</option>)}
+                      </select>
+                    </div>
+                    {/* Conta Bancária */}
+                    <div>
+                      <label style={lbl}>Conta Bancária</label>
+                      <select value={editLanc.contaBancoId||""} onChange={e=>setEditLanc(p=>({...p,contaBancoId:Number(e.target.value)}))} style={inp}>
+                        {contas.map(c=><option key={c.id} value={c.id}>{c.banco}</option>)}
+                      </select>
+                    </div>
+                    {/* Projeto / NF */}
+                    <div>
+                      <label style={lbl}>Projeto / NF</label>
+                      <input value={editLanc.projeto||""} onChange={e=>setEditLanc(p=>({...p,projeto:e.target.value}))} placeholder="Opcional" style={inp}/>
+                    </div>
+                    {/* OBS — full width */}
+                    <div style={{gridColumn:"1/3"}}>
+                      <label style={lbl}>Observação</label>
+                      <input value={editLanc.obs||""} onChange={e=>setEditLanc(p=>({...p,obs:e.target.value}))} placeholder="Opcional" style={inp}/>
+                    </div>
+                  </div>
+                  {/* Rodapé */}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderTop:"1px solid #f0f0f0",paddingTop:16}}>
+                    {/* Excluir — lado esquerdo */}
+                    <button onClick={async()=>{
+                      if(!window.confirm(`Excluir "${editLanc.descricao}"?\n\nEsta ação não pode ser desfeita.`))return;
+                      setLancamentos(p=>p.filter(x=>x.id!==editLanc.id));
+                      await supabase.from("lancamentos").delete().eq("id",editLanc.id);
+                      setEditLanc(null);
+                    }} style={{padding:"8px 16px",background:"#fff",color:"#dc2626",border:"1px solid #fca5a5",borderRadius:7,cursor:"pointer",fontSize:11,fontFamily:"Arial,sans-serif"}}>
+                      🗑 Excluir
+                    </button>
+                    {/* Cancelar + Salvar — lado direito */}
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={()=>setEditLanc(null)} style={{padding:"8px 18px",background:"#f5f5f5",border:"none",borderRadius:7,cursor:"pointer",fontSize:11,fontFamily:"Arial,sans-serif"}}>Cancelar</button>
+                      <button onClick={async()=>{
+                        if(!editLanc.data||!editLanc.descricao?.trim())return alert("Preencha data e descrição!");
+                        const upd={...editLanc,entrada:Number(editLanc.entrada)||0,saida:Number(editLanc.saida)||0};
+                        setLancamentos(p=>p.map(x=>x.id===upd.id?upd:x));
+                        await supabase.from("lancamentos").update(upd).eq("id",upd.id);
+                        setEditLanc(null);
+                      }} style={{padding:"8px 24px",background:"#1a4a7a",color:"#fff",border:"none",borderRadius:7,cursor:"pointer",fontWeight:700,fontSize:11,fontFamily:"Arial,sans-serif"}}>
+                        Salvar
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>):null;
+            );})():null;
 
             // Computed values
             const mesLanc=lancamentos.filter(l=>l.data.endsWith(finMesRef.replace("/","/2026").slice(-7))||l.data.slice(3).startsWith(finMesRef.split("/").reverse().join("/")));
