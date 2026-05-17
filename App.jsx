@@ -4582,12 +4582,57 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 </div>
 
                 {/* VISAO GERAL */}
-                {finTab==="visao"&&(
+                {finTab==="visao"&&(()=>{
+                  // Período customizado — estado via IIFE com ref trick
+                  const periodoRef=useRef("mes");
+                  const periodoDeRef=useRef(finMesRef);
+                  const periodoAteRef=useRef(finMesRef);
+                  const[periodoAtivo,_setPeriodoAtivo]=useState("mes");
+                  const[periodoDE,_setPeriodoDE]=useState(finMesRef);
+                  const[periodoATE,_setPeriodoATE]=useState(finMesRef);
+                  const setPeriodoAtivo=(v)=>{periodoRef.current=v;_setPeriodoAtivo(v);};
+                  const setPeriodoDE=(v)=>{periodoDeRef.current=v;_setPeriodoDE(v);};
+                  const setPeriodoATE=(v)=>{periodoAteRef.current=v;_setPeriodoATE(v);};
+                  const MESES_DISP=[...new Set(lancamentos.map(l=>{ const d=l.data||""; return d.slice(3,5)+"/"+d.slice(6,10); }).filter(m=>m.length===7))].sort();
+                  const filtrarPeriodo=(arr)=>{
+                    if(periodoAtivo==="mes") return arr.filter(l=>{ const d=l.data||""; return d.slice(3,5)+"/"+d.slice(6,10)===finMesRef; });
+                    const[deM,deY]=periodoDE.split("/"); const[ateM,ateY]=periodoATE.split("/");
+                    return arr.filter(l=>{ const d=l.data||""; const mm=d.slice(3,5); const yy=d.slice(6,10); const n=Number(yy)*100+Number(mm); return n>=Number(deY)*100+Number(deM)&&n<=Number(ateY)*100+Number(ateM); });
+                  };
+                  const lancP=filtrarPeriodo(lancamentos.filter(l=>l.tipo!=="Saldo Anterior"));
+                  const entP=lancP.reduce((a,l)=>a+(l.entrada||0),0);
+                  const saidP=lancP.reduce((a,l)=>a+(l.saida||0),0);
+                  const resP=entP-saidP;
+                  const labelP=periodoAtivo==="mes"?finMesRef:`${periodoDE} → ${periodoATE}`;
+                  const dreRec=CAT_RECEITA.map(cat=>({cat,val:lancP.filter(l=>l.categoria===cat&&(l.entrada||0)>0).reduce((a,l)=>a+(l.entrada||0),0)})).filter(x=>x.val>0);
+                  const dreDes=CAT_DESPESA.map(cat=>({cat,val:lancP.filter(l=>l.categoria===cat&&(l.saida||0)>0).reduce((a,l)=>a+(l.saida||0),0)})).filter(x=>x.val>0).sort((a,b)=>b.val-a.val);
+                  const mesesGraf=MESES_DISP.filter(m=>{ const[mm,yy]=m.split("/"); const n=Number(yy)*100+Number(mm); if(periodoAtivo==="mes"){ const[rm,ry]=finMesRef.split("/"); return n===Number(ry)*100+Number(rm); } const[deM,deY]=periodoDE.split("/"); const[ateM,ateY]=periodoATE.split("/"); return n>=Number(deY)*100+Number(deM)&&n<=Number(ateY)*100+Number(ateM); });
+                  const grafData=mesesGraf.map(m=>{ const[mm,yy]=m.split("/"); const ls=lancamentos.filter(l=>{ const d=l.data||""; return d.slice(3,5)===mm&&d.slice(6,10)===yy&&l.tipo!=="Saldo Anterior"; }); return{mes:m,entradas:ls.reduce((a,l)=>a+(l.entrada||0),0),saidas:ls.reduce((a,l)=>a+(l.saida||0),0)}; });
+                  const selS={background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"5px 8px",fontSize:11,color:T.text,outline:"none"};
+                  return(
                   <div>
+                    {/* Seletor de período */}
+                    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}>
+                      <div style={{fontSize:10,color:T.muted,fontFamily:"monospace",textTransform:"uppercase",letterSpacing:1}}>Período</div>
+                      <div style={{display:"flex",gap:4}}>
+                        {[["mes","Mês atual"],["custom","Personalizado"]].map(([v,l])=>(
+                          <button key={v} onClick={()=>{setPeriodoAtivo(v);if(v==="custom"){setPeriodoDE(finMesRef);setPeriodoATE(finMesRef);}}} style={{padding:"5px 12px",borderRadius:6,fontSize:10,fontWeight:600,cursor:"pointer",border:`1px solid ${periodoAtivo===v?T.accentBorder:T.border}`,background:periodoAtivo===v?T.accentDim:"transparent",color:periodoAtivo===v?T.accent:T.muted}}>{l}</button>
+                        ))}
+                      </div>
+                      {periodoAtivo==="custom"&&(
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{fontSize:10,color:T.muted}}>De</span>
+                          <select value={periodoDE} onChange={e=>setPeriodoDE(e.target.value)} style={selS}>{MESES_DISP.map(m=><option key={m} value={m}>{m}</option>)}</select>
+                          <span style={{fontSize:10,color:T.muted}}>até</span>
+                          <select value={periodoATE} onChange={e=>setPeriodoATE(e.target.value)} style={selS}>{MESES_DISP.map(m=><option key={m} value={m}>{m}</option>)}</select>
+                        </div>
+                      )}
+                      <div style={{marginLeft:"auto",fontSize:10,color:T.accent,fontFamily:"monospace"}}>{lancP.length} lançamentos · {labelP}</div>
+                    </div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:16}}>
-                      <KCard label="Total entradas" value={fmt(totalEntradas)} sub={finMesRef} color={T.accent} icon="-"/>
-                      <KCard label="Total saidas" value={fmt(totalSaidas)} sub={finMesRef} color={T.danger} icon="-"/>
-                      <KCard label="Resultado do mes" value={fmt(lucroMes)} sub="entradas - saidas" color={lucroMes>=0?T.accent:T.danger} icon="-"/>
+                      <KCard label="Total entradas" value={fmt(entP)} sub={labelP} color={T.accent} icon="-"/>
+                      <KCard label="Total saidas" value={fmt(saidP)} sub={labelP} color={T.danger} icon="-"/>
+                      <KCard label="Resultado" value={fmt(resP)} sub="entradas - saidas" color={resP>=0?T.accent:T.danger} icon="-"/>
                       <KCard label="Saldo em caixa" value={fmt(saldoMesFinal)} sub="saldo acumulado" color={saldoMesFinal>=0?T.info:T.danger} icon="-"/>
                     </div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:16}}>
@@ -4754,8 +4799,59 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         </div>
                       );
                     })()}
+
+                    {/* Gráfico evolução por período */}
+                    {grafData.length>1&&(
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:16}}>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Evolução Mensal — {labelP}</div>
+                        <ResponsiveContainer width="100%" height={200}>
+                          <BarChart data={grafData} barSize={20}>
+                            <XAxis dataKey="mes" tick={{fontSize:9,fill:T.muted}} axisLine={false} tickLine={false}/>
+                            <YAxis tick={{fontSize:9,fill:T.muted}} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}k`}/>
+                            <Tooltip formatter={(v,n)=>[fmt(v),n==="entradas"?"Entradas":"Saídas"]} contentStyle={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,fontSize:11}}/>
+                            <Legend wrapperStyle={{fontSize:10}}/>
+                            <Bar dataKey="entradas" fill={T.accent} radius={[4,4,0,0]} name="Entradas"/>
+                            <Bar dataKey="saidas" fill={T.danger} radius={[4,4,0,0]} name="Saídas"/>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
+                    {/* DRE por categoria no período */}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+                      <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18}}>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:12}}>Receitas por Categoria — {labelP}</div>
+                        {dreRec.length===0&&<div style={{fontSize:10,color:T.muted}}>Nenhuma receita no período</div>}
+                        {dreRec.map(({cat,val})=>(
+                          <div key={cat} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:2,background:T.accent}}/><span style={{fontSize:10,color:T.soft}}>{cat}</span></div>
+                            <div style={{display:"flex",alignItems:"center",gap:8}}>
+                              <div style={{width:60,height:4,borderRadius:2,background:T.border,overflow:"hidden"}}><div style={{width:`${entP>0?Math.round((val/entP)*100):0}%`,height:"100%",background:T.accent}}/></div>
+                              <span style={{fontSize:10,color:T.accent,fontFamily:"monospace",fontWeight:700,minWidth:80,textAlign:"right"}}>{fmt(val)}</span>
+                            </div>
+                          </div>
+                        ))}
+                        {dreRec.length>0&&<div style={{display:"flex",justifyContent:"space-between",paddingTop:8}}><span style={{fontSize:10,color:T.muted,fontWeight:700}}>TOTAL</span><span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.accent}}>{fmt(entP)}</span></div>}
+                      </div>
+                      <div style={{background:T.card,border:`1px solid ${T.danger}22`,borderRadius:12,padding:18}}>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.danger,marginBottom:12}}>Despesas por Categoria — {labelP}</div>
+                        {dreDes.length===0&&<div style={{fontSize:10,color:T.muted}}>Nenhuma despesa no período</div>}
+                        {dreDes.map(({cat,val})=>(
+                          <div key={cat} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:2,background:T.danger}}/><span style={{fontSize:10,color:T.soft}}>{cat}</span></div>
+                            <div style={{display:"flex",alignItems:"center",gap:8}}>
+                              <div style={{width:60,height:4,borderRadius:2,background:T.border,overflow:"hidden"}}><div style={{width:`${saidP>0?Math.round((val/saidP)*100):0}%`,height:"100%",background:T.danger}}/></div>
+                              <span style={{fontSize:10,color:T.danger,fontFamily:"monospace",fontWeight:700,minWidth:80,textAlign:"right"}}>{fmt(val)}</span>
+                            </div>
+                          </div>
+                        ))}
+                        {dreDes.length>0&&<div style={{display:"flex",justifyContent:"space-between",paddingTop:8}}><span style={{fontSize:10,color:T.muted,fontWeight:700}}>TOTAL</span><span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.danger}}>{fmt(saidP)}</span></div>}
+                      </div>
+                    </div>
+
                   </div>
-                )}
+                  );
+                })()}
 
                 {/* FLUXO DE CAIXA */}
                 {finTab==="fluxo"&&(()=>{
