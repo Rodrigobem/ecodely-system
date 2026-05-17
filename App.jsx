@@ -4583,50 +4583,63 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
                 {/* VISAO GERAL */}
                 {finTab==="visao"&&(()=>{
-                  // Período customizado — estado via IIFE com ref trick
-                  const periodoRef=useRef("mes");
-                  const periodoDeRef=useRef(finMesRef);
-                  const periodoAteRef=useRef(finMesRef);
-                  const[periodoAtivo,_setPeriodoAtivo]=useState("mes");
-                  const[periodoDE,_setPeriodoDE]=useState(finMesRef);
-                  const[periodoATE,_setPeriodoATE]=useState(finMesRef);
-                  const setPeriodoAtivo=(v)=>{periodoRef.current=v;_setPeriodoAtivo(v);};
-                  const setPeriodoDE=(v)=>{periodoDeRef.current=v;_setPeriodoDE(v);};
-                  const setPeriodoATE=(v)=>{periodoAteRef.current=v;_setPeriodoATE(v);};
-                  const MESES_DISP=[...new Set(lancamentos.map(l=>{ const d=l.data||""; return d.slice(3,5)+"/"+d.slice(6,10); }).filter(m=>m.length===7))].sort();
+                  // Helpers de data DD/MM/YYYY <-> YYYY-MM-DD
+                  const brToIso=(br)=>{ if(!br||!br.includes("/"))return ""; const[d,m,y]=br.split("/"); return `${y}-${m}-${d}`; };
+                  const isoToBr=(iso)=>{ if(!iso||!iso.includes("-"))return ""; const[y,m,d]=iso.split("-"); return `${d}/${m}/${y}`; };
+                  const dataBrToNum=(br)=>{ if(!br)return 0; const[d,m,y]=br.split("/"); return Number(y)*10000+Number(m)*100+Number(d); };
+                  // Estado do range — armazenado em YYYY-MM-DD (formato input[type=date])
+                  const[rangeAtivo,_setRangeAtivo]=useState("mes");
+                  const[rangeDE,_setRangeDE]=useState(()=>{ const[m,y]=finMesRef.split("/"); return `${y}-${m}-01`; });
+                  const[rangeATE,_setRangeATE]=useState(()=>{ const[m,y]=finMesRef.split("/"); const last=new Date(Number(y),Number(m),0).getDate(); return `${y}-${m}-${String(last).padStart(2,"0")}`; });
+                  const setRangeAtivo=_setRangeAtivo;
+                  const setRangeDE=_setRangeDE;
+                  const setRangeATE=_setRangeATE;
+                  // Quando muda o mês de referência, atualiza o range do mês
+                  const deLabel=isoToBr(rangeDE); const ateLabel=isoToBr(rangeATE);
+                  const labelP=rangeAtivo==="mes"?finMesRef:`${deLabel} → ${ateLabel}`;
+                  // Filtro por dia exato
                   const filtrarPeriodo=(arr)=>{
-                    if(periodoAtivo==="mes") return arr.filter(l=>{ const d=l.data||""; return d.slice(3,5)+"/"+d.slice(6,10)===finMesRef; });
-                    const[deM,deY]=periodoDE.split("/"); const[ateM,ateY]=periodoATE.split("/");
-                    return arr.filter(l=>{ const d=l.data||""; const mm=d.slice(3,5); const yy=d.slice(6,10); const n=Number(yy)*100+Number(mm); return n>=Number(deY)*100+Number(deM)&&n<=Number(ateY)*100+Number(ateM); });
+                    const base=arr.filter(l=>l.tipo!=="Saldo Anterior");
+                    if(rangeAtivo==="mes") return base.filter(l=>{ const d=l.data||""; return d.slice(3,5)+"/"+d.slice(6,10)===finMesRef; });
+                    const nDe=dataBrToNum(deLabel); const nAte=dataBrToNum(ateLabel);
+                    return base.filter(l=>{ const n=dataBrToNum(l.data||""); return n>=nDe&&n<=nAte; });
                   };
-                  const lancP=filtrarPeriodo(lancamentos.filter(l=>l.tipo!=="Saldo Anterior"));
+                  const lancP=filtrarPeriodo(lancamentos);
                   const entP=lancP.reduce((a,l)=>a+(l.entrada||0),0);
                   const saidP=lancP.reduce((a,l)=>a+(l.saida||0),0);
                   const resP=entP-saidP;
-                  const labelP=periodoAtivo==="mes"?finMesRef:`${periodoDE} → ${periodoATE}`;
+                  // Agrupamento mensal para gráfico
+                  const mesesNoRange=[...new Set(lancP.map(l=>{ const d=l.data||""; return d.slice(3,5)+"/"+d.slice(6,10); }).filter(m=>m.length===7))].sort();
+                  const grafData=mesesNoRange.map(m=>{ const[mm,yy]=m.split("/"); const ls=lancamentos.filter(l=>{ const d=l.data||""; return d.slice(3,5)===mm&&d.slice(6,10)===yy&&l.tipo!=="Saldo Anterior"; }); return{mes:m,entradas:ls.reduce((a,l)=>a+(l.entrada||0),0),saidas:ls.reduce((a,l)=>a+(l.saida||0),0)}; });
                   const dreRec=CAT_RECEITA.map(cat=>({cat,val:lancP.filter(l=>l.categoria===cat&&(l.entrada||0)>0).reduce((a,l)=>a+(l.entrada||0),0)})).filter(x=>x.val>0);
                   const dreDes=CAT_DESPESA.map(cat=>({cat,val:lancP.filter(l=>l.categoria===cat&&(l.saida||0)>0).reduce((a,l)=>a+(l.saida||0),0)})).filter(x=>x.val>0).sort((a,b)=>b.val-a.val);
-                  const mesesGraf=MESES_DISP.filter(m=>{ const[mm,yy]=m.split("/"); const n=Number(yy)*100+Number(mm); if(periodoAtivo==="mes"){ const[rm,ry]=finMesRef.split("/"); return n===Number(ry)*100+Number(rm); } const[deM,deY]=periodoDE.split("/"); const[ateM,ateY]=periodoATE.split("/"); return n>=Number(deY)*100+Number(deM)&&n<=Number(ateY)*100+Number(ateM); });
-                  const grafData=mesesGraf.map(m=>{ const[mm,yy]=m.split("/"); const ls=lancamentos.filter(l=>{ const d=l.data||""; return d.slice(3,5)===mm&&d.slice(6,10)===yy&&l.tipo!=="Saldo Anterior"; }); return{mes:m,entradas:ls.reduce((a,l)=>a+(l.entrada||0),0),saidas:ls.reduce((a,l)=>a+(l.saida||0),0)}; });
-                  const selS={background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"5px 8px",fontSize:11,color:T.text,outline:"none"};
+                  const inpDate={background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"6px 10px",fontSize:11,color:T.text,outline:"none",colorScheme:"dark"};
                   return(
                   <div>
                     {/* Seletor de período */}
-                    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}>
-                      <div style={{fontSize:10,color:T.muted,fontFamily:"monospace",textTransform:"uppercase",letterSpacing:1}}>Período</div>
+                    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"14px 18px",marginBottom:16,display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
+                      <div style={{fontSize:9,color:T.muted,fontFamily:"monospace",textTransform:"uppercase",letterSpacing:1.5}}>Período</div>
+                      {/* Botões rápidos */}
+                      {[["mes","Mês"],["custom","Personalizado"]].map(([v,l])=>(
+                        <button key={v} onClick={()=>{ setRangeAtivo(v); if(v==="mes"){ const[m,y]=finMesRef.split("/"); const last=new Date(Number(y),Number(m),0).getDate(); setRangeDE(`${y}-${m}-01`); setRangeATE(`${y}-${m}-${String(last).padStart(2,"0")}`); } }} style={{padding:"5px 13px",borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer",border:`1px solid ${rangeAtivo===v?T.accentBorder:T.border}`,background:rangeAtivo===v?T.accentDim:"transparent",color:rangeAtivo===v?T.accent:T.muted,transition:"all 0.15s"}}>{l}</button>
+                      ))}
+                      {/* Date range inputs */}
+                      <div style={{display:"flex",alignItems:"center",gap:8,background:T.surface,border:`1px solid ${rangeAtivo==="custom"?T.accentBorder:T.border}`,borderRadius:8,padding:"6px 12px",transition:"border 0.15s"}}>
+                        <span style={{fontSize:10,color:T.muted}}>De</span>
+                        <input type="date" value={rangeDE} onChange={e=>{ setRangeDE(e.target.value); setRangeAtivo("custom"); }} style={inpDate}/>
+                        <span style={{fontSize:10,color:T.muted,padding:"0 4px"}}>→</span>
+                        <input type="date" value={rangeATE} onChange={e=>{ setRangeATE(e.target.value); setRangeAtivo("custom"); }} min={rangeDE} style={inpDate}/>
+                      </div>
+                      {/* Atalhos rápidos */}
                       <div style={{display:"flex",gap:4}}>
-                        {[["mes","Mês atual"],["custom","Personalizado"]].map(([v,l])=>(
-                          <button key={v} onClick={()=>{setPeriodoAtivo(v);if(v==="custom"){setPeriodoDE(finMesRef);setPeriodoATE(finMesRef);}}} style={{padding:"5px 12px",borderRadius:6,fontSize:10,fontWeight:600,cursor:"pointer",border:`1px solid ${periodoAtivo===v?T.accentBorder:T.border}`,background:periodoAtivo===v?T.accentDim:"transparent",color:periodoAtivo===v?T.accent:T.muted}}>{l}</button>
+                        {[
+                          ["7d","7 dias",()=>{ const t=new Date(); const d=new Date(t); d.setDate(d.getDate()-6); const iso=(x)=>x.toISOString().slice(0,10); setRangeDE(iso(d)); setRangeATE(iso(t)); setRangeAtivo("custom"); }],
+                          ["30d","30 dias",()=>{ const t=new Date(); const d=new Date(t); d.setDate(d.getDate()-29); const iso=(x)=>x.toISOString().slice(0,10); setRangeDE(iso(d)); setRangeATE(iso(t)); setRangeAtivo("custom"); }],
+                          ["ytd","Este ano",()=>{ const y=new Date().getFullYear(); setRangeDE(`${y}-01-01`); setRangeATE(new Date().toISOString().slice(0,10)); setRangeAtivo("custom"); }],
+                        ].map(([k,l,fn])=>(
+                          <button key={k} onClick={fn} style={{padding:"4px 9px",borderRadius:5,fontSize:9,fontWeight:600,cursor:"pointer",border:`1px solid ${T.border}`,background:"transparent",color:T.muted}}>{l}</button>
                         ))}
                       </div>
-                      {periodoAtivo==="custom"&&(
-                        <div style={{display:"flex",alignItems:"center",gap:8}}>
-                          <span style={{fontSize:10,color:T.muted}}>De</span>
-                          <select value={periodoDE} onChange={e=>setPeriodoDE(e.target.value)} style={selS}>{MESES_DISP.map(m=><option key={m} value={m}>{m}</option>)}</select>
-                          <span style={{fontSize:10,color:T.muted}}>até</span>
-                          <select value={periodoATE} onChange={e=>setPeriodoATE(e.target.value)} style={selS}>{MESES_DISP.map(m=><option key={m} value={m}>{m}</option>)}</select>
-                        </div>
-                      )}
                       <div style={{marginLeft:"auto",fontSize:10,color:T.accent,fontFamily:"monospace"}}>{lancP.length} lançamentos · {labelP}</div>
                     </div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:16}}>
