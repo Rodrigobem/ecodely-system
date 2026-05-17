@@ -4661,6 +4661,99 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:24,color:T.accent}}>{fmt(totalEntradas*aliqVal)}</div>
                       </div>
                     </div>
+
+                    {/* GRÁFICO DE EVOLUÇÃO MENSAL */}
+                    {(()=>{
+                      const mesesOrdem=["01","02","03","04","05","06","07","08","09","10","11","12"];
+                      const anos=["2025","2026"];
+                      const chartData=[];
+                      let saldoAcum=seedInicial;
+                      anos.forEach(ano=>{
+                        mesesOrdem.forEach(mm=>{
+                          const mesLancs=lancamentos.filter(l=>{
+                            const p=l.data.split("/");
+                            return p[1]===mm&&p[2]===ano&&l.tipo!=="Saldo Anterior";
+                          });
+                          const ent=mesLancs.reduce((a,l)=>a+(l.entrada||0),0);
+                          const sai=mesLancs.reduce((a,l)=>a+(l.saida||0),0);
+                          saldoAcum+=ent-sai;
+                          const mesNome=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][Number(mm)-1];
+                          chartData.push({mes:`${mesNome}/${ano.slice(2)}`,entradas:ent,saidas:sai,saldo:saldoAcum});
+                        });
+                      });
+                      const fmtK=v=>{if(Math.abs(v)>=1000)return`R$${(v/1000).toFixed(0)}k`;return`R$${v.toFixed(0)}`;};
+                      return(
+                        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:16}}>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:16}}>Evolução Mensal — Entradas / Saídas / Saldo</div>
+                          <ResponsiveContainer width="100%" height={220}>
+                            <BarChart data={chartData} margin={{top:0,right:16,left:0,bottom:20}}>
+                              <XAxis dataKey="mes" tick={{fontSize:9,fill:T.muted}} tickLine={false} axisLine={false} angle={-45} textAnchor="end"/>
+                              <YAxis tickFormatter={fmtK} tick={{fontSize:9,fill:T.muted}} tickLine={false} axisLine={false} width={52}/>
+                              <Tooltip formatter={(v,n)=>[`R$ ${v.toLocaleString("pt-BR",{minimumFractionDigits:2})}`,n==="entradas"?"Entradas":n==="saidas"?"Saídas":"Saldo"]} contentStyle={{fontSize:11,borderRadius:8,border:`1px solid ${T.border}`,background:T.card,color:T.text}}/>
+                              <Legend formatter={v=>v==="entradas"?"Entradas":v==="saidas"?"Saídas":"Saldo"} wrapperStyle={{fontSize:10,paddingTop:8}}/>
+                              <Bar dataKey="entradas" fill="#16a34a" radius={[3,3,0,0]} maxBarSize={18}/>
+                              <Bar dataKey="saidas" fill="#dc2626" radius={[3,3,0,0]} maxBarSize={18}/>
+                              <Bar dataKey="saldo" fill={T.info} radius={[3,3,0,0]} maxBarSize={18}/>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      );
+                    })()}
+
+                    {/* DRE SIMPLIFICADO */}
+                    {(()=>{
+                      const catReceitas=CAT_RECEITA;
+                      const catDespesas=CAT_DESPESA;
+                      const lancAno=lancamentos.filter(l=>{
+                        const p=l.data.split("/");
+                        return p[2]===aaRef&&l.tipo!=="Saldo Anterior";
+                      });
+                      const totalRec=catReceitas.map(cat=>({cat,val:lancAno.filter(l=>l.categoria===cat&&l.entrada>0).reduce((a,l)=>a+(l.entrada||0),0)})).filter(x=>x.val>0);
+                      const totalDesp=catDespesas.map(cat=>({cat,val:lancAno.filter(l=>l.categoria===cat&&l.saida>0).reduce((a,l)=>a+(l.saida||0),0)})).filter(x=>x.val>0).sort((a,b)=>b.val-a.val);
+                      const totRec=totalRec.reduce((a,x)=>a+x.val,0);
+                      const totDesp=totalDesp.reduce((a,x)=>a+x.val,0);
+                      const resultado=totRec-totDesp;
+                      return(
+                        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18,marginBottom:16}}>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:16}}>DRE Simplificado — {aaRef}</div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+                            {/* Receitas */}
+                            <div>
+                              <div style={{fontSize:9,color:T.accent,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8,paddingBottom:6,borderBottom:`2px solid ${T.accent}44`}}>RECEITAS</div>
+                              {totalRec.map(({cat,val})=>(
+                                <div key={cat} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
+                                  <span style={{fontSize:11,color:T.soft}}>{cat}</span>
+                                  <span style={{fontSize:11,color:T.accent,fontFamily:"Arial,sans-serif",fontWeight:600}}>{fmt(val)}</span>
+                                </div>
+                              ))}
+                              <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",marginTop:4}}>
+                                <span style={{fontSize:11,fontWeight:700,color:T.text}}>TOTAL RECEITAS</span>
+                                <span style={{fontSize:12,fontWeight:800,color:T.accent,fontFamily:"Arial,sans-serif"}}>{fmt(totRec)}</span>
+                              </div>
+                            </div>
+                            {/* Despesas */}
+                            <div>
+                              <div style={{fontSize:9,color:T.danger,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8,paddingBottom:6,borderBottom:`2px solid ${T.danger}44`}}>DESPESAS</div>
+                              {totalDesp.map(({cat,val})=>(
+                                <div key={cat} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
+                                  <span style={{fontSize:11,color:T.soft}}>{cat}</span>
+                                  <span style={{fontSize:11,color:T.danger,fontFamily:"Arial,sans-serif",fontWeight:600}}>{fmt(val)}</span>
+                                </div>
+                              ))}
+                              <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",marginTop:4}}>
+                                <span style={{fontSize:11,fontWeight:700,color:T.text}}>TOTAL DESPESAS</span>
+                                <span style={{fontSize:12,fontWeight:800,color:T.danger,fontFamily:"Arial,sans-serif"}}>{fmt(totDesp)}</span>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Resultado */}
+                          <div style={{borderTop:`2px solid ${T.border}`,marginTop:12,paddingTop:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                            <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.text}}>RESULTADO LÍQUIDO {aaRef}</span>
+                            <span style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:resultado>=0?T.accent:T.danger}}>{fmt(resultado)}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
