@@ -7410,13 +7410,13 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     setSimLoading(true);
                     try{
                       const history=[...simMsgs.map(m=>({role:m.role==="user"?"user":"assistant",content:m.text})),userMsg];
-                      const res=await fetch("https://api.anthropic.com/v1/messages",{
+                      const res=await fetch("/api/whatsapp/chat",{
                         method:"POST",
-                        headers:{"Content-Type":"application/json","x-api-key": import.meta.env.VITE_ANTHROPIC_KEY||""},
-                        body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:500,system:buildSimPrompt(simModo),messages:history})
+                        headers:{"Content-Type":"application/json"},
+                        body:JSON.stringify({messages:history,modo:simModo})
                       });
                       const data=await res.json();
-                      const resposta=data.content?.[0]?.text||"(sem resposta)";
+                      const resposta=data.text||data.error||"(sem resposta)";
                       // Detectar ação JSON
                       let textoFinal=resposta;
                       let badge=null;
@@ -7428,13 +7428,13 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   const iniciarSim=async()=>{
                     setSimMsgs([]);setSimStarted(true);setSimLoading(true);
                     try{
-                      const res=await fetch("https://api.anthropic.com/v1/messages",{
+                      const res=await fetch("/api/whatsapp/chat",{
                         method:"POST",
-                        headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_KEY||""},
-                        body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:300,system:buildSimPrompt(simModo),messages:[{role:"user",content:"oi"}]})
+                        headers:{"Content-Type":"application/json"},
+                        body:JSON.stringify({messages:[{role:"user",content:"oi"}],modo:simModo})
                       });
                       const data=await res.json();
-                      const resposta=data.content?.[0]?.text||"Olá! 👋";
+                      const resposta=data.text||"Olá! 👋";
                       setSimMsgs([{role:"user",text:"oi"},{role:"assistant",text:resposta}]);
                     }catch(e){setSimMsgs([{role:"assistant",text:"(configure VITE_ANTHROPIC_KEY no .env para testar)"}]);}
                     setSimLoading(false);
