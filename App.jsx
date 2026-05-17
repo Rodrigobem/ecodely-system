@@ -158,6 +158,7 @@ const getNav=(role,queueCount,notifCount,extraRoles=[])=>[
   {id:"planejamento-midia",label:"Planejamento de Mídia",icon:"-",roles:["admin","comercial"]},
   {id:"relatorios",label:"Relatórios",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base"]},
   {id:"cadastros",label:"Cadastros",icon:"-",roles:["admin","comercial","operacional"]},
+  {id:"whatsapp",label:"WhatsApp IA",icon:"-",roles:["admin","comercial","base"]},
   {id:"usuarios",label:"Usuários",icon:"-",roles:["admin"]},
 ].filter(n=>n.roles.includes(role)||extraRoles.some(r=>n.roles.includes(r)));
 
@@ -2111,6 +2112,15 @@ export default function App(){
   const[baseScoreMin,setBaseScoreMin]=useState(0);
   const[baseContratoFilter,setBaseContratoFilter]=useState("todos");
   const[basePartners,setBasePartners]=useState(BASE_PARTNERS_INIT);
+  // WhatsApp agent states
+  const[waConversas,setWaConversas]=useState([]);
+  const[waMensagens,setWaMensagens]=useState([]);
+  const[waSelConv,setWaSelConv]=useState(null);
+  const[waInput,setWaInput]=useState("");
+  const[waLoading,setWaLoading]=useState(false);
+  const[waFiltro,setWaFiltro]=useState("todos");
+  const[waNovoNumero,setWaNovoNumero]=useState("");
+  const[waNovoModo,setWaNovoModo]=useState("prospecto");
   const[baseTab,setBaseTab]=useState("parceiros"); // parceiros | contratos | score
   const[selPartner,setSelPartner]=useState(null);
   const[contratoTableFilter,setContratoTableFilter]=useState("todos");
@@ -7270,6 +7280,163 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             </div>
           )}
 
+
+
+          {/* --------------------------------------
+              WHATSAPP IA
+          -------------------------------------- */}
+          {tab==="whatsapp"&&(()=>{
+            // Carregar conversas
+            const loadConversas=async()=>{
+              setWaLoading(true);
+              const{data}=await supabase.from("wa_conversas").select("*").order("atualizado_em",{ascending:false});
+              setWaConversas(data||[]);
+              setWaLoading(false);
+            };
+            const loadMensagens=async(convId)=>{
+              const{data}=await supabase.from("wa_mensagens").select("*").eq("conversa_id",convId).order("criado_em",{ascending:true});
+              setWaMensagens(data||[]);
+            };
+            const selecionarConversa=(conv)=>{
+              setWaSelConv(conv);
+              loadMensagens(conv.id);
+            };
+            const enviarManual=async()=>{
+              if(!waInput.trim()||!waSelConv)return;
+              const msg=waInput.trim();
+              setWaInput("");
+              // Otimista: adicionar na tela
+              const temp={id:Date.now(),conversa_id:waSelConv.id,role:"assistant",conteudo:msg,criado_em:new Date().toISOString()};
+              setWaMensagens(p=>[...p,temp]);
+              await fetch("/api/whatsapp/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({numero:waSelConv.numero,mensagem:msg,conversa_id:waSelConv.id})});
+            };
+            const iniciarConversa=async()=>{
+              if(!waNovoNumero.trim())return;
+              const num=waNovoNumero.replace(/\D/g,"");
+              const{data}=await supabase.from("wa_conversas").upsert({numero:num,modo:waNovoModo,status:"novo"},{onConflict:"numero"}).select().single();
+              if(data){setWaConversas(p=>[data,...p.filter(c=>c.id!==data.id)]);selecionarConversa(data);}
+              setWaNovoNumero("");
+            };
+
+            const STATUS_COLOR={"novo":T.info,"em_andamento":T.warn,"aguardando":T.purple,"convertido":T.accent,"encerrado":T.muted};
+            const STATUS_LABEL={"novo":"Novo","em_andamento":"Em andamento","aguardando":"Aguardando","convertido":"Convertido","encerrado":"Encerrado"};
+            const MODO_COLOR={"prospecto":T.info,"parceiro":T.accent,"equipe":T.purple,"cobranca":T.warn};
+            const convsFilt=waFiltro==="todos"?waConversas:waConversas.filter(c=>c.status===waFiltro);
+
+            // Carregar ao montar
+            if(waConversas.length===0&&!waLoading) loadConversas();
+
+            return(
+            <div style={{display:"grid",gridTemplateColumns:"300px 1fr",gap:0,height:"calc(100vh - 120px)",background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
+
+              {/* ── LISTA DE CONVERSAS ── */}
+              <div style={{borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column"}}>
+                {/* Header lista */}
+                <div style={{padding:"14px 16px",borderBottom:`1px solid ${T.border}`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>WhatsApp IA</div>
+                    <button onClick={loadConversas} style={{background:"none",border:"none",color:T.muted,cursor:"pointer",fontSize:14}}>↻</button>
+                  </div>
+                  {/* Nova conversa */}
+                  <div style={{display:"flex",gap:4,marginBottom:8}}>
+                    <input value={waNovoNumero} onChange={e=>setWaNovoNumero(e.target.value)} placeholder="+5511999999999" onKeyDown={e=>e.key==="Enter"&&iniciarConversa()} style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"5px 8px",fontSize:10,color:T.text,outline:"none"}}/>
+                    <select value={waNovoModo} onChange={e=>setWaNovoModo(e.target.value)} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"5px 6px",fontSize:10,color:T.text,outline:"none"}}>
+                      <option value="prospecto">Prospec.</option>
+                      <option value="parceiro">Parceiro</option>
+                      <option value="equipe">Equipe</option>
+                    </select>
+                    <button onClick={iniciarConversa} style={{padding:"5px 10px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer"}}>+</button>
+                  </div>
+                  {/* Filtros */}
+                  <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+                    {[["todos","Todos"],["novo","Novos"],["em_andamento","Ativos"],["convertido","Convertidos"],["encerrado","Enc."]].map(([v,l])=>(
+                      <button key={v} onClick={()=>setWaFiltro(v)} style={{padding:"3px 7px",borderRadius:4,fontSize:8,cursor:"pointer",border:`1px solid ${waFiltro===v?T.accentBorder:T.border}`,background:waFiltro===v?T.accentDim:"transparent",color:waFiltro===v?T.accent:T.muted}}>{l}</button>
+                    ))}
+                  </div>
+                </div>
+                {/* Lista */}
+                <div style={{flex:1,overflowY:"auto"}}>
+                  {waLoading&&<div style={{padding:20,textAlign:"center",color:T.muted,fontSize:11}}>Carregando...</div>}
+                  {!waLoading&&convsFilt.length===0&&<div style={{padding:20,textAlign:"center",color:T.muted,fontSize:11}}>Nenhuma conversa</div>}
+                  {convsFilt.map(conv=>(
+                    <div key={conv.id} onClick={()=>selecionarConversa(conv)} style={{padding:"12px 14px",borderBottom:`1px solid ${T.border}`,cursor:"pointer",background:waSelConv?.id===conv.id?T.surface:"transparent",transition:"background 0.1s"}}
+                      onMouseEnter={e=>e.currentTarget.style.background=T.surface}
+                      onMouseLeave={e=>e.currentTarget.style.background=waSelConv?.id===conv.id?T.surface:"transparent"}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:3}}>
+                        <div style={{fontWeight:600,fontSize:11}}>{conv.nome||conv.numero}</div>
+                        <div style={{width:7,height:7,borderRadius:"50%",background:STATUS_COLOR[conv.status]||T.muted,flexShrink:0,marginTop:3}}/>
+                      </div>
+                      <div style={{display:"flex",gap:4}}>
+                        <span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:(MODO_COLOR[conv.modo]||T.muted)+"22",color:MODO_COLOR[conv.modo]||T.muted}}>{conv.modo}</span>
+                        <span style={{fontSize:8,color:T.muted}}>{STATUS_LABEL[conv.status]||conv.status}</span>
+                      </div>
+                      {conv.dados_lead?.tipo&&<div style={{fontSize:9,color:T.muted,marginTop:2}}>{conv.dados_lead.tipo} · {conv.dados_lead.cidade}</div>}
+                    </div>
+                  ))}
+                </div>
+                {/* Stats */}
+                <div style={{padding:"10px 14px",borderTop:`1px solid ${T.border}`,display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                  {[["Convertidos",waConversas.filter(c=>c.status==="convertido").length,T.accent],["Ativos",waConversas.filter(c=>c.status==="em_andamento").length,T.warn]].map(([l,v,c])=>(
+                    <div key={l} style={{background:T.surface,borderRadius:6,padding:"6px 8px",textAlign:"center"}}>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:c}}>{v}</div>
+                      <div style={{fontSize:8,color:T.muted}}>{l}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── ÁREA DE CHAT ── */}
+              {!waSelConv?(
+                <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",color:T.muted,gap:10}}>
+                  <div style={{fontSize:32}}>💬</div>
+                  <div style={{fontSize:12}}>Selecione uma conversa ou inicie uma nova</div>
+                  <div style={{fontSize:10,color:T.border,textAlign:"center",maxWidth:280}}>O agente usa Claude IA para responder automaticamente a prospecções e gerenciar a base de parceiros</div>
+                </div>
+              ):(
+                <div style={{display:"flex",flexDirection:"column"}}>
+                  {/* Header chat */}
+                  <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div>
+                      <div style={{fontWeight:700,fontSize:13}}>{waSelConv.nome||waSelConv.numero}</div>
+                      <div style={{fontSize:10,color:T.muted}}>{waSelConv.numero} · <span style={{color:MODO_COLOR[waSelConv.modo]||T.muted}}>{waSelConv.modo}</span></div>
+                    </div>
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                      <div style={{padding:"3px 10px",borderRadius:5,fontSize:9,background:(STATUS_COLOR[waSelConv.status]||T.muted)+"22",color:STATUS_COLOR[waSelConv.status]||T.muted,fontWeight:700}}>{STATUS_LABEL[waSelConv.status]}</div>
+                      {waSelConv.status!=="convertido"&&["prospecto","parceiro"].includes(waSelConv.modo)&&(
+                        <button onClick={async()=>{await supabase.from("wa_conversas").update({status:"convertido",modo:"parceiro"}).eq("id",waSelConv.id);setWaSelConv(p=>({...p,status:"convertido",modo:"parceiro"}));setWaConversas(p=>p.map(c=>c.id===waSelConv.id?{...c,status:"convertido",modo:"parceiro"}:c));}} style={{padding:"3px 10px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:5,fontSize:9,fontWeight:700,cursor:"pointer"}}>✓ Converter</button>
+                      )}
+                    </div>
+                  </div>
+                  {/* Dados do lead */}
+                  {waSelConv.dados_lead&&Object.keys(waSelConv.dados_lead).length>0&&(
+                    <div style={{padding:"8px 16px",background:T.accentDim,borderBottom:`1px solid ${T.accentBorder}`,display:"flex",gap:12,flexWrap:"wrap"}}>
+                      {Object.entries(waSelConv.dados_lead).filter(([k,v])=>v).map(([k,v])=>(
+                        <span key={k} style={{fontSize:9,color:T.accent}}><span style={{color:T.muted}}>{k}:</span> {v}</span>
+                      ))}
+                    </div>
+                  )}
+                  {/* Mensagens */}
+                  <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:8}}>
+                    {waMensagens.length===0&&<div style={{textAlign:"center",color:T.muted,fontSize:11,marginTop:20}}>Nenhuma mensagem ainda</div>}
+                    {waMensagens.map(msg=>(
+                      <div key={msg.id} style={{display:"flex",justifyContent:msg.role==="user"?"flex-start":"flex-end"}}>
+                        <div style={{maxWidth:"70%",padding:"8px 12px",borderRadius:msg.role==="user"?"4px 12px 12px 12px":"12px 4px 12px 12px",background:msg.role==="user"?T.surface:T.accentDim,border:`1px solid ${msg.role==="user"?T.border:T.accentBorder}`,fontSize:11,lineHeight:1.5,color:msg.role==="user"?T.text:T.accent}}>
+                          {msg.conteudo}
+                          <div style={{fontSize:8,color:T.muted,marginTop:4,textAlign:"right"}}>{msg.role==="user"?"👤":"🤖"} {new Date(msg.criado_em).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Input */}
+                  <div style={{padding:"12px 16px",borderTop:`1px solid ${T.border}`,display:"flex",gap:8}}>
+                    <input value={waInput} onChange={e=>setWaInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&enviarManual()} placeholder="Mensagem manual (Enter para enviar)..." style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"9px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+                    <button onClick={enviarManual} style={{padding:"9px 16px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Enviar</button>
+                  </div>
+                </div>
+              )}
+            </div>
+            );
+          })()}
 
           {/* --------------------------------------
               USUÁRIOS
