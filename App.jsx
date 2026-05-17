@@ -4729,7 +4729,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:38,alignSelf:"stretch"}}/>
                           <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:38,alignSelf:"stretch"}}/>
                           <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:38,alignSelf:"stretch"}}/>
-                          <div style={{background:"#f0e8ff",minHeight:38}}/>
+                          <div style={{background:"#f0e8ff",minHeight:38,boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}/>
                           <div style={{background:"#f0e8ff",minHeight:38}}/>
                         </div>}
                         {grupos.map((grupo,gi)=>{
@@ -4771,17 +4771,18 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                 <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#16a34a",fontWeight:800,textAlign:"right",padding:"6px 10px",background:"#d4edda",display:"flex",alignItems:"center",justifyContent:"flex-end",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}>{dEntradas>0?fmt(dEntradas):""}</div>
                                 <div style={{fontFamily:"Arial,sans-serif",fontSize:11,color:"#dc2626",fontWeight:800,textAlign:"right",padding:"6px 10px",background:"#d4edda",display:"flex",alignItems:"center",justifyContent:"flex-end",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}>{dSaidas>0?fmt(dSaidas):""}</div>
                                 <div style={{fontFamily:"Arial,sans-serif",fontSize:13,fontWeight:800,color:saldoDia>=0?"#16a34a":"#dc2626",textAlign:"right",padding:"6px 10px",background:"#d4edda",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{fmt(saldoDia)}</div>
-                                <div style={{background:"#d4edda",boxShadow:"inset 0 -1px 0 #888"}}/>
+                                <div style={{background:"#d4edda",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}/>
+                                <div style={{background:"#d4edda"}}/>
                               </div>
                             </div>
                           );
                         })}
 
-                        <div style={{display:"grid",gridTemplateColumns:colWidths.slice(0,7).map(w=>w+"px").join(" "),padding:"10px 0",gap:0,background:"#1a4a7a",borderTop:"2px solid #1a4a7a"}}>
+                        <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),padding:"10px 0",gap:0,background:"#1a4a7a",borderTop:"2px solid #1a4a7a"}}>
                           <div style={{fontSize:9,color:"#fff",gridColumn:"1/3",fontWeight:800,textTransform:"uppercase",letterSpacing:1}}>TOTAL DO MÊS</div>
                           <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:12,color:"#90ee90",textAlign:"right"}}>{fmt(totalEntradas)}</div>
                           <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:12,color:"#ff9999",textAlign:"right"}}>{fmt(totalSaidas)}</div>
-                          <div style={{gridColumn:"5/8",fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:lucroMes>=0?"#90ee90":"#ff9999",textAlign:"right"}}>{fmt(lucroMes)}</div>
+                          <div style={{gridColumn:"5/10",fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:lucroMes>=0?"#90ee90":"#ff9999",textAlign:"right"}}>{fmt(lucroMes)}</div>
                         </div>
                       </div>
                     </div>
