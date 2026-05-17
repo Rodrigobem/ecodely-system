@@ -4778,11 +4778,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           );
                         })}
 
-                        <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),padding:"10px 0",gap:0,background:"#1a4a7a",borderTop:"3px solid #0f3460",position:"sticky",bottom:0,zIndex:4}}>
-                          <div style={{fontSize:9,color:"#fff",gridColumn:"1/3",fontWeight:800,textTransform:"uppercase",letterSpacing:1,padding:"0 10px"}}>TOTAL DO MÊS</div>
-                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:12,color:"#90ee90",textAlign:"right",padding:"0 10px"}}>{fmt(totalEntradas)}</div>
-                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:12,color:"#ff9999",textAlign:"right",padding:"0 10px"}}>{fmt(totalSaidas)}</div>
-                          <div style={{gridColumn:"5/10",fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:lucroMes>=0?"#90ee90":"#ff9999",textAlign:"right",padding:"0 10px"}}>{fmt(lucroMes)}</div>
+                        <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),padding:"10px 0",gap:0,background:"#1a4a7a",borderTop:"3px solid #0f3460",position:"sticky",bottom:0,zIndex:4,width:"100%",minWidth:"fit-content"}}>
+                          <div style={{fontSize:9,color:"#fff",fontWeight:800,textTransform:"uppercase",letterSpacing:1,padding:"0 10px",display:"flex",alignItems:"center"}}>TOTAL</div>
+                          <div style={{fontSize:9,color:"#fff",fontWeight:800,textTransform:"uppercase",letterSpacing:1,padding:"0 10px",display:"flex",alignItems:"center"}}>DO MÊS</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:12,color:"#90ee90",textAlign:"right",padding:"0 10px",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{fmt(totalEntradas)}</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:12,color:"#ff9999",textAlign:"right",padding:"0 10px",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{fmt(totalSaidas)}</div>
+                          <div style={{padding:"0 10px"}}/>
+                          <div style={{padding:"0 10px"}}/>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:lucroMes>=0?"#90ee90":"#ff9999",textAlign:"right",padding:"0 10px",display:"flex",alignItems:"center",justifyContent:"flex-end"}}>{fmt(lucroMes)}</div>
+                          <div style={{padding:"0 10px"}}/>
+                          <div style={{padding:"0 10px"}}/>
                         </div>
                       </div>
                     </div>
