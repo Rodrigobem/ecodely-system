@@ -2113,6 +2113,12 @@ export default function App(){
   const[baseContratoFilter,setBaseContratoFilter]=useState("todos");
   const[basePartners,setBasePartners]=useState(BASE_PARTNERS_INIT);
   // WhatsApp agent states
+  // Simulador
+  const[simMsgs,setSimMsgs]=useState([]);
+  const[simInput,setSimInput]=useState("");
+  const[simLoading,setSimLoading]=useState(false);
+  const[simModo,setSimModo]=useState("prospecto");
+  const[simStarted,setSimStarted]=useState(false);
   const[waConversas,setWaConversas]=useState([]);
   const[waMensagens,setWaMensagens]=useState([]);
   const[waSelConv,setWaSelConv]=useState(null);
@@ -7337,6 +7343,12 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>WhatsApp IA</div>
                     <button onClick={loadConversas} style={{background:"none",border:"none",color:T.muted,cursor:"pointer",fontSize:14}}>↻</button>
                   </div>
+                  {/* Sub-tabs */}
+                  <div style={{display:"flex",gap:4,marginBottom:10}}>
+                    {[["conversas","Conversas"],["simulador","🧪 Simulador"]].map(([v,l])=>(
+                      <button key={v} onClick={()=>setWaFiltro(v==="simulador"?"simulador":waFiltro==="simulador"?"todos":waFiltro)} style={{padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:600,cursor:"pointer",border:`1px solid ${(v==="simulador"?waFiltro==="simulador":waFiltro!=="simulador")?T.accentBorder:T.border}`,background:(v==="simulador"?waFiltro==="simulador":waFiltro!=="simulador")?T.accentDim:"transparent",color:(v==="simulador"?waFiltro==="simulador":waFiltro!=="simulador")?T.accent:T.muted}}>{l}</button>
+                    ))}
+                  </div>
                   {/* Nova conversa */}
                   <div style={{display:"flex",gap:4,marginBottom:8}}>
                     <input value={waNovoNumero} onChange={e=>setWaNovoNumero(e.target.value)} placeholder="+5511999999999" onKeyDown={e=>e.key==="Enter"&&iniciarConversa()} style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"5px 8px",fontSize:10,color:T.text,outline:"none"}}/>
@@ -7385,8 +7397,95 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 </div>
               </div>
 
-              {/* ── ÁREA DE CHAT ── */}
-              {!waSelConv?(
+              {/* ── ÁREA DE CHAT / SIMULADOR ── */}
+              {waFiltro==="simulador"?(
+                // ── SIMULADOR ──
+                (()=>{
+                  const enviarSim=async()=>{
+                    if(!simInput.trim()||simLoading)return;
+                    const texto=simInput.trim();
+                    setSimInput("");
+                    const userMsg={role:"user",content:texto};
+                    setSimMsgs(p=>[...p,{role:"user",text:texto}]);
+                    setSimLoading(true);
+                    try{
+                      const history=[...simMsgs.map(m=>({role:m.role==="user"?"user":"assistant",content:m.text})),userMsg];
+                      const res=await fetch("https://api.anthropic.com/v1/messages",{
+                        method:"POST",
+                        headers:{"Content-Type":"application/json","x-api-key": import.meta.env.VITE_ANTHROPIC_KEY||""},
+                        body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:500,system:buildSimPrompt(simModo),messages:history})
+                      });
+                      const data=await res.json();
+                      const resposta=data.content?.[0]?.text||"(sem resposta)";
+                      // Detectar ação JSON
+                      let textoFinal=resposta;
+                      let badge=null;
+                      try{const j=JSON.parse(resposta.trim());if(j.acao){badge=j.acao;textoFinal=j.acao==="cadastrar_lead"?"✅ Lead cadastrado! Dados: "+JSON.stringify(j.dados):j.acao==="converter_parceiro"?"🎉 Parceiro convertido! Dados: "+JSON.stringify(j.dados):"👋 Conversa encerrada.";}}catch(e){}
+                      setSimMsgs(p=>[...p,{role:"assistant",text:textoFinal,badge}]);
+                    }catch(e){setSimMsgs(p=>[...p,{role:"assistant",text:"(erro: "+e.message+")"}]);}
+                    setSimLoading(false);
+                  };
+                  const iniciarSim=async()=>{
+                    setSimMsgs([]);setSimStarted(true);setSimLoading(true);
+                    try{
+                      const res=await fetch("https://api.anthropic.com/v1/messages",{
+                        method:"POST",
+                        headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_KEY||""},
+                        body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:300,system:buildSimPrompt(simModo),messages:[{role:"user",content:"oi"}]})
+                      });
+                      const data=await res.json();
+                      const resposta=data.content?.[0]?.text||"Olá! 👋";
+                      setSimMsgs([{role:"user",text:"oi"},{role:"assistant",text:resposta}]);
+                    }catch(e){setSimMsgs([{role:"assistant",text:"(configure VITE_ANTHROPIC_KEY no .env para testar)"}]);}
+                    setSimLoading(false);
+                  };
+                  return(
+                  <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+                    {/* Header simulador */}
+                    <div style={{padding:"14px 20px",borderBottom:`1px solid ${T.border}`,background:T.accentDim}}>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent,marginBottom:8}}>🧪 Simulador do Agente</div>
+                      <div style={{fontSize:10,color:T.muted,marginBottom:10}}>Simule uma conversa como se você fosse um estabelecimento. O agente responde com a IA real.</div>
+                      <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                        <span style={{fontSize:10,color:T.muted}}>Modo:</span>
+                        {[["prospecto","🎯 Prospecção"],["parceiro","🤝 Parceiro"],["cobranca","📸 Cobrança"]].map(([v,l])=>(
+                          <button key={v} onClick={()=>{setSimModo(v);setSimMsgs([]);setSimStarted(false);}} style={{padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:600,cursor:"pointer",border:`1px solid ${simModo===v?T.accentBorder:T.border}`,background:simModo===v?T.accentDim:"transparent",color:simModo===v?T.accent:T.muted}}>{l}</button>
+                        ))}
+                        <button onClick={()=>{setSimMsgs([]);setSimStarted(false);}} style={{marginLeft:"auto",padding:"4px 10px",borderRadius:5,fontSize:10,cursor:"pointer",border:`1px solid ${T.border}`,background:"transparent",color:T.muted}}>↺ Reiniciar</button>
+                      </div>
+                    </div>
+                    {/* Mensagens simulador */}
+                    <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:10}}>
+                      {!simStarted&&simMsgs.length===0&&(
+                        <div style={{textAlign:"center",marginTop:40}}>
+                          <div style={{fontSize:32,marginBottom:12}}>🤖</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,marginBottom:6}}>Agente Lena — Ecodely</div>
+                          <div style={{fontSize:11,color:T.muted,marginBottom:20,maxWidth:320,margin:"0 auto 20px"}}>Modo: <strong>{simModo==="prospecto"?"Prospecção fria":simModo==="parceiro"?"Suporte ao parceiro":"Cobrança de postagem"}</strong><br/>Clique em iniciar para o agente mandar a primeira mensagem</div>
+                          <button onClick={iniciarSim} style={{padding:"10px 24px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>▶ Iniciar simulação</button>
+                        </div>
+                      )}
+                      {simMsgs.map((msg,i)=>(
+                        <div key={i} style={{display:"flex",justifyContent:msg.role==="user"?"flex-end":"flex-start",gap:8,alignItems:"flex-end"}}>
+                          {msg.role==="assistant"&&<div style={{width:28,height:28,borderRadius:"50%",background:T.accentDim,border:`1px solid ${T.accentBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>🤖</div>}
+                          <div style={{maxWidth:"72%"}}>
+                            <div style={{padding:"10px 14px",borderRadius:msg.role==="user"?"14px 4px 14px 14px":"4px 14px 14px 14px",background:msg.role==="user"?T.surface:T.card,border:`1px solid ${msg.role==="user"?T.border:T.accentBorder}`,fontSize:11,lineHeight:1.6,whiteSpace:"pre-wrap"}}>
+                              {msg.text}
+                            </div>
+                            {msg.badge&&<div style={{fontSize:8,color:T.accent,marginTop:3,textAlign:msg.role==="assistant"?"left":"right",fontWeight:700}}>⚡ AÇÃO: {msg.badge}</div>}
+                          </div>
+                          {msg.role==="user"&&<div style={{width:28,height:28,borderRadius:"50%",background:T.surface,border:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>🏪</div>}
+                        </div>
+                      ))}
+                      {simLoading&&<div style={{display:"flex",gap:8,alignItems:"center"}}><div style={{width:28,height:28,borderRadius:"50%",background:T.accentDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>🤖</div><div style={{padding:"10px 14px",borderRadius:"4px 14px 14px 14px",background:T.card,border:`1px solid ${T.accentBorder}`,fontSize:11,color:T.muted}}>digitando...</div></div>}
+                    </div>
+                    {/* Input simulador */}
+                    {simStarted&&<div style={{padding:"12px 16px",borderTop:`1px solid ${T.border}`,display:"flex",gap:8}}>
+                      <input value={simInput} onChange={e=>setSimInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&enviarSim()} placeholder="Responda como se fosse o estabelecimento..." disabled={simLoading} style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"9px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+                      <button onClick={enviarSim} disabled={simLoading} style={{padding:"9px 16px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Enviar</button>
+                    </div>}
+                  </div>
+                  );
+                })()
+              ):!waSelConv?(
                 <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",color:T.muted,gap:10}}>
                   <div style={{fontSize:32}}>💬</div>
                   <div style={{fontSize:12}}>Selecione uma conversa ou inicie uma nova</div>
