@@ -1763,7 +1763,7 @@ export default function App(){
   T=THEMES[tema]||THEMES.escuro;
   useEffect(()=>{localStorage.setItem("ecodely_tema",tema);document.body.style.background=T.bg;},[tema]);
   const[editLanc,setEditLanc]=useState(null);
-  const[colWidths,setColWidths]=useState([90,340,120,120,110,110,130,36]);
+  const[colWidths,setColWidths]=useState([90,340,120,120,110,110,130,36,180]);
   const[relTab,setRelTab]=useState("gerencial");
   const[relSelecionados,setRelSelecionados]=useState([]);
   const[relTitulo,setRelTitulo]=useState("Relatório Ecodely");
@@ -1844,7 +1844,7 @@ export default function App(){
   // --- FINANCEIRO STATES (movidos do IIFE para nivel do componente) --------
   const[showAdd,setShowAdd]=useState(false);
   const todayISO=new Date().toISOString().slice(0,10);
-  const[novoLanc,setNovoLanc]=useState({data:todayISO,descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1});
+  const[novoLanc,setNovoLanc]=useState({data:todayISO,descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1,parcelas:1});
   const[showAddCartao,setShowAddCartao]=useState(false);
   const[showAddCompra,setShowAddCompra]=useState(false);
   const[novoCartao,setNovoCartao]=useState({nome:"",titular:"",vencimento:15,limite:0,banco:"",cor:"#3D9EFF"});
@@ -4668,20 +4668,35 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                               <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Projeto / NF</div>
                               <input value={novoLanc.projeto} onChange={e=>setNovoLanc(p=>({...p,projeto:e.target.value}))} placeholder="Opcional" style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}/>
                             </div>
+                            <div>
+                              <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Nº de Parcelas</div>
+                              <input type="number" min="1" max="60" value={novoLanc.parcelas} onChange={e=>setNovoLanc(p=>({...p,parcelas:Math.max(1,parseInt(e.target.value)||1)}))} style={{width:"100%",border:`2px solid ${novoLanc.parcelas>1?"#1a4a7a":"#ddd"}`,borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box",fontWeight:novoLanc.parcelas>1?700:400}}/>
+                              {novoLanc.parcelas>1&&<div style={{fontSize:9,color:"#1a4a7a",marginTop:3}}>⚡ Vai criar {novoLanc.parcelas} lançamentos mensais</div>}
+                            </div>
                           </div>
                           <div style={{display:"flex",gap:10,justifyContent:"flex-end",borderTop:"1px solid #f0f0f0",paddingTop:16}}>
                             <button onClick={()=>setShowAdd(false)} style={{padding:"9px 20px",background:"#f5f5f5",border:"none",borderRadius:8,cursor:"pointer",fontSize:12,fontFamily:"Arial,sans-serif"}}>Cancelar</button>
                             <button onClick={async()=>{
                               if(!novoLanc.data||!novoLanc.descricao.trim())return alert("Preencha data e descrição!");
                               if(!novoLanc.entrada&&!novoLanc.saida)return alert("Informe entrada ou saída!");
-                              const dateFmt=novoLanc.data.split("-").reverse().join("/");
-                              const novoId=Date.now();
-                              const rec={...novoLanc,id:novoId,data:dateFmt};
-                              setLancamentos(p=>[...p,rec]);
+                              const parcelas=novoLanc.parcelas||1;
+                              const novos=[];
+                              for(let p=0;p<parcelas;p++){
+                                const baseDate=new Date(novoLanc.data+'T12:00:00');
+                                baseDate.setMonth(baseDate.getMonth()+p);
+                                const dd=String(baseDate.getDate()).padStart(2,'0');
+                                const mm=String(baseDate.getMonth()+1).padStart(2,'0');
+                                const yyyy=baseDate.getFullYear();
+                                const dateFmt=`${dd}/${mm}/${yyyy}`;
+                                const desc=parcelas>1?`${novoLanc.descricao} ${p+1} de ${parcelas}`:novoLanc.descricao;
+                                novos.push({...novoLanc,id:Date.now()+p,data:dateFmt,descricao:desc});
+                              }
+                              setLancamentos(prev=>[...prev,...novos]);
                               setShowAdd(false);
-                              setNovoLanc({data:new Date().toISOString().slice(0,10),descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1});
-                              const{error}=await supabase.from("lancamentos").upsert({...rec,centrosCusto:rec.centrosCusto,contaBancoId:rec.contaBancoId});
-                              if(error)alert("Erro ao salvar: "+error.message);
+                              setNovoLanc({data:new Date().toISOString().slice(0,10),descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1,parcelas:1});
+                              for(const rec of novos){
+                                await supabase.from("lancamentos").upsert({...rec,centrosCusto:rec.centrosCusto,contaBancoId:rec.contaBancoId});
+                              }
                             }} style={{padding:"9px 28px",background:"#1a4a7a",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,fontFamily:"Arial,sans-serif"}}>Salvar Lançamento</button>
                           </div>
                         </div>
@@ -4690,10 +4705,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       <div style={{background:"#fff",border:"2px solid #555",borderRadius:4,overflow:"auto",boxShadow:"0 1px 4px #00000022"}}>
                         {/* Header — Excel style com colunas redimensionáveis */}
                         <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),padding:"0",gap:0,background:"#1a4a7a",borderBottom:"2px solid #0f3460",position:"relative"}}>
-                          {["DATA","DESCRIÇÃO","ENTRADA","SAÍDA","TOT. ENTRADA","TOT. SAÍDA","SALDO","✓"].map((h,i)=>(
+                          {["DATA","DESCRIÇÃO","ENTRADA","SAÍDA","TOT. ENTRADA","TOT. SAÍDA","SALDO","✓","OBS"].map((h,i)=>(
                             <div key={h} style={{fontSize:8,color:"#fff",textTransform:"uppercase",letterSpacing:1,fontWeight:700,textAlign:i===0?"left":i===1?"center":"right",padding:"9px 10px",position:"relative",userSelect:"none",overflow:"hidden",whiteSpace:"nowrap",background:"#1a4a7a",boxShadow:"inset -1px 0 0 #4a7aaa"}}>
                               {h}
-                              {i<7&&<div
+                              {i<8&&<div
                                 style={{position:"absolute",right:0,top:0,bottom:0,width:6,cursor:"col-resize",zIndex:10}}
                                 onDoubleClick={e=>{e.stopPropagation();const cells=document.querySelectorAll("[data-col='"+i+"']");let maxW=80;cells.forEach(el=>{const w=(el.textContent||"").length*7+24;if(w>maxW)maxW=w;});setColWidths(p=>{const n=[...p];n[i]=Math.min(Math.max(maxW,60),500);return n;});}}
                                 onMouseDown={e=>{e.preventDefault();const sx=e.clientX,sw=colWidths[i];const mv=ev=>{setColWidths(p=>{const n=[...p];n[i]=Math.max(40,sw+(ev.clientX-sx));return n;});};const up=()=>{window.removeEventListener("mousemove",mv);window.removeEventListener("mouseup",up);};window.addEventListener("mousemove",mv);window.addEventListener("mouseup",up);}}
@@ -4715,6 +4730,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:38,alignSelf:"stretch"}}/>
                           <div style={{boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",minHeight:38,alignSelf:"stretch"}}/>
                           <div style={{background:"#f0e8ff",minHeight:38}}/>
+                          <div style={{background:"#f0e8ff",minHeight:38}}/>
                         </div>}
                         {grupos.map((grupo,gi)=>{
                           const dEntradas=grupo.lancs.reduce((a,l)=>a+(l.entrada||0),0);
@@ -4735,6 +4751,14 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                   <div style={{minHeight:38,background:rowBg,alignSelf:"stretch",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}/><div style={{minHeight:38,background:rowBg,alignSelf:"stretch",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}/><div style={{minHeight:38,background:rowBg,alignSelf:"stretch",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}}/>
                                   <div onClick={async e=>{e.stopPropagation();const upd={...l,confirmado:!l.confirmado};setLancamentos(p=>p.map(x=>x.id===l.id?upd:x));await supabase.from("lancamentos").update({confirmado:!l.confirmado}).eq("id",l.id);}} style={{display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",height:"100%",background:l.confirmado?"#16a34a":rowBg}} title={l.confirmado?"Marcar como pendente":"Confirmar pagamento"}>
                                     <span style={{fontSize:14}}>{l.confirmado?"✓":"○"}</span>
+                                  </div>
+                                  <div data-col="8" style={{padding:"2px 6px",background:rowBg,display:"flex",alignItems:"center",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888"}} onClick={e=>e.stopPropagation()}>
+                                    <input
+                                      defaultValue={l.obs||""}
+                                      placeholder="obs..."
+                                      style={{width:"100%",border:"none",outline:"none",background:"transparent",fontSize:10,color:"#555",fontFamily:"Arial,sans-serif",resize:"none"}}
+                                      onBlur={async ev=>{const v=ev.target.value;if(v===(l.obs||""))return;const upd={...l,obs:v};setLancamentos(p=>p.map(x=>x.id===l.id?upd:x));await supabase.from("lancamentos").update({obs:v}).eq("id",l.id);}}
+                                    />
                                   </div>
                                 </div>
                               );})}
