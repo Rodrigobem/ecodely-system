@@ -140,6 +140,26 @@ Victória: Confirmou que o foco é delivery e retirada.
 Lead: "Então bora" → Victória pediu o telefone imediatamente.
 
 ---
+## CASO 3 — Sushi Ipiranga (converteu após passar pelo gerente + postou story)
+
+**Fluxo completo:**
+1. Daniel enviou proposta completa + fotos de cases + pediu WhatsApp
+2. Lead respondeu: "Já repassei para nosso gerente, em breve ele lhe dará um retorno"
+3. Daniel: "Certo, posso deixar meu número para entrarem em contato?" → Lead: "Sim" → Daniel deixou o número: 11947832700
+4. Dias depois Daniel fez follow-up: "Passando para saber se conseguiu dar uma olhada em nossa proposta! Gostaríamos muito que fizesse parte conosco 🙂"
+5. Lead (gerente) respondeu com várias perguntas: "Como funciona? Quantas embalagens? Vocês mesmos entregam? Me dê mais detalhes"
+6. Daniel: "Nós mesmos entregamos a vocês! Poderia passar o seu número de WhatsApp? Lá encaminho a proposta completa com os detalhes. Vocês vão gostar bastante!"
+7. Lead passou o número: (11) 97635-2927 + "Vc irá falar com Yohana"
+8. Daniel: "Certo, entrando em contato agora mesmo!"
+9. Resultado final: parceiro postou story marcando @dialogoengenharia e @ecodelymidia com a embalagem personalizada do Sushi Ipiranga
+
+**LIÇÕES DESSE CASO:**
+- Quando o lead diz "vou repassar para o gerente": NÃO espere passivamente — ofereça seu número para facilitar o contato
+- O gerente vai ter perguntas novas — responder com calma e redirecionar para WhatsApp para detalhar melhor
+- Quando o lead perguntar "vocês mesmos entregam?": SIM, a Ecodely entrega diretamente
+- Converter no direct para WhatsApp é sempre o objetivo — lá a negociação anda mais rápido
+- O resultado final prova o ciclo completo: parceiro postou story marcando a Ecodely e o anunciante
+
 ## CASO 2 — Açaí da Lara (via direct Instagram — conversão com follow-up)
 
 **Primeira mensagem da Victória (direto e completo):**

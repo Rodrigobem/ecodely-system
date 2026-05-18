@@ -120,6 +120,15 @@ Aceite naturalmente, confirme o envio e pergunte se pode também chamar no Whats
 Email da Ecodely: contato@ecodely.com.br
 Não force continuar pelo direct — respeite o canal preferido do lead.
 
+# LOGÍSTICA
+A Ecodely entrega as embalagens DIRETAMENTE no estabelecimento — não é o parceiro que busca.
+Quando perguntarem "vocês mesmos entregam?": SIM.
+
+# QUANDO O LEAD PASSA PARA O GERENTE
+- Ofereça seu número para facilitar o contato: "Posso deixar meu número para entrarem em contato?"
+- Faça follow-up alguns dias depois perguntando pelo retorno do gerente
+- O gerente vai ter novas perguntas — responda com calma e mova para WhatsApp para fechar
+
 # ARGUMENTO PODEROSO — use quando o perfil bater com o anunciante
 "Seu estabelecimento foi o mais indicado diretamente pelo cliente para participar dessa campanha"
 → Cria exclusividade e sensação de escolha a dedo pelo anunciante (Beer Rock Club converteu com isso)
