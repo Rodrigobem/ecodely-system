@@ -2176,15 +2176,22 @@ return(
       const iniciarSim=async()=>{
         setSimMsgs([]);setSimStarted(true);setSimLoading(true);
         try{
+          // A Victória aborda primeiro — pede para gerar a mensagem inicial de prospecção
+          const promptInicio=simModo==="prospecto"
+            ?"Gere APENAS a sua primeira mensagem de abordagem para este restaurante, como se você estivesse enviando o primeiro contato pelo direct do Instagram. Não espere o restaurante falar — você está abordando eles. Use o modelo de primeira mensagem do seu prompt."
+            :simModo==="cobranca"
+            ?"Gere APENAS a sua primeira mensagem lembrando o parceiro sobre a postagem pendente deste mês."
+            :"Gere APENAS uma mensagem de boas vindas para um parceiro que acabou de entrar em contato.";
           const res=await fetch("/api/whatsapp/chat",{
             method:"POST",
             headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({messages:[{role:"user",content:"oi"}],modo:simModo})
+            body:JSON.stringify({messages:[{role:"user",content:promptInicio}],modo:simModo})
           });
           const data=await res.json();
           const resposta=data.text||"Olá! 👋";
-          setSimMsgs([{role:"user",text:"oi"},{role:"assistant",text:resposta}]);
-        }catch(e){setSimMsgs([{role:"assistant",text:"(configure VITE_ANTHROPIC_KEY no .env para testar)"}]);}
+          // Só mostra a mensagem da Victória — sem o "oi" do usuário
+          setSimMsgs([{role:"assistant",text:resposta}]);
+        }catch(e){setSimMsgs([{role:"assistant",text:"(erro ao conectar — verifique ANTHROPIC_API_KEY no Vercel)"}]);}
         setSimLoading(false);
       };
       return(
@@ -2192,7 +2199,7 @@ return(
         {/* Header simulador */}
         <div style={{padding:"14px 20px",borderBottom:`1px solid ${T.border}`,background:T.accentDim}}>
           <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent,marginBottom:8}}>🧪 Simulador do Agente</div>
-          <div style={{fontSize:10,color:T.muted,marginBottom:10}}>Simule uma conversa como se você fosse um estabelecimento. O agente responde com a IA real.</div>
+          <div style={{fontSize:10,color:T.muted,marginBottom:10}}>A Victória aborda o restaurante primeiro. Você responde como se fosse o dono/responsável.</div>
           <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
             <span style={{fontSize:10,color:T.muted}}>Modo:</span>
             {[["prospecto","🎯 Prospecção"],["parceiro","🤝 Parceiro"],["cobranca","📸 Cobrança"]].map(([v,l])=>(
@@ -2207,8 +2214,8 @@ return(
             <div style={{textAlign:"center",marginTop:40}}>
               <div style={{fontSize:32,marginBottom:12}}>🤖</div>
               <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,marginBottom:6}}>Agente Victória — Ecodely</div>
-              <div style={{fontSize:11,color:T.muted,marginBottom:20,maxWidth:320,margin:"0 auto 20px"}}>Modo: <strong>{simModo==="prospecto"?"Prospecção fria":simModo==="parceiro"?"Suporte ao parceiro":"Cobrança de postagem"}</strong><br/>Clique em iniciar para o agente mandar a primeira mensagem</div>
-              <button onClick={iniciarSim} style={{padding:"10px 24px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>▶ Iniciar simulação</button>
+              <div style={{fontSize:11,color:T.muted,marginBottom:20,maxWidth:320,margin:"0 auto 20px"}}>Modo: <strong>{simModo==="prospecto"?"Prospecção fria":simModo==="parceiro"?"Suporte ao parceiro":"Cobrança de postagem"}</strong><br/>Clique para a Victória mandar a primeira mensagem de prospecção</div>
+              <button onClick={iniciarSim} style={{padding:"10px 24px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>▶ Victória aborda agora</button>
             </div>
           )}
           {simMsgs.map((msg,i)=>(
