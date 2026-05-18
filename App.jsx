@@ -158,6 +158,7 @@ const getNav=(role,queueCount,notifCount,extraRoles=[])=>[
   {id:"planejamento-midia",label:"Planejamento de Mídia",icon:"-",roles:["admin","comercial"]},
   {id:"relatorios",label:"Relatórios",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base"]},
   {id:"cadastros",label:"Cadastros",icon:"-",roles:["admin","comercial","operacional"]},
+  {id:"pipeline",label:"Pipeline",icon:"-",roles:["admin","comercial","base"]},
   {id:"whatsapp",label:"WhatsApp IA",icon:"-",roles:["admin","comercial","base"]},
   {id:"usuarios",label:"Usuários",icon:"-",roles:["admin"]},
 ].filter(n=>n.roles.includes(role)||extraRoles.some(r=>n.roles.includes(r)));
@@ -2293,6 +2294,227 @@ return(
 
 }
 
+// ---------------------------------------------------------------------------
+// PIPELINE DE CONVERSÃO
+// ---------------------------------------------------------------------------
+function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoading,pipeMembro,setPipeMembro,pipeCampanha,setPipeCampanha,pipeDragging,setPipeDragging,pipeModalLead,setPipeModalLead,pipeNovoLead,setPipeNovoLead,pipeShowNovo,setPipeShowNovo,T}){
+  const ETAPAS=[
+    {id:"abordado",label:"Abordado",color:T.muted,emoji:"📤"},
+    {id:"respondeu",label:"Respondeu",color:T.info,emoji:"💬"},
+    {id:"interessado",label:"Interessado",color:T.warn,emoji:"🔥"},
+    {id:"convertido",label:"Convertido",color:T.accent,emoji:"✅"},
+  ];
+  const MEMBROS=["Victória","Daniel","Rodrigo"];
+  const inpS={width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none",boxSizing:"border-box"};
+
+  useEffect(()=>{loadLeads();},[]);
+
+  const loadLeads=async()=>{
+    setPipeLoading(true);
+    const{data}=await supabase.from("pipeline_leads").select("*").order("criado_em",{ascending:false});
+    setPipeLeads(data||[]);
+    setPipeLoading(false);
+  };
+
+  const atualizarEtapa=async(id,etapa)=>{
+    setPipeLeads(p=>p.map(l=>l.id===id?{...l,etapa}:l));
+    await supabase.from("pipeline_leads").update({etapa,atualizado_em:new Date().toISOString()}).eq("id",id);
+  };
+
+  const salvarLead=async()=>{
+    if(!pipeNovoLead.nome.trim()) return;
+    const{data}=await supabase.from("pipeline_leads").insert([{...pipeNovoLead,criado_em:new Date().toISOString(),atualizado_em:new Date().toISOString()}]).select().single();
+    if(data) setPipeLeads(p=>[data,...p]);
+    setPipeShowNovo(false);
+    setPipeNovoLead({nome:"",responsavel:"Victória",etapa:"abordado",campanha:"",cidade:"",tipo:"",telefone:"",instagram:"",obs:""});
+  };
+
+  const salvarEdicao=async()=>{
+    if(!pipeModalLead) return;
+    await supabase.from("pipeline_leads").update({...pipeModalLead,atualizado_em:new Date().toISOString()}).eq("id",pipeModalLead.id);
+    setPipeLeads(p=>p.map(l=>l.id===pipeModalLead.id?pipeModalLead:l));
+    setPipeModalLead(null);
+  };
+
+  const excluirLead=async(id)=>{
+    await supabase.from("pipeline_leads").delete().eq("id",id);
+    setPipeLeads(p=>p.filter(l=>l.id!==id));
+    setPipeModalLead(null);
+  };
+
+  // Filtros
+  const leadsFilt=pipeLeads
+    .filter(l=>pipeMembro==="todos"||l.responsavel===pipeMembro)
+    .filter(l=>pipeCampanha==="todas"||l.campanha===pipeCampanha);
+
+  const campanhas=[...new Set(pipeLeads.map(l=>l.campanha).filter(Boolean))];
+  const total=leadsFilt.length;
+  const convertidos=leadsFilt.filter(l=>l.etapa==="convertido").length;
+  const taxaConv=total>0?Math.round((convertidos/total)*100):0;
+
+  // Drag and drop handlers
+  const onDragStart=(e,lead)=>{ setPipeDragging(lead); e.dataTransfer.effectAllowed="move"; };
+  const onDragOver=(e)=>{ e.preventDefault(); e.dataTransfer.dropEffect="move"; };
+  const onDrop=(e,etapa)=>{ e.preventDefault(); if(pipeDragging&&pipeDragging.etapa!==etapa) atualizarEtapa(pipeDragging.id,etapa); setPipeDragging(null); };
+
+  return(
+  <div>
+    {/* Modal edição */}
+    {pipeModalLead&&(
+      <div style={{position:"fixed",inset:0,background:"#00000088",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget)setPipeModalLead(null);}}>
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:24,width:"min(520px,95vw)",maxHeight:"90vh",overflowY:"auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:T.accent}}>Editar Lead</div>
+            <button onClick={()=>setPipeModalLead(null)} style={{background:"none",border:"none",color:T.muted,fontSize:18,cursor:"pointer"}}>✕</button>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+            {[["nome","Restaurante"],["cidade","Cidade"],["tipo","Tipo"],["telefone","Telefone"],["instagram","Instagram"],["campanha","Campanha"]].map(([k,l])=>(
+              <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:3}}>{l}</div>
+              <input value={pipeModalLead[k]||""} onChange={e=>setPipeModalLead(p=>({...p,[k]:e.target.value}))} style={inpS}/></div>
+            ))}
+            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Responsável</div>
+            <select value={pipeModalLead.responsavel||"Victória"} onChange={e=>setPipeModalLead(p=>({...p,responsavel:e.target.value}))} style={inpS}>{MEMBROS.map(m=><option key={m}>{m}</option>)}</select></div>
+            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Etapa</div>
+            <select value={pipeModalLead.etapa||"abordado"} onChange={e=>setPipeModalLead(p=>({...p,etapa:e.target.value}))} style={inpS}>{ETAPAS.map(e=><option key={e.id} value={e.id}>{e.label}</option>)}</select></div>
+          </div>
+          <div style={{marginBottom:12}}><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Observações</div>
+          <textarea value={pipeModalLead.obs||""} onChange={e=>setPipeModalLead(p=>({...p,obs:e.target.value}))} rows={3} style={{...inpS,resize:"vertical"}}/></div>
+          <div style={{display:"flex",justifyContent:"space-between"}}>
+            <button onClick={()=>excluirLead(pipeModalLead.id)} style={{padding:"7px 14px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer"}}>🗑 Excluir</button>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setPipeModalLead(null)} style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10,cursor:"pointer"}}>Cancelar</button>
+              <button onClick={salvarEdicao} style={{padding:"7px 16px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer"}}>Salvar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Header */}
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16,flexWrap:"wrap",gap:12}}>
+      <div>
+        <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,marginBottom:4}}>Pipeline de Conversão</div>
+        <div style={{fontSize:11,color:T.muted}}>{total} leads · {convertidos} convertidos · <span style={{color:T.accent,fontWeight:700}}>{taxaConv}% de conversão</span></div>
+      </div>
+      <button onClick={()=>setPipeShowNovo(p=>!p)} style={{padding:"8px 16px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>+ Novo Lead</button>
+    </div>
+
+    {/* Filtros */}
+    <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
+      <span style={{fontSize:10,color:T.muted}}>Time:</span>
+      {["todos",...MEMBROS].map(m=>(
+        <button key={m} onClick={()=>setPipeMembro(m)} style={{padding:"5px 12px",borderRadius:6,fontSize:10,fontWeight:600,cursor:"pointer",border:`1px solid ${pipeMembro===m?T.accentBorder:T.border}`,background:pipeMembro===m?T.accentDim:"transparent",color:pipeMembro===m?T.accent:T.muted}}>{m==="todos"?"Todos":m}</button>
+      ))}
+      {campanhas.length>0&&<>
+        <span style={{fontSize:10,color:T.muted,marginLeft:8}}>Campanha:</span>
+        <select value={pipeCampanha} onChange={e=>setPipeCampanha(e.target.value)} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"5px 8px",fontSize:10,color:T.text,outline:"none"}}>
+          <option value="todas">Todas</option>
+          {campanhas.map(c=><option key={c} value={c}>{c}</option>)}
+        </select>
+      </>}
+      <button onClick={loadLeads} style={{marginLeft:"auto",padding:"5px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:10,cursor:"pointer"}}>↻</button>
+    </div>
+
+    {/* Formulário novo lead */}
+    {pipeShowNovo&&(
+      <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16,marginBottom:16}}>
+        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:12}}>Novo Lead</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+          {[["nome","Restaurante *"],["cidade","Cidade"],["tipo","Tipo"],["telefone","Telefone"],["instagram","Instagram"],["campanha","Campanha"]].map(([k,l])=>(
+            <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:3}}>{l}</div>
+            <input value={pipeNovoLead[k]||""} onChange={e=>setPipeNovoLead(p=>({...p,[k]:e.target.value}))} style={inpS}/></div>
+          ))}
+          <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Responsável</div>
+          <select value={pipeNovoLead.responsavel} onChange={e=>setPipeNovoLead(p=>({...p,responsavel:e.target.value}))} style={inpS}>{MEMBROS.map(m=><option key={m}>{m}</option>)}</select></div>
+          <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Etapa inicial</div>
+          <select value={pipeNovoLead.etapa} onChange={e=>setPipeNovoLead(p=>({...p,etapa:e.target.value}))} style={inpS}>{ETAPAS.map(e=><option key={e.id} value={e.id}>{e.label}</option>)}</select></div>
+        </div>
+        <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+          <button onClick={()=>setPipeShowNovo(false)} style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10,cursor:"pointer"}}>Cancelar</button>
+          <button onClick={salvarLead} style={{padding:"7px 16px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer"}}>Salvar</button>
+        </div>
+      </div>
+    )}
+
+    {/* Stats por membro */}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:16}}>
+      {MEMBROS.map(m=>{
+        const ml=pipeLeads.filter(l=>l.responsavel===m);
+        const mc=ml.filter(l=>l.etapa==="convertido").length;
+        const mt=Math.round(ml.length>0?(mc/ml.length)*100:0);
+        return(
+          <div key={m} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 16px",cursor:"pointer",border:`1px solid ${pipeMembro===m?T.accentBorder:T.border}`}} onClick={()=>setPipeMembro(pipeMembro===m?"todos":m)}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+              <div style={{fontWeight:700,fontSize:12}}>{m}</div>
+              <div style={{fontSize:9,color:T.accent,fontWeight:700}}>{mt}%</div>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              {ETAPAS.map(e=>{
+                const n=ml.filter(l=>l.etapa===e.id).length;
+                return n>0?<span key={e.id} style={{fontSize:9,padding:"2px 6px",borderRadius:4,background:e.color+"22",color:e.color}}>{e.emoji} {n}</span>:null;
+              })}
+            </div>
+            <div style={{marginTop:8,height:4,background:T.border,borderRadius:2,overflow:"hidden"}}>
+              <div style={{width:`${mt}%`,height:"100%",background:T.accent,borderRadius:2,transition:"width 0.3s"}}/>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    {/* Kanban */}
+    {pipeLoading&&<div style={{textAlign:"center",padding:40,color:T.muted,fontSize:11}}>Carregando...</div>}
+    {!pipeLoading&&(
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,alignItems:"start"}}>
+        {ETAPAS.map(etapa=>{
+          const cols=leadsFilt.filter(l=>l.etapa===etapa.id);
+          return(
+            <div key={etapa.id}
+              onDragOver={onDragOver}
+              onDrop={e=>onDrop(e,etapa.id)}
+              style={{background:T.surface,borderRadius:12,padding:12,border:`2px solid ${pipeDragging?etapa.color+"44":T.border}`,minHeight:200,transition:"border 0.15s"}}>
+              {/* Header coluna */}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span>{etapa.emoji}</span>
+                  <span style={{fontWeight:700,fontSize:11,color:etapa.color}}>{etapa.label}</span>
+                </div>
+                <div style={{background:etapa.color+"22",color:etapa.color,fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:10}}>{cols.length}</div>
+              </div>
+              {/* Cards */}
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {cols.map(lead=>(
+                  <div key={lead.id}
+                    draggable
+                    onDragStart={e=>onDragStart(e,lead)}
+                    onDragEnd={()=>setPipeDragging(null)}
+                    onClick={()=>setPipeModalLead({...lead})}
+                    style={{background:T.card,border:`1px solid ${pipeDragging?.id===lead.id?etapa.color:T.border}`,borderRadius:9,padding:"10px 12px",cursor:"grab",transition:"transform 0.1s, box-shadow 0.1s",opacity:pipeDragging?.id===lead.id?0.5:1}}
+                    onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 4px 12px ${etapa.color}22`;}}
+                    onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="none";}}>
+                    <div style={{fontWeight:700,fontSize:11,marginBottom:4}}>{lead.nome}</div>
+                    {lead.cidade&&<div style={{fontSize:9,color:T.muted,marginBottom:3}}>📍 {lead.cidade}</div>}
+                    {lead.tipo&&<div style={{fontSize:9,color:T.muted,marginBottom:3}}>🍽 {lead.tipo}</div>}
+                    {lead.campanha&&<div style={{fontSize:8,padding:"2px 6px",borderRadius:3,background:T.accentDim,color:T.accent,display:"inline-block",marginBottom:4}}>{lead.campanha}</div>}
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
+                      <div style={{fontSize:8,color:T.muted}}>{lead.responsavel}</div>
+                      {lead.telefone&&<div style={{fontSize:8,color:T.info}}>📞</div>}
+                      {lead.instagram&&<div style={{fontSize:8,color:T.purple}}>📸</div>}
+                    </div>
+                  </div>
+                ))}
+                {cols.length===0&&<div style={{textAlign:"center",padding:"20px 0",color:T.border,fontSize:10}}>Arraste um card aqui</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )}
+  </div>
+  );
+}
+
+
 export default function App(){
   const[user,setUser]=useState(()=>{try{const s=localStorage.getItem("ecodely_user");return s?JSON.parse(s):null;}catch{return null;}});
   const[loginForm,setLoginForm]=useState({email:"",pass:""});
@@ -2379,6 +2601,15 @@ export default function App(){
   const[baseScoreMin,setBaseScoreMin]=useState(0);
   const[baseContratoFilter,setBaseContratoFilter]=useState("todos");
   const[basePartners,setBasePartners]=useState(BASE_PARTNERS_INIT);
+  // Pipeline states
+  const[pipeLeads,setPipeLeads]=useState([]);
+  const[pipeLoading,setPipeLoading]=useState(false);
+  const[pipeMembro,setPipeMembro]=useState("todos");
+  const[pipeCampanha,setPipeCampanha]=useState("todas");
+  const[pipeDragging,setPipeDragging]=useState(null);
+  const[pipeModalLead,setPipeModalLead]=useState(null); // lead sendo editado/criado
+  const[pipeNovoLead,setPipeNovoLead]=useState({nome:"",responsavel:"Victória",etapa:"abordado",campanha:"",cidade:"",tipo:"",telefone:"",instagram:"",obs:""});
+  const[pipeShowNovo,setPipeShowNovo]=useState(false);
   // WhatsApp agent states
   // Simulador
   const[simMsgs,setSimMsgs]=useState([]);
@@ -7554,6 +7785,20 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           )}
 
 
+
+          {/* --------------------------------------
+              PIPELINE DE CONVERSÃO
+          -------------------------------------- */}
+          {tab==="pipeline"&&<PipelinePanel
+            supabase={supabase} pipeLeads={pipeLeads} setPipeLeads={setPipeLeads}
+            pipeLoading={pipeLoading} setPipeLoading={setPipeLoading}
+            pipeMembro={pipeMembro} setPipeMembro={setPipeMembro}
+            pipeCampanha={pipeCampanha} setPipeCampanha={setPipeCampanha}
+            pipeDragging={pipeDragging} setPipeDragging={setPipeDragging}
+            pipeModalLead={pipeModalLead} setPipeModalLead={setPipeModalLead}
+            pipeNovoLead={pipeNovoLead} setPipeNovoLead={setPipeNovoLead}
+            pipeShowNovo={pipeShowNovo} setPipeShowNovo={setPipeShowNovo}
+            T={T}/>}
 
           {/* --------------------------------------
               WHATSAPP IA
