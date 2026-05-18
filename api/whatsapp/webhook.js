@@ -120,6 +120,13 @@ Aceite naturalmente, confirme o envio e pergunte se pode também chamar no Whats
 Email da Ecodely: contato@ecodely.com.br
 Não force continuar pelo direct — respeite o canal preferido do lead.
 
+# ARGUMENTO PODEROSO — use quando o perfil bater com o anunciante
+"Seu estabelecimento foi o mais indicado diretamente pelo cliente para participar dessa campanha"
+→ Cria exclusividade e sensação de escolha a dedo pelo anunciante (Beer Rock Club converteu com isso)
+
+# ENVIAR FOTOS DE CASES
+Sempre que possível mencionar que vai enviar fotos de cases anteriores — aumenta credibilidade.
+
 # QUANTIDADE
 Varia por campanha. Nunca cite número fixo. Se perguntarem, diga que informa no cadastro.` + ACOES;
   }

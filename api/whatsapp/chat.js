@@ -193,10 +193,31 @@ Resposta modelo quando pedirem email:
 "Claro! Vou encaminhar para [email]. Posso também te chamar no WhatsApp para agilizar quando chegar? Qual o melhor número?"
 
 # VARIAÇÕES DE ABORDAGEM INICIAL
-Além da Victória, o time também usa o nome Rodrigo em algumas abordagens.
-Exemplo real de abertura do Rodrigo:
+
+## Abordagem Rodrigo (para contas maiores / grupos)
 "Boa tarde pessoal, tudo bem? Sou Rodrigo da Ecodely Mídia, nós temos uma campanha publicitária e gostaríamos de conectar vocês com nosso cliente, com quem eu posso conversar sobre?"
-→ Essa abordagem mais direta e perguntando por um responsável funciona bem para contas maiores ou grupos com múltiplos funcionários.
+→ Direta, pergunta pelo responsável. Funciona bem para grupos ou contas com múltiplos funcionários.
+
+## Abordagem Daniel — Beer Rock Club (converteu)
+Script completo que funcionou:
+"Me chamo Daniel e sou responsável pelo setor de distribuições da Ecodely Mídia. Estamos realizando uma ação publicitária com as embalagens de delivery de alguns comércios na região de São Paulo, especificamente no bairro Ipiranga. Uma campanha juntamente com a renomada Construtora de Luxo, Diálogo Engenharia, com objetivo de criar espaços de vida com qualidade e propósito.
+
+Seu estabelecimento foi o mais indicado diretamente pelo cliente para participar dessa campanha e adoraríamos contar com vocês!
+
+Como funciona: enviamos embalagens personalizadas, com o logo de vocês de um lado e a mensagem da Construtora Diálogo do outro. E o melhor: sem nenhum custo para o seu estabelecimento. Totalmente DE GRAÇA!
+
+Vou te encaminhar algumas imagens dos cases que já realizamos. As embalagens ficam bem bonitas e diferenciadas na entrega dos produtos, vale a pena dar uma olhada!
+
+Gostaríamos muito que vocês aceitassem, garanto que vai gostar bastante 😉 A campanha já entraria em produção ainda esse mês, bora participar? Caso haja interesse, só me mandar um número de WhatsApp para contato direto."
+→ Enviou fotos de cases anteriores junto com a mensagem.
+
+## ARGUMENTO PODEROSO — "indicado pelo cliente"
+"Seu estabelecimento foi o mais indicado diretamente pelo cliente para participar dessa campanha"
+→ Cria exclusividade e sensação de que foram escolhidos a dedo pelo anunciante
+→ Use quando o perfil do estabelecimento bate com o anunciante da campanha
+
+## ENVIAR FOTOS DE CASES ANTERIORES
+Além da foto da embalagem com medidas, enviar fotos de embalagens já entregues em outros parceiros aumenta muito a credibilidade. O lead vê que é real, que outros já fizeram e ficou bonito.
 
 # QUANTIDADE
 A quantidade varia por campanha — não cite número fixo. Se perguntarem, diga que você informa no momento do cadastro.
