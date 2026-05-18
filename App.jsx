@@ -158,7 +158,6 @@ const getNav=(role,queueCount,notifCount,extraRoles=[])=>[
   {id:"planejamento-midia",label:"Planejamento de Mídia",icon:"-",roles:["admin","comercial"]},
   {id:"relatorios",label:"Relatórios",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base"]},
   {id:"cadastros",label:"Cadastros",icon:"-",roles:["admin","comercial","operacional"]},
-  {id:"pipeline",label:"Pipeline",icon:"-",roles:["admin","comercial","base"]},
   {id:"whatsapp",label:"WhatsApp IA",icon:"-",roles:["admin","comercial","base"]},
   {id:"usuarios",label:"Usuários",icon:"-",roles:["admin"]},
 ].filter(n=>n.roles.includes(role)||extraRoles.some(r=>n.roles.includes(r)));
@@ -6654,7 +6653,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
               {/* Sub tabs */}
               <div style={{display:"flex",gap:0,marginBottom:16,borderBottom:`1px solid ${T.border}`}}>
-                {[["parceiros","Parceiros"],["score","Score & Ranking"],["contratos","Contratos"]].map(([id,l])=>(
+                {[["parceiros","Parceiros"],["pipeline","Pipeline"],["score","Score & Ranking"],["contratos","Contratos"]].map(([id,l])=>(
                   <div key={id} onClick={()=>setBaseTab(id)} style={{padding:"9px 16px",fontSize:11,cursor:"pointer",color:baseTab===id?T.accent:T.muted,borderBottom:`2px solid ${baseTab===id?T.accent:"transparent"}`,transition:"all 0.15s"}}>{l}</div>
                 ))}
               </div>
@@ -6710,6 +6709,19 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               )}
 
               {/* -- SCORE & RANKING -- */}
+              {baseTab==="pipeline"&&(
+                <PipelinePanel
+                  supabase={supabase} pipeLeads={pipeLeads} setPipeLeads={setPipeLeads}
+                  pipeLoading={pipeLoading} setPipeLoading={setPipeLoading}
+                  pipeMembro={pipeMembro} setPipeMembro={setPipeMembro}
+                  pipeCampanha={pipeCampanha} setPipeCampanha={setPipeCampanha}
+                  pipeDragging={pipeDragging} setPipeDragging={setPipeDragging}
+                  pipeModalLead={pipeModalLead} setPipeModalLead={setPipeModalLead}
+                  pipeNovoLead={pipeNovoLead} setPipeNovoLead={setPipeNovoLead}
+                  pipeShowNovo={pipeShowNovo} setPipeShowNovo={setPipeShowNovo}
+                  T={T}/>
+              )}
+
               {baseTab==="score"&&(
                 <div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20,marginBottom:14}}>
@@ -7785,20 +7797,6 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           )}
 
 
-
-          {/* --------------------------------------
-              PIPELINE DE CONVERSÃO
-          -------------------------------------- */}
-          {tab==="pipeline"&&<PipelinePanel
-            supabase={supabase} pipeLeads={pipeLeads} setPipeLeads={setPipeLeads}
-            pipeLoading={pipeLoading} setPipeLoading={setPipeLoading}
-            pipeMembro={pipeMembro} setPipeMembro={setPipeMembro}
-            pipeCampanha={pipeCampanha} setPipeCampanha={setPipeCampanha}
-            pipeDragging={pipeDragging} setPipeDragging={setPipeDragging}
-            pipeModalLead={pipeModalLead} setPipeModalLead={setPipeModalLead}
-            pipeNovoLead={pipeNovoLead} setPipeNovoLead={setPipeNovoLead}
-            pipeShowNovo={pipeShowNovo} setPipeShowNovo={setPipeShowNovo}
-            T={T}/>}
 
           {/* --------------------------------------
               WHATSAPP IA
