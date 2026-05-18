@@ -2192,11 +2192,12 @@ return(
           </div>
         </div>
         {/* Mensagens simulador */}
-        <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:10}}>
+        <div id="sim-scroll" style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:10}}
+          ref={el=>{if(el){el.scrollTop=el.scrollHeight;}}}>
           {!simStarted&&simMsgs.length===0&&(
             <div style={{textAlign:"center",marginTop:40}}>
               <div style={{fontSize:32,marginBottom:12}}>🤖</div>
-              <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,marginBottom:6}}>Agente Lena — Ecodely</div>
+              <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,marginBottom:6}}>Agente Victória — Ecodely</div>
               <div style={{fontSize:11,color:T.muted,marginBottom:20,maxWidth:320,margin:"0 auto 20px"}}>Modo: <strong>{simModo==="prospecto"?"Prospecção fria":simModo==="parceiro"?"Suporte ao parceiro":"Cobrança de postagem"}</strong><br/>Clique em iniciar para o agente mandar a primeira mensagem</div>
               <button onClick={iniciarSim} style={{padding:"10px 24px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>▶ Iniciar simulação</button>
             </div>
@@ -2205,9 +2206,8 @@ return(
             <div key={i} style={{display:"flex",justifyContent:msg.role==="user"?"flex-end":"flex-start",gap:8,alignItems:"flex-end"}}>
               {msg.role==="assistant"&&<div style={{width:28,height:28,borderRadius:"50%",background:T.accentDim,border:`1px solid ${T.accentBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>🤖</div>}
               <div style={{maxWidth:"72%"}}>
-                <div style={{padding:"10px 14px",borderRadius:msg.role==="user"?"14px 4px 14px 14px":"4px 14px 14px 14px",background:msg.role==="user"?T.surface:T.card,border:`1px solid ${msg.role==="user"?T.border:T.accentBorder}`,fontSize:11,lineHeight:1.6,whiteSpace:"pre-wrap"}}>
-                  {msg.text}
-                </div>
+                <div style={{padding:"10px 14px",borderRadius:msg.role==="user"?"14px 4px 14px 14px":"4px 14px 14px 14px",background:msg.role==="user"?T.surface:T.card,border:`1px solid ${msg.role==="user"?T.border:T.accentBorder}`,fontSize:11,lineHeight:1.6,whiteSpace:"pre-wrap"}}
+                  dangerouslySetInnerHTML={{__html:msg.text.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n/g,"<br/>")}}/>
                 {msg.badge&&<div style={{fontSize:8,color:T.accent,marginTop:3,textAlign:msg.role==="assistant"?"left":"right",fontWeight:700}}>⚡ AÇÃO: {msg.badge}</div>}
               </div>
               {msg.role==="user"&&<div style={{width:28,height:28,borderRadius:"50%",background:T.surface,border:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>🏪</div>}
