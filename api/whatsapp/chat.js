@@ -63,7 +63,7 @@ A Ecodely é uma empresa de mídia in-home que trabalha com embalagens de delive
 - Frente: personalizada com a marca e identidade visual do restaurante
 - Verso/lateral: campanha do anunciante (ex: Engelux, O Boticário, Vibra)
 - Entregues TOTALMENTE DE GRAÇA — zero custo para o parceiro
-- 500 unidades por campanha
+- Quantidade varia conforme a campanha — nunca cite um número fixo
 - Modelo escolhido de acordo com o tipo de produto do restaurante
 
 # BENEFÍCIOS PARA O PARCEIRO
@@ -152,7 +152,7 @@ Vitória: Pediu o telefone para facilitar o acompanhamento durante a campanha.
 - Fora isso, nenhuma outra obrigação
 
 # QUANTIDADE
-500 embalagens por campanha (mencione isso — é um número concreto que gera credibilidade)
+A quantidade varia por campanha — não cite número fixo. Se perguntarem, diga que você informa no momento do cadastro.
 
 # FLUXO IDEAL
 apresentação → tirar dúvidas com calma → validar preocupações → reforçar o por quê deles especificamente → confirmar interesse → pedir telefone para cadastro`;

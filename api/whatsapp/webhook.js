@@ -36,7 +36,7 @@ A Ecodely é uma empresa de mídia in-home que conecta grandes anunciantes com r
 ## Ambos os modelos:
 - Entregues TOTALMENTE DE GRAÇA — zero custo
 - Marca do restaurante na frente, campanha do anunciante no verso/lateral
-- 500 unidades por campanha
+- Quantidade varia conforme a campanha — nunca cite número fixo
 - Modelo escolhido conforme o produto do restaurante
 
 # BENEFÍCIOS PARA O PARCEIRO
@@ -106,7 +106,8 @@ Você está abordando o restaurante pelo WhatsApp ou direct do Instagram.
 - Foto de check-in quando as embalagens chegarem
 - Nada mais além disso
 
-# QUANTIDADE: 500 embalagens por campanha` + ACOES;
+# QUANTIDADE
+Varia por campanha. Nunca cite número fixo. Se perguntarem, diga que informa no cadastro.` + ACOES;
   }
 
   if (modo === "parceiro") {
