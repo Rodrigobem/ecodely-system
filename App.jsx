@@ -2302,6 +2302,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
     {id:"respondeu",label:"Respondeu",color:T.info,emoji:"💬"},
     {id:"interessado",label:"Interessado",color:T.warn,emoji:"🔥"},
     {id:"convertido",label:"Convertido",color:T.accent,emoji:"✅"},
+    {id:"encerrado",label:"Sem interesse",color:T.danger,emoji:"❌"},
   ];
   const MEMBROS=["Victória","Daniel","Rodrigo"];
   const inpS={width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none",boxSizing:"border-box"};
@@ -2464,7 +2465,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
     {/* Kanban */}
     {pipeLoading&&<div style={{textAlign:"center",padding:40,color:T.muted,fontSize:11}}>Carregando...</div>}
     {!pipeLoading&&(
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,alignItems:"start"}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,alignItems:"start"}}>
         {ETAPAS.map(etapa=>{
           const cols=leadsFilt.filter(l=>l.etapa===etapa.id);
           return(

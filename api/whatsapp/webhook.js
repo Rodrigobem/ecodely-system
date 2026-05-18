@@ -210,6 +210,46 @@ async function sendWhatsApp(numero, texto) {
   return res.json();
 }
 
+// ── Upsert no pipeline de conversão ───────────────────────────────────────
+async function upsertPipeline(supabase, conversa, etapa, dados = {}) {
+  try {
+    // Verificar se já existe card no pipeline para essa conversa
+    const { data: existente } = await supabase
+      .from("pipeline_leads")
+      .select("id, etapa")
+      .eq("wa_conversa_id", conversa.id)
+      .single();
+
+    const payload = {
+      nome: dados.nome || dados.restaurante || conversa.nome || conversa.numero,
+      responsavel: dados.responsavel || conversa.responsavel || "Victória",
+      etapa,
+      campanha: dados.campanha || conversa.dados_lead?.campanha || "",
+      cidade: dados.cidade || conversa.dados_lead?.cidade || "",
+      tipo: dados.tipo || conversa.dados_lead?.tipo || "",
+      telefone: dados.telefone || conversa.numero || "",
+      instagram: dados.instagram || "",
+      origem: "whatsapp",
+      wa_conversa_id: conversa.id,
+      atualizado_em: new Date().toISOString(),
+    };
+
+    if (existente) {
+      // Só avança de etapa, nunca volta
+      const ORDEM = ["abordado", "respondeu", "interessado", "convertido", "encerrado"];
+      const ordemAtual = ORDEM.indexOf(existente.etapa);
+      const ordemNova = ORDEM.indexOf(etapa);
+      if (ordemNova > ordemAtual) {
+        await supabase.from("pipeline_leads").update(payload).eq("id", existente.id);
+      }
+    } else {
+      await supabase.from("pipeline_leads").insert([{ ...payload, criado_em: new Date().toISOString() }]);
+    }
+  } catch (e) {
+    console.error("Pipeline upsert error:", e.message);
+  }
+}
+
 // ── Handler principal ──────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -268,6 +308,11 @@ module.exports = async function handler(req, res) {
       atualizado_em: new Date().toISOString(),
     }).eq("id", conversa.id);
 
+    // Pipeline: quando responde pela primeira vez → etapa "respondeu"
+    if (conversa.status === "novo" || conversa.status === "em_andamento") {
+      await upsertPipeline(supabase, conversa, "respondeu");
+    }
+
     // ── 3. Buscar histórico para contexto ─────────────────────────────────
     const { data: historico } = await supabase
       .from("wa_mensagens")
@@ -300,14 +345,18 @@ module.exports = async function handler(req, res) {
             status: "aguardando",
             nome: parsed.dados?.nome || conversa.nome,
           }).eq("id", conversa.id);
+          // Pipeline: interesse confirmado → Interessado
+          await upsertPipeline(supabase, conversa, "interessado", parsed.dados);
         } else if (parsed.acao === "converter_parceiro") {
-          textoFinal = `🎉 Que ótima notícia! Bem-vindo à família Ecodely! Seu cadastro foi confirmado. Nossa equipe de instalação vai entrar em contato para agendar a visita. Qualquer dúvida, é só chamar aqui!`;
+          textoFinal = `🎉 Que ótima notícia! Bem-vindo à família Ecodely! Seu cadastro foi confirmado. Nossa equipe vai entrar em contato em breve. Qualquer dúvida, é só chamar aqui!`;
           await supabase.from("wa_conversas").update({
             dados_lead: parsed.dados,
             status: "convertido",
             modo: "parceiro",
             nome: parsed.dados?.nome || conversa.nome,
           }).eq("id", conversa.id);
+          // Pipeline: parceiro confirmado → Convertido
+          await upsertPipeline(supabase, conversa, "convertido", parsed.dados);
 
           // Inserir como parceiro na base
           await supabase.from("parceiros").insert({
@@ -327,6 +376,8 @@ module.exports = async function handler(req, res) {
         } else if (parsed.acao === "encerrar") {
           textoFinal = `Tudo bem! Qualquer dia que quiser saber mais sobre a Ecodely, pode chamar aqui. Até mais! 👋`;
           await supabase.from("wa_conversas").update({ status: "encerrado" }).eq("id", conversa.id);
+          // Pipeline: sem interesse → marca como encerrado (etapa especial)
+          await upsertPipeline(supabase, conversa, "encerrado");
         }
       }
     } catch (e) {
