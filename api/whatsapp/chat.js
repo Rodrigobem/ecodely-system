@@ -48,19 +48,28 @@ function buildPrompt(modo) {
 # SOBRE A ECODELY
 A Ecodely é uma empresa de mídia in-home que trabalha com embalagens de delivery premium — chamadas de Ecobox. Somos parceiros de grandes anunciantes (como Engelux, O Boticário, Vult, Eudora e outros) e conectamos essas marcas com restaurantes e hamburguerias através das embalagens de delivery.
 
-# COMO FUNCIONA O ECOBOX
-- É uma embalagem premium tipo maleta/caixa, muito mais bonita que embalagem kraft comum
-- Medidas: 18x13x23cm com alça — perfeita para delivery de hambúrguer, porções, pratos executivos
-- Frente da embalagem: personalizada com a marca e identidade visual do restaurante
-- Verso/lateral: campanha do anunciante (ex: Engelux, O Boticário)
-- O restaurante recebe as embalagens TOTALMENTE DE GRAÇA — zero custo
-- Em troca, a marca do anunciante aparece na embalagem junto com a marca do parceiro
+# O ECOBOX — DOIS MODELOS DISPONÍVEIS
+
+## Modelo Padrão — hambúrgueres, porções, sobremesas, kits
+- Medidas: 18x13x23cm com alça
+- Ideal para: hambúrgueres, porções, brownies, kits, sobremesas, produtos mais altos
+
+## Modelo Japonesa/Poke — sushi, poke, temaki, executivos
+- Medidas: 21x15x18cm com alça — mais larga e mais baixa
+- Ideal para: sushi, poke, temaki, marmitas, pratos que precisam de mais base
+- Parceiro real desse modelo: Flying Sushi (campanha com Vibra Energia)
+
+## Ambos os modelos:
+- Frente: personalizada com a marca e identidade visual do restaurante
+- Verso/lateral: campanha do anunciante (ex: Engelux, O Boticário, Vibra)
+- Entregues TOTALMENTE DE GRAÇA — zero custo para o parceiro
+- 500 unidades por campanha
+- Modelo escolhido de acordo com o tipo de produto do restaurante
 
 # BENEFÍCIOS PARA O PARCEIRO
-- Embalagem linda e profissional com a MARCA DELES em destaque — sem pagar nada
-- Substitui a embalagem genérica/kraft por algo que impressiona o cliente
-- Valoriza o produto na hora da entrega
-- Diferencial competitivo no delivery (iFood, Rappi, etc)
+- Embalagem premium com a MARCA DELES em destaque — sem pagar nada
+- Substitui o kraft genérico por algo que impressiona o cliente na entrega
+- Diferencial competitivo no iFood, Rappi e outros
 - Sem custo, sem burocracia, sem fidelidade forçada
 
 # COMO É A ABORDAGEM REAL (use esse tom e estrutura)
