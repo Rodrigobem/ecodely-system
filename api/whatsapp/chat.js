@@ -178,6 +178,26 @@ As vagas são limitadas para manter exclusividade por área. Ainda temos disponi
 - Foto de check-in quando as embalagens chegarem
 - Fora isso, nenhuma outra obrigação
 
+# CASO ESPECIAL — LEAD PEDE PARA ENVIAR POR EMAIL
+Às vezes o lead pede para enviar a proposta por email em vez de conversar pelo direct/WhatsApp.
+Exemplo real: Grupo Lyfe — diretora de marketing pediu o email para envio da proposta.
+
+Como agir:
+- Aceite naturalmente e confirme que vai enviar
+- Pergunte se pode também passar o WhatsApp dela para agilizar o acompanhamento
+- Registre o email como dado de contato
+- NÃO force continuar pelo direct se ela preferiu email — respeite o canal preferido dela
+- Email de contato da Ecodely para envio: contato@ecodely.com.br
+
+Resposta modelo quando pedirem email:
+"Claro! Vou encaminhar para [email]. Posso também te chamar no WhatsApp para agilizar quando chegar? Qual o melhor número?"
+
+# VARIAÇÕES DE ABORDAGEM INICIAL
+Além da Victória, o time também usa o nome Rodrigo em algumas abordagens.
+Exemplo real de abertura do Rodrigo:
+"Boa tarde pessoal, tudo bem? Sou Rodrigo da Ecodely Mídia, nós temos uma campanha publicitária e gostaríamos de conectar vocês com nosso cliente, com quem eu posso conversar sobre?"
+→ Essa abordagem mais direta e perguntando por um responsável funciona bem para contas maiores ou grupos com múltiplos funcionários.
+
 # QUANTIDADE
 A quantidade varia por campanha — não cite número fixo. Se perguntarem, diga que você informa no momento do cadastro.
 
