@@ -2030,6 +2030,16 @@ return(
 // WHATSAPP PANEL — componente próprio (evita side effect em IIFE)
 // ---------------------------------------------------------------------------
 function WhatsAppPanel({supabase,waConversas,setWaConversas,waMensagens,setWaMensagens,waSelConv,setWaSelConv,waInput,setWaInput,waLoading,setWaLoading,waFiltro,setWaFiltro,waNovoNumero,setWaNovoNumero,waNovoModo,setWaNovoModo,simMsgs,setSimMsgs,simInput,setSimInput,simLoading,setSimLoading,simModo,setSimModo,simStarted,setSimStarted,T}){
+// Scroll automático do simulador
+useEffect(()=>{
+  const el=document.getElementById("sim-bottom");
+  if(el) el.scrollIntoView({behavior:"smooth"});
+},[simMsgs,simLoading]);
+// Scroll automático do chat de conversas
+useEffect(()=>{
+  const el=document.getElementById("chat-bottom");
+  if(el) el.scrollIntoView({behavior:"smooth"});
+},[waMensagens]);
 // Carregar conversas
 const loadConversas=async()=>{
   setWaLoading(true);
@@ -2192,8 +2202,7 @@ return(
           </div>
         </div>
         {/* Mensagens simulador */}
-        <div id="sim-scroll" style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:10}}
-          ref={el=>{if(el){el.scrollTop=el.scrollHeight;}}}>
+        <div id="sim-scroll" style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:10}}>
           {!simStarted&&simMsgs.length===0&&(
             <div style={{textAlign:"center",marginTop:40}}>
               <div style={{fontSize:32,marginBottom:12}}>🤖</div>
@@ -2214,6 +2223,7 @@ return(
             </div>
           ))}
           {simLoading&&<div style={{display:"flex",gap:8,alignItems:"center"}}><div style={{width:28,height:28,borderRadius:"50%",background:T.accentDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>🤖</div><div style={{padding:"10px 14px",borderRadius:"4px 14px 14px 14px",background:T.card,border:`1px solid ${T.accentBorder}`,fontSize:11,color:T.muted}}>digitando...</div></div>}
+          <div id="sim-bottom"/>
         </div>
         {/* Input simulador */}
         {simStarted&&<div style={{padding:"12px 16px",borderTop:`1px solid ${T.border}`,display:"flex",gap:8}}>
