@@ -2976,6 +2976,7 @@ export default function App(){
   const[fluxoTipo,setFluxoTipo]=useState("todos");
   const[fluxoCategoria,setFluxoCategoria]=useState("todas");
   const[fluxoForma,setFluxoForma]=useState("todas");
+  const[mobileMenuOpen,setMobileMenuOpen]=useState(false);
   const[showAddConta,setShowAddConta]=useState(false);
   const[showAddCentro,setShowAddCentro]=useState(false);
   const[novoCusto,setNovoCusto]=useState({descricao:"",valor:0,dia:5,categoria:"Outros",centrosCusto:"Administrativo",ativo:true});
@@ -4267,15 +4268,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
         </div>
       )}
 
-      {/* SIDEBAR */}
-      <div style={{width:210,background:T.surface,borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",flexShrink:0}}>
+      {/* SIDEBAR — overlay no mobile */}
+      {mobileMenuOpen&&<div onClick={()=>setMobileMenuOpen(false)} style={{position:"fixed",inset:0,background:"#00000077",zIndex:299,display:"none"}} className="mob-overlay"/>}
+      <div style={{width:210,background:T.surface,borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",flexShrink:0}} className={mobileMenuOpen?"sidebar-open":"sidebar"}>
         <div style={{padding:"20px 16px 14px",borderBottom:`1px solid ${T.border}`}}>
           <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:17,color:T.accent,letterSpacing:-0.5}}>ECODELY</div>
           <div style={{fontSize:8,color:T.muted,letterSpacing:2.5,marginTop:2,fontFamily:"Arial,sans-serif"}}>SISTEMA DE GESTÃO</div>
         </div>
         <div style={{flex:1,padding:"10px 8px",overflowY:"auto"}}>
           {nav.map(n=>(
-            <div key={n.id} className="nb" onClick={()=>setTab(n.id)} style={{display:"flex",alignItems:"center",gap:9,padding:"9px 10px",borderRadius:7,marginBottom:1,background:tab===n.id?T.accentDim:"transparent",border:`1px solid ${tab===n.id?T.accentBorder:"transparent"}`}}>
+            <div key={n.id} className="nb" onClick={()=>{setTab(n.id);setMobileMenuOpen(false);}} style={{display:"flex",alignItems:"center",gap:9,padding:"9px 10px",borderRadius:7,marginBottom:1,background:tab===n.id?T.accentDim:"transparent",border:`1px solid ${tab===n.id?T.accentBorder:"transparent"}`}}>
               <span style={{fontSize:12,color:tab===n.id?T.accent:T.muted,width:16,textAlign:"center"}}>{n.icon}</span>
               <span style={{fontSize:11,color:tab===n.id?T.text:T.muted,fontFamily:"Arial,sans-serif"}}>{n.label}</span>
               {n.badge&&<div style={{marginLeft:"auto",background:T.danger,borderRadius:8,padding:"1px 5px",fontSize:8,color:"#fff",fontWeight:700}}>{n.badge}</div>}
@@ -4306,8 +4308,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
       </div>
 
       {/* CONTENT */}
-      <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column"}}>
-        <div style={{padding:"13px 24px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",background:T.surface,flexShrink:0}}>
+      <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",minWidth:0}}>
+        <div style={{padding:"13px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",background:T.surface,flexShrink:0}}>
+          <button onClick={()=>setMobileMenuOpen(p=>!p)} className="hamburger" style={{display:"none",background:"none",border:"none",color:T.text,fontSize:20,cursor:"pointer",padding:"4px 8px",borderRadius:6,marginRight:8}}>☰</button>
           <div>
             <div style={{fontFamily:"Arial,sans-serif",fontSize:15,fontWeight:700}}>{nav.find(n=>n.id===tab)?.label||"Ecodely"}</div>
             <div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif",marginTop:1}}>{new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
@@ -4385,7 +4388,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           </div>
         </div>
 
-        <div style={{flex:1,padding:24,overflow:"auto"}} className="fade" key={tab} onClick={()=>inboxOpen&&setInboxOpen(false)}>
+        <div style={{flex:1,padding:"16px 20px",overflow:"auto"}} className="fade content-pad" key={tab} onClick={()=>inboxOpen&&setInboxOpen(false)}>
 
           {/* --------------------------------------
               DASHBOARD - ROLE BASED
