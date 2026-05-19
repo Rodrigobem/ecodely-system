@@ -1,5 +1,6 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/treino", "destination": "/treino.html" },
+    { "source": "/((?!treino|api|assets|favicon).*)", "destination": "/" }
   ]
 }

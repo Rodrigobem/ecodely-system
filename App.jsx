@@ -2147,6 +2147,39 @@ return(
 
   {/* ── ÁREA DE CHAT / SIMULADOR ── */}
   {waFiltro==="simulador"?(
+    simModo==="feedbacks"?(
+      <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+        <div style={{padding:"14px 20px",borderBottom:`1px solid ${T.border}`,background:T.warnDim,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.warn}}>📋 Feedbacks da Equipe</div>
+            <div style={{fontSize:10,color:T.muted}}>{feedbacks.length} correções enviadas</div>
+          </div>
+          <button onClick={()=>setSimModo("prospecto")} style={{background:"none",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,padding:"4px 10px",fontSize:10,cursor:"pointer"}}>← Voltar</button>
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:12}}>
+          {feedbacksLoading&&<div style={{textAlign:"center",padding:40,color:T.muted,fontSize:11}}>Carregando...</div>}
+          {!feedbacksLoading&&feedbacks.length===0&&<div style={{textAlign:"center",padding:40,color:T.muted,fontSize:11}}>Nenhum feedback ainda. Compartilhe o link com a equipe!</div>}
+          {!feedbacksLoading&&feedbacks.map(fb=>(
+            <div key={fb.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <span style={{fontSize:9,padding:"2px 7px",borderRadius:4,background:T.warnDim,color:T.warn,fontWeight:600}}>{fb.modo}</span>
+                <span style={{fontSize:9,color:T.muted}}>{new Date(fb.criado_em).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</span>
+              </div>
+              <div style={{marginBottom:8}}>
+                <div style={{fontSize:9,color:T.muted,marginBottom:4}}>❌ O que a Victória disse:</div>
+                <div style={{fontSize:11,color:T.soft,background:T.surface,borderRadius:6,padding:"8px 10px",borderLeft:`3px solid ${T.danger}`}}>{fb.resposta_agente}</div>
+              </div>
+              <div>
+                <div style={{fontSize:9,color:T.muted,marginBottom:4}}>✅ Como deveria responder:</div>
+                <div style={{fontSize:11,color:T.text,background:T.surface,borderRadius:6,padding:"8px 10px",borderLeft:`3px solid ${T.accent}`}}>{fb.correcao_sugerida}</div>
+              </div>
+              {!fb.resolvido&&<div style={{marginTop:8,display:"flex",justifyContent:"flex-end"}}><button onClick={async()=>{await supabase.from("simulador_feedback").update({resolvido:true}).eq("id",fb.id);setFeedbacks(p=>p.map(f=>f.id===fb.id?{...f,resolvido:true}:f));}} style={{padding:"4px 10px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:5,fontSize:9,cursor:"pointer",fontWeight:600}}>✓ Resolvido</button></div>}
+              {fb.resolvido&&<div style={{marginTop:8,textAlign:"right"}}><span style={{fontSize:9,color:T.accent}}>✓ Resolvido</span></div>}
+            </div>
+          ))}
+        </div>
+      </div>
+    ):(
     // ── SIMULADOR ──
     (()=>{
       const enviarSim=async()=>{
@@ -2198,7 +2231,10 @@ return(
       <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
         {/* Header simulador */}
         <div style={{padding:"14px 20px",borderBottom:`1px solid ${T.border}`,background:T.accentDim}}>
-          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent,marginBottom:8}}>🧪 Simulador do Agente</div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:8}}>
+            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>🧪 Simulador do Agente</div>
+            <a href="/treino" target="_blank" style={{padding:"5px 12px",background:T.surface,border:`1px solid ${T.border}`,color:T.soft,borderRadius:6,fontSize:10,fontWeight:600,textDecoration:"none"}}>🔗 Abrir link da equipe</a>
+          </div>
           <div style={{fontSize:10,color:T.muted,marginBottom:10}}>A Victória aborda o restaurante primeiro. Você responde como se fosse o dono/responsável.</div>
           <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
             <span style={{fontSize:10,color:T.muted}}>Modo:</span>
@@ -2206,6 +2242,7 @@ return(
               <button key={v} onClick={()=>{setSimModo(v);setSimMsgs([]);setSimStarted(false);}} style={{padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:600,cursor:"pointer",border:`1px solid ${simModo===v?T.accentBorder:T.border}`,background:simModo===v?T.accentDim:"transparent",color:simModo===v?T.accent:T.muted}}>{l}</button>
             ))}
             <button onClick={()=>{setSimMsgs([]);setSimStarted(false);}} style={{marginLeft:"auto",padding:"4px 10px",borderRadius:5,fontSize:10,cursor:"pointer",border:`1px solid ${T.border}`,background:"transparent",color:T.muted}}>↺ Reiniciar</button>
+            <button onClick={async()=>{setFeedbacksLoading(true);setSimModo("feedbacks");const{data}=await supabase.from("simulador_feedback").select("*").order("criado_em",{ascending:false}).limit(50);setFeedbacks(data||[]);setFeedbacksLoading(false);}} style={{padding:"4px 10px",borderRadius:5,fontSize:10,cursor:"pointer",border:`1px solid ${T.warn}44`,background:T.warnDim,color:T.warn,fontWeight:600}}>📋 Feedbacks da equipe</button>
           </div>
         </div>
         {/* Mensagens simulador */}
@@ -2240,6 +2277,7 @@ return(
       </div>
       );
     })()
+    )
   ):!waSelConv?(
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",color:T.muted,gap:10}}>
       <div style={{fontSize:32}}>💬</div>

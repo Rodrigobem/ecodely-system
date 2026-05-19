@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Treinamento Agente Victória — Ecodely</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:#06070D;color:#E6E8F0;font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+    .header{background:#10121E;border-bottom:1px solid #1A1E30;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+    .logo{font-size:18px;font-weight:800;color:#00E5A0;}
+    .subtitle{font-size:11px;color:#4A5070;}
+    .badge{padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;background:#00E5A012;border:1px solid #00E5A038;color:#00E5A0;}
+    .container{max-width:780px;margin:0 auto;padding:24px 16px;flex:1;display:flex;flex-direction:column;gap:16px;}
+    .card{background:#10121E;border:1px solid #1A1E30;border-radius:14px;padding:20px;}
+    .section-title{font-size:13px;font-weight:700;margin-bottom:4px;}
+    .section-sub{font-size:11px;color:#4A5070;margin-bottom:16px;}
+    .mode-bar{display:flex;gap:6px;flex-wrap:wrap;}
+    .mode-btn{padding:7px 14px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid #1A1E30;background:transparent;color:#4A5070;transition:all 0.15s;}
+    .mode-btn.active{background:#00E5A012;border-color:#00E5A038;color:#00E5A0;}
+    .start-btn{padding:11px 28px;background:#00E5A012;border:1px solid #00E5A038;color:#00E5A0;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.15s;}
+    .start-btn:hover{background:#00E5A022;}
+    .start-btn:disabled{opacity:0.4;cursor:not-allowed;}
+    .msgs{display:flex;flex-direction:column;gap:12px;min-height:300px;max-height:500px;overflow-y:auto;padding:4px 0;}
+    .msg-row{display:flex;gap:10px;align-items:flex-end;}
+    .msg-row.user{flex-direction:row-reverse;}
+    .avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+    .avatar.bot{background:#00E5A012;border:1px solid #00E5A038;}
+    .avatar.user{background:#1A1E30;}
+    .bubble{max-width:75%;padding:11px 14px;border-radius:4px 14px 14px 14px;font-size:12px;line-height:1.6;position:relative;}
+    .bubble.bot{background:#10121E;border:1px solid #00E5A038;color:#E6E8F0;border-radius:4px 14px 14px 14px;}
+    .bubble.user{background:#1A1E30;border:1px solid #1A1E30;color:#E6E8F0;border-radius:14px 4px 14px 14px;}
+    .bubble-meta{font-size:9px;color:#4A5070;margin-top:5px;display:flex;justify-content:flex-end;align-items:center;gap:6px;}
+    .feedback-btn{background:none;border:none;cursor:pointer;font-size:12px;opacity:0.5;transition:opacity 0.15s;padding:0;}
+    .feedback-btn:hover{opacity:1;}
+    .feedback-area{margin-top:8px;background:#1A1E30;border-radius:8px;padding:10px;}
+    .feedback-area textarea{width:100%;background:#0C0E18;border:1px solid #1A1E30;border-radius:6px;padding:8px;font-size:11px;color:#E6E8F0;resize:vertical;min-height:60px;outline:none;font-family:inherit;}
+    .feedback-area textarea::placeholder{color:#4A5070;}
+    .feedback-btns{display:flex;gap:6px;margin-top:6px;justify-content:flex-end;}
+    .btn-sm{padding:5px 12px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid;}
+    .btn-cancel{background:transparent;border-color:#1A1E30;color:#4A5070;}
+    .btn-send{background:#00E5A012;border-color:#00E5A038;color:#00E5A0;}
+    .typing{display:flex;gap:4px;align-items:center;padding:12px 14px;}
+    .dot{width:6px;height:6px;border-radius:50%;background:#00E5A0;animation:bounce 1.2s infinite;}
+    .dot:nth-child(2){animation-delay:0.2s;}
+    .dot:nth-child(3){animation-delay:0.4s;}
+    @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+    .input-bar{display:flex;gap:8px;margin-top:8px;}
+    .input-bar input{flex:1;background:#0C0E18;border:1px solid #1A1E30;border-radius:9px;padding:11px 14px;font-size:12px;color:#E6E8F0;outline:none;font-family:inherit;}
+    .input-bar input:focus{border-color:#00E5A038;}
+    .input-bar button{padding:11px 18px;background:#00E5A012;border:1px solid #00E5A038;color:#00E5A0;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;}
+    .input-bar button:disabled{opacity:0.4;cursor:not-allowed;}
+    .empty-state{text-align:center;padding:40px 20px;color:#4A5070;}
+    .empty-icon{font-size:36px;margin-bottom:12px;}
+    .empty-title{font-size:14px;font-weight:700;margin-bottom:6px;color:#8A90A8;}
+    .tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:600;}
+    .tip{background:#1A1E30;border-radius:10px;padding:12px 14px;font-size:11px;color:#8A90A8;line-height:1.6;}
+    .tip strong{color:#E6E8F0;}
+    .saved-badge{display:inline-block;padding:3px 8px;background:#00E5A012;border:1px solid #00E5A038;color:#00E5A0;border-radius:4px;font-size:9px;font-weight:700;}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="logo">ecodely</div>
+    <div class="subtitle">Treinamento do Agente Victória</div>
+  </div>
+  <div class="badge">🧪 Ambiente de Treino</div>
+</div>
+
+<div class="container">
+
+  <!-- Instruções -->
+  <div class="tip">
+    <strong>Como usar:</strong> Escolha o modo, clique em <strong>Victória aborda agora</strong> e responda como se fosse o dono de um restaurante. 
+    Quando a Victória errar, clique em <strong>👎</strong> na mensagem e descreva como deveria ter respondido. 
+    Seu feedback vai ajudar a melhorar o agente. 💡
+  </div>
+
+  <!-- Controles -->
+  <div class="card">
+    <div class="section-title">Modo de simulação</div>
+    <div class="section-sub">Escolha o cenário que quer treinar</div>
+    <div class="mode-bar" id="modebar">
+      <button class="mode-btn active" data-modo="prospecto" onclick="setModo('prospecto',this)">🎯 Prospecção fria</button>
+      <button class="mode-btn" data-modo="parceiro" onclick="setModo('parceiro',this)">🤝 Suporte ao parceiro</button>
+      <button class="mode-btn" data-modo="cobranca" onclick="setModo('cobranca',this)">📸 Cobrança de postagem</button>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="card" style="flex:1;">
+    <div id="empty-state" class="empty-state">
+      <div class="empty-icon">🤖</div>
+      <div class="empty-title">Agente Victória — Ecodely</div>
+      <div style="font-size:11px;margin-bottom:20px;">Modo: <span id="modo-label" style="color:#00E5A0;font-weight:600;">Prospecção fria</span></div>
+      <button class="start-btn" id="start-btn" onclick="iniciar()">▶ Victória aborda agora</button>
+    </div>
+    <div id="chat-area" style="display:none;">
+      <div class="msgs" id="msgs"></div>
+      <div id="typing" style="display:none;" class="msg-row">
+        <div class="avatar bot">🤖</div>
+        <div class="bubble bot"><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>
+      </div>
+      <div id="chat-bottom"></div>
+      <div class="input-bar" style="margin-top:12px;">
+        <input id="inp" placeholder="Responda como se fosse o restaurante..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviar();}"/>
+        <button id="send-btn" onclick="enviar()">Enviar</button>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+        <button onclick="reiniciar()" style="background:none;border:none;color:#4A5070;font-size:10px;cursor:pointer;">↺ Reiniciar conversa</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SUPA_URL="https://xklvqcxhtariqqhvnseh.supabase.co";
+const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhrbHZxY3hodGFyaXFxaHZuc2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NTYxMjYsImV4cCI6MjA5NDAzMjEyNn0.uZmJKJNTMpH65z3eztXKbip6jiZnsuKIUUl3ceWd5XU";
+const MODO_LABELS={"prospecto":"Prospecção fria","parceiro":"Suporte ao parceiro","cobranca":"Cobrança de postagem"};
+
+let modo="prospecto";
+let history=[];
+let loading=false;
+let feedbackAberto=null;
+
+function setModo(m,btn){
+  modo=m;
+  document.querySelectorAll(".mode-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("modo-label").textContent=MODO_LABELS[m]||m;
+  reiniciar();
+}
+
+function reiniciar(){
+  history=[];
+  loading=false;
+  feedbackAberto=null;
+  document.getElementById("msgs").innerHTML="";
+  document.getElementById("chat-area").style.display="none";
+  document.getElementById("empty-state").style.display="block";
+  document.getElementById("start-btn").disabled=false;
+  document.getElementById("start-btn").textContent="▶ Victória aborda agora";
+}
+
+async function iniciar(){
+  const btn=document.getElementById("start-btn");
+  btn.disabled=true;
+  btn.textContent="Aguardando...";
+  document.getElementById("empty-state").style.display="none";
+  document.getElementById("chat-area").style.display="block";
+  setLoading(true);
+  const prompt=modo==="prospecto"
+    ?"Gere APENAS a sua primeira mensagem de abordagem para este restaurante, como se você estivesse enviando o primeiro contato pelo direct do Instagram. Não espere o restaurante falar — você está abordando eles. Use o modelo de primeira mensagem do seu prompt."
+    :modo==="cobranca"
+    ?"Gere APENAS a sua primeira mensagem lembrando o parceiro sobre a postagem pendente deste mês."
+    :"Gere APENAS uma mensagem de boas-vindas para um parceiro que acabou de entrar em contato.";
+  const resp=await chamarAgente([{role:"user",content:prompt}]);
+  setLoading(false);
+  if(resp) adicionarMsg("bot",resp);
+}
+
+async function enviar(){
+  const inp=document.getElementById("inp");
+  const txt=inp.value.trim();
+  if(!txt||loading)return;
+  inp.value="";
+  adicionarMsg("user",txt);
+  history.push({role:"user",content:txt});
+  setLoading(true);
+  const resp=await chamarAgente(history);
+  setLoading(false);
+  if(resp){
+    history.push({role:"assistant",content:resp});
+    adicionarMsg("bot",resp);
+  }
+}
+
+async function chamarAgente(msgs){
+  try{
+    const res=await fetch("/api/whatsapp/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:msgs,modo})});
+    const data=await res.json();
+    return data.text||data.error||"(sem resposta)";
+  }catch(e){return"(erro: "+e.message+")";}
+}
+
+function adicionarMsg(role,texto){
+  const msgs=document.getElementById("msgs");
+  const id="msg-"+Date.now();
+  const div=document.createElement("div");
+  div.className="msg-row"+(role==="user"?" user":"");
+  div.id=id;
+
+  // Formatar texto (negrito)
+  const html=texto.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n/g,"<br/>");
+
+  div.innerHTML=`
+    <div class="avatar ${role}">${role==="bot"?"🤖":"🏪"}</div>
+    <div style="max-width:75%">
+      <div class="bubble ${role}" dangerouslysetinnerhtml="${html}">${html}</div>
+      <div class="bubble-meta">
+        ${role==="bot"?`<button class="feedback-btn" onclick="abrirFeedback('${id}')" title="Marcar como resposta ruim">👎</button>`:""}
+        <span>${new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</span>
+      </div>
+      <div id="fb-${id}" style="display:none;">
+        <div class="feedback-area">
+          <div style="font-size:10px;color:#4A5070;margin-bottom:6px;">Como a Victória deveria ter respondido?</div>
+          <textarea id="fb-txt-${id}" placeholder="Ex: Deveria ter explicado o anunciante antes de pedir o número..."></textarea>
+          <div class="feedback-btns">
+            <button class="btn-sm btn-cancel" onclick="fecharFeedback('${id}')">Cancelar</button>
+            <button class="btn-sm btn-send" onclick="salvarFeedback('${id}','${encodeURIComponent(texto)}')">Enviar feedback</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  msgs.appendChild(div);
+  document.getElementById("chat-bottom").scrollIntoView({behavior:"smooth"});
+}
+
+function abrirFeedback(id){
+  if(feedbackAberto&&feedbackAberto!==id) fecharFeedback(feedbackAberto);
+  feedbackAberto=id;
+  document.getElementById("fb-"+id).style.display="block";
+  document.getElementById("fb-txt-"+id).focus();
+}
+
+function fecharFeedback(id){
+  const el=document.getElementById("fb-"+id);
+  if(el) el.style.display="none";
+  feedbackAberto=null;
+}
+
+async function salvarFeedback(id,textoEnc){
+  const txtEl=document.getElementById("fb-txt-"+id);
+  const correcao=txtEl.value.trim();
+  if(!correcao)return;
+  const textoOriginal=decodeURIComponent(textoEnc);
+  const btn=document.querySelector(`#fb-${id} .btn-send`);
+  btn.textContent="Salvando...";
+  btn.disabled=true;
+  try{
+    await fetch(`${SUPA_URL}/rest/v1/simulador_feedback`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY},
+      body:JSON.stringify({
+        modo,
+        resposta_agente:textoOriginal,
+        correcao_sugerida:correcao,
+        historico:JSON.stringify(history.slice(-6)),
+        criado_em:new Date().toISOString()
+      })
+    });
+    document.getElementById("fb-"+id).innerHTML=`<div style="padding:8px 0;"><span class="saved-badge">✓ Feedback enviado — obrigada!</span></div>`;
+    feedbackAberto=null;
+  }catch(e){
+    btn.textContent="Enviar feedback";
+    btn.disabled=false;
+    alert("Erro ao salvar: "+e.message);
+  }
+}
+
+function setLoading(v){
+  loading=v;
+  document.getElementById("typing").style.display=v?"flex":"none";
+  document.getElementById("send-btn").disabled=v;
+  document.getElementById("inp").disabled=v;
+  if(v) document.getElementById("chat-bottom").scrollIntoView({behavior:"smooth"});
+}
+</script>
+</body>
+</html>
