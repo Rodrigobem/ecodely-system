@@ -2546,12 +2546,35 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
 // ---------------------------------------------------------------------------
 // RELATÓRIO POR CATEGORIA — componente financeiro
 // ---------------------------------------------------------------------------
-function CategoriasFin({lancamentos,T}){
+function CategoriasFin({lancamentos,finMesRef,T}){
   const[periodoAtivo,setPeriodoAtivo]=useState("mes_atual");
-  const[rangeDE,setRangeDE]=useState(()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-01`;});
-  const[rangeATE,setRangeATE]=useState(()=>{const d=new Date();const last=new Date(d.getFullYear(),d.getMonth()+1,0);return last.toISOString().slice(0,10);});
+  const mesRefToRange=(ref)=>{
+    if(!ref)return{de:"",ate:""};
+    const[mm,yy]=ref.split("/");
+    const last=new Date(Number(yy),Number(mm),0);
+    return{de:`${yy}-${mm}-01`,ate:`${yy}-${mm}-${String(last.getDate()).padStart(2,"0")}`};
+  };
+  const[rangeDE,setRangeDE]=useState(()=>mesRefToRange(finMesRef).de);
+  const[rangeATE,setRangeATE]=useState(()=>mesRefToRange(finMesRef).ate);
   const[tipoView,setTipoView]=useState("despesas"); // despesas | receitas | ambos
   const[detalheCategoria,setDetalheCategoria]=useState(null);
+
+  // Sincronizar com finMesRef quando periodoAtivo="mes_atual"
+  useEffect(()=>{
+    if(periodoAtivo==="mes_atual"){
+      const{de,ate}=mesRefToRange(finMesRef);
+      setRangeDE(de);
+      setRangeATE(ate);
+    }
+  },[finMesRef]);
+
+  // Sincronizar com finMesRef quando muda o mês
+  useEffect(()=>{
+    if(periodoAtivo==="mes_atual"){
+      const{de,ate}=mesRefToRange(finMesRef);
+      setRangeDE(de); setRangeATE(ate);
+    }
+  },[finMesRef]);
 
   // Conversão de datas
   const isoToBr=(iso)=>{if(!iso)return"";const[y,m,d]=iso.split("-");return`${d}/${m}/${y}`;};
@@ -2559,7 +2582,7 @@ function CategoriasFin({lancamentos,T}){
 
   // Atalhos de período
   const atalhos=[
-    {id:"mes_atual",label:"Este mês",fn:()=>{const d=new Date();const y=d.getFullYear(),m=d.getMonth();const last=new Date(y,m+1,0);setRangeDE(`${y}-${String(m+1).padStart(2,"0")}-01`);setRangeATE(last.toISOString().slice(0,10));}},
+    {id:"mes_atual",label:"Mês ref.",fn:()=>{const{de,ate}=mesRefToRange(finMesRef);setRangeDE(de);setRangeATE(ate);}},
     {id:"mes_ant",label:"Mês anterior",fn:()=>{const d=new Date();const y=d.getFullYear(),m=d.getMonth()-1;const last=new Date(y,m+1,0);setRangeDE(`${y}-${String(m+1).padStart(2,"0")}-01`);setRangeATE(last.toISOString().slice(0,10));}},
     {id:"trim",label:"Trimestre",fn:()=>{const d=new Date();const y=d.getFullYear();const q=Math.floor(d.getMonth()/3);setRangeDE(`${y}-${String(q*3+1).padStart(2,"0")}-01`);const last=new Date(y,q*3+3,0);setRangeATE(last.toISOString().slice(0,10));}},
     {id:"ano",label:"Este ano",fn:()=>{const y=new Date().getFullYear();setRangeDE(`${y}-01-01`);setRangeATE(`${y}-12-31`);}},
@@ -5767,7 +5790,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 {finTab==="visao"&&<VisaoGeralFin lancamentos={lancamentos} finMesRef={finMesRef} contas={contas} custosFix={custosFix} cartoes={cartoes} comprasCartao={comprasCartao} proximoMesCartao={proximoMesCartao} rbt12={rbt12} faixa={faixa} aliqDisplay={aliqDisplay} aliqVal={aliqVal} saldoMesFinal={saldoMesFinal} saldoTotal={saldoTotal} totalEntradas={totalEntradas} totalSaidas={totalSaidas} lucroMes={lucroMes} aaRef={aaRef} mmRef={mmRef}/> }
 
                 {/* FLUXO DE CAIXA */}
-                {finTab==="categorias"&&<CategoriasFin lancamentos={lancamentos} T={T}/>}
+                {finTab==="categorias"&&<CategoriasFin lancamentos={lancamentos} finMesRef={finMesRef} T={T}/>}
 
                 {finTab==="fluxo"&&(()=>{
                   const [mmAtual,aaAtual]=[mmRef,aaRef];
