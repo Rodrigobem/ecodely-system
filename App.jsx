@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { createClient } from "@supabase/supabase-js";
+import * as XLSX from "xlsx";
 
 const SUPABASE_URL = "https://xklvqcxhtariqqhvnseh.supabase.co";
 const SUPABASE_KEY = "sb_publishable_0Y8LZnFlLIrVrQ-EdsjTQQ_1w0MwYQ2";
@@ -5507,7 +5508,79 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         {(fluxoBusca||fluxoTipo!=="todos"||fluxoCategoria!=="todas"||fluxoForma!=="todas")&&(
                           <button onClick={()=>{setFluxoBusca("");setFluxoTipo("todos");setFluxoCategoria("todas");setFluxoForma("todas");}} style={{padding:"7px 12px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>✕ Limpar</button>
                         )}
-                        <div style={{marginLeft:"auto"}}>
+                        <div style={{marginLeft:"auto",display:"flex",gap:6}}>
+                          {/* Exportar Excel */}
+                          <button onClick={()=>{
+                            const saldoAnt=saldoAcumuladoAnterior;
+                            const rows=[
+                              ["Ecodely — Fluxo de Caixa","","","","","",""],
+                              [`Referência: ${finMesRef}`,"","","","","",""],
+                              [""],
+                              ["DATA","DESCRIÇÃO","CATEGORIA","TIPO","FORMA","ENTRADA (R$)","SAÍDA (R$)","SALDO (R$)"],
+                              ["—","Saldo Anterior","","","","","",saldoAnt.toFixed(2)],
+                            ];
+                            let saldo=saldoAnt;
+                            lancOrdenados.forEach(l=>{
+                              saldo+=(l.entrada||0)-(l.saida||0);
+                              rows.push([l.data,l.descricao,l.categoria||"",l.tipo||"",l.forma||"",(l.entrada||0).toFixed(2),(l.saida||0).toFixed(2),saldo.toFixed(2)]);
+                            });
+                            rows.push([""]);
+                            rows.push(["TOTAL","","","","",lancOrdenados.reduce((a,l)=>a+(l.entrada||0),0).toFixed(2),lancOrdenados.reduce((a,l)=>a+(l.saida||0),0).toFixed(2),saldo.toFixed(2)]);
+                            const ws=XLSX.utils.aoa_to_sheet(rows);
+                            ws["!cols"]=[{wch:12},{wch:40},{wch:20},{wch:10},{wch:12},{wch:14},{wch:14},{wch:14}];
+                            const wb=XLSX.utils.book_new();
+                            XLSX.utils.book_append_sheet(wb,ws,`Fluxo ${finMesRef.replace("/","-")}`);
+                            XLSX.writeFile(wb,`Ecodely_Fluxo_${finMesRef.replace("/","-")}.xlsx`);
+                          }} style={{padding:"7px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
+                            📊 Excel
+                          </button>
+                          {/* Exportar PDF */}
+                          <button onClick={()=>{
+                            const saldoAnt=saldoAcumuladoAnterior;
+                            let saldo=saldoAnt;
+                            const linhas=lancOrdenados.map(l=>{
+                              saldo+=(l.entrada||0)-(l.saida||0);
+                              const ent=l.entrada>0?`<span style="color:#16a34a;font-weight:700">${fmt(l.entrada)}</span>`:"—";
+                              const sai=l.saida>0?`<span style="color:#dc2626;font-weight:700">${fmt(l.saida)}</span>`:"—";
+                              const sal=`<span style="color:${saldo>=0?"#16a34a":"#dc2626"};font-weight:700">${fmt(saldo)}</span>`;
+                              return `<tr><td>${l.data}</td><td>${l.descricao||""}</td><td>${l.categoria||""}</td><td>${l.forma||""}</td><td style="text-align:right">${ent}</td><td style="text-align:right">${sai}</td><td style="text-align:right">${sal}</td></tr>`;
+                            }).join("");
+                            const totalEnt=lancOrdenados.reduce((a,l)=>a+(l.entrada||0),0);
+                            const totalSai=lancOrdenados.reduce((a,l)=>a+(l.saida||0),0);
+                            const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Fluxo de Caixa ${finMesRef}</title><style>
+                              *{margin:0;padding:0;box-sizing:border-box;}
+                              body{font-family:Arial,sans-serif;font-size:11px;padding:24px;color:#1a1a1a;}
+                              h1{font-size:18px;margin-bottom:4px;}
+                              .sub{font-size:12px;color:#666;margin-bottom:16px;}
+                              table{width:100%;border-collapse:collapse;margin-bottom:16px;}
+                              th{background:#1a4a7a;color:#fff;padding:7px 8px;text-align:left;font-size:10px;}
+                              td{padding:6px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;}
+                              tr:nth-child(even) td{background:#f9fafb;}
+                              .saldo-ant{background:#ede9fe!important;}
+                              .totais td{background:#f0f9ff!important;font-weight:700;border-top:2px solid #1a4a7a;}
+                              .filtros{font-size:9px;color:#666;margin-bottom:12px;}
+                              @media print{body{padding:12px;}}
+                            </style></head><body>
+                              <h1>Ecodely — Fluxo de Caixa</h1>
+                              <div class="sub">Referência: ${finMesRef} ${fluxoBusca||fluxoTipo!=="todos"||fluxoCategoria!=="todas"||fluxoForma!=="todas"?"(filtrado)":""}</div>
+                              ${fluxoBusca||fluxoTipo!=="todos"||fluxoCategoria!=="todas"||fluxoForma!=="todas"?`<div class="filtros">Filtros: ${[fluxoBusca?"Busca: "+fluxoBusca:"",fluxoTipo!=="todos"?"Tipo: "+fluxoTipo:"",fluxoCategoria!=="todas"?"Categoria: "+fluxoCategoria:"",fluxoForma!=="todas"?"Forma: "+fluxoForma:""].filter(Boolean).join(" · ")}</div>`:""}
+                              <table>
+                                <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Forma</th><th style="text-align:right">Entrada</th><th style="text-align:right">Saída</th><th style="text-align:right">Saldo</th></tr></thead>
+                                <tbody>
+                                  <tr class="saldo-ant"><td>—</td><td><strong>Saldo Anterior</strong></td><td></td><td></td><td></td><td></td><td style="text-align:right"><strong>${fmt(saldoAnt)}</strong></td></tr>
+                                  ${linhas}
+                                  <tr class="totais"><td colspan="4"><strong>TOTAL DO MÊS</strong></td><td style="text-align:right"><span style="color:#16a34a">${fmt(totalEnt)}</span></td><td style="text-align:right"><span style="color:#dc2626">${fmt(totalSai)}</span></td><td style="text-align:right"><span style="color:${saldo>=0?"#16a34a":"#dc2626"}">${fmt(saldo)}</span></td></tr>
+                                </tbody>
+                              </table>
+                              <div style="font-size:9px;color:#999;text-align:right">Gerado em ${new Date().toLocaleDateString("pt-BR")} ${new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})} — ${lancOrdenados.length} lançamentos</div>
+                            </body></html>`;
+                            const w=window.open("","_blank","width=900,height=700");
+                            w.document.write(html);
+                            w.document.close();
+                            setTimeout(()=>w.print(),500);
+                          }} style={{padding:"7px 12px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
+                            📄 PDF
+                          </button>
                           <button onClick={()=>setShowAdd(true)} style={{padding:"7px 16px",background:T.accent,border:"none",color:"#000",borderRadius:7,fontSize:11,fontWeight:700,cursor:"pointer"}}>+ Novo</button>
                         </div>
                       </div>
