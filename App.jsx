@@ -4429,9 +4429,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             const DashComercial=()=>(
               <div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-                  <KCard label="Meu pipeline" value={fmtK(myProspects.reduce((a,p)=>a+(p.value||0),0))} sub={`${myProspects.length} prospects`} color={T.info} icon="-" onClick={()=>{setTab("comercial");setCommTab("pipeline");}} hint="Ver pipeline -"/>
-                  <KCard label="Propostas enviadas" value={myProspects.filter(p=>["proposta","negociacao","fechado"].includes(p.stage)).length} sub="no período" color={T.purple} icon="-"/>
-                  <KCard label="Minha taxa conversao" value={myProspects.length>0?Math.round((myProspects.filter(p=>p.stage==="fechado").length/myProspects.length)*100)+"%":"0%"} sub="prospects fechados" color={T.accent} icon="-"/>
+                  <KCard label="Leads no pipeline" value={pipeLeads.filter(l=>l.responsavel===user.name||user.role==="admin"?true:l.responsavel===user.name).length} sub="total" color={T.info} icon="-" onClick={()=>{setTab("base");setBaseTab("pipeline");}} hint="Ver pipeline -"/>
+                  <KCard label="Convertidos" value={pipeLeads.filter(l=>l.etapa==="convertido"&&(user.role==="admin"||l.responsavel===user.name)).length} sub="parceiros fechados" color={T.accent} icon="-"/>
+                  <KCard label="Taxa conversão" value={taxaConvDash+"%"} sub="geral da equipe" color={taxaConvDash>=30?T.accent:T.warn} icon="-"/>
                   <KCard label="Minhas tarefas" value={pendingQueue.length} sub="pendentes" color={pendingQueue.length>0?T.danger:T.accent} icon="-" onClick={()=>setTab("minha-fila")} hint="Ver fila -"/>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:12}}>
@@ -4597,10 +4597,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             const DashFinanceiro=()=>(
               <div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-                  <KCard label="Receita total" value={fmtK(receitaReal)} sub="lançamentos no período" color={T.accent} icon="-" onClick={()=>{setTab("financeiro-modulo");}} hint="Ver financeiro -"/>
-                  <KCard label="Total despesas" value={fmtK(despesaReal)} sub="lançamentos no período" color={T.danger} icon="-"/>
-                  <KCard label="Resultado líquido" value={fmtK(receitaReal-despesaReal)} sub="receita - despesas" color={receitaReal>despesaReal?T.accent:T.danger} icon="-"/>
-                  <KCard label="Pendente aprovação" value={closings.filter(c=>c.status==="pendente").length} sub="comissões" color={T.purple} icon="-" onClick={()=>setTab("comissoes")} hint="Aprovar -"/>
+                  <KCard label="Receita do mês" value={fmt(receitaMes)} sub={mesRefDash} color={T.accent} icon="-" onClick={()=>{setTab("financeiro-modulo");setFinTab("fluxo");}} hint="Ver fluxo -"/>
+                  <KCard label="Despesas do mês" value={fmt(despesaMes)} sub={mesRefDash} color={T.danger} icon="-"/>
+                  <KCard label="Resultado" value={fmt(Math.abs(resultadoMes))} sub={resultadoMes>=0?"superávit":"déficit"} color={resultadoMes>=0?T.accent:T.danger} icon="-"/>
+                  <KCard label="Saldo em caixa" value={fmt(saldoCaixaReal)} sub="todas as contas" color={T.info} icon="-" onClick={()=>{setTab("financeiro-modulo");setFinTab("visao");}} hint="Ver contas -"/>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
@@ -4636,16 +4636,25 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   </div>
                 </div>
                 <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
-                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Pipeline de receita (prospects)</div>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
-                    {[{l:"Em negociação",stages:["negociacao"],c:T.warn},{l:"Propostas enviadas",stages:["proposta"],c:T.info},{l:"Total pipeline",stages:["lead","qualificado","proposta","negociacao"],c:T.accent}].map((k,i)=>{
-                      const v=prospects.filter(p=>k.stages.includes(p.stage)).reduce((a,p)=>a+(p.value||0),0);
-                      return(<div key={i} style={{background:T.surface,borderRadius:8,padding:"12px",textAlign:"center"}}>
+                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,marginBottom:14}}>Custos fixos do mês</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:12}}>
+                    {[
+                      {l:"Total fixo",v:custosFix.filter(c=>c.ativo).reduce((a,c)=>a+c.valor,0),c:T.danger},
+                      {l:"Resultado",v:resultadoMes,c:resultadoMes>=0?T.accent:T.danger},
+                      {l:"Saldo caixa",v:saldoCaixaReal,c:T.info},
+                    ].map((k,i)=>(
+                      <div key={i} style={{background:T.surface,borderRadius:8,padding:"12px",textAlign:"center"}}>
                         <div style={{fontSize:9,color:T.muted,marginBottom:4}}>{k.l}</div>
-                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:k.c}}>{fmtK(v)}</div>
-                      </div>);
-                    })}
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:k.c}}>{fmt(k.v)}</div>
+                      </div>
+                    ))}
                   </div>
+                  {custosFix.filter(c=>c.ativo).slice(0,5).map((c,i)=>(
+                    <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${T.border}`}}>
+                      <span style={{fontSize:10,color:T.soft}}>{c.descricao}</span>
+                      <span style={{fontSize:10,color:T.danger,fontFamily:"Arial,sans-serif",fontWeight:700}}>{fmt(c.valor)}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             );
@@ -4660,7 +4669,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     <KCard label="Em gráfica" value={campsGrafica.length} sub="aguardando impressão" color={T.purple} icon="-"/>
                     <KCard label="Em logística" value={campsLogistica.length} sub="em distribuição" color={T.warn} icon="-"/>
                     <KCard label="Minhas tarefas" value={pendingQueue.length} sub="pendentes" color={pendingQueue.length>0?T.danger:T.accent} icon="-" onClick={()=>setTab("minha-fila")} hint="Ver fila -"/>
-                    <KCard label="Parceiros na base" value={basePartners.length} sub="cadastrados" color={T.info} icon="-" onClick={()=>setTab("base")} hint="Ver base -"/>
+                    <KCard label="Leads convertidos" value={leadsConvertidos} sub="parceiros na base" color={T.info} icon="-" onClick={()=>{setTab("base");setBaseTab("pipeline");}} hint="Ver pipeline -"/>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                     {[{title:"Na Gráfica",camps:campsGrafica,color:T.purple},{title:"Na Logística",camps:campsLogistica,color:T.warn}].map((g,gi)=>(
@@ -4691,41 +4700,62 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
             // -- DASH BASE --
             const DashBase=()=>{
-              const parceirosCamp=camps.flatMap(c=>c.parceirosIds||[]);
-              const parceirosAtivos=basePartners.filter(p=>p.status==="ativo").length;
-              const contratosMes=basePartners.filter(p=>p.contrato.status==="assinado").length;
-              const parcFaltantes=camps.filter(c=>c.stage<5&&c.parceiros>0).reduce((a,c)=>a+(c.parceiros-((c.parceirosIds||[]).length)),0);
+              // Dados reais do Pipeline
+              const pipeAbordados=pipeLeads.filter(l=>l.etapa==="abordado").length;
+              const pipeRespondeu=pipeLeads.filter(l=>l.etapa==="respondeu").length;
+              const pipeInteressado=pipeLeads.filter(l=>l.etapa==="interessado").length;
+              const pipeConvertido=pipeLeads.filter(l=>l.etapa==="convertido").length;
+              const pipeTotal2=pipeLeads.length;
+              const taxa=pipeTotal2>0?Math.round((pipeConvertido/pipeTotal2)*100):0;
+              // Pipeline por membro
+              const porMembro=["Victória","Daniel","Rodrigo"].map(m=>({
+                nome:m,
+                total:pipeLeads.filter(l=>l.responsavel===m).length,
+                convertidos:pipeLeads.filter(l=>l.responsavel===m&&l.etapa==="convertido").length,
+              })).filter(m=>m.total>0);
               return(
                 <div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-                    <KCard label="Campanhas no ar" value={campsAtivas.length} sub="ativas" color={T.accent} icon="-" onClick={()=>setTab("campanhas")} hint="Ver campanhas -"/>
-                    <KCard label="Parceiros ativos" value={parceirosAtivos} sub="na base" color={T.info} icon="-" onClick={()=>setTab("base")} hint="Ver base -"/>
-                    <KCard label="Contratos assinados" value={contratosMes} sub="no total" color={T.green} icon="-"/>
-                    <KCard label="Parceiros faltantes" value={Math.max(0,parcFaltantes)} sub="em campanhas ativas" color={parcFaltantes>0?T.danger:T.accent} icon="-"/>
+                    <KCard label="Total abordagens" value={pipeTotal2} sub="no pipeline" color={T.info} icon="-" onClick={()=>{setTab("base");setBaseTab("pipeline");}} hint="Ver pipeline -"/>
+                    <KCard label="Convertidos" value={pipeConvertido} sub={taxa+"% de conversão"} color={T.accent} icon="-" onClick={()=>{setTab("base");setBaseTab("pipeline");}} hint="Ver pipeline -"/>
+                    <KCard label="Em negociação" value={pipeRespondeu+pipeInteressado} sub="respondeu + interesse" color={T.warn} icon="-"/>
+                    <KCard label="Campanhas ativas" value={campsAtivas.length} sub="em andamento" color={T.purple} icon="-" onClick={()=>setTab("campanhas")} hint="Ver -"/>
                   </div>
+                  {/* Funil do Pipeline real */}
                   <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:12}}>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
-                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Parceiros por campanha</div>
-                      {campsAtivas.map(c=>(
-                        <div key={c.id} style={{marginBottom:10}}>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Funil de conversão</div>
+                      {[
+                        {label:"Abordados",v:pipeAbordados,cor:T.muted},
+                        {label:"Responderam",v:pipeRespondeu,cor:T.info},
+                        {label:"Interessados",v:pipeInteressado,cor:T.warn},
+                        {label:"Convertidos",v:pipeConvertido,cor:T.accent},
+                      ].map(({label,v,cor})=>(
+                        <div key={label} style={{marginBottom:10}}>
                           <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                            <span style={{fontSize:11,fontWeight:600}}>{c.name}</span>
-                            <span style={{fontSize:10,color:T.accent}}>{(c.parceirosIds||[]).length}/{c.parceiros}</span>
+                            <span style={{fontSize:10,color:T.soft}}>{label}</span>
+                            <span style={{fontSize:10,color:cor,fontFamily:"Arial,sans-serif",fontWeight:700}}>{v}</span>
                           </div>
-                          <PBar pct={Math.round(((c.parceirosIds||[]).length/c.parceiros)*100)} color={T.accent} h={5}/>
+                          <div style={{height:8,background:T.border,borderRadius:4,overflow:"hidden"}}>
+                            <div style={{width:`${pipeTotal2>0?Math.round((v/pipeTotal2)*100):0}%`,height:"100%",background:cor,borderRadius:4,transition:"width 0.4s"}}/>
+                          </div>
                         </div>
                       ))}
+                      {pipeTotal2===0&&<div style={{textAlign:"center",padding:20,color:T.muted,fontSize:11}}>Nenhum lead no pipeline ainda</div>}
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:12}}>
-                      <div style={{background:T.card,border:`1px solid ${T.danger}33`,borderRadius:12,padding:16}}>
-                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.danger,marginBottom:10}}>Contratos expirando</div>
-                        {basePartners.filter(p=>p.contrato.status==="expirando").map((p,i)=>(
-                          <div key={i} style={{padding:"5px 0",borderBottom:`1px solid ${T.border}`}}>
-                            <div style={{fontSize:11,fontWeight:600}}>{p.name}</div>
-                            <div style={{fontSize:9,color:T.danger}}>Vence: {p.contrato.expiraEm}</div>
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Por membro do time</div>
+                        {porMembro.length===0&&<div style={{fontSize:10,color:T.muted}}>Nenhum lead cadastrado</div>}
+                        {porMembro.map(m=>(
+                          <div key={m.nome} style={{marginBottom:10}}>
+                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                              <span style={{fontSize:10,fontWeight:600}}>{m.nome}</span>
+                              <span style={{fontSize:9,color:T.accent}}>{m.convertidos}/{m.total}</span>
+                            </div>
+                            <PBar pct={m.total>0?Math.round((m.convertidos/m.total)*100):0} color={T.accent} h={5}/>
                           </div>
                         ))}
-                        {basePartners.filter(p=>p.contrato.status==="expirando").length===0&&<div style={{fontSize:11,color:T.accent}}>Nenhum expirando</div>}
                       </div>
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,marginBottom:8}}>Minha fila</div>
@@ -4733,18 +4763,6 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <div style={{fontSize:9,color:T.muted,marginBottom:8}}>tarefas pendentes</div>
                         <button onClick={()=>setTab("minha-fila")} className="btn" style={{width:"100%",padding:"7px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10}}>Ver fila -</button>
                       </div>
-                    </div>
-                  </div>
-                  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
-                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>Ranking de parceiros</div>
-                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                      {[...basePartners].sort((a,b)=>b.score-a.score).slice(0,5).map((p,i)=>(
-                        <div key={i} style={{display:"flex",gap:12,alignItems:"center"}}>
-                          <div style={{width:22,height:22,borderRadius:"50%",background:i<3?[T.warn+"33",T.soft+"22",T.soft+"15"][i]:T.border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:T.soft,fontWeight:700,flexShrink:0}}>{i+1}</div>
-                          <div style={{flex:1}}><div style={{fontSize:11,fontWeight:600}}>{p.name}</div><div style={{fontSize:9,color:T.muted}}>{p.category}</div></div>
-                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:p.score>80?T.accent:T.warn}}>{p.score}</div>
-                        </div>
-                      ))}
                     </div>
                   </div>
                 </div>
