@@ -2697,6 +2697,10 @@ export default function App(){
   const[nfValor,setNfValor]=useState("");
   const[dasManual,setDasManual]=useState("");
   const[showAddFixo,setShowAddFixo]=useState(false);
+  const[fluxoBusca,setFluxoBusca]=useState("");
+  const[fluxoTipo,setFluxoTipo]=useState("todos");
+  const[fluxoCategoria,setFluxoCategoria]=useState("todas");
+  const[fluxoForma,setFluxoForma]=useState("todas");
   const[showAddConta,setShowAddConta]=useState(false);
   const[showAddCentro,setShowAddCentro]=useState(false);
   const[novoCusto,setNovoCusto]=useState({descricao:"",valor:0,dia:5,categoria:"Outros",centrosCusto:"Administrativo",ativo:true});
@@ -5432,7 +5436,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 {/* FLUXO DE CAIXA */}
                 {finTab==="fluxo"&&(()=>{
                   const [mmAtual,aaAtual]=[mmRef,aaRef];
-                  const lancOrdenados=[...lancMesFilt].filter(l=>l.tipo!=="Saldo Anterior").sort((a,b)=>a.data.split("/").reverse().join("")-b.data.split("/").reverse().join(""));
+                  // Aplicar filtros
+                  const lancFiltrados=[...lancMesFilt].filter(l=>{
+                    if(l.tipo==="Saldo Anterior") return false;
+                    if(fluxoBusca&&!l.descricao?.toLowerCase().includes(fluxoBusca.toLowerCase())) return false;
+                    if(fluxoTipo!=="todos"&&l.tipo!==fluxoTipo) return false;
+                    if(fluxoCategoria!=="todas"&&l.categoria!==fluxoCategoria) return false;
+                    if(fluxoForma!=="todas"&&l.forma!==fluxoForma) return false;
+                    return true;
+                  });
+                  const lancOrdenados=lancFiltrados.sort((a,b)=>a.data.split("/").reverse().join("")-b.data.split("/").reverse().join(""));
                   let saldoAcum=saldoAcumuladoAnterior;
                   const grupos=[];
                   let diaAtual=null, grupoAtual=[];
@@ -5461,9 +5474,42 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:lucroMes>=0?T.accent:T.danger}}>{fmt(lucroMes)}</div>
                         </div>
                       </div>
-                      {/* Add button */}
-                      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
-                        <button onClick={()=>setShowAdd(true)} style={{padding:"9px 18px",background:T.accent,border:"none",color:"#000",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",letterSpacing:0.5}}>+ Novo Lançamento</button>
+                      {/* Filtros */}
+                      {(()=>{
+                        // Estados de filtro via ref para não criar useState em IIFE
+                        // Usamos os estados já existentes no escopo do App
+                        return null;
+                      })()}
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 14px",marginBottom:12,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+                        {/* Busca */}
+                        <div style={{position:"relative",flex:"1",minWidth:160}}>
+                          <span style={{position:"absolute",left:9,top:"50%",transform:"translateY(-50%)",fontSize:11,color:T.muted}}>🔍</span>
+                          <input value={fluxoBusca} onChange={e=>setFluxoBusca(e.target.value)} placeholder="Buscar descrição..." style={{width:"100%",background:T.surface,border:`1px solid ${fluxoBusca?T.accentBorder:T.border}`,borderRadius:7,padding:"7px 10px 7px 28px",fontSize:11,color:T.text,outline:"none",boxSizing:"border-box"}}/>
+                          {fluxoBusca&&<button onClick={()=>setFluxoBusca("")} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:T.muted,cursor:"pointer",fontSize:12}}>✕</button>}
+                        </div>
+                        {/* Tipo */}
+                        <select value={fluxoTipo} onChange={e=>setFluxoTipo(e.target.value)} style={{background:T.surface,border:`1px solid ${fluxoTipo!=="todos"?T.accentBorder:T.border}`,borderRadius:7,padding:"7px 10px",fontSize:11,color:fluxoTipo!=="todos"?T.accent:T.muted,outline:"none"}}>
+                          <option value="todos">Tipo: Todos</option>
+                          <option value="Receita">Receitas</option>
+                          <option value="Despesa">Despesas</option>
+                        </select>
+                        {/* Categoria */}
+                        <select value={fluxoCategoria} onChange={e=>setFluxoCategoria(e.target.value)} style={{background:T.surface,border:`1px solid ${fluxoCategoria!=="todas"?T.accentBorder:T.border}`,borderRadius:7,padding:"7px 10px",fontSize:11,color:fluxoCategoria!=="todas"?T.accent:T.muted,outline:"none"}}>
+                          <option value="todas">Categoria: Todas</option>
+                          {[...CAT_RECEITA,...CAT_DESPESA].filter((v,i,a)=>a.indexOf(v)===i).sort().map(c=><option key={c}>{c}</option>)}
+                        </select>
+                        {/* Forma */}
+                        <select value={fluxoForma} onChange={e=>setFluxoForma(e.target.value)} style={{background:T.surface,border:`1px solid ${fluxoForma!=="todas"?T.accentBorder:T.border}`,borderRadius:7,padding:"7px 10px",fontSize:11,color:fluxoForma!=="todas"?T.accent:T.muted,outline:"none"}}>
+                          <option value="todas">Forma: Todas</option>
+                          {FORMAS_PAG.map(f=><option key={f}>{f}</option>)}
+                        </select>
+                        {/* Limpar filtros */}
+                        {(fluxoBusca||fluxoTipo!=="todos"||fluxoCategoria!=="todas"||fluxoForma!=="todas")&&(
+                          <button onClick={()=>{setFluxoBusca("");setFluxoTipo("todos");setFluxoCategoria("todas");setFluxoForma("todas");}} style={{padding:"7px 12px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>✕ Limpar</button>
+                        )}
+                        <div style={{marginLeft:"auto"}}>
+                          <button onClick={()=>setShowAdd(true)} style={{padding:"7px 16px",background:T.accent,border:"none",color:"#000",borderRadius:7,fontSize:11,fontWeight:700,cursor:"pointer"}}>+ Novo</button>
+                        </div>
                       </div>
                       {/* Modal Novo Lançamento */}
                       {showAdd&&<div style={{position:"fixed",inset:0,background:"#00000099",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setShowAdd(false)}>
@@ -5556,6 +5602,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {/* Transaction table */}
                       <div style={{background:"#fff",border:"2px solid #555",borderRadius:4,overflow:"auto",boxShadow:"0 1px 4px #00000022",paddingBottom:0}}>
                         {/* Header — Excel style com colunas redimensionáveis */}
+                        {(fluxoBusca||fluxoTipo!=="todos"||fluxoCategoria!=="todas"||fluxoForma!=="todas")&&<div style={{padding:"6px 14px",background:T.accentDim,borderBottom:`1px solid ${T.accentBorder}`,fontSize:10,color:T.accent}}>{lancOrdenados.length} resultado{lancOrdenados.length!==1?"s":""} encontrado{lancOrdenados.length!==1?"s":""}</div>}
                         <div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),padding:"0",gap:0,background:"#1a4a7a",borderBottom:"2px solid #0f3460",position:"sticky",top:0,zIndex:5}}>
                           {["DATA","DESCRIÇÃO","ENTRADA","SAÍDA","TOT. ENTRADA","TOT. SAÍDA","SALDO","✓","OBS"].map((h,i)=>(
                             <div key={h} style={{fontSize:8,color:"#fff",textTransform:"uppercase",letterSpacing:1,fontWeight:700,textAlign:"center",padding:"9px 10px",position:"relative",userSelect:"none",overflow:"hidden",whiteSpace:"nowrap",background:"#1a4a7a",boxShadow:"inset -1px 0 0 #4a7aaa"}}>
@@ -5568,7 +5615,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             </div>
                           ))}
                         </div>
-                        {grupos.length===0&&<div style={{padding:"16px 14px",textAlign:"center",color:"#888",fontSize:11,background:"#fff",borderBottom:"1px solid #e0e0e0"}}>Nenhum lançamento registrado em {finMesRef}</div>}
+                        {grupos.length===0&&<div style={{padding:"16px 14px",textAlign:"center",color:"#888",fontSize:11,background:"#fff",borderBottom:"1px solid #e0e0e0"}}>{fluxoBusca||fluxoTipo!=="todos"||fluxoCategoria!=="todas"||fluxoForma!=="todas"?"Nenhum lançamento encontrado com esses filtros":"Nenhum lançamento registrado em "+finMesRef}</div>}
                         {/* Linha de saldo anterior automático */}
                         {saldoAcumuladoAnterior!==0&&<div style={{display:"grid",gridTemplateColumns:colWidths.map(w=>w+"px").join(" "),gap:0,background:"#f0e8ff",alignItems:"stretch",width:"100%",minWidth:"fit-content"}}>
                           <div style={{fontSize:10,color:"#7c3aed",fontFamily:"Arial,sans-serif",padding:"7px 10px",boxShadow:"inset -1px 0 0 #888, inset 0 -1px 0 #888",background:"#f0e8ff",display:"flex",alignItems:"center"}}>01/{mmRef}</div>
