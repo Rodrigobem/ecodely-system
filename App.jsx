@@ -77,13 +77,8 @@ const now=()=>new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",h
 
 // --- AUTH --------------------------------------------------------------------
 const USERS_DB=[
-  {id:0,name:"Admin Teste",email:"a",pass:"1",role:"admin",avatar:"AT",active:true},
   {id:1,name:"Rodrigo Bem",email:"rodrigo@ecodely.com.br",pass:"admin123",role:"admin",avatar:"RB",active:true},
-  {id:2,name:"Ana Lima",email:"ana@ecodely.com.br",pass:"user123",role:"comercial",avatar:"AL",active:true},
-  {id:3,name:"Carlos Mendes",email:"carlos@ecodely.com.br",pass:"user123",role:"operacional",avatar:"CM",active:true},
-  {id:4,name:"Juliana Faria",email:"juliana@ecodely.com.br",pass:"user123",role:"marketing",avatar:"JF",active:true},
-  {id:5,name:"Paulo Neto",email:"paulo@ecodely.com.br",pass:"user123",role:"financeiro",avatar:"PN",active:true},
-  {id:6,name:"Mariana Costa",email:"mariana@ecodely.com.br",pass:"user123",role:"base",avatar:"MC",active:true},
+  // Adicione os demais membros da equipe pelo painel Usuários
 ];
 const ROLE_LABELS={admin:"Administrador",comercial:"Comercial",operacional:"Operacional",marketing:"Marketing",financeiro:"Financeiro",base:"Base"};
 const ROLE_COLOR={admin:T.accent,comercial:T.info,operacional:T.purple,marketing:T.pink,financeiro:T.warn,base:T.green};
@@ -110,27 +105,21 @@ const mkImpactos=()=>({stories:[],influencer:[],impulsionado:[],galeria:[],evide
 
 // --- COMMERCIAL ---------------------------------------------------------------
 const PIPE_STAGES=[{id:"lead",label:"Lead",color:T.muted,prob:10},{id:"qualificado",label:"Qualificado",color:T.info,prob:30},{id:"proposta",label:"Proposta",color:T.purple,prob:60},{id:"negociacao",label:"Negociação",color:T.warn,prob:80},{id:"fechado",label:"Fechado",color:T.accent,prob:100}];
-const PROSPECTS_INIT=[
-  {id:1,name:"Natura",contact:"Paula Mendes",email:"paula@natura.com.br",segment:"Beleza",value:42000,stage:"lead",owner:"Ana Lima",notes:"Indicação O Boticário"},
-  {id:2,name:"Ambev",contact:"Ricardo Torres",email:"ricardo@ambev.com.br",segment:"Alimentação",value:85000,stage:"qualificado",owner:"Ana Lima",notes:"Interesse em 3 capitais"},
-  {id:3,name:"Magazine Luiza",contact:"Fernanda Luz",email:"fernanda@magalu.com.br",segment:"Tecnologia",value:120000,stage:"proposta",owner:"Rodrigo Bem",notes:"Proposta enviada 05/04"},
-  {id:4,name:"iFood",contact:"Bruno Sá",email:"bruno@ifood.com.br",segment:"Tecnologia",value:200000,stage:"negociacao",owner:"Rodrigo Bem",notes:"Reunião marcada 20/04"},
-  {id:5,name:"Riachuelo",contact:"Carla Vaz",email:"carla@riachuelo.com.br",segment:"Moda",value:55000,stage:"proposta",owner:"Ana Lima",notes:"Aguardando aprovação interna"},
-];
+const PROSPECTS_INIT=[];
 const CLIENTS_LIST=[];
 const CLIENT_BILLING=[];
 const LANCAMENTOS_INIT=[];
 const FAT_MENSAIS_INIT=[];
 const CAMPS_INIT=[];
 const SUPPLIERS=[];
-const MONTHLY_DATA=[{month:"Nov/24",receita:28400,previsao:30000},{month:"Dez/24",receita:31200,previsao:32000},{month:"Jan/25",receita:19800,previsao:22000},{month:"Fev/25",receita:35600,previsao:34000},{month:"Mar/25",receita:42100,previsao:40000},{month:"Abr/25",receita:38700,previsao:41000},{month:"Mai/25",receita:0,previsao:52000},{month:"Jun/25",receita:0,previsao:58000}];
+const MONTHLY_DATA=[];
 const USER_BILLING=[];
 
 // --- COMMISSIONS -------------------------------------------------------------
-const PROJECTS_INIT=[{id:1,name:"Copa 2025",active:true},{id:2,name:"Verão 2025",active:true},{id:3,name:"Dia das Mães 2025",active:true}];
+const PROJECTS_INIT=[];
 const PTYPES_INIT=[{id:1,name:"Restaurante"},{id:2,name:"Bar"},{id:3,name:"Padaria"},{id:4,name:"Açaí"},{id:5,name:"Café"},{id:6,name:"Hamburgueria"}];
-const COMM_TABLE_INIT=[{id:1,typeId:1,typeName:"Restaurante",projectId:1,projectName:"Copa 2025",value:80},{id:2,typeId:2,typeName:"Bar",projectId:1,projectName:"Copa 2025",value:120},{id:3,typeId:3,typeName:"Padaria",projectId:1,projectName:"Copa 2025",value:60},{id:4,typeId:1,typeName:"Restaurante",projectId:2,projectName:"Verão 2025",value:70},{id:5,typeId:4,typeName:"Açaí",projectId:2,projectName:"Verão 2025",value:90},{id:6,typeId:5,typeName:"Café",projectId:3,projectName:"Dia das Mães 2025",value:55}];
-const CLOSINGS_INIT=[{id:1,user:"Mariana Costa",userId:6,partner:"Churrascaria do Zé",type:"Restaurante",typeId:1,project:"Copa 2025",projectId:1,value:80,date:"02/04",status:"aprovado",pago:true},{id:2,user:"Mariana Costa",userId:6,partner:"Bar do Alemão",type:"Bar",typeId:2,project:"Copa 2025",projectId:1,value:120,date:"05/04",status:"aprovado",pago:false},{id:3,user:"Mariana Costa",userId:6,partner:"Padaria Estrela",type:"Padaria",typeId:3,project:"Copa 2025",projectId:1,value:60,date:"08/04",status:"pendente",pago:false},{id:4,user:"Carlos Mendes",userId:3,partner:"Café Central",type:"Café",typeId:5,project:"Dia das Mães 2025",projectId:3,value:55,date:"20/04",status:"pendente",pago:false}];
+const COMM_TABLE_INIT=[];
+const CLOSINGS_INIT=[];
 
 // --- BASE PARTNERS ------------------------------------------------------------
 const calcScore=(p)=>{
