@@ -28,6 +28,9 @@ DELETE FROM fat_mensais WHERE id IS NOT NULL;
 -- Limpar planejamentos de teste
 DELETE FROM planejamentos WHERE id IS NOT NULL;
 
+-- Limpar fornecedores de teste (Gráfica TopPrint, ColorMax, TransBrasil, etc)
+DELETE FROM fornecedores WHERE id IS NOT NULL;
+
 -- NÃO APAGAR (dados reais):
 -- lancamentos ← financeiro real 2025/2026
 -- contas ← Bradesco, C6
