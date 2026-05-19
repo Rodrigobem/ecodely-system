@@ -4751,29 +4751,57 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               );
             };
 
+            // Dados reais para o Dashboard
+            const hoje2=new Date();
+            const mm2=String(hoje2.getMonth()+1).padStart(2,"0");
+            const yy2=String(hoje2.getFullYear());
+            const mesRefDash=mm2+"/"+yy2;
+            const lancMes2=lancamentos.filter(l=>{const d=l.data||"";return d.slice(3,5)===mm2&&d.slice(6,10)===yy2&&l.tipo!=="Saldo Anterior";});
+            const receitaMes=lancMes2.reduce((a,l)=>a+(l.entrada||0),0);
+            const despesaMes=lancMes2.reduce((a,l)=>a+(l.saida||0),0);
+            const resultadoMes=receitaMes-despesaMes;
+            const saldoCaixaReal=contas.reduce((a,c)=>a+(c.saldo||0),0);
+            // Últimos 6 meses para gráfico
+            const ultMeses=[];
+            for(let i=5;i>=0;i--){
+              const d=new Date(hoje2.getFullYear(),hoje2.getMonth()-i,1);
+              const mm=String(d.getMonth()+1).padStart(2,"0");
+              const yy=String(d.getFullYear());
+              const ls=lancamentos.filter(l=>{const dd=l.data||"";return dd.slice(3,5)===mm&&dd.slice(6,10)===yy&&l.tipo!=="Saldo Anterior";});
+              ultMeses.push({mes:mm+"/"+yy,label:d.toLocaleDateString("pt-BR",{month:"short"}),receita:ls.reduce((a,l)=>a+(l.entrada||0),0),despesa:ls.reduce((a,l)=>a+(l.saida||0),0)});
+            }
+            // Despesas por categoria no mês
+            const despCatMes=CAT_DESPESA.map(cat=>({cat,v:lancMes2.filter(l=>l.categoria===cat&&(l.saida||0)>0).reduce((a,l)=>a+(l.saida||0),0)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,5);
+            // Pipeline leads reais
+            const leadsConvertidos=pipeLeads.filter(l=>l.etapa==="convertido").length;
+            const leadsAtivos=pipeLeads.filter(l=>["respondeu","interessado"].includes(l.etapa)).length;
+            const leadsTotal=pipeLeads.length;
+            const taxaConvDash=leadsTotal>0?Math.round((leadsConvertidos/leadsTotal)*100):0;
+
             const DashGeral=()=>(
               <div>
-                {/* Period selector */}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
-                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14}}>Visão geral</div>
-                  <div style={{display:"flex",gap:6}}>
-                    {[["mes","Mês atual"],["trim","Trimestre"],["ano","Ano"],["custom","Período"]].map(([id,l])=>(
-                      <button key={id} onClick={()=>setDashPeriod(id)} className="btn" style={{padding:"5px 12px",fontSize:10,borderRadius:7,background:dashPeriod===id?T.accentDim:"transparent",border:`1px solid ${dashPeriod===id?T.accentBorder:T.border}`,color:dashPeriod===id?T.accent:T.muted,cursor:"pointer"}}>{l}</button>
-                    ))}
-                    {dashPeriod==="custom"&&(
-                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                        <input type="date" style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:6,padding:"4px 8px",fontSize:10,color:T.text,outline:"none"}}/>
-                        <span style={{fontSize:10,color:T.muted}}>até</span>
-                        <input type="date" style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:6,padding:"4px 8px",fontSize:10,color:T.text,outline:"none"}}/>
-                      </div>
-                    )}
+                  <div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18}}>Dashboard</div>
+                    <div style={{fontSize:11,color:T.muted}}>{hoje2.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
+                  </div>
+                  <div style={{fontSize:10,color:T.accent,fontFamily:"Arial,sans-serif",fontWeight:700,background:T.accentDim,padding:"5px 12px",borderRadius:6,border:`1px solid ${T.accentBorder}`}}>
+                    {mesRefDash} · dados reais
                   </div>
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:12}}>
-                  <KCard label="Campanhas ativas" value={campsAtivas.length} sub="em andamento" color={T.accent} icon="-" onClick={()=>setTab("campanhas")} hint="Ver campanhas -"/>
-                  <KCard label="Pipeline comercial" value={fmtK(pipeTotal)} sub={`${prospects.length} prospects`} color={T.info} icon="-" onClick={()=>{setTab("comercial");setCommTab("pipeline");}} hint="Ver pipeline -"/>
-                  <KCard label="Total a receber" value={fmtK(CLIENT_BILLING.reduce((a,c)=>a+c.pendente,0))} sub="NFs em aberto" color={T.warn} icon="-"/>
-                  <KCard label="Total a pagar" value={fmtK(closings.filter(c=>c.status==="aprovado"&&!c.pago).reduce((a,c)=>a+c.value,0))} sub="comissões aprovadas" color={T.danger} icon="-" onClick={()=>setTab("comissoes")} hint="Ver comissões -"/>
+                {/* Cards reais */}
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:16}}>
+                  <KCard label="Receita do mês" value={fmt(receitaMes)} sub={mesRefDash} color={T.accent} icon="-" onClick={()=>{setTab("financeiro-modulo");setFinTab("fluxo");}} hint="Ver fluxo -"/>
+                  <KCard label="Despesas do mês" value={fmt(despesaMes)} sub={mesRefDash} color={T.danger} icon="-" onClick={()=>{setTab("financeiro-modulo");setFinTab("fluxo");}} hint="Ver fluxo -"/>
+                  <KCard label="Resultado" value={fmt(Math.abs(resultadoMes))} sub={resultadoMes>=0?"superávit":"déficit"} color={resultadoMes>=0?T.accent:T.danger} icon="-"/>
+                  <KCard label="Saldo em caixa" value={fmt(saldoCaixaReal)} sub="todas as contas" color={T.info} icon="-" onClick={()=>{setTab("financeiro-modulo");setFinTab("visao");}} hint="Ver contas -"/>
+                </div>
+                {/* Segunda linha de cards */}
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:16}}>
+                  <KCard label="Campanhas ativas" value={campsAtivas.length} sub="em andamento" color={T.purple} icon="-" onClick={()=>setTab("campanhas")} hint="Ver campanhas -"/>
+                  <KCard label="Leads convertidos" value={leadsConvertidos} sub={`${taxaConvDash}% de conversão`} color={T.accent} icon="-" onClick={()=>{setTab("base");setBaseTab("pipeline");}} hint="Ver pipeline -"/>
+                  <KCard label="Leads em negociação" value={leadsAtivos} sub="respondeu + interesse" color={T.warn} icon="-" onClick={()=>{setTab("base");setBaseTab("pipeline");}} hint="Ver pipeline -"/>
+                  <KCard label="Conversas WhatsApp" value={waConversas.filter(c=>c.status!=="encerrado").length} sub="ativas" color={T.green} icon="-" onClick={()=>setTab("whatsapp")} hint="Ver conversas -"/>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:12}}>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
@@ -4885,24 +4913,44 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     })()}
                   </div>
                 )}
-                {/* Receita mensal com valores */}
-                <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Receita mensal</div>
-                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:T.accent}}>{fmtK(MONTHLY_DATA.reduce((a,d)=>a+d.receita,0))}</div>
+                {/* Gráfico últimos 6 meses REAL */}
+                <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:12}}>
+                  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Receita vs Despesa — últimos 6 meses</div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:T.accent}}>{fmt(receitaMes)}<span style={{fontSize:10,color:T.muted,fontWeight:400}}> este mês</span></div>
+                    </div>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <BarChart data={ultMeses} barSize={14}>
+                        <XAxis dataKey="label" tick={{fontSize:9,fill:T.muted}} axisLine={false} tickLine={false}/>
+                        <YAxis tick={{fontSize:9,fill:T.muted}} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}k`}/>
+                        <Tooltip formatter={(v,n)=>[fmt(v),n==="receita"?"Receita":"Despesa"]} contentStyle={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,fontSize:10}}/>
+                        <Bar dataKey="receita" fill={T.accent} radius={[3,3,0,0]} name="receita"/>
+                        <Bar dataKey="despesa" fill={T.danger} radius={[3,3,0,0]} name="despesa"/>
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
-                  <div style={{display:"flex",gap:6,alignItems:"flex-end",height:100}}>
-                    {MONTHLY_DATA.map((d,i)=>{
-                      const maxVal=Math.max(...MONTHLY_DATA.map(x=>x.receita),1);
-                      const h=d.receita>0?Math.round((d.receita/maxVal)*75):4;
-                      return(
-                        <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                          {d.receita>0&&<div style={{fontSize:7,color:T.accent,fontFamily:"Arial,sans-serif",whiteSpace:"nowrap"}}>{fmtK(d.receita)}</div>}
-                          <div style={{width:"70%",background:d.receita>0?`linear-gradient(180deg,${T.accent},${T.accent}88)`:T.border,borderRadius:"3px 3px 0 0",height:`${h}px`,transition:"height 0.4s"}}/>
-                          <div style={{fontSize:7,color:T.muted,whiteSpace:"nowrap"}}>{d.month}</div>
+                  {/* Despesas por categoria no mês */}
+                  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Top despesas — {mesRefDash}</div>
+                    {despCatMes.length===0&&<div style={{fontSize:10,color:T.muted,textAlign:"center",padding:20}}>Nenhuma despesa registrada</div>}
+                    {despCatMes.map(({cat,v})=>(
+                      <div key={cat} style={{marginBottom:10}}>
+                        <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                          <span style={{fontSize:10,color:T.soft}}>{cat}</span>
+                          <span style={{fontSize:10,color:T.danger,fontFamily:"Arial,sans-serif",fontWeight:700}}>{fmt(v)}</span>
                         </div>
-                      );
-                    })}
+                        <div style={{height:4,background:T.border,borderRadius:2,overflow:"hidden"}}>
+                          <div style={{width:`${despesaMes>0?Math.round((v/despesaMes)*100):0}%`,height:"100%",background:T.danger,borderRadius:2}}/>
+                        </div>
+                      </div>
+                    ))}
+                    {despCatMes.length>0&&(
+                      <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:`1px solid ${T.border}`,marginTop:4}}>
+                        <span style={{fontSize:9,color:T.muted}}>Total despesas</span>
+                        <span style={{fontSize:11,color:T.danger,fontFamily:"Arial,sans-serif",fontWeight:800}}>{fmt(despesaMes)}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
