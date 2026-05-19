@@ -2554,6 +2554,280 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
 }
 
 
+// ---------------------------------------------------------------------------
+// RELATÓRIO POR CATEGORIA — componente financeiro
+// ---------------------------------------------------------------------------
+function CategoriasFin({lancamentos,T}){
+  const[periodoAtivo,setPeriodoAtivo]=useState("mes_atual");
+  const[rangeDE,setRangeDE]=useState(()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-01`;});
+  const[rangeATE,setRangeATE]=useState(()=>{const d=new Date();const last=new Date(d.getFullYear(),d.getMonth()+1,0);return last.toISOString().slice(0,10);});
+  const[tipoView,setTipoView]=useState("despesas"); // despesas | receitas | ambos
+  const[detalheCategoria,setDetalheCategoria]=useState(null);
+
+  // Conversão de datas
+  const isoToBr=(iso)=>{if(!iso)return"";const[y,m,d]=iso.split("-");return`${d}/${m}/${y}`;};
+  const brToNum=(br)=>{if(!br)return 0;const[d,m,y]=br.split("/");return Number(y)*10000+Number(m)*100+Number(d);};
+
+  // Atalhos de período
+  const atalhos=[
+    {id:"mes_atual",label:"Este mês",fn:()=>{const d=new Date();const y=d.getFullYear(),m=d.getMonth();const last=new Date(y,m+1,0);setRangeDE(`${y}-${String(m+1).padStart(2,"0")}-01`);setRangeATE(last.toISOString().slice(0,10));}},
+    {id:"mes_ant",label:"Mês anterior",fn:()=>{const d=new Date();const y=d.getFullYear(),m=d.getMonth()-1;const last=new Date(y,m+1,0);setRangeDE(`${y}-${String(m+1).padStart(2,"0")}-01`);setRangeATE(last.toISOString().slice(0,10));}},
+    {id:"trim",label:"Trimestre",fn:()=>{const d=new Date();const y=d.getFullYear();const q=Math.floor(d.getMonth()/3);setRangeDE(`${y}-${String(q*3+1).padStart(2,"0")}-01`);const last=new Date(y,q*3+3,0);setRangeATE(last.toISOString().slice(0,10));}},
+    {id:"ano",label:"Este ano",fn:()=>{const y=new Date().getFullYear();setRangeDE(`${y}-01-01`);setRangeATE(`${y}-12-31`);}},
+    {id:"custom",label:"Personalizado",fn:null},
+  ];
+
+  // Filtrar lançamentos pelo período
+  const deDe=brToNum(isoToBr(rangeDE)); const deAte=brToNum(isoToBr(rangeATE));
+  const lancP=lancamentos.filter(l=>{
+    if(!l.data||l.tipo==="Saldo Anterior")return false;
+    const n=brToNum(l.data);
+    return n>=deDe&&n<=deAte;
+  });
+
+  // Agrupar por categoria
+  const porCategoria=(tipo)=>{
+    const filtrados=tipo==="entrada"?lancP.filter(l=>(l.entrada||0)>0):lancP.filter(l=>(l.saida||0)>0);
+    const acc={};
+    filtrados.forEach(l=>{
+      const cat=l.categoria||"Sem categoria";
+      if(!acc[cat])acc[cat]={total:0,count:0,lancs:[]};
+      acc[cat].total+=(tipo==="entrada"?l.entrada:l.saida)||0;
+      acc[cat].count++;
+      acc[cat].lancs.push(l);
+    });
+    return Object.entries(acc).map(([cat,v])=>({cat,...v})).sort((a,b)=>b.total-a.total);
+  };
+
+  const despPorCat=porCategoria("saida");
+  const recPorCat=porCategoria("entrada");
+  const totalDesp=despPorCat.reduce((a,c)=>a+c.total,0);
+  const totalRec=recPorCat.reduce((a,c)=>a+c.total,0);
+
+  // Meses no período para tabela
+  const mesesNoPeriodo=[...new Set(lancP.map(l=>l.data.slice(3,5)+"/"+l.data.slice(6,10)))].sort();
+
+  // Breakdown mensal por categoria selecionada
+  const breakdownMensal=(cat,tipo)=>{
+    return mesesNoPeriodo.map(mes=>{
+      const[mm,yy]=mes.split("/");
+      const ls=lancP.filter(l=>l.categoria===cat&&l.data.slice(3,5)===mm&&l.data.slice(6,10)===yy);
+      const v=tipo==="saida"?ls.reduce((a,l)=>a+(l.saida||0),0):ls.reduce((a,l)=>a+(l.entrada||0),0);
+      return{mes,v};
+    });
+  };
+
+  const inpDate={background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"5px 8px",fontSize:11,color:T.text,outline:"none",colorScheme:"dark"};
+  const CatCard=({cat,total,count,totalGeral,tipo,cor})=>(
+    <div onClick={()=>setDetalheCategoria(detalheCategoria?.cat===cat&&detalheCategoria?.tipo===tipo?null:{cat,tipo,total,count})}
+      style={{background:T.card,border:`1px solid ${detalheCategoria?.cat===cat&&detalheCategoria?.tipo===tipo?cor:T.border}`,borderRadius:10,padding:"12px 14px",cursor:"pointer",transition:"all 0.15s"}}
+      onMouseEnter={e=>e.currentTarget.style.borderColor=cor}
+      onMouseLeave={e=>e.currentTarget.style.borderColor=detalheCategoria?.cat===cat&&detalheCategoria?.tipo===tipo?cor:T.border}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+        <div style={{fontWeight:600,fontSize:11}}>{cat}</div>
+        <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:cor}}>{fmt(total)}</div>
+      </div>
+      <div style={{height:4,background:T.border,borderRadius:2,overflow:"hidden",marginBottom:6}}>
+        <div style={{width:`${totalGeral>0?Math.round((total/totalGeral)*100):0}%`,height:"100%",background:cor,borderRadius:2,transition:"width 0.4s"}}/>
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between"}}>
+        <span style={{fontSize:9,color:T.muted}}>{count} lançamento{count!==1?"s":""}</span>
+        <span style={{fontSize:9,color:cor,fontWeight:600}}>{totalGeral>0?Math.round((total/totalGeral)*100):0}%</span>
+      </div>
+    </div>
+  );
+
+  return(
+  <div>
+    {/* Período */}
+    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 16px",marginBottom:16}}>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",marginBottom:10}}>
+        {atalhos.map(a=>(
+          <button key={a.id} onClick={()=>{setPeriodoAtivo(a.id);if(a.fn)a.fn();}} style={{padding:"5px 12px",borderRadius:6,fontSize:10,fontWeight:600,cursor:"pointer",border:`1px solid ${periodoAtivo===a.id?T.accentBorder:T.border}`,background:periodoAtivo===a.id?T.accentDim:"transparent",color:periodoAtivo===a.id?T.accent:T.muted}}>{a.label}</button>
+        ))}
+      </div>
+      {periodoAtivo==="custom"&&(
+        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+          <span style={{fontSize:10,color:T.muted}}>De</span>
+          <input type="date" value={rangeDE} onChange={e=>setRangeDE(e.target.value)} style={inpDate}/>
+          <span style={{fontSize:10,color:T.muted}}>até</span>
+          <input type="date" value={rangeATE} onChange={e=>setRangeATE(e.target.value)} min={rangeDE} style={inpDate}/>
+        </div>
+      )}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,flexWrap:"wrap",gap:8}}>
+        <div style={{fontSize:10,color:T.muted}}>{lancP.length} lançamentos · {isoToBr(rangeDE)} → {isoToBr(rangeATE)}</div>
+        {/* Exportar Excel */}
+        <button onClick={()=>{
+          const rows=[["Ecodely — Relatório por Categoria","","",""],["Período: "+isoToBr(rangeDE)+" → "+isoToBr(rangeATE),"","",""],[""],
+            ["DESPESAS POR CATEGORIA","","",""],["Categoria","Total (R$)","Lançamentos","%"],
+            ...despPorCat.map(c=>[c.cat,c.total.toFixed(2),c.count,totalDesp>0?Math.round((c.total/totalDesp)*100)+"%":"0%"]),
+            ["TOTAL DESPESAS",totalDesp.toFixed(2),"",""],[""],
+            ["RECEITAS POR CATEGORIA","","",""],["Categoria","Total (R$)","Lançamentos","%"],
+            ...recPorCat.map(c=>[c.cat,c.total.toFixed(2),c.count,totalRec>0?Math.round((c.total/totalRec)*100)+"%":"0%"]),
+            ["TOTAL RECEITAS",totalRec.toFixed(2),"",""],
+          ];
+          const ws=XLSX.utils.aoa_to_sheet(rows);
+          ws["!cols"]=[{wch:30},{wch:15},{wch:15},{wch:10}];
+          const wb=XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb,ws,"Por Categoria");
+          XLSX.writeFile(wb,`Ecodely_Categorias_${rangeDE.slice(0,7)}.xlsx`);
+        }} style={{padding:"6px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer"}}>📊 Exportar Excel</button>
+      </div>
+    </div>
+
+    {/* Tipo de view */}
+    <div style={{display:"flex",gap:6,marginBottom:16}}>
+      {[["despesas","💸 Despesas"],["receitas","💰 Receitas"],["ambos","📊 Ambos"]].map(([v,l])=>(
+        <button key={v} onClick={()=>setTipoView(v)} style={{padding:"6px 14px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",border:`1px solid ${tipoView===v?(v==="despesas"?T.danger:v==="receitas"?T.accent:T.info)+"88":T.border}`,background:tipoView===v?(v==="despesas"?T.dangerDim:v==="receitas"?T.accentDim:T.infoDim):"transparent",color:tipoView===v?(v==="despesas"?T.danger:v==="receitas"?T.accent:T.info):T.muted}}>{l}</button>
+      ))}
+      <div style={{marginLeft:"auto",display:"flex",gap:12,alignItems:"center"}}>
+        {tipoView!=="receitas"&&<div style={{fontSize:11}}><span style={{color:T.muted}}>Total despesas: </span><span style={{color:T.danger,fontWeight:800}}>{fmt(totalDesp)}</span></div>}
+        {tipoView!=="despesas"&&<div style={{fontSize:11}}><span style={{color:T.muted}}>Total receitas: </span><span style={{color:T.accent,fontWeight:800}}>{fmt(totalRec)}</span></div>}
+      </div>
+    </div>
+
+    {/* Cards por categoria */}
+    <div style={{display:"grid",gridTemplateColumns:tipoView==="ambos"?"1fr 1fr":"1fr",gap:16,marginBottom:16}}>
+      {(tipoView==="despesas"||tipoView==="ambos")&&(
+        <div>
+          {tipoView==="ambos"&&<div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.danger,marginBottom:10}}>💸 Despesas por Categoria</div>}
+          {despPorCat.length===0&&<div style={{textAlign:"center",padding:24,color:T.muted,fontSize:11}}>Nenhuma despesa no período</div>}
+          <div style={{display:"grid",gridTemplateColumns:tipoView==="ambos"?"1fr":"repeat(2,1fr)",gap:8}}>
+            {despPorCat.map(c=><CatCard key={c.cat} {...c} totalGeral={totalDesp} tipo="saida" cor={T.danger}/>)}
+          </div>
+        </div>
+      )}
+      {(tipoView==="receitas"||tipoView==="ambos")&&(
+        <div>
+          {tipoView==="ambos"&&<div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent,marginBottom:10}}>💰 Receitas por Categoria</div>}
+          {recPorCat.length===0&&<div style={{textAlign:"center",padding:24,color:T.muted,fontSize:11}}>Nenhuma receita no período</div>}
+          <div style={{display:"grid",gridTemplateColumns:tipoView==="ambos"?"1fr":"repeat(2,1fr)",gap:8}}>
+            {recPorCat.map(c=><CatCard key={c.cat} {...c} totalGeral={totalRec} tipo="entrada" cor={T.accent}/>)}
+          </div>
+        </div>
+      )}
+    </div>
+
+    {/* Detalhe da categoria selecionada */}
+    {detalheCategoria&&(()=>{
+      const bd=breakdownMensal(detalheCategoria.cat,detalheCategoria.tipo);
+      const lancsDet=lancP.filter(l=>l.categoria===detalheCategoria.cat&&(detalheCategoria.tipo==="saida"?(l.saida||0)>0:(l.entrada||0)>0)).sort((a,b)=>brToNum(b.data)-brToNum(a.data));
+      const cor=detalheCategoria.tipo==="saida"?T.danger:T.accent;
+      return(
+      <div style={{background:T.card,border:`1px solid ${cor}44`,borderRadius:12,padding:18,marginBottom:16}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div>
+            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14}}>{detalheCategoria.cat}</div>
+            <div style={{fontSize:10,color:T.muted}}>{detalheCategoria.count} lançamentos · total {fmt(detalheCategoria.total)}</div>
+          </div>
+          <button onClick={()=>setDetalheCategoria(null)} style={{background:"none",border:"none",color:T.muted,fontSize:18,cursor:"pointer"}}>✕</button>
+        </div>
+        {/* Evolução mensal */}
+        {mesesNoPeriodo.length>1&&(
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:10,color:T.muted,marginBottom:8}}>Evolução mensal</div>
+            <div style={{display:"flex",gap:6,alignItems:"flex-end",height:60}}>
+              {bd.map(({mes,v})=>{
+                const maxV=Math.max(...bd.map(x=>x.v),1);
+                const pct=Math.round((v/maxV)*100);
+                return(
+                  <div key={mes} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                    <div style={{fontSize:8,color:cor,fontWeight:700}}>{v>0?fmt(v).replace("R$","").trim():""}</div>
+                    <div style={{width:"100%",height:pct*0.4+"px",minHeight:v>0?4:2,background:v>0?cor:T.border,borderRadius:"2px 2px 0 0",transition:"height 0.3s"}}/>
+                    <div style={{fontSize:8,color:T.muted}}>{mes.slice(0,2)}/{mes.slice(3,5)}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {/* Lista de lançamentos */}
+        <div style={{fontSize:10,color:T.muted,marginBottom:6}}>Lançamentos</div>
+        <div style={{maxHeight:200,overflowY:"auto"}}>
+          {lancsDet.map((l,i)=>(
+            <div key={l.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:`1px solid ${T.border}`}}>
+              <div>
+                <div style={{fontSize:11,fontWeight:500}}>{l.descricao}</div>
+                <div style={{fontSize:9,color:T.muted}}>{l.data} · {l.forma||""} {l.centrosCusto?`· ${l.centrosCusto}`:""}</div>
+              </div>
+              <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:cor,flexShrink:0,marginLeft:12}}>
+                {fmt(detalheCategoria.tipo==="saida"?l.saida:l.entrada)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      );
+    })()}
+
+    {/* Tabela comparativa por mês */}
+    {mesesNoPeriodo.length>1&&(
+      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden",marginBottom:16}}>
+        <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.border}`,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12}}>
+          Comparativo Mensal — {tipoView==="despesas"?"Despesas":tipoView==="receitas"?"Receitas":"Despesas e Receitas"}
+        </div>
+        <div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:10}}>
+            <thead>
+              <tr style={{background:T.surface}}>
+                <th style={{padding:"8px 12px",textAlign:"left",color:T.muted,fontWeight:600,borderBottom:`1px solid ${T.border}`,whiteSpace:"nowrap"}}>Categoria</th>
+                {mesesNoPeriodo.map(m=><th key={m} style={{padding:"8px 12px",textAlign:"right",color:T.muted,fontWeight:600,borderBottom:`1px solid ${T.border}`,whiteSpace:"nowrap"}}>{m}</th>)}
+                <th style={{padding:"8px 12px",textAlign:"right",color:T.muted,fontWeight:600,borderBottom:`1px solid ${T.border}`}}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(tipoView!=="receitas"?despPorCat:[]).map(({cat,total})=>(
+                <tr key={"d-"+cat} style={{borderBottom:`1px solid ${T.border}`}} onMouseEnter={e=>e.currentTarget.style.background=T.surface} onMouseLeave={e=>e.currentTarget.style.background=""}>
+                  <td style={{padding:"7px 12px",display:"flex",alignItems:"center",gap:6}}>
+                    <div style={{width:3,height:12,borderRadius:1,background:T.danger,flexShrink:0}}/>
+                    {cat}
+                  </td>
+                  {mesesNoPeriodo.map(mes=>{
+                    const[mm,yy]=mes.split("/");
+                    const v=lancP.filter(l=>l.categoria===cat&&(l.saida||0)>0&&l.data.slice(3,5)===mm&&l.data.slice(6,10)===yy).reduce((a,l)=>a+(l.saida||0),0);
+                    return<td key={mes} style={{padding:"7px 12px",textAlign:"right",color:v>0?T.danger:T.border}}>{v>0?fmt(v):"—"}</td>;
+                  })}
+                  <td style={{padding:"7px 12px",textAlign:"right",color:T.danger,fontWeight:700}}>{fmt(total)}</td>
+                </tr>
+              ))}
+              {(tipoView!=="despesas"?recPorCat:[]).map(({cat,total})=>(
+                <tr key={"r-"+cat} style={{borderBottom:`1px solid ${T.border}`}} onMouseEnter={e=>e.currentTarget.style.background=T.surface} onMouseLeave={e=>e.currentTarget.style.background=""}>
+                  <td style={{padding:"7px 12px",display:"flex",alignItems:"center",gap:6}}>
+                    <div style={{width:3,height:12,borderRadius:1,background:T.accent,flexShrink:0}}/>
+                    {cat}
+                  </td>
+                  {mesesNoPeriodo.map(mes=>{
+                    const[mm,yy]=mes.split("/");
+                    const v=lancP.filter(l=>l.categoria===cat&&(l.entrada||0)>0&&l.data.slice(3,5)===mm&&l.data.slice(6,10)===yy).reduce((a,l)=>a+(l.entrada||0),0);
+                    return<td key={mes} style={{padding:"7px 12px",textAlign:"right",color:v>0?T.accent:T.border}}>{v>0?fmt(v):"—"}</td>;
+                  })}
+                  <td style={{padding:"7px 12px",textAlign:"right",color:T.accent,fontWeight:700}}>{fmt(total)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr style={{background:T.surface,borderTop:`2px solid ${T.border}`}}>
+                <td style={{padding:"8px 12px",fontWeight:700}}>TOTAL</td>
+                {mesesNoPeriodo.map(mes=>{
+                  const[mm,yy]=mes.split("/");
+                  const vD=tipoView!=="receitas"?lancP.filter(l=>(l.saida||0)>0&&l.data.slice(3,5)===mm&&l.data.slice(6,10)===yy).reduce((a,l)=>a+(l.saida||0),0):0;
+                  const vR=tipoView!=="despesas"?lancP.filter(l=>(l.entrada||0)>0&&l.data.slice(3,5)===mm&&l.data.slice(6,10)===yy).reduce((a,l)=>a+(l.entrada||0),0):0;
+                  const v=tipoView==="ambos"?vR-vD:tipoView==="despesas"?vD:vR;
+                  const cor=tipoView==="despesas"?T.danger:tipoView==="receitas"?T.accent:(v>=0?T.accent:T.danger);
+                  return<td key={mes} style={{padding:"8px 12px",textAlign:"right",fontWeight:800,fontFamily:"Arial,sans-serif",color:cor}}>{fmt(Math.abs(v))}</td>;
+                })}
+                <td style={{padding:"8px 12px",textAlign:"right",fontWeight:800,fontFamily:"Arial,sans-serif",color:tipoView==="despesas"?T.danger:T.accent}}>{fmt(tipoView==="despesas"?totalDesp:tipoView==="receitas"?totalRec:Math.abs(totalRec-totalDesp))}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    )}
+  </div>
+  );
+}
+
+
 export default function App(){
   const[user,setUser]=useState(()=>{try{const s=localStorage.getItem("ecodely_user");return s?JSON.parse(s):null;}catch{return null;}});
   const[loginForm,setLoginForm]=useState({email:"",pass:""});
@@ -5404,7 +5678,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             const totalCartao=comprasCartao.reduce((a,c)=>a+(c.valorParcela*(c.parcelas-c.parcelaAtual+1)),0);
             const proximoMesCartao=comprasCartao.filter(c=>c.parcelaAtual<=c.parcelas).reduce((a,c)=>a+c.valorParcela,0);
 
-            const FIN_TABS=[["visao","Visao Geral"],["fluxo","Fluxo de Caixa"],["cartoes","Cartoes"],["das","DAS / Simples"],["distribuicao","Distribuicao"],["config","Configuracoes"]];
+            const FIN_TABS=[["visao","Visao Geral"],["fluxo","Fluxo de Caixa"],["categorias","Por Categoria"],["cartoes","Cartoes"],["das","DAS / Simples"],["distribuicao","Distribuicao"],["config","Configuracoes"]];
 
             return(
               <div>
@@ -5435,6 +5709,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 {finTab==="visao"&&<VisaoGeralFin lancamentos={lancamentos} finMesRef={finMesRef} contas={contas} custosFix={custosFix} cartoes={cartoes} comprasCartao={comprasCartao} proximoMesCartao={proximoMesCartao} rbt12={rbt12} faixa={faixa} aliqDisplay={aliqDisplay} aliqVal={aliqVal} saldoMesFinal={saldoMesFinal} saldoTotal={saldoTotal} totalEntradas={totalEntradas} totalSaidas={totalSaidas} lucroMes={lucroMes} aaRef={aaRef} mmRef={mmRef}/> }
 
                 {/* FLUXO DE CAIXA */}
+                {finTab==="categorias"&&<CategoriasFin lancamentos={lancamentos} T={T}/>}
+
                 {finTab==="fluxo"&&(()=>{
                   const [mmAtual,aaAtual]=[mmRef,aaRef];
                   // Aplicar filtros
