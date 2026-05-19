@@ -8044,109 +8044,251 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             const disponiveis=BLOCOS.filter(b=>isAdmin||b.roles.includes(user.role));
 
             return(
-              <div style={{display:"grid",gridTemplateColumns:"260px 1fr",gap:16,minHeight:"calc(100vh - 120px)"}}>
-
-                {/* ── PAINEL ESQUERDO — Seletor de blocos ── */}
-                <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16,height:"fit-content",position:"sticky",top:0}}>
-                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,marginBottom:4}}>Construtor</div>
-                  <div style={{fontSize:9,color:T.muted,marginBottom:14}}>Escolha os blocos do relatório</div>
-
-                  {/* Título */}
-                  <div style={{marginBottom:10}}>
-                    <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Título</div>
-                    <input value={relTitulo} onChange={e=>setRelTitulo(e.target.value)} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/>
-                  </div>
-
-                  {/* Período — seletores rápidos */}
-                  <div style={{marginBottom:14}}>
-                    <div style={{fontSize:9,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Período</div>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}}>
-                      {[["mes","Este mês"],["mes_ant","Mês ant."],["trim","Trimestre"],["ano","Este ano"],["tudo","Tudo"]].map(([tipo,label])=>(
-                        <div key={tipo} onClick={()=>aplicarFiltro(tipo)} style={{padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:9,background:T.surface,border:`1px solid ${T.border}`,color:T.muted,fontFamily:"Arial,sans-serif"}}>
-                          {label}
-                        </div>
-                      ))}
+              <div>
+                {/* ── TEMPLATES PRONTOS ── */}
+                {!relSelecionados.length&&(
+                <div style={{marginBottom:24}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                    <div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18}}>Relatórios</div>
+                      <div style={{fontSize:11,color:T.muted}}>Templates prontos ou construa o seu</div>
                     </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
-                      <div>
-                        <div style={{fontSize:8,color:T.muted,marginBottom:2}}>De</div>
-                        <input type="date" value={relDateStart} onChange={e=>{setRelDateStart(e.target.value);setRelPeriodo("Personalizado");}} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 6px",fontSize:10,color:T.text,outline:"none"}}/>
-                      </div>
-                      <div>
-                        <div style={{fontSize:8,color:T.muted,marginBottom:2}}>Até</div>
-                        <input type="date" value={relDateEnd} onChange={e=>{setRelDateEnd(e.target.value);setRelPeriodo("Personalizado");}} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 6px",fontSize:10,color:T.text,outline:"none"}}/>
-                      </div>
-                    </div>
-                    {relPeriodo&&<div style={{fontSize:9,color:T.accent,marginTop:5,fontFamily:"Arial,sans-serif"}}>↳ {relPeriodo}</div>}
+                    <button onClick={()=>setRelSelecionados(["dre","saldos","desp_categoria","fat_mensal"])} style={{padding:"8px 16px",background:T.surface,border:`1px solid ${T.border}`,color:T.soft,borderRadius:8,fontSize:11,cursor:"pointer",fontWeight:600}}>✏️ Construtor livre</button>
                   </div>
-
-                  {/* Blocos por categoria */}
-                  {cats.map(cat=>(
-                    <div key={cat} style={{marginBottom:14}}>
-                      <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6,fontFamily:"Arial,sans-serif"}}>{cat}</div>
-                      {disponiveis.filter(b=>b.cat===cat).map(b=>{
-                        const sel=relSelecionados.includes(b.id);
-                        return(
-                          <div key={b.id} onClick={()=>toggle(b.id)} style={{display:"flex",gap:8,alignItems:"center",padding:"7px 8px",borderRadius:7,cursor:"pointer",marginBottom:4,background:sel?b.color+"15":T.surface,border:`1px solid ${sel?b.color+"55":T.border}`,transition:"all 0.15s"}}>
-                            <div style={{width:12,height:12,borderRadius:3,border:`2px solid ${sel?b.color:T.border}`,background:sel?b.color:"transparent",flexShrink:0}}/>
-                            <span style={{fontSize:10,color:sel?b.color:T.soft,fontWeight:sel?700:400}}>{b.label}</span>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
+                    {[
+                      {
+                        id:"financeiro",
+                        titulo:"Resumo Financeiro",
+                        subtitulo:"Para o contador e reuniões",
+                        desc:"DRE completo, fluxo de caixa, despesas por categoria, custo de pessoal e saldos bancários. Ideal para prestação de contas mensais.",
+                        blocos:["dre","desp_categoria","custo_pessoal","saldos","dre_completo"],
+                        grad:`linear-gradient(135deg,${T.accent}22,${T.accent}08)`,
+                        borda:T.accentBorder,
+                        cor:T.accent,
+                        icon:"💰",
+                        tags:["Financeiro","Contador","Mensal"],
+                        itens:["DRE — Resultado","Despesas por categoria","Custo pessoal","Saldos bancários","DRE Completo"],
+                      },
+                      {
+                        id:"executivo",
+                        titulo:"Visão Executiva",
+                        subtitulo:"Para sócios e diretoria",
+                        desc:"Panorama completo da operação: financeiro, pipeline comercial, performance de campanhas e base de parceiros em uma visão integrada.",
+                        blocos:["dre","saldos","pipeline_etapas","parceiros_status","perf_campanhas"],
+                        grad:`linear-gradient(135deg,${T.purple}22,${T.info}11)`,
+                        borda:T.purple+"55",
+                        cor:T.purple,
+                        icon:"📊",
+                        tags:["Estratégico","Sócios","Board"],
+                        itens:["DRE — Resultado","Saldos bancários","Pipeline por etapa","Parceiros por status","Performance campanhas"],
+                      },
+                      {
+                        id:"comercial",
+                        titulo:"Performance Comercial",
+                        subtitulo:"Para reunião de vendas",
+                        desc:"Acompanhamento do time comercial: pipeline por etapa, meta vs realizado, taxa de conversão e faturamento mensal.",
+                        blocos:["pipeline_etapas","meta_vs_realizado","conversao","fat_mensal"],
+                        grad:`linear-gradient(135deg,${T.info}22,${T.info}08)`,
+                        borda:T.info+"55",
+                        cor:T.info,
+                        icon:"🎯",
+                        tags:["Comercial","Vendas","Semanal"],
+                        itens:["Pipeline por etapa","Meta vs Realizado","Conversão por usuário","Faturamento mensal"],
+                      },
+                      {
+                        id:"operacional",
+                        titulo:"Operacional",
+                        subtitulo:"Para o time de campanhas",
+                        desc:"Status das campanhas em andamento, prazos críticos de gráfica e logística, performance por campanha e impactos por canal.",
+                        blocos:["prazos","camps_status_det","perf_campanhas","impactos_canal"],
+                        grad:`linear-gradient(135deg,${T.warn}22,${T.warn}08)`,
+                        borda:T.warn+"55",
+                        cor:T.warn,
+                        icon:"⚙️",
+                        tags:["Operacional","Campanhas","Semanal"],
+                        itens:["Prazos críticos","Status por campanha","Performance campanhas","Impactos por canal"],
+                      },
+                      {
+                        id:"base",
+                        titulo:"Base de Parceiros",
+                        subtitulo:"Para gestão da base",
+                        desc:"Visão completa da base: status de todos os parceiros, ranking por score, contratos pendentes e top performers.",
+                        blocos:["parceiros_status","top_parceiros","camps_grafica"],
+                        grad:`linear-gradient(135deg,${T.green}22,${T.green}08)`,
+                        borda:T.green+"55",
+                        cor:T.green,
+                        icon:"🤝",
+                        tags:["Base","Parceiros","Mensal"],
+                        itens:["Parceiros por status","Top parceiros por score","Campanhas por gráfica"],
+                      },
+                      {
+                        id:"marketing",
+                        titulo:"Marketing & Impactos",
+                        subtitulo:"Para o time de marketing",
+                        desc:"Análise completa dos impactos gerados: por canal, por campanha, detalhamento de stories e resultados dos influenciadores.",
+                        blocos:["impactos_canal","perf_campanhas","impactos_det"],
+                        grad:`linear-gradient(135deg,${T.pink}22,${T.pink}08)`,
+                        borda:T.pink+"55",
+                        cor:T.pink,
+                        icon:"📱",
+                        tags:["Marketing","Impactos","Stories"],
+                        itens:["Impactos por canal","Performance campanhas","Impactos detalhados"],
+                      },
+                    ].map(t=>(
+                      <div key={t.id} style={{background:t.grad,border:`1px solid ${t.borda}`,borderRadius:14,padding:20,display:"flex",flexDirection:"column",gap:10,transition:"transform 0.15s,box-shadow 0.15s",cursor:"default"}}
+                        onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow=`0 8px 24px ${t.cor}22`;}}
+                        onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="none";}}>
+                        {/* Header */}
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                          <div style={{fontSize:28}}>{t.icon}</div>
+                          <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                            {t.tags.map(tag=><span key={tag} style={{fontSize:8,padding:"2px 6px",borderRadius:3,background:t.cor+"22",color:t.cor,fontWeight:600}}>{tag}</span>)}
                           </div>
-                        );
-                      })}
-                    </div>
-                  ))}
-
-                  {relSelecionados.length>0&&(
-                    <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:6}}>
-                      <button onClick={()=>gerarPDF()} style={{width:"100%",padding:"9px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:11,border:"none"}}>
-                        Exportar PDF
-                      </button>
-                      <button onClick={()=>setRelSelecionados([])} style={{width:"100%",padding:"7px",background:"transparent",color:T.muted,borderRadius:8,cursor:"pointer",fontSize:10,border:`1px solid ${T.border}`}}>
-                        Limpar seleção
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* ── PAINEL DIREITO — Preview do relatório ── */}
-                <div>
-                  {blocosSel.length===0?(
-                    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"60vh",gap:12,color:T.muted}}>
-                      <div style={{fontSize:40}}>📊</div>
-                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:16,color:T.soft}}>Seu relatório aparece aqui</div>
-                      <div style={{fontSize:11,color:T.muted}}>Selecione os blocos no painel ao lado</div>
-                    </div>
-                  ):(
-                    <div className="print-area">
-                      {/* Cabeçalho do relatório */}
-                      <div style={{background:`linear-gradient(135deg,${T.accent}22,${T.purple}11)`,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:"20px 24px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        </div>
+                        {/* Título */}
                         <div>
-                          <div style={{fontSize:8,color:T.accent,fontFamily:"Arial,sans-serif",letterSpacing:3,textTransform:"uppercase",marginBottom:4}}>ECODELY · MÍDIA IN-HOME</div>
-                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:22,marginBottom:2}}>{relTitulo}</div>
-                          <div style={{fontSize:10,color:T.muted}}>{relPeriodo} · Gerado em {new Date().toLocaleDateString("pt-BR")}</div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,color:t.cor,marginBottom:3}}>{t.titulo}</div>
+                          <div style={{fontSize:10,color:T.muted,fontWeight:600}}>{t.subtitulo}</div>
                         </div>
-                        <div style={{textAlign:"right"}}>
-                          <div style={{fontSize:9,color:T.muted,marginBottom:4}}>{blocosSel.length} bloco{blocosSel.length!==1?"s":""} selecionado{blocosSel.length!==1?"s":""}</div>
-                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.accent}}>{user.name}</div>
-                          <div style={{fontSize:9,color:T.muted}}>{ROLE_LABELS[user.role]}</div>
+                        {/* Descrição */}
+                        <div style={{fontSize:10,color:T.soft,lineHeight:1.6}}>{t.desc}</div>
+                        {/* Itens incluídos */}
+                        <div style={{background:T.card+"88",borderRadius:8,padding:"10px 12px"}}>
+                          <div style={{fontSize:8,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Inclui</div>
+                          {t.itens.map((item,i)=>(
+                            <div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"3px 0",borderBottom:i<t.itens.length-1?`1px solid ${T.border}`:"none"}}>
+                              <div style={{width:5,height:5,borderRadius:"50%",background:t.cor,flexShrink:0}}/>
+                              <span style={{fontSize:10,color:T.soft}}>{item}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Ações */}
+                        <div style={{display:"flex",gap:6,marginTop:4}}>
+                          <button onClick={()=>{
+                            setRelSelecionados(t.blocos);
+                            setRelTitulo(t.titulo);
+                            aplicarFiltro("mes");
+                          }} style={{flex:1,padding:"8px",background:t.cor,border:"none",color:"#000",borderRadius:8,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"Arial,sans-serif"}}>
+                            Gerar Relatório
+                          </button>
+                          <button onClick={()=>{
+                            setRelSelecionados(t.blocos);
+                            setRelTitulo(t.titulo);
+                            aplicarFiltro("mes");
+                            setTimeout(()=>gerarPDF(),300);
+                          }} style={{padding:"8px 12px",background:"transparent",border:`1px solid ${t.borda}`,color:t.cor,borderRadius:8,fontSize:10,fontWeight:700,cursor:"pointer"}}>
+                            PDF
+                          </button>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                </div>
+                )}
 
-                      {/* Blocos em grid */}
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                        {blocosSel.map(b=>(
-                          <div key={b.id} style={{background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${b.color}`,borderRadius:12,padding:"16px 18px",position:"relative"}}>
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                              <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:b.color}}>{b.label}</div>
-                              <div onClick={()=>toggle(b.id)} style={{cursor:"pointer",color:T.muted,fontSize:14,lineHeight:1}}>×</div>
-                            </div>
-                            {b.render()}
-                          </div>
+                {/* ── CONSTRUTOR + PREVIEW ── */}
+                {relSelecionados.length>0&&(
+                <div style={{display:"grid",gridTemplateColumns:"260px 1fr",gap:16,minHeight:"calc(100vh - 120px)"}}>
+
+                  {/* Painel esquerdo */}
+                  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16,height:"fit-content",position:"sticky",top:0}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13}}>Construtor</div>
+                      <button onClick={()=>setRelSelecionados([])} style={{background:"none",border:"none",color:T.muted,fontSize:10,cursor:"pointer",textDecoration:"underline"}}>← Templates</button>
+                    </div>
+                    {/* Título */}
+                    <div style={{marginBottom:10}}>
+                      <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Título</div>
+                      <input value={relTitulo} onChange={e=>setRelTitulo(e.target.value)} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none"}}/>
+                    </div>
+                    {/* Período */}
+                    <div style={{marginBottom:14}}>
+                      <div style={{fontSize:9,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Período</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}}>
+                        {[["mes","Este mês"],["mes_ant","Mês ant."],["trim","Trimestre"],["ano","Este ano"],["tudo","Tudo"]].map(([tipo,label])=>(
+                          <div key={tipo} onClick={()=>aplicarFiltro(tipo)} style={{padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:9,background:T.surface,border:`1px solid ${T.border}`,color:T.muted,fontFamily:"Arial,sans-serif"}}>{label}</div>
                         ))}
                       </div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+                        <div>
+                          <div style={{fontSize:8,color:T.muted,marginBottom:2}}>De</div>
+                          <input type="date" value={relDateStart} onChange={e=>{setRelDateStart(e.target.value);setRelPeriodo("Personalizado");}} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 6px",fontSize:10,color:T.text,outline:"none",colorScheme:"dark"}}/>
+                        </div>
+                        <div>
+                          <div style={{fontSize:8,color:T.muted,marginBottom:2}}>Até</div>
+                          <input type="date" value={relDateEnd} onChange={e=>{setRelDateEnd(e.target.value);setRelPeriodo("Personalizado");}} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 6px",fontSize:10,color:T.text,outline:"none",colorScheme:"dark"}}/>
+                        </div>
+                      </div>
+                      {relPeriodo&&<div style={{fontSize:9,color:T.accent,marginTop:5,fontFamily:"Arial,sans-serif"}}>↳ {relPeriodo}</div>}
                     </div>
-                  )}
+                    {/* Blocos */}
+                    {cats.map(cat=>(
+                      <div key={cat} style={{marginBottom:14}}>
+                        <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6,fontFamily:"Arial,sans-serif"}}>{cat}</div>
+                        {disponiveis.filter(b=>b.cat===cat).map(b=>{
+                          const sel=relSelecionados.includes(b.id);
+                          return(
+                            <div key={b.id} onClick={()=>toggle(b.id)} style={{display:"flex",gap:8,alignItems:"center",padding:"7px 8px",borderRadius:7,cursor:"pointer",marginBottom:4,background:sel?b.color+"15":T.surface,border:`1px solid ${sel?b.color+"55":T.border}`,transition:"all 0.15s"}}>
+                              <div style={{width:12,height:12,borderRadius:3,border:`2px solid ${sel?b.color:T.border}`,background:sel?b.color:"transparent",flexShrink:0}}/>
+                              <span style={{fontSize:10,color:sel?b.color:T.soft,fontWeight:sel?700:400}}>{b.label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                    {relSelecionados.length>0&&(
+                      <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:6}}>
+                        <button onClick={()=>gerarPDF()} style={{width:"100%",padding:"9px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:11,border:"none"}}>
+                          Exportar PDF
+                        </button>
+                        <button onClick={()=>setRelSelecionados([])} style={{width:"100%",padding:"7px",background:"transparent",color:T.muted,borderRadius:8,cursor:"pointer",fontSize:10,border:`1px solid ${T.border}`}}>
+                          ← Voltar aos templates
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Painel direito — Preview */}
+                  <div>
+                    {blocosSel.length===0?(
+                      <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"60vh",gap:12,color:T.muted}}>
+                        <div style={{fontSize:40}}>📊</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:16,color:T.soft}}>Seu relatório aparece aqui</div>
+                        <div style={{fontSize:11,color:T.muted}}>Selecione os blocos no painel ao lado</div>
+                      </div>
+                    ):(
+                      <div className="print-area">
+                        {/* Cabeçalho */}
+                        <div style={{background:`linear-gradient(135deg,${T.accent}22,${T.purple}11)`,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:"20px 24px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                          <div>
+                            <div style={{fontSize:8,color:T.accent,fontFamily:"Arial,sans-serif",letterSpacing:3,textTransform:"uppercase",marginBottom:4}}>ECODELY · MÍDIA IN-HOME</div>
+                            <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:22,marginBottom:2}}>{relTitulo}</div>
+                            <div style={{fontSize:10,color:T.muted}}>{relPeriodo} · Gerado em {new Date().toLocaleDateString("pt-BR")}</div>
+                          </div>
+                          <div style={{textAlign:"right"}}>
+                            <div style={{fontSize:9,color:T.muted,marginBottom:4}}>{blocosSel.length} bloco{blocosSel.length!==1?"s":""}</div>
+                            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.accent}}>{user.name}</div>
+                            <div style={{fontSize:9,color:T.muted}}>{ROLE_LABELS[user.role]}</div>
+                          </div>
+                        </div>
+                        {/* Blocos */}
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                          {blocosSel.map(b=>(
+                            <div key={b.id} style={{background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${b.color}`,borderRadius:12,padding:"16px 18px",position:"relative"}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                                <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:b.color}}>{b.label}</div>
+                                <div onClick={()=>toggle(b.id)} style={{cursor:"pointer",color:T.muted,fontSize:14,lineHeight:1}}>×</div>
+                              </div>
+                              {b.render()}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
+                )}
               </div>
             );
           })()}
