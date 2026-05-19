@@ -5488,18 +5488,18 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           {fluxoBusca&&<button onClick={()=>setFluxoBusca("")} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:T.muted,cursor:"pointer",fontSize:12}}>✕</button>}
                         </div>
                         {/* Tipo */}
-                        <select value={fluxoTipo} onChange={e=>setFluxoTipo(e.target.value)} style={{background:T.surface,border:`1px solid ${fluxoTipo!=="todos"?T.accentBorder:T.border}`,borderRadius:7,padding:"7px 10px",fontSize:11,color:fluxoTipo!=="todos"?T.accent:T.muted,outline:"none"}}>
+                        <select value={fluxoTipo} onChange={e=>setFluxoTipo(e.target.value)} style={{background:T.surface,border:`1px solid ${fluxoTipo!=="todos"?T.accentBorder:T.border}`,borderRadius:7,padding:"7px 10px",fontSize:11,color:fluxoTipo!=="todos"?T.accent:T.text,outline:"none",colorScheme:"dark"}}>
                           <option value="todos">Tipo: Todos</option>
                           <option value="Receita">Receitas</option>
                           <option value="Despesa">Despesas</option>
                         </select>
                         {/* Categoria */}
-                        <select value={fluxoCategoria} onChange={e=>setFluxoCategoria(e.target.value)} style={{background:T.surface,border:`1px solid ${fluxoCategoria!=="todas"?T.accentBorder:T.border}`,borderRadius:7,padding:"7px 10px",fontSize:11,color:fluxoCategoria!=="todas"?T.accent:T.muted,outline:"none"}}>
+                        <select value={fluxoCategoria} onChange={e=>setFluxoCategoria(e.target.value)} style={{background:T.surface,border:`1px solid ${fluxoCategoria!=="todas"?T.accentBorder:T.border}`,borderRadius:7,padding:"7px 10px",fontSize:11,color:fluxoCategoria!=="todas"?T.accent:T.text,outline:"none",colorScheme:"dark"}}>
                           <option value="todas">Categoria: Todas</option>
                           {[...CAT_RECEITA,...CAT_DESPESA].filter((v,i,a)=>a.indexOf(v)===i).sort().map(c=><option key={c}>{c}</option>)}
                         </select>
                         {/* Forma */}
-                        <select value={fluxoForma} onChange={e=>setFluxoForma(e.target.value)} style={{background:T.surface,border:`1px solid ${fluxoForma!=="todas"?T.accentBorder:T.border}`,borderRadius:7,padding:"7px 10px",fontSize:11,color:fluxoForma!=="todas"?T.accent:T.muted,outline:"none"}}>
+                        <select value={fluxoForma} onChange={e=>setFluxoForma(e.target.value)} style={{background:T.surface,border:`1px solid ${fluxoForma!=="todas"?T.accentBorder:T.border}`,borderRadius:7,padding:"7px 10px",fontSize:11,color:fluxoForma!=="todas"?T.accent:T.text,outline:"none",colorScheme:"dark"}}>
                           <option value="todas">Forma: Todas</option>
                           {FORMAS_PAG.map(f=><option key={f}>{f}</option>)}
                         </select>
