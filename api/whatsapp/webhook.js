@@ -1,22 +1,60 @@
 // api/whatsapp/webhook.js
 // Recebe mensagens da Evolution API, processa com Claude, responde
 
-import { createClient } from "@supabase/supabase-js";
-
-// Polyfill WebSocket para Node.js 20 no Vercel
-if (typeof globalThis.WebSocket === "undefined") {
-  const { WebSocket } = await import("ws");
-  globalThis.WebSocket = WebSocket;
-}
-
-const SUPA_URL = process.env.SUPABASE_URL || "https://xklvqcxhtariqqhvnseh.supabase.co";
-const SUPA_KEY = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhrbHZxY3hodGFyaXFxaHZuc2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NTYxMjYsImV4cCI6MjA5NDAzMjEyNn0.uZmJKJNTMpH65z3eztXKbip6jiZnsuKIUUl3ceWd5XU";
+const SUPA_URL = "https://xklvqcxhtariqqhvnseh.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhrbHZxY3hodGFyaXFxaHZuc2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NTYxMjYsImV4cCI6MjA5NDAzMjEyNn0.uZmJKJNTMpH65z3eztXKbip6jiZnsuKIUUl3ceWd5XU";
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-const EVOLUTION_URL = process.env.EVOLUTION_API_URL;   // ex: https://evo.seudominio.com
-const EVOLUTION_KEY = process.env.EVOLUTION_API_KEY;   // api key da Evolution API
-const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE || "ecodely";
+const EVOLUTION_URL = process.env.EVOLUTION_API_URL;
+const EVOLUTION_KEY = process.env.EVOLUTION_API_KEY;
+const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE || "victoria";
 
-const supabase = createClient(SUPA_URL, SUPA_KEY);
+// Supabase via REST puro — sem WebSocket, funciona no Node 20
+const H = {"apikey": SUPA_KEY, "Authorization": "Bearer "+SUPA_KEY, "Content-Type": "application/json"};
+const DB = {
+  async get(table, col, val) {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${col}=eq.${encodeURIComponent(val)}&limit=1`, {headers: H});
+    const d = await r.json();
+    return Array.isArray(d) && d.length > 0 ? d[0] : null;
+  },
+  async insert(table, row) {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${table}`, {method:"POST", headers:{...H, "Prefer":"return=representation"}, body: JSON.stringify(row)});
+    const d = await r.json();
+    return Array.isArray(d) ? d[0] : d;
+  },
+  async update(table, col, val, data) {
+    await fetch(`${SUPA_URL}/rest/v1/${table}?${col}=eq.${encodeURIComponent(val)}`, {method:"PATCH", headers: H, body: JSON.stringify(data)});
+  },
+  async getMany(table, col, val, order="criado_em", limit=50) {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${col}=eq.${encodeURIComponent(val)}&order=${order}.asc&limit=${limit}`, {headers: H});
+    return await r.json();
+  }
+};
+
+// Compatibilidade com código que usa supabase.from(...)
+const supabase = {
+  from: (table) => ({
+    select: () => ({
+      eq: (col, val) => ({
+        single: async () => ({data: await DB.get(table, col, val)}),
+        order: (o, opts) => ({
+          limit: async (n) => {
+            const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${col}=eq.${encodeURIComponent(val)}&order=${o}.${opts?.ascending?"asc":"desc"}&limit=${n}`, {headers: H});
+            return {data: await r.json()};
+          }
+        })
+      })
+    }),
+    insert: (rows) => ({
+      select: () => ({
+        single: async () => ({data: await DB.insert(table, Array.isArray(rows)?rows[0]:rows)})
+      }),
+      then: async (cb) => { const d = await DB.insert(table, Array.isArray(rows)?rows[0]:rows); return cb ? cb({data:d}) : {data:d}; }
+    }),
+    update: (data) => ({
+      eq: async (col, val) => { await DB.update(table, col, val, data); return {data:null}; }
+    })
+  })
+};
 
 // ── Prompt de sistema por modo ──────────────────────────────────────────────
 function buildSystemPrompt(modo, dadosLead) {
