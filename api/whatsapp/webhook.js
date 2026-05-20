@@ -261,7 +261,7 @@ async function sendWhatsApp(numero, texto) {
       "apikey": EVOLUTION_KEY,
     },
     body: JSON.stringify({
-      number: numero,
+      number: numero, // Evolution API aceita @lid, @s.whatsapp.net ou número limpo
       textMessage: { text: texto },
     }),
   });
@@ -324,23 +324,18 @@ export default async function handler(req, res) {
     const body = req.body;
 
     // Evolution API envia: { data: { key: { remoteJid }, message: { conversation } } }
-    // Extrair número — tratar @lid, @s.whatsapp.net e grupos
+    // Extrair JID e número — suporte a @lid (WhatsApp novo) e @s.whatsapp.net
     const rawJid = body?.data?.key?.remoteJid || "";
     if (rawJid.includes("@g.us")) return res.status(200).json({ ok: true, skipped: "group" });
-    // @lid = formato novo do WhatsApp — tentar pegar pelo pushName ou participant
-    let numero = rawJid.replace("@s.whatsapp.net", "").replace("@c.us", "").replace("@lid", "");
-    // Se vier no formato @lid sem número útil, tentar pegar do campo participant ou remoteJid alternativo
-    if (rawJid.includes("@lid")) {
-      // Tentar pegar número do campo de remetente
-      const participant = body?.data?.participant || body?.data?.key?.participant || "";
-      if (participant) numero = participant.replace("@s.whatsapp.net","").replace("@c.us","");
-      else {
-        // Usar pushName + número do JID como fallback
-        const numMatch = rawJid.match(/(\d{10,15})/);
-        if (numMatch) numero = numMatch[1];
-      }
-    }
-    numero = numero || body?.numero; // fallback para testes manuais
+    
+    // Usar o remoteJid completo para responder (funciona com @lid e @s.whatsapp.net)
+    const remoteJidCompleto = rawJid;
+    
+    // Para salvar no banco, usar o JID sem o sufixo como identificador
+    const numero = rawJid.replace("@s.whatsapp.net", "").replace("@c.us", "").replace("@lid", "") ||
+                   body?.numero;
+    
+    const pushName = body?.data?.pushName || "";
     const textoRecebido = body?.data?.message?.conversation ||
                           body?.data?.message?.extendedTextMessage?.text ||
                           body?.mensagem; // fallback para testes
@@ -465,7 +460,7 @@ export default async function handler(req, res) {
     });
 
     // ── 7. Enviar pelo WhatsApp ────────────────────────────────────────────
-    await sendWhatsApp(numero, textoFinal);
+    await sendWhatsApp(remoteJidCompleto || numero, textoFinal);
 
     return res.status(200).json({ ok: true, acao: acao?.acao || "resposta", resposta: textoFinal });
 
