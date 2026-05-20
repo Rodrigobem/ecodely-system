@@ -2138,7 +2138,7 @@ return(
   {/* ── ÁREA DE CHAT / SIMULADOR ── */}
   {waFiltro==="simulador"?(
     showFeedbacks?(
-      <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{display:"flex",flexDirection:"column",minHeight:400,background:T.card,borderRadius:12,border:`1px solid ${T.border}`,overflow:"hidden"}}>
         <div style={{padding:"14px 20px",borderBottom:`1px solid ${T.border}`,background:T.warnDim,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
             <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.warn}}>📋 Feedbacks da Equipe</div>
