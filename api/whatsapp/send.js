@@ -1,17 +1,16 @@
 // api/whatsapp/send.js
 // Envio manual de mensagens pelo painel do sistema
 
-const { createClient } = require("@supabase/supabase-js");
 
 const SUPA_URL = process.env.SUPABASE_URL || "https://xklvqcxhtariqqhvnseh.supabase.co";
 const SUPA_KEY = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhrbHZxY3hodGFyaXFxaHZuc2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NTYxMjYsImV4cCI6MjA5NDAzMjEyNn0.uZmJKJNTMpH65z3eztXKbip6jiZnsuKIUUl3ceWd5XU";
-const EVOLUTION_URL = process.env.EVOLUTION_API_URL;
-const EVOLUTION_KEY = process.env.EVOLUTION_API_KEY;
+const EVOLUTION_URL = "http://2.24.111.162:8080";
+const EVOLUTION_KEY = "ecodely2026";
 const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE || "ecodely";
 
 const supabase = createClient(SUPA_URL, SUPA_KEY);
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
