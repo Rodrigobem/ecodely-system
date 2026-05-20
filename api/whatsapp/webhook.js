@@ -328,14 +328,39 @@ export default async function handler(req, res) {
     const rawJid = body?.data?.key?.remoteJid || "";
     if (rawJid.includes("@g.us")) return res.status(200).json({ ok: true, skipped: "group" });
     
-    // Usar o remoteJid completo para responder (funciona com @lid e @s.whatsapp.net)
-    const remoteJidCompleto = rawJid;
-    
-    // Para salvar no banco, usar o JID sem o sufixo como identificador
-    const numero = rawJid.replace("@s.whatsapp.net", "").replace("@c.us", "").replace("@lid", "") ||
-                   body?.numero;
-    
+    // Resolver JID — converter @lid para número real
+    let remoteJidCompleto = rawJid;
+    let numero = rawJid.replace("@s.whatsapp.net","").replace("@c.us","").replace("@lid","") || body?.numero;
     const pushName = body?.data?.pushName || "";
+
+    // Se for @lid, buscar contatos para encontrar o número real
+    if (rawJid.includes("@lid") && EVOLUTION_URL) {
+      try {
+        const contResp = await fetch(`${EVOLUTION_URL}/contact/findContacts/victoria?where={"id":"${rawJid}"}`, {
+          headers: {"apikey": EVOLUTION_KEY}
+        });
+        const contData = await contResp.json();
+        if (Array.isArray(contData) && contData.length > 0 && contData[0].pushName) {
+          // Contato encontrado — mas ainda precisamos do número
+        }
+        // Tentar pela conversa existente
+        const chatResp = await fetch(`${EVOLUTION_URL}/chat/findChats/victoria`, {
+          method: "POST",
+          headers: {"Content-Type":"application/json","apikey":EVOLUTION_KEY},
+          body: JSON.stringify({"where":{"id":rawJid}})
+        });
+        const chatData = await chatResp.json();
+        if (Array.isArray(chatData) && chatData[0]?.id) {
+          const resolvedJid = chatData[0].id;
+          if (resolvedJid.includes("@s.whatsapp.net")) {
+            remoteJidCompleto = resolvedJid;
+            numero = resolvedJid.replace("@s.whatsapp.net","");
+          }
+        }
+      } catch(e) {
+        console.log("Erro ao resolver @lid:", e.message);
+      }
+    }
     const textoRecebido = body?.data?.message?.conversation ||
                           body?.data?.message?.extendedTextMessage?.text ||
                           body?.mensagem; // fallback para testes
