@@ -333,28 +333,29 @@ export default async function handler(req, res) {
     let numero = rawJid.replace("@s.whatsapp.net","").replace("@c.us","").replace("@lid","") || body?.numero;
     const pushName = body?.data?.pushName || "";
 
-    // Se for @lid, buscar contatos para encontrar o número real
+    // Se for @lid, buscar o número real nas mensagens enviadas para esse JID
     if (rawJid.includes("@lid") && EVOLUTION_URL) {
       try {
-        const contResp = await fetch(`${EVOLUTION_URL}/contact/findContacts/victoria?where={"id":"${rawJid}"}`, {
-          headers: {"apikey": EVOLUTION_KEY}
-        });
-        const contData = await contResp.json();
-        if (Array.isArray(contData) && contData.length > 0 && contData[0].pushName) {
-          // Contato encontrado — mas ainda precisamos do número
-        }
-        // Tentar pela conversa existente
-        const chatResp = await fetch(`${EVOLUTION_URL}/chat/findChats/victoria`, {
+        // Buscar mensagens enviadas (fromMe:true) para esse @lid — elas têm o número real
+        const msgResp = await fetch(`${EVOLUTION_URL}/chat/findMessages/victoria`, {
           method: "POST",
           headers: {"Content-Type":"application/json","apikey":EVOLUTION_KEY},
-          body: JSON.stringify({"where":{"id":rawJid}})
+          body: JSON.stringify({"where":{"key":{"remoteJid":rawJid}},"limit":5})
         });
-        const chatData = await chatResp.json();
-        if (Array.isArray(chatData) && chatData[0]?.id) {
-          const resolvedJid = chatData[0].id;
-          if (resolvedJid.includes("@s.whatsapp.net")) {
-            remoteJidCompleto = resolvedJid;
-            numero = resolvedJid.replace("@s.whatsapp.net","");
+        const msgs = await msgResp.json();
+        if (Array.isArray(msgs) && msgs.length > 0) {
+          const jidReal = msgs[0]?.key?.remoteJid || "";
+          if (jidReal.includes("@s.whatsapp.net")) {
+            remoteJidCompleto = jidReal;
+            numero = jidReal.replace("@s.whatsapp.net","");
+          }
+        }
+        // Alternativa: buscar no Supabase se já temos o mapeamento salvo
+        if (remoteJidCompleto.includes("@lid")) {
+          const conv = await DB.get("wa_conversas","lid_jid",rawJid);
+          if (conv?.numero) {
+            numero = conv.numero;
+            remoteJidCompleto = numero + "@s.whatsapp.net";
           }
         }
       } catch(e) {
