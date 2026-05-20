@@ -2019,7 +2019,7 @@ return(
 // ---------------------------------------------------------------------------
 // WHATSAPP PANEL — componente próprio (evita side effect em IIFE)
 // ---------------------------------------------------------------------------
-function WhatsAppPanel({supabase,waConversas,setWaConversas,waMensagens,setWaMensagens,waSelConv,setWaSelConv,waInput,setWaInput,waLoading,setWaLoading,waFiltro,setWaFiltro,waNovoNumero,setWaNovoNumero,waNovoModo,setWaNovoModo,simMsgs,setSimMsgs,simInput,setSimInput,simLoading,setSimLoading,simModo,setSimModo,simStarted,setSimStarted,T}){
+function WhatsAppPanel({supabase,waConversas,setWaConversas,waMensagens,setWaMensagens,waSelConv,setWaSelConv,waInput,setWaInput,waLoading,setWaLoading,waFiltro,setWaFiltro,waNovoNumero,setWaNovoNumero,waNovoModo,setWaNovoModo,simMsgs,setSimMsgs,simInput,setSimInput,simLoading,setSimLoading,simModo,setSimModo,simStarted,setSimStarted,showFeedbacks,setShowFeedbacks,feedbacks,setFeedbacks,feedbacksLoading,setFeedbacksLoading,T}){
 // Scroll automático do simulador
 useEffect(()=>{
   const el=document.getElementById("sim-bottom");
@@ -8459,7 +8459,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           {/* --------------------------------------
               WHATSAPP IA
           -------------------------------------- */}
-          {tab==="whatsapp"&&<WhatsAppPanel supabase={supabase} waConversas={waConversas} setWaConversas={setWaConversas} waMensagens={waMensagens} setWaMensagens={setWaMensagens} waSelConv={waSelConv} setWaSelConv={setWaSelConv} waInput={waInput} setWaInput={setWaInput} waLoading={waLoading} setWaLoading={setWaLoading} waFiltro={waFiltro} setWaFiltro={setWaFiltro} waNovoNumero={waNovoNumero} setWaNovoNumero={setWaNovoNumero} waNovoModo={waNovoModo} setWaNovoModo={setWaNovoModo} simMsgs={simMsgs} setSimMsgs={setSimMsgs} simInput={simInput} setSimInput={setSimInput} simLoading={simLoading} setSimLoading={setSimLoading} simModo={simModo} setSimModo={setSimModo} simStarted={simStarted} setSimStarted={setSimStarted} T={T}/>}
+          {tab==="whatsapp"&&<WhatsAppPanel supabase={supabase} waConversas={waConversas} setWaConversas={setWaConversas} waMensagens={waMensagens} setWaMensagens={setWaMensagens} waSelConv={waSelConv} setWaSelConv={setWaSelConv} waInput={waInput} setWaInput={setWaInput} waLoading={waLoading} setWaLoading={setWaLoading} waFiltro={waFiltro} setWaFiltro={setWaFiltro} waNovoNumero={waNovoNumero} setWaNovoNumero={setWaNovoNumero} waNovoModo={waNovoModo} setWaNovoModo={setWaNovoModo} simMsgs={simMsgs} setSimMsgs={setSimMsgs} simInput={simInput} setSimInput={setSimInput} simLoading={simLoading} setSimLoading={setSimLoading} simModo={simModo} setSimModo={setSimModo} simStarted={simStarted} setSimStarted={setSimStarted} showFeedbacks={showFeedbacks} setShowFeedbacks={setShowFeedbacks} feedbacks={feedbacks} setFeedbacks={setFeedbacks} feedbacksLoading={feedbacksLoading} setFeedbacksLoading={setFeedbacksLoading} T={T}/>}
 
           {/* --------------------------------------
               USUÁRIOS
