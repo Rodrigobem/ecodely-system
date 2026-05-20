@@ -4,8 +4,8 @@
 const SUPA_URL = "https://xklvqcxhtariqqhvnseh.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhrbHZxY3hodGFyaXFxaHZuc2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NTYxMjYsImV4cCI6MjA5NDAzMjEyNn0.uZmJKJNTMpH65z3eztXKbip6jiZnsuKIUUl3ceWd5XU";
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-const EVOLUTION_URL = process.env.EVOLUTION_API_URL || "http://2.24.111.162:8080";
-const EVOLUTION_KEY = process.env.EVOLUTION_API_KEY || "ecodely2026";
+const EVOLUTION_URL = "http://2.24.111.162:8080"; // hardcoded VPS Hostinger
+const EVOLUTION_KEY = "ecodely2026"; // hardcoded
 const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE || "victoria";
 
 // Supabase via REST puro — sem WebSocket, funciona no Node 20
