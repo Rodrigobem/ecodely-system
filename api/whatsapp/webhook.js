@@ -3,6 +3,12 @@
 
 import { createClient } from "@supabase/supabase-js";
 
+// Polyfill WebSocket para Node.js 20 no Vercel
+if (typeof globalThis.WebSocket === "undefined") {
+  const { WebSocket } = await import("ws");
+  globalThis.WebSocket = WebSocket;
+}
+
 const SUPA_URL = process.env.SUPABASE_URL || "https://xklvqcxhtariqqhvnseh.supabase.co";
 const SUPA_KEY = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhrbHZxY3hodGFyaXFxaHZuc2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NTYxMjYsImV4cCI6MjA5NDAzMjEyNn0.uZmJKJNTMpH65z3eztXKbip6jiZnsuKIUUl3ceWd5XU";
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
