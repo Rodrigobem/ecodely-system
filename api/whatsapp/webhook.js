@@ -262,7 +262,7 @@ async function sendWhatsApp(numero, texto) {
     },
     body: JSON.stringify({
       number: numero,
-      text: texto,
+      textMessage: { text: texto },
     }),
   });
   return res.json();
