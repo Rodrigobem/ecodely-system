@@ -2137,14 +2137,14 @@ return(
 
   {/* ── ÁREA DE CHAT / SIMULADOR ── */}
   {waFiltro==="simulador"?(
-    simModo==="feedbacks"?(
+    showFeedbacks?(
       <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
         <div style={{padding:"14px 20px",borderBottom:`1px solid ${T.border}`,background:T.warnDim,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
             <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.warn}}>📋 Feedbacks da Equipe</div>
             <div style={{fontSize:10,color:T.muted}}>{feedbacks.length} correções enviadas</div>
           </div>
-          <button onClick={()=>setSimModo("prospecto")} style={{background:"none",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,padding:"4px 10px",fontSize:10,cursor:"pointer"}}>← Voltar</button>
+          <button onClick={()=>setShowFeedbacks(false)} style={{background:"none",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,padding:"4px 10px",fontSize:10,cursor:"pointer"}}>← Voltar</button>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:12}}>
           {feedbacksLoading&&<div style={{textAlign:"center",padding:40,color:T.muted,fontSize:11}}>Carregando...</div>}
@@ -2232,7 +2232,7 @@ return(
               <button key={v} onClick={()=>{setSimModo(v);setSimMsgs([]);setSimStarted(false);}} style={{padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:600,cursor:"pointer",border:`1px solid ${simModo===v?T.accentBorder:T.border}`,background:simModo===v?T.accentDim:"transparent",color:simModo===v?T.accent:T.muted}}>{l}</button>
             ))}
             <button onClick={()=>{setSimMsgs([]);setSimStarted(false);}} style={{marginLeft:"auto",padding:"4px 10px",borderRadius:5,fontSize:10,cursor:"pointer",border:`1px solid ${T.border}`,background:"transparent",color:T.muted}}>↺ Reiniciar</button>
-            <button onClick={async()=>{setFeedbacksLoading(true);setSimModo("feedbacks");const{data}=await supabase.from("simulador_feedback").select("*").order("criado_em",{ascending:false}).limit(50);setFeedbacks(data||[]);setFeedbacksLoading(false);}} style={{padding:"4px 10px",borderRadius:5,fontSize:10,cursor:"pointer",border:`1px solid ${T.warn}44`,background:T.warnDim,color:T.warn,fontWeight:600}}>📋 Feedbacks da equipe</button>
+            <button onClick={async()=>{setShowFeedbacks(true);setFeedbacksLoading(true);const{data}=await supabase.from("simulador_feedback").select("*").order("criado_em",{ascending:false}).limit(50);setFeedbacks(data||[]);setFeedbacksLoading(false);}} style={{padding:"4px 10px",borderRadius:5,fontSize:10,cursor:"pointer",border:`1px solid ${T.warn}44`,background:T.warnDim,color:T.warn,fontWeight:600}}>📋 Feedbacks da equipe</button>
           </div>
         </div>
         {/* Mensagens simulador */}
