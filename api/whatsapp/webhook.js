@@ -8,7 +8,6 @@ const EVOLUTION_URL = "http://2.24.111.162:8080";
 const EVOLUTION_KEY = "ecodely2026";
 const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE || "victoria";
 
-// ── Fotos dos cases ────────────────────────────────────────────────────────
 const FOTOS_CASES = [
   "https://drive.usercontent.google.com/download?id=1qNEXechEqIf5BxAe5TcYlplKTFXFYqim&export=download",
   "https://drive.usercontent.google.com/download?id=1NopFJUr9EiNIs4G42p9Z8331ds3QIMnb&export=download",
@@ -20,6 +19,7 @@ const FOTOS_CASES = [
 ];
 
 const H = {"apikey": SUPA_KEY, "Authorization": "Bearer "+SUPA_KEY, "Content-Type": "application/json"};
+
 const DB = {
   async get(table, col, val) {
     const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${col}=eq.${encodeURIComponent(val)}&limit=1`, {headers: H});
@@ -61,35 +61,24 @@ const supabase = {
   })
 };
 
-// ── Detectar se o lead pediu fotos ────────────────────────────────────────
 function pedindoFotos(texto) {
   const t = texto.toLowerCase();
   return t.includes("foto") || t.includes("imagem") || t.includes("ver") ||
-         t.includes("como é") || t.includes("como e ") || t.includes("exemplo") ||
-         t.includes("modelo") || t.includes("print") || t.includes("mostra");
+         t.includes("como é") || t.includes("exemplo") || t.includes("print") ||
+         t.includes("mostra");
 }
 
-// ── Enviar imagem pelo WhatsApp ───────────────────────────────────────────
 async function sendImagem(numero, url, caption = "") {
   try {
     const res = await fetch(`${EVOLUTION_URL}/message/sendMedia/${EVOLUTION_INSTANCE}`, {
       method: "POST",
       headers: {"Content-Type": "application/json", "apikey": EVOLUTION_KEY},
-      body: JSON.stringify({
-        number: numero,
-        mediatype: "image",
-        mimetype: "image/jpeg",
-        caption,
-        media: url,
-      }),
+      body: JSON.stringify({ number: numero, mediatype: "image", mimetype: "image/jpeg", caption, media: url }),
     });
     return res.json();
-  } catch(e) {
-    console.error("Erro ao enviar imagem:", e.message);
-  }
+  } catch(e) { console.error("Erro imagem:", e.message); }
 }
 
-// ── Enviar texto pelo WhatsApp ─────────────────────────────────────────────
 async function sendWhatsApp(numero, texto) {
   try {
     const res = await fetch(`${EVOLUTION_URL}/message/sendText/${EVOLUTION_INSTANCE}`, {
@@ -98,114 +87,36 @@ async function sendWhatsApp(numero, texto) {
       body: JSON.stringify({ number: numero, text: texto }),
     });
     return res.json();
-  } catch(e) {
-    console.error("Erro ao enviar texto:", e.message);
-  }
+  } catch(e) { console.error("Erro texto:", e.message); }
 }
 
-// ── Prompt de sistema ──────────────────────────────────────────────────────
-function buildSystemPrompt(modo, dadosLead) {
+const SYSTEM_PROMPT = `Você é a Victória, da Ecodely Mídia. Fala pelo WhatsApp com donos de restaurantes. Nunca diga que é IA.
 
-  const ECODELY_BASE = `
-# QUEM VOCÊ É
-Você é a Victória, da Ecodely Mídia. Fala pelo WhatsApp com donos e responsáveis de restaurantes. Nunca diga que é IA ou robô.
+A Ecodely envia Ecobox — embalagens de delivery premium — de graça para restaurantes. O restaurante coloca o logo na frente, o anunciante fica no verso. Zero custo para o parceiro.
 
-# O QUE É A ECODELY
-A Ecodely conecta grandes anunciantes com restaurantes através do Ecobox — embalagem de delivery premium. O restaurante recebe as embalagens de graça, com o logo dele na frente e a campanha do anunciante no verso.
-
-# MODELOS DE EMBALAGEM — REGRA CRÍTICA
-SEMPRE apresente OS DOIS modelos. NUNCA diga qual é o ideal ou recomende um específico. Deixe o parceiro escolher.
+MODELOS (sempre apresente os dois, nunca recomende um):
 - Modelo Padrão: 18x13x23cm
 - Modelo Mega: 21x15x18cm
-NUNCA diga "ideal para hamburgueria" ou qualquer sugestão de modelo.
 
-# COMO VOCÊ ESCREVE — REGRAS DE OURO
-- Mensagens CURTAS. Máximo 2-3 linhas.
-- NUNCA use bullet points ou listas. Só texto corrido.
-- NUNCA comece com "Ótimo!", "Perfeito!", "Excelente!", "Ótima pergunta!" — soa robótico.
-- Máximo 1 emoji por mensagem. Às vezes nenhum.
-- Linguagem informal, direta, como uma pessoa real no zap.
-- Faça UMA pergunta por vez. Nunca várias perguntas juntas.
-- Se a pessoa mandar mensagem curta, responda curto também.
-- Quando não souber responder algo, diga "deixa eu verificar e já te falo" — nunca trave.
+REGRAS DE ESCRITA:
+- Mensagens curtas, máximo 2-3 linhas
+- Sem bullet points, só texto corrido
+- Sem "Ótimo!", "Perfeito!", "Excelente!" no início
+- Máximo 1 emoji por mensagem
+- Linguagem informal, como pessoa real no zap
+- Uma pergunta por vez
 
-# QUANDO PEDIREM FOTOS
-Diga que está enviando as fotos agora. Não precisa explicar mais nada sobre as fotos — elas falam por si.
+OBRIGAÇÕES DO PARCEIRO: postar no Instagram 1x/semana marcando @ecodelymidia, enviar métricas dos stories.
 
-# EXEMPLOS DE COMO NÃO FALAR (robótico):
-❌ "Ótimo, Rodrigo! Prazer! Então, pra eu avançar: • Nome? • Cidade? • WhatsApp?"
-❌ "Perfeito! Então temos o Modelo Padrão que é ideal pra hamburgueria"
-❌ "Excelente! 1000 pedidos é um volume bem interessante 🚀"
+FLUXO: apresentar proposta → confirmar delivery → tipo de estabelecimento → dois modelos → volume de pedidos → nome → cidade → WhatsApp → cadastrar.
 
-# EXEMPLOS DE COMO FALAR (humano):
-✅ "legal, 1000 pedidos é bastante. qual o nome da hamburgueria?"
-✅ "temos dois modelos, você escolhe — Padrão (18x13x23cm) ou Mega (21x15x18cm)"
-✅ "deixa eu verificar e já te falo"
+Quando tiver nome + cidade + tipo, retorne APENAS: {"acao":"cadastrar_lead","dados":{"nome":"","tipo":"","cidade":"","responsavel":"","telefone":""}}
+Quando confirmar parceria: {"acao":"converter_parceiro","dados":{"nome":"","tipo":"","cidade":"","responsavel":"","telefone":""}}
+Quando encerrar: {"acao":"encerrar","motivo":"sem_interesse"}
+Quando pedirem fotos: {"acao":"enviar_fotos"}
+Nos demais casos, responda com texto curto.`;
 
-# BENEFÍCIOS
-- Embalagem premium de graça com o logo deles em destaque
-- Sem custo, sem burocracia, sem fidelidade forçada
-- Trabalhamos com O Boticário, Engelux, Vult
-
-# OBRIGAÇÕES DO PARCEIRO
-- Postar no Instagram 1x por semana durante a campanha, marcar @ecodelymidia
-- Enviar print das métricas dos stories
-- Foto de check-in quando as embalagens chegarem
-
-# LOGÍSTICA
-A Ecodely entrega diretamente no estabelecimento.`;
-
-  const ACOES = `
-# AÇÕES AUTOMÁTICAS
-Quando tiver: nome do estabelecimento + cidade + tipo, retorne APENAS este JSON:
-{"acao":"cadastrar_lead","dados":{"nome":"","tipo":"","cidade":"","responsavel":"","telefone":""}}
-
-Quando confirmar parceria:
-{"acao":"converter_parceiro","dados":{"nome":"","tipo":"","cidade":"","responsavel":"","telefone":"","endereco":""}}
-
-Quando encerrar sem interesse:
-{"acao":"encerrar","motivo":"sem_interesse"}
-
-Quando pedirem fotos/imagens/exemplos, retorne APENAS:
-{"acao":"enviar_fotos"}
-
-Em qualquer outro caso, responda com texto curto.`;
-
-  if (modo === "prospecto") {
-    return ECODELY_BASE + `
-
-# MODO: PROSPECÇÃO
-Fluxo natural — colete UM dado por vez:
-1. Se apresentar e explicar a proposta em 2 linhas
-2. Perguntar se usam delivery
-3. Tipo do estabelecimento
-4. Apresentar OS DOIS modelos (nunca recomendar um)
-5. Quantidade de pedidos por mês
-6. Nome do estabelecimento
-7. Cidade
-8. Confirmar WhatsApp
-
-Urgência natural: "vagas por área são limitadas", "cliente quer fechar a lista essa semana".
-NUNCA desistir no silêncio — follow-up com mensagem curta.` + ACOES;
-  }
-
-  if (modo === "parceiro") {
-    return ECODELY_BASE + `
-# MODO: SUPORTE
-O estabelecimento já é parceiro. Ajude com dúvidas. Seja direto.` + ACOES;
-  }
-
-  if (modo === "cobranca") {
-    return ECODELY_BASE + `
-# MODO: COBRANÇA
-Parceiro com postagem pendente. Lembre de forma amigável. Ofereça ajuda com conteúdo.` + ACOES;
-  }
-
-  return ECODELY_BASE + ACOES;
-}
-
-// ── Chamar Claude ──────────────────────────────────────────────────────────
-async function callClaude(systemPrompt, messages) {
+async function callClaude(messages) {
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -217,11 +128,12 @@ async function callClaude(systemPrompt, messages) {
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 300,
-        system: systemPrompt,
-        messages,
+        system: SYSTEM_PROMPT,
+        messages: messages.length > 0 ? messages : [{role:"user", content:"oi"}],
       }),
     });
     const data = await response.json();
+    console.log("CLAUDE STATUS:", data.type, data.error?.message || "ok");
     return data.content?.[0]?.text || "";
   } catch(e) {
     console.error("Erro Claude:", e.message);
@@ -229,12 +141,9 @@ async function callClaude(systemPrompt, messages) {
   }
 }
 
-// ── Upsert pipeline ────────────────────────────────────────────────────────
 async function upsertPipeline(supabase, conversa, etapa, dados = {}) {
   try {
-    const { data: existente } = await supabase
-      .from("pipeline_leads").select("id, etapa").eq("wa_conversa_id", conversa.id).single();
-
+    const { data: existente } = await supabase.from("pipeline_leads").select("id, etapa").eq("wa_conversa_id", conversa.id).single();
     const payload = {
       nome: dados.nome || conversa.nome || conversa.numero,
       responsavel: dados.responsavel || "Victória",
@@ -246,7 +155,6 @@ async function upsertPipeline(supabase, conversa, etapa, dados = {}) {
       wa_conversa_id: conversa.id,
       atualizado_em: new Date().toISOString(),
     };
-
     if (existente) {
       const ORDEM = ["abordado","respondeu","interessado","convertido","encerrado"];
       if (ORDEM.indexOf(etapa) > ORDEM.indexOf(existente.etapa)) {
@@ -255,12 +163,9 @@ async function upsertPipeline(supabase, conversa, etapa, dados = {}) {
     } else {
       await supabase.from("pipeline_leads").insert([{...payload, criado_em: new Date().toISOString()}]);
     }
-  } catch(e) {
-    console.error("Pipeline error:", e.message);
-  }
+  } catch(e) { console.error("Pipeline error:", e.message); }
 }
 
-// ── Handler principal ──────────────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
@@ -271,7 +176,6 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body;
-
     const rawJid = body?.data?.key?.remoteJid || "";
     if (rawJid.includes("@g.us")) return res.status(200).json({ ok: true, skipped: "group" });
     if (body?.data?.key?.fromMe) return res.status(200).json({ ok: true, skipped: "fromMe" });
@@ -307,16 +211,15 @@ export default async function handler(req, res) {
 
     if (!numero || !textoRecebido) return res.status(200).json({ ok: true, skipped: "no text" });
 
-    // ── 1. Buscar ou criar conversa ────────────────────────────────────────
+    // Buscar ou criar conversa
     let { data: conversa } = await supabase.from("wa_conversas").select("*").eq("numero", numero).single();
-
     if (!conversa) {
       const { data: nova } = await supabase.from("wa_conversas")
         .insert({ numero, modo: "prospecto", status: "novo" }).select().single();
       conversa = nova;
     }
 
-    // ── 2. Salvar mensagem do usuário ──────────────────────────────────────
+    // Salvar mensagem do usuário
     await supabase.from("wa_mensagens").insert({ conversa_id: conversa.id, role: "user", conteudo: textoRecebido });
     await supabase.from("wa_conversas").update({
       status: conversa.status === "novo" ? "em_andamento" : conversa.status,
@@ -327,16 +230,7 @@ export default async function handler(req, res) {
       await upsertPipeline(supabase, conversa, "respondeu");
     }
 
-    // ── 3. Buscar histórico ────────────────────────────────────────────────
-    const { data: historico } = await supabase.from("wa_mensagens")
-      .select("role, conteudo").eq("conversa_id", conversa.id)
-      .order("criado_em", { ascending: true }).limit(20);
-
-    const messages = (historico || [])
-      .filter(m => m.role === "user" || m.role === "assistant")
-      .map(m => ({ role: m.role, content: m.conteudo }));
-
-    // ── 4. Verificar se pediu fotos (atalho direto) ────────────────────────
+    // Fotos direto sem chamar Claude
     if (pedindoFotos(textoRecebido)) {
       const textoFotos = "aqui estão alguns cases 📸";
       await supabase.from("wa_mensagens").insert({ conversa_id: conversa.id, role: "assistant", conteudo: textoFotos });
@@ -347,58 +241,52 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, acao: "enviar_fotos" });
     }
 
-    // ── 5. Chamar Claude ───────────────────────────────────────────────────
-    const systemPrompt = buildSystemPrompt(conversa.modo, conversa.dados_lead);
-    const resposta = await callClaude(systemPrompt, messages);
+    // Buscar histórico
+    const { data: historico } = await supabase.from("wa_mensagens")
+      .select("role, conteudo").eq("conversa_id", conversa.id)
+      .order("criado_em", { ascending: true }).limit(10);
 
-    // ── 6. Processar resposta ──────────────────────────────────────────────
+    const messages = (historico || [])
+      .filter(m => m.role === "user" || m.role === "assistant")
+      .map(m => ({ role: m.role, content: m.conteudo }));
+
+    // Chamar Claude
+    const resposta = await callClaude(messages);
+
+    // Processar resposta
     let textoFinal = resposta;
     let acao = null;
 
-    // Fallback se Claude não responder
     if (!textoFinal || textoFinal.trim() === "") {
-      textoFinal = "deixa eu verificar e já te falo 👍";
+      textoFinal = "oi! tudo bem? como posso te ajudar?";
     }
 
     try {
       const parsed = JSON.parse(textoFinal.trim());
       if (parsed.acao) {
         acao = parsed;
-
         if (parsed.acao === "enviar_fotos") {
           textoFinal = "aqui estão alguns cases 📸";
           await supabase.from("wa_mensagens").insert({ conversa_id: conversa.id, role: "assistant", conteudo: textoFinal });
           await sendWhatsApp(remoteJidCompleto || numero, textoFinal);
-          for (const url of FOTOS_CASES) {
-            await sendImagem(remoteJidCompleto || numero, url);
-          }
+          for (const url of FOTOS_CASES) { await sendImagem(remoteJidCompleto || numero, url); }
           return res.status(200).json({ ok: true, acao: "enviar_fotos" });
-
         } else if (parsed.acao === "cadastrar_lead") {
           textoFinal = "anotei tudo aqui 📋 nossa equipe entra em contato em breve. tem mais alguma dúvida?";
-          await supabase.from("wa_conversas").update({
-            dados_lead: parsed.dados, status: "aguardando", nome: parsed.dados?.nome || conversa.nome,
-          }).eq("id", conversa.id);
+          await supabase.from("wa_conversas").update({ dados_lead: parsed.dados, status: "aguardando", nome: parsed.dados?.nome || conversa.nome }).eq("id", conversa.id);
           await upsertPipeline(supabase, conversa, "interessado", parsed.dados);
-
         } else if (parsed.acao === "converter_parceiro") {
           textoFinal = "que bom! bem-vindo à Ecodely 🎉 cadastro confirmado. nossa equipe entra em contato em breve";
-          await supabase.from("wa_conversas").update({
-            dados_lead: parsed.dados, status: "convertido", modo: "parceiro", nome: parsed.dados?.nome || conversa.nome,
-          }).eq("id", conversa.id);
+          await supabase.from("wa_conversas").update({ dados_lead: parsed.dados, status: "convertido", modo: "parceiro", nome: parsed.dados?.nome || conversa.nome }).eq("id", conversa.id);
           await upsertPipeline(supabase, conversa, "convertido", parsed.dados);
-
         } else if (parsed.acao === "encerrar") {
           textoFinal = "tudo bem! se quiser saber mais sobre a Ecodely, pode chamar aqui a qualquer hora 👋";
           await supabase.from("wa_conversas").update({ status: "encerrado" }).eq("id", conversa.id);
           await upsertPipeline(supabase, conversa, "encerrado");
         }
       }
-    } catch(e) {
-      // Resposta normal de texto — ok
-    }
+    } catch(e) { /* resposta normal */ }
 
-    // ── 7. Salvar e enviar ─────────────────────────────────────────────────
     await supabase.from("wa_mensagens").insert({ conversa_id: conversa.id, role: "assistant", conteudo: textoFinal });
     await sendWhatsApp(remoteJidCompleto || numero, textoFinal);
 
