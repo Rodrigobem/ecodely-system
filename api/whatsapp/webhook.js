@@ -448,11 +448,10 @@ export default async function handler(req, res) {
       conteudo: textoFinal,
     });
 
-    // ── 7. Retornar 200 imediatamente e enviar em background ───────────────
-    res.status(200).json({ ok: true, acao: acao?.acao || "resposta", resposta: textoFinal });
+    // ── 7. Enviar e retornar ──────────────────────────────────────────────
+    await sendWhatsApp(remoteJidCompleto || numero, textoFinal);
 
-    // Enviar com delay humano APÓS retornar 200
-    await sendWhatsAppHumano(remoteJidCompleto || numero, textoFinal);
+    return res.status(200).json({ ok: true, acao: acao?.acao || "resposta", resposta: textoFinal });
 
   } catch (err) {
     console.error("Webhook error:", err);
