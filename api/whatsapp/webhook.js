@@ -133,7 +133,7 @@ async function callClaude(messages) {
       }),
     });
     const data = await response.json();
-    console.log("CLAUDE STATUS:", data.type, data.error?.message || "ok");
+    console.log("CLAUDE FULL:", JSON.stringify(data).substring(0,500));
     return data.content?.[0]?.text || "";
   } catch(e) {
     console.error("Erro Claude:", e.message);
