@@ -259,14 +259,20 @@ export default async function handler(req, res) {
       .map(m => ({ role: m.role, content: m.conteudo }));
 
     // Chamar Claude
-    const resposta = await callClaude(messages);
+    let resposta = await callClaude(messages);
+
+    // Se retornou vazio, tenta só com a última mensagem (histórico corrompido)
+    if (!resposta || resposta.trim() === "") {
+      console.log("RETRY: tentando sem histórico");
+      resposta = await callClaude([{role:"user", content: textoRecebido}]);
+    }
 
     // Processar resposta
     let textoFinal = resposta;
     let acao = null;
 
     if (!textoFinal || textoFinal.trim() === "") {
-      textoFinal = "oi! tudo bem? como posso te ajudar?";
+      textoFinal = "desculpa, pode repetir?";
     }
 
     try {
