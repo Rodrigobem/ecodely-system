@@ -318,7 +318,11 @@ export default async function handler(req, res) {
       }
     } catch(e) { /* resposta normal */ }
 
-    await supabase.from("wa_mensagens").insert({ conversa_id: conversa.id, role: "assistant", conteudo: textoFinal });
+    // Só salva no histórico se for texto válido (não JSON, não fallback)
+    const ehTextoValido = textoFinal && !textoFinal.trim().startsWith("{") && textoFinal.length > 2;
+    if (ehTextoValido) {
+      await supabase.from("wa_mensagens").insert({ conversa_id: conversa.id, role: "assistant", conteudo: textoFinal });
+    }
     await sendWhatsApp(remoteJidCompleto || numero, textoFinal);
 
     return res.status(200).json({ ok: true, acao: acao?.acao || "resposta", resposta: textoFinal });
