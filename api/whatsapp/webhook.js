@@ -247,7 +247,15 @@ export default async function handler(req, res) {
       .order("criado_em", { ascending: true }).limit(10);
 
     const messages = (historico || [])
-      .filter(m => m.role === "user" || m.role === "assistant")
+      .filter(m => {
+        if (m.role !== "user" && m.role !== "assistant") return false;
+        if (!m.conteudo || m.conteudo.trim() === "") return false;
+        // Remove mensagens que são JSONs de ação ou fallback
+        if (m.conteudo.trim().startsWith("{")) return false;
+        if (m.conteudo === "oi! tudo bem? como posso te ajudar?") return false;
+        if (m.conteudo === "deixa eu verificar e já te falo 👍") return false;
+        return true;
+      })
       .map(m => ({ role: m.role, content: m.conteudo }));
 
     // Chamar Claude
