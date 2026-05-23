@@ -248,7 +248,7 @@ async function callClaude(systemPrompt, messages) {
   return data.content?.[0]?.text || "";
 }
 
-// ── Enviar mensagem pelo WhatsApp (Evolution API) ─────────────────────────
+// ── Enviar mensagem pelo WhatsApp (Evolution API v2.3.7) ──────────────────
 async function sendWhatsApp(numero, texto) {
   if (!EVOLUTION_URL || !EVOLUTION_KEY) {
     console.log("[WA MOCK] Para:", numero, "→", texto);
@@ -261,8 +261,8 @@ async function sendWhatsApp(numero, texto) {
       "apikey": EVOLUTION_KEY,
     },
     body: JSON.stringify({
-      number: numero, // Evolution API aceita @lid, @s.whatsapp.net ou número limpo
-      textMessage: { text: texto },
+      number: numero,
+      text: texto, // ← CORRIGIDO: era textMessage: { text: texto }
     }),
   });
   return res.json();
@@ -271,7 +271,6 @@ async function sendWhatsApp(numero, texto) {
 // ── Upsert no pipeline de conversão ───────────────────────────────────────
 async function upsertPipeline(supabase, conversa, etapa, dados = {}) {
   try {
-    // Verificar se já existe card no pipeline para essa conversa
     const { data: existente } = await supabase
       .from("pipeline_leads")
       .select("id, etapa")
@@ -293,7 +292,6 @@ async function upsertPipeline(supabase, conversa, etapa, dados = {}) {
     };
 
     if (existente) {
-      // Só avança de etapa, nunca volta
       const ORDEM = ["abordado", "respondeu", "interessado", "convertido", "encerrado"];
       const ordemAtual = ORDEM.indexOf(existente.etapa);
       const ordemNova = ORDEM.indexOf(etapa);
@@ -315,7 +313,6 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, apikey");
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  // GET — health check
   if (req.method === "GET") return res.json({ ok: true, agent: "Ecodely WhatsApp Agent" });
 
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -323,20 +320,15 @@ export default async function handler(req, res) {
   try {
     const body = req.body;
 
-    // Evolution API envia: { data: { key: { remoteJid }, message: { conversation } } }
-    // Extrair JID e número — suporte a @lid (WhatsApp novo) e @s.whatsapp.net
     const rawJid = body?.data?.key?.remoteJid || "";
     if (rawJid.includes("@g.us")) return res.status(200).json({ ok: true, skipped: "group" });
-    
-    // Resolver JID — converter @lid para número real
+
     let remoteJidCompleto = rawJid;
     let numero = rawJid.replace("@s.whatsapp.net","").replace("@c.us","").replace("@lid","") || body?.numero;
     const pushName = body?.data?.pushName || "";
 
-    // Se for @lid, buscar o número real nas mensagens enviadas para esse JID
     if (rawJid.includes("@lid") && EVOLUTION_URL) {
       try {
-        // Buscar mensagens enviadas (fromMe:true) para esse @lid — elas têm o número real
         const msgResp = await fetch(`${EVOLUTION_URL}/chat/findMessages/victoria`, {
           method: "POST",
           headers: {"Content-Type":"application/json","apikey":EVOLUTION_KEY},
@@ -350,7 +342,6 @@ export default async function handler(req, res) {
             numero = jidReal.replace("@s.whatsapp.net","");
           }
         }
-        // Alternativa: buscar no Supabase se já temos o mapeamento salvo
         if (remoteJidCompleto.includes("@lid")) {
           const conv = await DB.get("wa_conversas","lid_jid",rawJid);
           if (conv?.numero) {
@@ -362,15 +353,15 @@ export default async function handler(req, res) {
         console.log("Erro ao resolver @lid:", e.message);
       }
     }
+
     const textoRecebido = body?.data?.message?.conversation ||
                           body?.data?.message?.extendedTextMessage?.text ||
-                          body?.mensagem; // fallback para testes
+                          body?.mensagem;
 
     if (!numero || !textoRecebido) {
       return res.status(200).json({ ok: true, skipped: "no text message" });
     }
 
-    // Ignorar mensagens do próprio agente
     if (body?.data?.key?.fromMe) return res.status(200).json({ ok: true, skipped: "fromMe" });
 
     // ── 1. Buscar ou criar conversa ────────────────────────────────────────
@@ -396,18 +387,16 @@ export default async function handler(req, res) {
       conteudo: textoRecebido,
     });
 
-    // Atualizar status e timestamp
     await supabase.from("wa_conversas").update({
       status: conversa.status === "novo" ? "em_andamento" : conversa.status,
       atualizado_em: new Date().toISOString(),
     }).eq("id", conversa.id);
 
-    // Pipeline: quando responde pela primeira vez → etapa "respondeu"
     if (conversa.status === "novo" || conversa.status === "em_andamento") {
       await upsertPipeline(supabase, conversa, "respondeu");
     }
 
-    // ── 3. Buscar histórico para contexto ─────────────────────────────────
+    // ── 3. Buscar histórico ────────────────────────────────────────────────
     const { data: historico } = await supabase
       .from("wa_mensagens")
       .select("role, conteudo")
@@ -431,7 +420,6 @@ export default async function handler(req, res) {
       const parsed = JSON.parse(resposta.trim());
       if (parsed.acao) {
         acao = parsed;
-        // Gerar mensagem humana baseada na ação
         if (parsed.acao === "cadastrar_lead") {
           textoFinal = `Perfeito! Registrei seus dados aqui. 📋 Nossa equipe vai entrar em contato em breve para dar continuidade. Tem mais alguma dúvida?`;
           await supabase.from("wa_conversas").update({
@@ -439,7 +427,6 @@ export default async function handler(req, res) {
             status: "aguardando",
             nome: parsed.dados?.nome || conversa.nome,
           }).eq("id", conversa.id);
-          // Pipeline: interesse confirmado → Interessado
           await upsertPipeline(supabase, conversa, "interessado", parsed.dados);
         } else if (parsed.acao === "converter_parceiro") {
           textoFinal = `🎉 Que ótima notícia! Bem-vindo à família Ecodely! Seu cadastro foi confirmado. Nossa equipe vai entrar em contato em breve. Qualquer dúvida, é só chamar aqui!`;
@@ -449,10 +436,7 @@ export default async function handler(req, res) {
             modo: "parceiro",
             nome: parsed.dados?.nome || conversa.nome,
           }).eq("id", conversa.id);
-          // Pipeline: parceiro confirmado → Convertido
           await upsertPipeline(supabase, conversa, "convertido", parsed.dados);
-
-          // Inserir como parceiro na base
           await supabase.from("parceiros").insert({
             data: {
               name: parsed.dados?.nome || "Novo Parceiro",
@@ -470,7 +454,6 @@ export default async function handler(req, res) {
         } else if (parsed.acao === "encerrar") {
           textoFinal = `Tudo bem! Qualquer dia que quiser saber mais sobre a Ecodely, pode chamar aqui. Até mais! 👋`;
           await supabase.from("wa_conversas").update({ status: "encerrado" }).eq("id", conversa.id);
-          // Pipeline: sem interesse → marca como encerrado (etapa especial)
           await upsertPipeline(supabase, conversa, "encerrado");
         }
       }
