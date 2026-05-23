@@ -4,11 +4,10 @@
 const SUPA_URL = "https://xklvqcxhtariqqhvnseh.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhrbHZxY3hodGFyaXFxaHZuc2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NTYxMjYsImV4cCI6MjA5NDAzMjEyNn0.uZmJKJNTMpH65z3eztXKbip6jiZnsuKIUUl3ceWd5XU";
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-const EVOLUTION_URL = "http://2.24.111.162:8080"; // hardcoded VPS Hostinger
-const EVOLUTION_KEY = "ecodely2026"; // hardcoded
+const EVOLUTION_URL = "http://2.24.111.162:8080";
+const EVOLUTION_KEY = "ecodely2026";
 const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE || "victoria";
 
-// Supabase via REST puro — sem WebSocket, funciona no Node 20
 const H = {"apikey": SUPA_KEY, "Authorization": "Bearer "+SUPA_KEY, "Content-Type": "application/json"};
 const DB = {
   async get(table, col, val) {
@@ -30,7 +29,6 @@ const DB = {
   }
 };
 
-// Compatibilidade com código que usa supabase.from(...)
 const supabase = {
   from: (table) => ({
     select: () => ({
@@ -56,173 +54,158 @@ const supabase = {
   })
 };
 
+// ── Delay humano ──────────────────────────────────────────────────────────
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function delayHumano(texto) {
+  // ~60 palavras por minuto de digitação humana
+  const palavras = texto.split(" ").length;
+  const ms = Math.min(Math.max(palavras * 80, 1500), 5000);
+  // adiciona leve variação aleatória
+  return ms + Math.floor(Math.random() * 800);
+}
+
+// ── Quebrar resposta em partes curtas ─────────────────────────────────────
+function quebrarEmPartes(texto) {
+  // Divide por \n\n ou por frases longas
+  const partes = texto
+    .split(/\n\n+/)
+    .map(p => p.trim())
+    .filter(p => p.length > 0);
+
+  // Se só tem 1 parte mas é longa, divide por \n simples
+  if (partes.length === 1 && texto.length > 120) {
+    return texto.split(/\n/).map(p => p.trim()).filter(p => p.length > 0);
+  }
+
+  return partes;
+}
+
 // ── Prompt de sistema por modo ──────────────────────────────────────────────
 function buildSystemPrompt(modo, dadosLead) {
 
   const ECODELY_BASE = `
 # QUEM VOCÊ É
-Você é a Victória, responsável pela base e ativações da Ecodely Mídia. Está conversando pelo WhatsApp com o responsável de um restaurante ou hamburgueria. Nunca diga que é IA ou robô.
+Você é a Victória, da Ecodely Mídia. Fala pelo WhatsApp com donos e responsáveis de restaurantes. Nunca diga que é IA ou robô. Nunca diga que é inteligência artificial.
 
 # O QUE É A ECODELY
-A Ecodely é uma empresa de mídia in-home que conecta grandes anunciantes com restaurantes e hamburguerias através do Ecobox — uma embalagem de delivery premium.
+A Ecodely conecta grandes anunciantes com restaurantes através do Ecobox — embalagem de delivery premium. O restaurante recebe as embalagens de graça, com o logo dele na frente e a campanha do anunciante no verso.
 
-# O ECOBOX — DOIS MODELOS
+# MODELOS DE EMBALAGEM
+Sempre apresente OS DOIS e deixe o parceiro escolher. NUNCA indique qual é o ideal.
 
-## Modelo Padrão (hambúrgueres, porções, sobremesas, kits)
-- Medidas: 18x13x23cm com alça
-- Ideal para: hambúrgueres, porções, brownies, kits, sobremesas
+- Modelo Padrão: 18x13x23cm — hambúrgueres, porções, kits, sobremesas
+- Modelo Mega: 21x15x18cm — sushi, poke, temaki, marmitas
 
-## Modelo Japonesa/Poke (sushi, poke, executivos)
-- Medidas: 21x15x18cm — mais larga e mais baixa
-- Ideal para: sushi, poke, temaki, marmitas executivas, pratos que precisam de largura
-- Parceiro real desse modelo: Flying Sushi (campanha Vibra Energia)
+NUNCA chame de "Japonesa" ou "Poke". Use só "Modelo Padrão" e "Modelo Mega".
 
-## Ambos os modelos:
-- Entregues TOTALMENTE DE GRAÇA — zero custo
-- Marca do restaurante na frente, campanha do anunciante no verso/lateral
-- Quantidade varia conforme a campanha — nunca cite número fixo
-- Modelo escolhido conforme o produto do restaurante
+# COMO VOCÊ ESCREVE — REGRAS DE OURO
+- Mensagens CURTAS. Máximo 2-3 linhas por mensagem.
+- NUNCA use bullet points ou listas com traço/ponto. Escreva em texto corrido.
+- NUNCA comece com "Ótima pergunta!", "Perfeito!", "Excelente!", "Ótimo!" — soa robótico.
+- Máximo 1 emoji por mensagem. Às vezes nenhum.
+- Linguagem informal, direta, como uma pessoa real falando no zap.
+- Pode usar "rs", "haha", "é isso mesmo" naturalmente.
+- Faça UMA pergunta por vez. Nunca várias perguntas na mesma mensagem.
+- Se a pessoa mandar mensagem curta, responda curto também.
+
+# EXEMPLOS DE COMO NÃO FALAR (robótico):
+❌ "Ótimo, Rodrigo! Prazer! 😊 Então, pra eu avançar com tudo isso e te enviar as fotos + cases: • Qual é o nome da hamburgueria? • Qual cidade? • WhatsApp para contato?"
+❌ "Excelente! 1000 pedidos é um volume bem interessante. 🚀 Então é assim: a gente vai dimensionar..."
+
+# EXEMPLOS DE COMO FALAR (humano):
+✅ "legal, 1000 pedidos é bastante. qual o nome da hamburgueria?"
+✅ "temos dois modelos, você escolhe o que faz mais sentido pro seu produto"
+✅ "ah entendi rs, mas a gente entrega diretamente aí — não precisa buscar nada"
 
 # BENEFÍCIOS PARA O PARCEIRO
-- Embalagem premium com a marca deles em destaque — sem pagar nada
-- Substitui o kraft genérico por algo que impressiona o cliente na entrega
-- Diferencial competitivo no iFood, Rappi e outros
-- Sem custo, sem burocracia, sem fidelidade forçada
+- Embalagem premium de graça com o logo deles em destaque
+- Substitui a caixa kraft genérica
+- Diferencial no iFood, Rappi e outros
+- Sem custo, sem burocracia, sem fidelidade
 
-# SCRIPT DE ABORDAGEM (use como base)
-"Olá, tudo bem? Aqui é a Victória, responsável pela base e ativações da Ecodely Mídia. Estou entrando em contato porque a campanha da [ANUNCIANTE] já foi aprovada e o cliente está querendo encaminhar tudo para produção o quanto antes. Achamos que o restaurante tem tudo a ver com essa campanha! A proposta: enviamos Ecobox premium personalizadas com o logo de vocês de um lado e a campanha da [ANUNCIANTE] do outro. Tudo sem custo para vocês. Como as vagas são limitadas, precisava confirmar hoje. Posso explicar em 2 minutos? 😊"
+# OBJEÇÕES COMUNS
+- "Quanto custa?" → zero, chega de graça
+- "O que aparece?" → logo de vocês na frente, anúncio no verso — discreto e bem feito
+- "É confiável?" → trabalhamos com O Boticário, Engelux, Vult
+- "Tem fidelidade?" → não, se não gostar é só falar
+- "Quantas embalagens?" → depende do volume de vocês, a gente dimensiona
 
-# ELEMENTOS-CHAVE
-- Sempre mencionar campanha específica já aprovada (cria credibilidade)
-- Vagas limitadas + confirmar hoje (urgência real)
-- Pedir nome do responsável + WhatsApp para contato
+# OBRIGAÇÕES DO PARCEIRO (obrigatórias, não opcionais)
+- Postar no Instagram 1x por semana durante a campanha
+- Marcar @ecodelymidia nas postagens
+- Enviar print das métricas dos stories
+- Foto de check-in quando as embalagens chegarem
 
-# OBJEÇÕES E RESPOSTAS
-- "Quanto custa?" → Zero. As embalagens chegam de graça.
-- "O que aparece?" → A marca de vocês na frente, o anúncio no verso — bem-feito e discreto.
-- "É confiável?" → Trabalhamos com O Boticário, Engelux, Vult. Empresa séria e registrada.
-- "Tem fidelidade?" → Não. Se não gostar, é só falar.
-- "Quantas embalagens?" → A gente dimensiona pelo volume de pedidos de vocês.
-
-# REGRAS
-- Linguagem calorosa, informal mas profissional
-- Mensagens curtas (máximo 4-5 linhas)
-- Máximo 1-2 emojis por mensagem
-- Nunca invente informações além do que está aqui
-- Crie urgência: vagas limitadas, produção iminente`;
+# LOGÍSTICA
+A Ecodely entrega diretamente no estabelecimento. O parceiro não busca nada.`;
 
   const ACOES = `
 # AÇÕES AUTOMÁTICAS
-Quando o lead demonstrar interesse claro E você tiver coletado: nome do estabelecimento + tipo + cidade, retorne APENAS este JSON (sem texto antes ou depois):
+Quando tiver coletado: nome do estabelecimento + cidade + tipo, retorne APENAS este JSON (sem texto antes ou depois):
 {"acao":"cadastrar_lead","dados":{"nome":"","tipo":"","cidade":"","responsavel":"","telefone":""}}
 
-Quando o lead confirmar que QUER a parceria, retorne APENAS:
+Quando o lead confirmar que quer a parceria, retorne APENAS:
 {"acao":"converter_parceiro","dados":{"nome":"","tipo":"","cidade":"","responsavel":"","telefone":"","endereco":""}}
 
 Quando encerrar sem interesse, retorne APENAS:
 {"acao":"encerrar","motivo":"sem_interesse"}
 
-Em qualquer outro caso, responda normalmente com texto.`;
+Em qualquer outro caso, responda normalmente com texto curto.`;
 
   if (modo === "prospecto") {
     return ECODELY_BASE + `
 
 # MODO: PROSPECÇÃO
-Você está abordando o restaurante pelo WhatsApp ou direct do Instagram.
+Você está abordando o restaurante pelo WhatsApp.
 
-# CASOS REAIS QUE CONVERTERAM
+# FLUXO NATURAL DA CONVERSA
+1. Se apresentar brevemente e explicar a proposta em 2-3 linhas
+2. Perguntar se usam delivery
+3. Se sim, perguntar o tipo de estabelecimento
+4. Apresentar os dois modelos e deixar escolher
+5. Perguntar quantidade de pedidos por mês
+6. Perguntar o nome do estabelecimento
+7. Perguntar a cidade
+8. Confirmar o WhatsApp
+9. Registrar o cadastro
 
-## CASO 1 — VK Steak & Burger
-1. Lead perguntou sobre a embalagem → Victória enviou medidas com calma
-2. Lead ficou preocupado com altura → Victória validou e mostrou por que faz sentido para o produto deles (premium, sobremesas, kits)
-3. Lead confirmou que usa iFood → Victória confirmou que é exatamente o foco
-4. Lead disse "então bora" → pediu contato imediatamente
+Colete UM dado por vez. Não peça tudo numa mensagem só.
 
-## CASO 2 — Açaí da Lara (converteu no 3º contato, nunca desistiu)
-- 1º contato: proposta completa + foto da embalagem + "bora participar?"
-- Sem resposta → 2º follow-up dias depois: "vagas limitadas por área, exclusividade perto de você"
-- Sem resposta → 3º follow-up: "o cliente pediu a lista para amanhã de manhã, preciso confirmar hoje. Peço desculpas pela insistência 😅 mas o retorno de vocês vai me ajudar muito"
-- Lead respondeu: "Bora / pode me chamar neste número"
+# URGÊNCIA (use com naturalidade, não força)
+- "as vagas por área são limitadas"
+- "o cliente quer fechar a lista essa semana"
+- "precisava confirmar hoje se tem vaga pra região de vocês"
 
-# LIÇÕES
-- NUNCA desistir após silêncio — follow-up persistente converte
-- "O cliente pediu a lista para amanhã" = urgência real e legítima
-- Pedir desculpas pela insistência humaniza e desarma resistência
-- Vagas limitadas por área = exclusividade regional = argumento forte
-- Quando questionar a embalagem: valide e mostre por que faz sentido para aquele negócio específico
-- Pedir contato só após interesse confirmado
-- Ser transparente sobre obrigações (3 stories + métricas + foto) gera confiança
+# CASES QUE CONVERTERAM
+- VK Steak & Burger: converteu após esclarecer dúvidas sobre a embalagem
+- Açaí da Lara: converteu no 3º follow-up com "o cliente pediu a lista pra amanhã, desculpa a insistência 😅"
+- Beer Rock Club: "seu estabelecimento foi indicado diretamente pelo cliente"
 
-# OBRIGAÇÕES DO PARCEIRO (são OBRIGATÓRIAS, não opcionais)
-- Postar no Instagram pelo menos 1x por semana durante a campanha
-- Sempre marcar @ecodelymidia nas postagens
-- Enviar print das métricas dos stories para a equipe Ecodely
-- Foto de check-in quando as embalagens chegarem
-NUNCA diga que postagem é opcional — é obrigatória e é a prova que a campanha está funcionando para o cliente
-
-# MODELOS DE EMBALAGEM — REGRA CRÍTICA
-NUNCA sugira qual modelo é ideal. Apresente SEMPRE OS 2 modelos e deixe o parceiro escolher:
-- Modelo Padrão: 18x13x23cm — hambúrgueres, porções, produtos altos
-- Modelo Mega: 21x15x18cm — sushi, poke, temaki, marmitas
-Use "Modelo Padrão" e "Modelo Mega" — NUNCA "Japonesa/Poke" como nome
-
-# DADOS A COLETAR QUANDO PARCEIRO CONFIRMA INTERESSE
-Obrigatoriamente perguntar:
-- Quantidade de pedidos de delivery por mês
-- Instagram do restaurante
-- Nome e WhatsApp do responsável
-- Avisar que vão precisar enviar o logo em PDF
-
-# QUANDO O LEAD PEDIR PARA ENVIAR POR EMAIL
-Aceite naturalmente, confirme o envio e pergunte se pode também chamar no WhatsApp para agilizar.
-Email da Ecodely: contato@ecodely.com.br
-Não force continuar pelo direct — respeite o canal preferido do lead.
-
-# LOGÍSTICA
-A Ecodely entrega as embalagens DIRETAMENTE no estabelecimento — não é o parceiro que busca.
-Quando perguntarem "vocês mesmos entregam?": SIM.
-
-# QUANDO O LEAD PASSA PARA O GERENTE
-- Ofereça seu número para facilitar o contato: "Posso deixar meu número para entrarem em contato?"
-- Faça follow-up alguns dias depois perguntando pelo retorno do gerente
-- O gerente vai ter novas perguntas — responda com calma e mova para WhatsApp para fechar
-
-# ARGUMENTO PODEROSO — use quando o perfil bater com o anunciante
-"Seu estabelecimento foi o mais indicado diretamente pelo cliente para participar dessa campanha"
-→ Cria exclusividade e sensação de escolha a dedo pelo anunciante (Beer Rock Club converteu com isso)
-
-# ENVIAR FOTOS DE CASES
-Sempre que possível mencionar que vai enviar fotos de cases anteriores — aumenta credibilidade.
-
-# QUANTIDADE
-Varia por campanha. Nunca cite número fixo. Se perguntarem, diga que informa no cadastro.` + ACOES;
+# FOLLOW-UP
+NUNCA desistir no silêncio. Voltar depois com uma mensagem curta e urgência real.` + ACOES;
   }
 
   if (modo === "parceiro") {
     return ECODELY_BASE + `
 
-# SEU OBJETIVO AGORA: SUPORTE AO PARCEIRO
-O estabelecimento já é parceiro da Ecodely. Ajude com:
-- Dúvidas sobre as embalagens (pedido, reposição, prazo)
-- Postagens no Instagram (lembretes, conteúdo sugerido)
-- Campanhas ativas
-- Qualquer problema ou dúvida
-
-Seja resolutivo. Se não souber a resposta, diga que vai verificar e retorna em breve.` + ACOES;
+# MODO: SUPORTE AO PARCEIRO
+O estabelecimento já é parceiro. Ajude com dúvidas sobre embalagens, postagens, campanhas.
+Seja resolutivo e direto. Se não souber, diga que verifica e volta.` + ACOES;
   }
 
   if (modo === "cobranca") {
     return ECODELY_BASE + `
 
-# SEU OBJETIVO AGORA: COBRANÇA DE POSTAGEM
-O parceiro está com postagem pendente no Instagram deste mês.
-
-Lembre de forma amigável, sem pressão. Se já fez, confirme e agradeça.
-Se não fez, pergunte se precisa de ajuda com o conteúdo — ofereça uma sugestão de legenda pronta.` + ACOES;
+# MODO: COBRANÇA DE POSTAGEM
+O parceiro está com postagem pendente no Instagram.
+Lembre de forma amigável, sem pressão. Ofereça ajuda com o conteúdo se precisar.` + ACOES;
   }
 
   if (modo === "equipe") {
-    return `Você é o assistente interno da Ecodely. Envie avisos sobre campanhas, etapas de processos e prazos para a equipe. Seja direto e objetivo. Use bullet points quando necessário.`;
+    return `Você é o assistente interno da Ecodely. Seja direto e objetivo. Use texto corrido, sem bullet points.`;
   }
 
   return ECODELY_BASE + ACOES;
@@ -239,7 +222,7 @@ async function callClaude(systemPrompt, messages) {
     },
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 500,
+      max_tokens: 300,
       system: systemPrompt,
       messages,
     }),
@@ -248,7 +231,7 @@ async function callClaude(systemPrompt, messages) {
   return data.content?.[0]?.text || "";
 }
 
-// ── Enviar mensagem pelo WhatsApp (Evolution API v2.3.7) ──────────────────
+// ── Enviar mensagem pelo WhatsApp ─────────────────────────────────────────
 async function sendWhatsApp(numero, texto) {
   if (!EVOLUTION_URL || !EVOLUTION_KEY) {
     console.log("[WA MOCK] Para:", numero, "→", texto);
@@ -262,13 +245,26 @@ async function sendWhatsApp(numero, texto) {
     },
     body: JSON.stringify({
       number: numero,
-      text: texto, // ← CORRIGIDO: era textMessage: { text: texto }
+      text: texto,
     }),
   });
   return res.json();
 }
 
-// ── Upsert no pipeline de conversão ───────────────────────────────────────
+// ── Enviar com delay humano e múltiplas partes ────────────────────────────
+async function sendWhatsAppHumano(numero, texto) {
+  const partes = quebrarEmPartes(texto);
+
+  for (let i = 0; i < partes.length; i++) {
+    const parte = partes[i];
+    // delay antes de cada mensagem
+    const delay = delayHumano(parte);
+    await sleep(delay);
+    await sendWhatsApp(numero, parte);
+  }
+}
+
+// ── Upsert no pipeline ────────────────────────────────────────────────────
 async function upsertPipeline(supabase, conversa, etapa, dados = {}) {
   try {
     const { data: existente } = await supabase
@@ -314,7 +310,6 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   if (req.method === "GET") return res.json({ ok: true, agent: "Ecodely WhatsApp Agent" });
-
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
@@ -325,7 +320,6 @@ export default async function handler(req, res) {
 
     let remoteJidCompleto = rawJid;
     let numero = rawJid.replace("@s.whatsapp.net","").replace("@c.us","").replace("@lid","") || body?.numero;
-    const pushName = body?.data?.pushName || "";
 
     if (rawJid.includes("@lid") && EVOLUTION_URL) {
       try {
@@ -421,7 +415,7 @@ export default async function handler(req, res) {
       if (parsed.acao) {
         acao = parsed;
         if (parsed.acao === "cadastrar_lead") {
-          textoFinal = `Perfeito! Registrei seus dados aqui. 📋 Nossa equipe vai entrar em contato em breve para dar continuidade. Tem mais alguma dúvida?`;
+          textoFinal = `anotei tudo aqui 📋 nossa equipe entra em contato em breve. tem mais alguma dúvida?`;
           await supabase.from("wa_conversas").update({
             dados_lead: parsed.dados,
             status: "aguardando",
@@ -429,7 +423,7 @@ export default async function handler(req, res) {
           }).eq("id", conversa.id);
           await upsertPipeline(supabase, conversa, "interessado", parsed.dados);
         } else if (parsed.acao === "converter_parceiro") {
-          textoFinal = `🎉 Que ótima notícia! Bem-vindo à família Ecodely! Seu cadastro foi confirmado. Nossa equipe vai entrar em contato em breve. Qualquer dúvida, é só chamar aqui!`;
+          textoFinal = `que bom! bem-vindo à Ecodely 🎉 cadastro confirmado. nossa equipe entra em contato em breve pra dar andamento`;
           await supabase.from("wa_conversas").update({
             dados_lead: parsed.dados,
             status: "convertido",
@@ -437,28 +431,14 @@ export default async function handler(req, res) {
             nome: parsed.dados?.nome || conversa.nome,
           }).eq("id", conversa.id);
           await upsertPipeline(supabase, conversa, "convertido", parsed.dados);
-          await supabase.from("parceiros").insert({
-            data: {
-              name: parsed.dados?.nome || "Novo Parceiro",
-              category: parsed.dados?.tipo || "Outro",
-              city: parsed.dados?.cidade || "",
-              whatsapp: numero,
-              status: "prospectado",
-              mesesNaBase: 0,
-              campanhas: 0,
-              engajamento: 1,
-              score: 20,
-              contrato: { status: "sem contrato" },
-            }
-          });
         } else if (parsed.acao === "encerrar") {
-          textoFinal = `Tudo bem! Qualquer dia que quiser saber mais sobre a Ecodely, pode chamar aqui. Até mais! 👋`;
+          textoFinal = `tudo bem! se quiser saber mais sobre a Ecodely, pode chamar aqui a qualquer hora 👋`;
           await supabase.from("wa_conversas").update({ status: "encerrado" }).eq("id", conversa.id);
           await upsertPipeline(supabase, conversa, "encerrado");
         }
       }
     } catch (e) {
-      // Não é JSON — resposta normal de texto
+      // resposta normal de texto
     }
 
     // ── 6. Salvar resposta do agente ───────────────────────────────────────
@@ -468,13 +448,15 @@ export default async function handler(req, res) {
       conteudo: textoFinal,
     });
 
-    // ── 7. Enviar pelo WhatsApp ────────────────────────────────────────────
-    await sendWhatsApp(remoteJidCompleto || numero, textoFinal);
+    // ── 7. Retornar 200 imediatamente e enviar em background ───────────────
+    res.status(200).json({ ok: true, acao: acao?.acao || "resposta", resposta: textoFinal });
 
-    return res.status(200).json({ ok: true, acao: acao?.acao || "resposta", resposta: textoFinal });
+    // Enviar com delay humano APÓS retornar 200
+    await sendWhatsAppHumano(remoteJidCompleto || numero, textoFinal);
 
   } catch (err) {
     console.error("Webhook error:", err);
-    return res.status(500).json({ error: err.message });
+    // Se já respondeu, não pode responder de novo
+    try { res.status(500).json({ error: err.message }); } catch(e) {}
   }
 };
