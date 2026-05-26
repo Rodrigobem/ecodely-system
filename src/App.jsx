@@ -14,7 +14,7 @@ const SIMPLES_ANEXO_III=[
   {faixa:2,min:180000,max:360000,aliquota:0.112,deducao:9360,label:"Faixa 2"},
   {faixa:3,min:360000,max:720000,aliquota:0.135,deducao:17640,label:"Faixa 3"},
   {faixa:4,min:720000,max:1800000,aliquota:0.16,deducao:35640,label:"Faixa 4"},
-  {faixa:5,min:1800000,max:3600000,aliquota:0.21,deducao:125640,label:"Faixa 5"},
+  {faixa:5,min:1800000,max:3600000,aliquota:0.21,deducao:125640,label:"Faixa 5"}, 
 ];
 const calcAliquotaEfetiva=(rbt12)=>{
   const faixa=SIMPLES_ANEXO_III.find(f=>rbt12>=f.min&&rbt12<f.max)||SIMPLES_ANEXO_III[0];
