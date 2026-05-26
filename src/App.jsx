@@ -3280,7 +3280,7 @@ export default function App(){
                         <KCard label="Fechamentos" value={closings.length} sub="total do mês" color={T.info} icon="-" onClick={()=>setCommAdminTab("historico")} hint="Ver todos -"/>
                       </div>
                       {["Victoria","Priscila"].map((name,i)=>{
-                        const uc=closings.filter(c=>c.user===name);
+                        const uc=closings.filter(c=>c.user===u.name);
                         const uA=uc.filter(c=>c.status==="aprovado").reduce((a,c)=>a+c.value,0);
                         const uP=uc.filter(c=>c.pago).reduce((a,c)=>a+c.value,0);
                         const colors=[T.accent,T.purple];const avs=["MC","CM"];
