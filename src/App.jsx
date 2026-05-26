@@ -99,13 +99,12 @@ const now=()=>new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",h
 
 // --- AUTH --------------------------------------------------------------------
 const USERS_DB=[
-  {id:0,name:"Admin Teste",email:"a",pass:"1",role:"admin",avatar:"AT",active:true},
-  {id:1,name:"Rodrigo Bem",email:"rodrigo@ecodely.com.br",pass:"admin123",role:"admin",avatar:"RB",active:true},
-  {id:2,name:"Ana Lima",email:"ana@ecodely.com.br",pass:"user123",role:"comercial",avatar:"AL",active:true},
-  {id:3,name:"Carlos Mendes",email:"carlos@ecodely.com.br",pass:"user123",role:"operacional",avatar:"CM",active:true},
-  {id:4,name:"Juliana Faria",email:"juliana@ecodely.com.br",pass:"user123",role:"marketing",avatar:"JF",active:true},
-  {id:5,name:"Paulo Neto",email:"paulo@ecodely.com.br",pass:"user123",role:"financeiro",avatar:"PN",active:true},
-  {id:6,name:"Mariana Costa",email:"mariana@ecodely.com.br",pass:"user123",role:"base",avatar:"MC",active:true},
+  {id:1,name:"Rodrigo Bem",email:"rodrigobem@ecodely.com.br",pass:"admin123",role:"admin",avatar:"RB",active:true,lastAccess:"nunca",extraRoles:[],meta:500000},
+  {id:1779900001,name:"Pedro Camaor",email:"pedro.camaor@ecodely.com.br",pass:"ecodely2026",role:"admin",avatar:"PC",active:true,lastAccess:"nunca",extraRoles:[],meta:0},
+  {id:1779900002,name:"Priscila",email:"opec@ecodely.com.br",pass:"ecodely2026",role:"base",avatar:"P",active:true,lastAccess:"nunca",extraRoles:["operacional"],meta:0},
+  {id:1779900003,name:"Larissa",email:"financeiro@ecodely.com.br",pass:"ecodely2026",role:"financeiro",avatar:"L",active:true,lastAccess:"nunca",extraRoles:[],meta:0},
+  {id:1779900004,name:"Victoria",email:"victoria@ecodely.com.br",pass:"ecodely2026",role:"base",avatar:"V",active:true,lastAccess:"nunca",extraRoles:[],meta:0},
+  {id:1779900005,name:"Pedro Henrique",email:"marketing@ecodely.com.br",pass:"ecodely2026",role:"marketing",avatar:"PH",active:true,lastAccess:"nunca",extraRoles:[],meta:0},
 ];
 const ROLE_LABELS={admin:"Administrador",comercial:"Comercial",operacional:"Operacional",marketing:"Marketing",financeiro:"Financeiro",base:"Base"};
 const ROLE_COLOR={admin:T.accent,comercial:T.info,operacional:T.purple,marketing:T.pink,financeiro:T.warn,base:T.green};
@@ -3281,7 +3280,7 @@ export default function App(){
                         <KCard label="A pagar" value={fmt(closings.filter(c=>c.status==="aprovado"&&!c.pago).reduce((a,c)=>a+c.value,0))} sub="aprovados não pagos" color={T.danger} icon="-" onClick={()=>setCommAdminTab("historico")} hint="Ver a pagar -"/>
                         <KCard label="Fechamentos" value={closings.length} sub="total do mês" color={T.info} icon="-" onClick={()=>setCommAdminTab("historico")} hint="Ver todos -"/>
                       </div>
-                      {["Mariana Costa","Carlos Mendes"].map((name,i)=>{
+                      {["Victoria","Priscila"].map((name,i)=>{
                         const uc=closings.filter(c=>c.user===name);
                         const uA=uc.filter(c=>c.status==="aprovado").reduce((a,c)=>a+c.value,0);
                         const uP=uc.filter(c=>c.pago).reduce((a,c)=>a+c.value,0);
