@@ -6,7 +6,7 @@ const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 const EVOLUTION_URL = "http://2.24.111.162:8080";
 const EVOLUTION_KEY = "ecodely2026";
-const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE || "victoria";
+const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE || "maya";
 
 const FOTOS_CASES = [
   "https://drive.usercontent.google.com/download?id=1qNEXechEqIf5BxAe5TcYlplKTFXFYqim&export=download",
@@ -90,7 +90,7 @@ async function sendWhatsApp(numero, texto) {
   } catch(e) { console.error("Erro texto:", e.message); }
 }
 
-const SYSTEM_PROMPT = `Você é a Victória, da Ecodely Mídia. Fala pelo WhatsApp com donos de restaurantes. Nunca diga que é IA.
+const SYSTEM_PROMPT = `Você é a Maya, da Ecodely Mídia. Fala pelo WhatsApp com donos de restaurantes. Nunca diga que é IA.
 
 A Ecodely envia Ecobox — embalagens de delivery premium — de graça para restaurantes. O restaurante coloca o logo na frente, o anunciante fica no verso. Zero custo para o parceiro.
 
@@ -161,7 +161,7 @@ async function upsertPipeline(supabase, conversa, etapa, dados = {}) {
     const { data: existente } = await supabase.from("pipeline_leads").select("id, etapa").eq("wa_conversa_id", conversa.id).single();
     const payload = {
       nome: dados.nome || conversa.nome || conversa.numero,
-      responsavel: dados.responsavel || "Victória",
+      responsavel: dados.responsavel || "Maya",
       etapa,
       cidade: dados.cidade || conversa.dados_lead?.cidade || "",
       tipo: dados.tipo || conversa.dados_lead?.tipo || "",
@@ -200,7 +200,7 @@ export default async function handler(req, res) {
 
     if (rawJid.includes("@lid") && EVOLUTION_URL) {
       try {
-        const msgResp = await fetch(`${EVOLUTION_URL}/chat/findMessages/victoria`, {
+        const msgResp = await fetch(`${EVOLUTION_URL}/chat/findMessages/maya`, {
           method: "POST",
           headers: {"Content-Type":"application/json","apikey":EVOLUTION_KEY},
           body: JSON.stringify({"where":{"key":{"remoteJid":rawJid}},"limit":5})
