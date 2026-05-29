@@ -4185,12 +4185,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           ))}
           {loginErr&&<div style={{fontSize:11,color:T.danger,marginBottom:10}}>{loginErr}</div>}
           <button onClick={handleLogin} style={{width:"100%",padding:"13px",borderRadius:10,background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,border:"none",cursor:"pointer",marginTop:8}}>Entrar</button>
-          
-            rodrigo@ecodely.com.br · admin123<br/>
-            juliana@ecodely.com.br · user123 (Marketing)<br/>
-            paulo@ecodely.com.br · user123 (Financeiro)<br/>
-            mariana@ecodely.com.br · user123 (Base)
-          </div>
+
         </div>
       </div>
     </div>
