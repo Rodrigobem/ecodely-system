@@ -6756,19 +6756,18 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <KCard label="A pagar" value={fmt(closings.filter(c=>c.status==="aprovado"&&!c.pago).reduce((a,c)=>a+c.value,0))} sub="aprovados não pagos" color={T.danger} icon="-" onClick={()=>setCommAdminTab("historico")} hint="Ver a pagar -"/>
                         <KCard label="Fechamentos" value={closings.length} sub="total do mês" color={T.info} icon="-" onClick={()=>setCommAdminTab("historico")} hint="Ver todos -"/>
                       </div>
-                      {{users.filter(u=>u.role==="base"&&u.active).map((u,i)=>{
-                        const uc=closings.filter(c=>c.user===u.name);
+                      {["Mariana Costa","Carlos Mendes"].map((name,i)=>{
+                        const uc=closings.filter(c=>c.user===name);
                         const uA=uc.filter(c=>c.status==="aprovado").reduce((a,c)=>a+c.value,0);
                         const uP=uc.filter(c=>c.pago).reduce((a,c)=>a+c.value,0);
-                        const colors=[T.accent,T.purple,T.info,T.warn];
+                        const colors=[T.accent,T.purple];const avs=["MC","CM"];
                         return(
-                          <div key={u.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16,marginBottom:10,display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
-                            <div style={{width:34,height:34,borderRadius:"50%",background:colors[i%colors.length]+"22",border:`1px solid ${colors[i%colors.length]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:colors[i%colors.length],fontWeight:700,flexShrink:0}}>{u.avatar}</div>
-                            <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,fontFamily:"'Syne',sans-serif"}}>{u.name}</div><div style={{fontSize:9,color:T.muted}}>{uc.length} fechamentos · {uc.filter(c=>c.status==="pendente").length} aguardando</div></div>
+                          <div key={i} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16,marginBottom:10,display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
+                            <div style={{width:34,height:34,borderRadius:"50%",background:colors[i]+"22",border:`1px solid ${colors[i]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:colors[i],fontWeight:700,flexShrink:0}}>{avs[i]}</div>
+                            <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{name}</div><div style={{fontSize:9,color:T.muted}}>{uc.length} fechamentos · {uc.filter(c=>c.status==="pendente").length} aguardando</div></div>
                             {[["aprovado",uA,T.accent],["pago",uP,T.green],["a pagar",uA-uP,T.danger]].map(([l,v,c])=>(
-                              <div key={l} style={{textAlign:"center"}}><div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:16,color:c}}>{fmt(v)}</div><div style={{fontSize:8,color:T.muted}}>{l}</div></div>
+                              <div key={l} style={{textAlign:"center"}}><div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:c}}>{fmt(v)}</div><div style={{fontSize:8,color:T.muted}}>{l}</div></div>
                             ))}
-                            <button className="btn" onClick={()=>setUsers(p=>p.map(x=>x.id===u.id?{...x,active:false}:x))} style={{padding:"5px 10px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,fontSize:9,fontWeight:700}}>Remover</button>
                           </div>
                         );
                       })}
