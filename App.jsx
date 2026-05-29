@@ -7215,6 +7215,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     </div>
                     {basePartners.filter(p=>{
                       const ms=baseFilter==="todos"||p.status===baseFilter;
+                      const mEstado=baseEstado==="todos"||p.state===baseEstado;
+                      const mCidade=baseCidade==="todos"||p.city===baseCidade;
+                      const mSeg=baseSegmento==="todos"||p.category===baseSegmento;
                       const mq=p.name.toLowerCase().includes(baseSearch.toLowerCase())||p.handle.toLowerCase().includes(baseSearch.toLowerCase());
                       const ms2=p.score>=baseScoreMin;
                       const mc=baseContratoFilter==="todos"||p.contrato.status===baseContratoFilter;
