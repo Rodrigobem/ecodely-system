@@ -7005,6 +7005,22 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <input value={selPartner.state||""} onChange={e=>setSelPartner(p=>({...p,state:e.target.value.toUpperCase().slice(0,2)}))} placeholder="SP" style={inpS}/>
                           </div>
                           <div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Responsável</div>
+                            <input value={selPartner.responsavel||""} onChange={e=>setSelPartner(p=>({...p,responsavel:e.target.value}))} placeholder="Nome do responsável" style={inpS}/>
+                          </div>
+                          <div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Telefone / WhatsApp</div>
+                            <input value={selPartner.telefone||""} onChange={e=>setSelPartner(p=>({...p,telefone:e.target.value}))} placeholder="(11) 99999-9999" style={inpS}/>
+                          </div>
+                          <div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>E-mail</div>
+                            <input value={selPartner.email||""} onChange={e=>setSelPartner(p=>({...p,email:e.target.value}))} placeholder="email@parceiro.com" style={inpS}/>
+                          </div>
+                          <div>
+                            <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>CNPJ / CPF</div>
+                            <input value={selPartner.cnpj||""} onChange={e=>setSelPartner(p=>({...p,cnpj:e.target.value}))} placeholder="00.000.000/0000-00" style={inpS}/>
+                          </div>
+                          <div>
                             <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Entregas / mês</div>
                             <input type="number" value={selPartner.deliveries||""} onChange={e=>setSelPartner(p=>({...p,deliveries:Number(e.target.value)}))} placeholder="Ex: 500" style={inpS}/>
                           </div>
