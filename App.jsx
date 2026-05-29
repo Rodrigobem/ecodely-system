@@ -6228,16 +6228,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                   <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:T.warn}}>{fmt(parcelaMes)}</div>
                                 </div>
                               </div>
-                              {compras.length>0&&(
+                              {lancCartao.length>0&&(
                                 <div>
-                                  <div style={{fontSize:9,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Compras parceladas</div>
-                                  {compras.map((cp,i)=>(
+                                  <div style={{fontSize:9,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Lancamentos vinculados</div>
+                                  {lancCartao.slice(-5).reverse().map((l,i)=>(
                                     <div key={i} style={{padding:"6px 0",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                                       <div>
-                                        <div style={{fontSize:10,fontWeight:600}}>{cp.projeto}</div>
-                                        <div style={{fontSize:8,color:T.muted}}>{cp.parcelaAtual}/{cp.parcelas} parcelas - {fmt(cp.valorParcela)}/mes</div>
+                                        <div style={{fontSize:10,fontWeight:600}}>{l.descricao}</div>
+                                        <div style={{fontSize:8,color:T.muted}}>{l.data} - {l.categoria}</div>
                                       </div>
-                                      <div style={{fontSize:10,color:T.warn,fontFamily:"Arial,sans-serif"}}>{fmt(cp.valorParcela*(cp.parcelas-cp.parcelaAtual+1))}</div>
+                                      <div style={{fontSize:10,color:T.danger,fontFamily:"Arial,sans-serif"}}>{fmt(l.saida)}</div>
                                     </div>
                                   ))}
                                 </div>
