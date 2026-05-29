@@ -2915,6 +2915,9 @@ export default function App(){
   const[baseFilter,setBaseFilter]=useState("todos");
   const[baseScoreMin,setBaseScoreMin]=useState(0);
   const[baseContratoFilter,setBaseContratoFilter]=useState("todos");
+  const[baseEstado,setBaseEstado]=useState("todos");
+  const[baseCidade,setBaseCidade]=useState("todos");
+  const[baseSegmento,setBaseSegmento]=useState("todos");
   const[basePartners,setBasePartners]=useState(BASE_PARTNERS_INIT);
   // Pipeline states
   const[pipeLeads,setPipeLeads]=useState([]);
@@ -7191,6 +7194,18 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       <option value="todos">Todos contratos</option>
                       {["assinado","pendente","expirando","sem contrato"].map(s=><option key={s}>{s}</option>)}
                     </select>
+                    <select value={baseEstado} onChange={e=>{setBaseEstado(e.target.value);setBaseCidade("todos");}} style={{...selS,width:"auto"}}>
+                      <option value="todos">Todos estados</option>
+                      {[...new Set(basePartners.map(p=>p.state).filter(Boolean))].sort().map(s=><option key={s}>{s}</option>)}
+                    </select>
+                    <select value={baseCidade} onChange={e=>setBaseCidade(e.target.value)} style={{...selS,width:"auto"}}>
+                      <option value="todos">Todas cidades</option>
+                      {[...new Set(basePartners.filter(p=>baseEstado==="todos"||p.state===baseEstado).map(p=>p.city).filter(Boolean))].sort().map(c=><option key={c}>{c}</option>)}
+                    </select>
+                    <select value={baseSegmento} onChange={e=>setBaseSegmento(e.target.value)} style={{...selS,width:"auto"}}>
+                      <option value="todos">Todos segmentos</option>
+                      {[...new Set(basePartners.map(p=>p.category).filter(Boolean))].sort().map(s=><option key={s}>{s}</option>)}
+                    </select>
                     </div>
                     <button onClick={()=>setSelPartner({id:Date.now(),name:"",handle:"",city:"",state:"",category:"",deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:2,avaliacaoGoogle:0,avaliacaoIfood:0,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},whatsapp:"",instagram_seguidores:0,foto_fachada:"",address:"",_isNew:true})} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer",whiteSpace:"nowrap"}}>+ Novo Parceiro</button>
                   </div>
@@ -7203,7 +7218,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       const mq=p.name.toLowerCase().includes(baseSearch.toLowerCase())||p.handle.toLowerCase().includes(baseSearch.toLowerCase());
                       const ms2=p.score>=baseScoreMin;
                       const mc=baseContratoFilter==="todos"||p.contrato.status===baseContratoFilter;
-                      return ms&&mq&&ms2&&mc;
+                      return ms&&mq&&ms2&&mc&&mEstado&&mCidade&&mSeg;
                     }).map((p,i)=>(
                       <div key={i} className="hr" onClick={()=>setSelPartner(p)} style={{display:"grid",gridTemplateColumns:"2fr 1.1fr 0.9fr 0.7fr 0.7fr 0.9fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
                         <div>
