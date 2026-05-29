@@ -2965,7 +2965,7 @@ export default function App(){
   const[novoCliente,setNovoCliente]=useState({name:"",contact:"",email:"",phone:"",segment:"",agency:""});
   const[filterTo,setFilterTo]=useState("2025-06");
   const[showNewProsp,setShowNewProsp]=useState(false);
-  const[newProsp,setNewProsp]=useState({name:"",contact:"",email:"",segment:"Beleza",value:"",stage:"lead",owner:"Ana Lima",notes:""});
+  const[newProsp,setNewProsp]=useState({name:"",contact:"",email:"",segment:"Beleza",value:"",stage:"lead",owner:user?.name||"",notes:""});
   const[selProsp,setSelProsp]=useState(null);
   const[queueFilter,setQueueFilter]=useState("todos"); // todos | pendentes | concluidas
   const[notifs,setNotifs]=useState([]);
@@ -3318,7 +3318,7 @@ export default function App(){
     if(!newProsp.name)return;
     const rec={...newProsp,id:Date.now(),value:Number(newProsp.value)||0};
     setProspects(p=>[...p,rec]);
-    setNewProsp({name:"",contact:"",email:"",segment:"Beleza",value:"",stage:"lead",owner:"Ana Lima",notes:""});
+    setNewProsp({name:"",contact:"",email:"",segment:"Beleza",value:"",stage:"lead",owner:user?.name||"",notes:""});
     setShowNewProsp(false);
     const{error}=await supabase.from("prospects").insert({id:rec.id,name:rec.name,contact:rec.contact,email:rec.email,phone:rec.phone||"",notes:rec.notes,stage:rec.stage,value:rec.value,owner:rec.owner});
     if(error)console.error("SUPABASE addProsp:",error);
@@ -6516,7 +6516,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Etapa</div>
                         <select value={newProsp.stage} onChange={e=>setNewProsp(p=>({...p,stage:e.target.value}))} style={selS}>{PIPE_STAGES.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select></div>
                         <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Responsável</div>
-                        <select value={newProsp.owner} onChange={e=>setNewProsp(p=>({...p,owner:e.target.value}))} style={selS}><option>Rodrigo Bem</option><option>Ana Lima</option></select></div>
+                        <select value={newProsp.owner} onChange={e=>setNewProsp(p=>({...p,owner:e.target.value}))} style={selS}>{users.filter(u=>["admin","comercial"].includes(u.role)&&u.active).map(u=><option key={u.id} value={u.name}>{u.name}</option>)}</select></div>
                       </div>
                       <div style={{display:"flex",gap:8}}>
                         <button className="btn" onClick={addProsp} style={{padding:"8px 16px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>Salvar</button>
