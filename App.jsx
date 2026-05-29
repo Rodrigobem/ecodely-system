@@ -6180,9 +6180,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {/* Cards list */}
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
                         {cartoes.map(c=>{
-                          const compras=comprasCartao.filter(p=>p.cartaoId===c.id);
-                          const totalDevedor=compras.reduce((a,p)=>a+(p.valorParcela*(p.parcelas-p.parcelaAtual+1)),0);
-                          const parcelaMes=compras.filter(p=>p.parcelaAtual<=p.parcelas).reduce((a,p)=>a+p.valorParcela,0);
+                          const lancCartao=lancamentos.filter(l=>l.cartaoId===c.id);
+                          const totalGasto=lancCartao.reduce((a,l)=>a+l.saida,0);
+                          const totalDevedor=totalGasto;
+                          const parcelaMes=lancCartao.filter(l=>{const mm=l.data.slice(3,5);const yy=l.data.slice(6,10);return mm+"/"+yy===finMesRef;}).reduce((a,l)=>a+l.saida,0);
                           const utilizadoPct=c.limite>0?(totalDevedor/c.limite)*100:0;
                           return(
                             <div key={c.id} style={{background:T.card,border:`1px solid ${c.cor}44`,borderRadius:14,padding:18}}>
@@ -6215,16 +6216,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                   <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:T.warn}}>{fmt(parcelaMes)}</div>
                                 </div>
                               </div>
-                              {compras.length>0&&(
+                              {lancCartao.length>0&&(
                                 <div>
-                                  <div style={{fontSize:9,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Compras parceladas</div>
-                                  {compras.map((cp,i)=>(
+                                  <div style={{fontSize:9,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Lançamentos vinculados</div>
+                                  {lancCartao.slice(-5).reverse().map((l,i)=>(
                                     <div key={i} style={{padding:"6px 0",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                                       <div>
-                                        <div style={{fontSize:10,fontWeight:600}}>{cp.projeto}</div>
-                                        <div style={{fontSize:8,color:T.muted}}>{cp.parcelaAtual}/{cp.parcelas} parcelas - {fmt(cp.valorParcela)}/mes</div>
+                                        <div style={{fontSize:10,fontWeight:600}}>{l.descricao}</div>
+                                        <div style={{fontSize:8,color:T.muted}}>{l.data} · {l.categoria}</div>
                                       </div>
-                                      <div style={{fontSize:10,color:T.warn,fontFamily:"Arial,sans-serif"}}>{fmt(cp.valorParcela*(cp.parcelas-cp.parcelaAtual+1))}</div>
+                                      <div style={{fontSize:10,color:T.danger,fontFamily:"Arial,sans-serif"}}>{fmt(l.saida)}</div>
                                     </div>
                                   ))}
                                 </div>
