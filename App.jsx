@@ -7157,7 +7157,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           <div style={{border:`2px dashed ${T.border}`,borderRadius:9,padding:"14px",textAlign:"center",transition:"all 0.2s",background:T.surface}}
                             onMouseEnter={e=>e.currentTarget.style.borderColor=T.accent}
                             onMouseLeave={e=>e.currentTarget.style.borderColor=T.border}>
-                            <div style={{fontSize:20,marginBottom:3}}>📷</div>
+                            <div style={{fontSize:20,marginBottom:3}}>+</div>
                             <div style={{fontSize:11,fontWeight:700,fontFamily:"Arial,sans-serif",marginBottom:2}}>Adicionar fotos</div>
                             <div style={{fontSize:9,color:T.muted}}>Fachada · Interior · Produto · JPG ou PNG até 5MB</div>
                           </div>
