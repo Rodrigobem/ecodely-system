@@ -6756,7 +6756,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <KCard label="A pagar" value={fmt(closings.filter(c=>c.status==="aprovado"&&!c.pago).reduce((a,c)=>a+c.value,0))} sub="aprovados não pagos" color={T.danger} icon="-" onClick={()=>setCommAdminTab("historico")} hint="Ver a pagar -"/>
                         <KCard label="Fechamentos" value={closings.length} sub="total do mês" color={T.info} icon="-" onClick={()=>setCommAdminTab("historico")} hint="Ver todos -"/>
                       </div>
-                      {{users.filter(u=>u.role==="base"&&u.active).map((u,i)=>{
+                      {users.filter(u=>u.role==="base"&&u.active).map((u,i)=>{
                         const uc=closings.filter(c=>c.user===u.name);
                         const uA=uc.filter(c=>c.status==="aprovado").reduce((a,c)=>a+c.value,0);
                         const uP=uc.filter(c=>c.pago).reduce((a,c)=>a+c.value,0);
