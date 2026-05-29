@@ -29,23 +29,9 @@ const calcAliquotaEfetiva=(rbt12)=>{
   const aliquotaEfetiva=((rbt12*faixa.aliquota)-faixa.deducao)/rbt12;
   return{faixa,aliquotaEfetiva:Math.max(0,aliquotaEfetiva)};
 };
-const CONTAS_INIT=[
-  {id:1,banco:"Bradesco",tipo:"Conta Corrente",agencia:"1234-5",conta:"98765-4",saldo:14915.62,cor:"#CC0000"},
-  {id:2,banco:"Nubank",tipo:"Conta Corrente",agencia:"",conta:"",saldo:5000,cor:"#820AD1"},
-  {id:3,banco:"C6 Bank",tipo:"Conta Corrente",agencia:"",conta:"",saldo:2000,cor:"#F5C518"},
-];
-const CARTOES_INIT=[
-  {id:1,nome:"C6 Azul Dani",titular:"Daniela Gmeiner",vencimento:15,limite:30000,banco:"C6 Bank",cor:"#3D9EFF"},
-  {id:2,nome:"Latam Dani",titular:"Daniela Gmeiner",vencimento:20,limite:20000,banco:"Itaú",cor:"#F5A623"},
-  {id:3,nome:"Mastercard Daniela",titular:"Daniela Gmeiner",vencimento:10,limite:25000,banco:"Santander",cor:"#FF4D6A"},
-  {id:4,nome:"Master Santander Rodrigo",titular:"Rodrigo Bem",vencimento:15,limite:30000,banco:"Santander",cor:"#9B7FFF"},
-];
-const COMPRAS_CARTAO_INIT=[
-  {id:1,cartaoId:1,projeto:"PP 131 - Gráfica EVO - Sensia",valorTotal:4490,parcelas:2,parcelaAtual:2,valorParcela:2245,mesInicio:"04/2026",descricao:"GRAFICA EVO SENSIA 2.000 MEGABOX"},
-  {id:2,cartaoId:1,projeto:"PP 130 - Gráfica EVO - UNEX",valorTotal:7860,parcelas:2,parcelaAtual:2,valorParcela:3930,mesInicio:"04/2026",descricao:"GRAFICA EVO UNEX 3.000 MEGABOX BAHIA"},
-  {id:3,cartaoId:4,projeto:"Fluxo Ecodely Midia",valorTotal:5000,parcelas:12,parcelaAtual:10,valorParcela:416.74,mesInicio:"07/2025",descricao:"FLUXO PAGAMENTOS ECODELY MIDIA"},
-  {id:4,cartaoId:2,projeto:"Fluxo Ecodely Midia",valorTotal:5000,parcelas:12,parcelaAtual:10,valorParcela:416.74,mesInicio:"07/2025",descricao:"FLUXO PAGAMENTOS ECODELY MIDIA LATAM"},
-];
+const CONTAS_INIT=[];
+const CARTOES_INIT=[];
+const COMPRAS_CARTAO_INIT=[];
 const CUSTOS_FIXOS_INIT=[
   {id:1,descricao:"PRONAMP - Bradesco (Capital de Giro)",valor:2494.85,dia:2,categoria:"Financiamento",centrosCusto:"Financeiro",ativo:true},
   {id:2,descricao:"Advogado - Masserotto",valor:1860,dia:5,categoria:"Juridico",centrosCusto:"Administrativo",ativo:true},
@@ -2965,7 +2951,7 @@ export default function App(){
   const[novoCliente,setNovoCliente]=useState({name:"",contact:"",email:"",phone:"",segment:"",agency:""});
   const[filterTo,setFilterTo]=useState("2025-06");
   const[showNewProsp,setShowNewProsp]=useState(false);
-  const[newProsp,setNewProsp]=useState({name:"",contact:"",email:"",segment:"Beleza",value:"",stage:"lead",owner:user?.name||"",notes:""});
+  const[newProsp,setNewProsp]=useState({name:"",contact:"",email:"",segment:"Beleza",value:"",stage:"lead",owner:"Ana Lima",notes:""});
   const[selProsp,setSelProsp]=useState(null);
   const[queueFilter,setQueueFilter]=useState("todos"); // todos | pendentes | concluidas
   const[notifs,setNotifs]=useState([]);
@@ -3318,7 +3304,7 @@ export default function App(){
     if(!newProsp.name)return;
     const rec={...newProsp,id:Date.now(),value:Number(newProsp.value)||0};
     setProspects(p=>[...p,rec]);
-    setNewProsp({name:"",contact:"",email:"",segment:"Beleza",value:"",stage:"lead",owner:user?.name||"",notes:""});
+    setNewProsp({name:"",contact:"",email:"",segment:"Beleza",value:"",stage:"lead",owner:"Ana Lima",notes:""});
     setShowNewProsp(false);
     const{error}=await supabase.from("prospects").insert({id:rec.id,name:rec.name,contact:rec.contact,email:rec.email,phone:rec.phone||"",notes:rec.notes,stage:rec.stage,value:rec.value,owner:rec.owner});
     if(error)console.error("SUPABASE addProsp:",error);
@@ -4199,10 +4185,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           ))}
           {loginErr&&<div style={{fontSize:11,color:T.danger,marginBottom:10}}>{loginErr}</div>}
           <button onClick={handleLogin} style={{width:"100%",padding:"13px",borderRadius:10,background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,border:"none",cursor:"pointer",marginTop:8}}>Entrar</button>
-          <div style={{marginTop:18,padding:"12px",background:T.card,borderRadius:8,fontSize:10,color:T.muted,lineHeight:2}}>
-            <div style={{color:T.accent,fontWeight:700,marginBottom:4}}>Login rápido:</div>
-            a · 1 (Admin Teste)<br/>
-            <div style={{color:T.soft,marginTop:4,marginBottom:2}}>Outras contas demo:</div>
+          
             rodrigo@ecodely.com.br · admin123<br/>
             juliana@ecodely.com.br · user123 (Marketing)<br/>
             paulo@ecodely.com.br · user123 (Financeiro)<br/>
@@ -4879,7 +4862,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     </div>
                     <div style={{background:T.card,border:`1px solid ${T.warnDim}`,borderLeft:`3px solid ${T.warn}`,borderRadius:12,padding:16}}>
                       <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,color:T.warn,marginBottom:10}}>Prazos próximos</div>
-                      {[{camp:"T4F - Maio 2025",prazo:"Gráfica: 08/05",dias:5,id:4},{camp:"O Boticário - Maio",prazo:"Logística: 02/05",dias:1,id:1}].map((a,i)=>(
+                      {camps.filter(c=>c.stage<5&&c.stage>1).slice(0,3).map(c=>({camp:c.name,prazo:`Etapa: ${c.stage}`,dias:5,id:c.id})).map((a,i)=>(
                         <div key={i} onClick={()=>{const c=camps.find(x=>x.id===a.id);if(c)setSelCamp(c);}} className="hr" style={{marginBottom:8,padding:"5px 4px",borderRadius:6,cursor:"pointer"}}>
                           <div style={{fontSize:11,fontWeight:600}}>{a.camp}</div>
                           <div style={{fontSize:9,color:T.warn}}>{a.prazo} · {a.dias}d restantes</div>
@@ -6516,7 +6499,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Etapa</div>
                         <select value={newProsp.stage} onChange={e=>setNewProsp(p=>({...p,stage:e.target.value}))} style={selS}>{PIPE_STAGES.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select></div>
                         <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Responsável</div>
-                        <select value={newProsp.owner} onChange={e=>setNewProsp(p=>({...p,owner:e.target.value}))} style={selS}>{users.filter(u=>["admin","comercial"].includes(u.role)&&u.active).map(u=><option key={u.id} value={u.name}>{u.name}</option>)}</select></div>
+                        <select value={newProsp.owner} onChange={e=>setNewProsp(p=>({...p,owner:e.target.value}))} style={selS}><option>Rodrigo Bem</option><option>Ana Lima</option></select></div>
                       </div>
                       <div style={{display:"flex",gap:8}}>
                         <button className="btn" onClick={addProsp} style={{padding:"8px 16px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>Salvar</button>
