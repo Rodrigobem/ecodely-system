@@ -7253,11 +7253,6 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <Badge label={p.contrato.status} color={CONTRATO_COLOR[p.contrato.status]||T.muted}/>
                         <div style={{fontSize:10,color:T.soft}}>{p.responsavel||"-"}</div>
                         <div style={{fontSize:10,color:T.accent,fontFamily:"Arial,sans-serif"}}>{p.telefone||"-"}</div>
-                        <div>
-                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,color:p.score>80?T.accent:p.score>60?T.warn:T.danger}}>{p.score}</div>
-                          <PBar pct={p.score} color={p.score>80?T.accent:p.score>60?T.warn:T.danger} h={3}/>
-                        </div>
-                        <Badge label={p.contrato.status} color={CONTRATO_COLOR[p.contrato.status]||T.muted}/>
                         <Badge label={p.status} color={STATUS_PARTNER[p.status]||T.muted}/>
                       </div>
                     ))}
