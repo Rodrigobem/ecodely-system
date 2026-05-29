@@ -2966,7 +2966,7 @@ export default function App(){
   // --- FINANCEIRO STATES (movidos do IIFE para nivel do componente) --------
   const[showAdd,setShowAdd]=useState(false);
   const todayISO=new Date().toISOString().slice(0,10);
-  const[novoLanc,setNovoLanc]=useState({data:todayISO,descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1,parcelas:1});
+  const[novoLanc,setNovoLanc]=useState({data:todayISO,descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1,cartaoId:null,parcelas:1});
   const[showAddCartao,setShowAddCartao]=useState(false);
   const[showAddCompra,setShowAddCompra]=useState(false);
   const[novoCartao,setNovoCartao]=useState({nome:"",titular:"",vencimento:15,limite:0,banco:"",cor:"#3D9EFF"});
@@ -5668,6 +5668,15 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         {contas.map(c=><option key={c.id} value={c.id}>{c.banco}</option>)}
                       </select>
                     </div>
+                    {editLanc.forma==="Cartao"&&cartoes.length>0&&(
+                      <div>
+                        <label style={lbl}>Cartao</label>
+                        <select value={editLanc.cartaoId||""} onChange={e=>setEditLanc(p=>({...p,cartaoId:Number(e.target.value)}))} style={inp}>
+                          <option value="">Selecione...</option>
+                          {cartoes.map(c=><option key={c.id} value={c.id}>{c.nome} - {c.titular}</option>)}
+                        </select>
+                      </div>
+                    )}
                     {/* Projeto / NF */}
                     <div>
                       <label style={lbl}>Projeto / NF</label>
@@ -5974,6 +5983,15 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                 {contas.map(c=><option key={c.id} value={c.id}>{c.banco}</option>)}
                               </select>
                             </div>
+                            {novoLanc.forma==="Cartao"&&cartoes.length>0&&(
+                              <div>
+                                <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Cartao</div>
+                                <select value={novoLanc.cartaoId||""} onChange={e=>setNovoLanc(p=>({...p,cartaoId:Number(e.target.value)}))} style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}>
+                                  <option value="">Selecione...</option>
+                                  {cartoes.map(c=><option key={c.id} value={c.id}>{c.nome} - {c.titular}</option>)}
+                                </select>
+                              </div>
+                            )}
                             <div>
                               <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Projeto / NF</div>
                               <input value={novoLanc.projeto} onChange={e=>setNovoLanc(p=>({...p,projeto:e.target.value}))} placeholder="Opcional" style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}/>
@@ -6175,9 +6193,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {/* Cards list */}
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
                         {cartoes.map(c=>{
-                          const compras=comprasCartao.filter(p=>p.cartaoId===c.id);
-                          const totalDevedor=compras.reduce((a,p)=>a+(p.valorParcela*(p.parcelas-p.parcelaAtual+1)),0);
-                          const parcelaMes=compras.filter(p=>p.parcelaAtual<=p.parcelas).reduce((a,p)=>a+p.valorParcela,0);
+                          const lancCartao=lancamentos.filter(l=>l.cartaoId===c.id);
+                          const totalDevedor=lancCartao.reduce((a,l)=>a+l.saida,0);
+                          const parcelaMes=lancCartao.filter(l=>{const mm=l.data.slice(3,5);const yy=l.data.slice(6,10);return mm+"/"+yy===finMesRef;}).reduce((a,l)=>a+l.saida,0);
                           const utilizadoPct=c.limite>0?(totalDevedor/c.limite)*100:0;
                           return(
                             <div key={c.id} style={{background:T.card,border:`1px solid ${c.cor}44`,borderRadius:14,padding:18}}>
