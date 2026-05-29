@@ -7226,8 +7226,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     <button onClick={()=>setSelPartner({id:Date.now(),name:"",handle:"",city:"",state:"",category:"",deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:2,avaliacaoGoogle:0,avaliacaoIfood:0,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},whatsapp:"",instagram_seguidores:0,foto_fachada:"",address:"",_isNew:true})} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer",whiteSpace:"nowrap"}}>+ Novo Parceiro</button>
                   </div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
-                    <div style={{display:"grid",gridTemplateColumns:"2fr 1.1fr 0.9fr 0.7fr 0.7fr 0.9fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:8}}>
-                      {["Estabelecimento","Responsável","Telefone","Cidade","Segmento","Score","Contrato"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"Arial,sans-serif"}}>{h}</div>)}
+                    <div style={{display:"grid",gridTemplateColumns:"2.5fr 1fr 1fr 0.8fr 1fr 1fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:8}}>
+                      {["Estabelecimento","Segmento","Cidade","Score","Contrato","Responsável","Telefone"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"Arial,sans-serif"}}>{h}</div>)}
                     </div>
                     {basePartners.filter(p=>{
                       const ms=baseFilter==="todos"||p.status===baseFilter;
@@ -7239,16 +7239,20 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       const mc=baseContratoFilter==="todos"||p.contrato.status===baseContratoFilter;
                       return ms&&mq&&ms2&&mc&&mEstado&&mCidade&&mSeg;
                     }).map((p,i)=>(
-                      <div key={i} className="hr" onClick={()=>setSelPartner(p)} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 0.9fr 0.7fr 0.9fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
+                      <div key={i} className="hr" onClick={()=>setSelPartner(p)} style={{display:"grid",gridTemplateColumns:"2.5fr 1fr 1fr 0.8fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
                         <div>
                           <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div>
-                          <div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{p.city} · {p.state}</div>
+                          <div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{p.handle}</div>
                         </div>
+                        <div style={{fontSize:10,color:T.soft}}>{p.category}</div>
+                        <div style={{fontSize:10,color:T.soft}}>{p.city} · {p.state}</div>
+                        <div>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,color:p.score>80?T.accent:p.score>60?T.warn:T.danger}}>{p.score}</div>
+                          <PBar pct={p.score} color={p.score>80?T.accent:p.score>60?T.warn:T.danger} h={3}/>
+                        </div>
+                        <Badge label={p.contrato.status} color={CONTRATO_COLOR[p.contrato.status]||T.muted}/>
                         <div style={{fontSize:10,color:T.soft}}>{p.responsavel||"-"}</div>
                         <div style={{fontSize:10,color:T.accent,fontFamily:"Arial,sans-serif"}}>{p.telefone||"-"}</div>
-                        <div style={{fontSize:10,color:T.soft}}>{p.city}</div>
-                        <div style={{fontSize:10,color:T.soft}}>{p.category}</div>
-                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14}}>{p.deliveries}</div>
                         <div>
                           <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,color:p.score>80?T.accent:p.score>60?T.warn:T.danger}}>{p.score}</div>
                           <PBar pct={p.score} color={p.score>80?T.accent:p.score>60?T.warn:T.danger} h={3}/>
