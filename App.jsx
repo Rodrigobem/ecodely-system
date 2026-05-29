@@ -5673,6 +5673,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         {contas.map(c=><option key={c.id} value={c.id}>{c.banco}</option>)}
                       </select>
                     </div>
+                    {/* Cartão */}
+                    {editLanc.forma==="Cartao"&&(
+                      <div>
+                        <label style={lbl}>Cartão</label>
+                        <select value={editLanc.cartaoId||""} onChange={e=>setEditLanc(p=>({...p,cartaoId:Number(e.target.value)}))} style={inp}>
+                          <option value="">Selecione o cartão...</option>
+                          {cartoes.map(c=><option key={c.id} value={c.id}>{c.nome} — {c.titular}</option>)}
+                        </select>
+                      </div>
+                    )}
                     {/* Projeto / NF */}
                     <div>
                       <label style={lbl}>Projeto / NF</label>
@@ -5979,6 +5989,15 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                 {contas.map(c=><option key={c.id} value={c.id}>{c.banco}</option>)}
                               </select>
                             </div>
+                            {novoLanc.forma==="Cartao"&&(
+                              <div>
+                                <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Cartão</div>
+                                <select value={novoLanc.cartaoId||""} onChange={e=>setNovoLanc(p=>({...p,cartaoId:Number(e.target.value)}))} style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}>
+                                  <option value="">Selecione o cartão...</option>
+                                  {cartoes.map(c=><option key={c.id} value={c.id}>{c.nome} — {c.titular}</option>)}
+                                </select>
+                              </div>
+                            )}
                             <div>
                               <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Projeto / NF</div>
                               <input value={novoLanc.projeto} onChange={e=>setNovoLanc(p=>({...p,projeto:e.target.value}))} placeholder="Opcional" style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}/>
