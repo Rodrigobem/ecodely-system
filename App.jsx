@@ -7141,12 +7141,22 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
                             <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>Foto da Fachada</div>
                             {selPartner.sv_editando?(
-                              <div style={{display:"flex",gap:6}}>
+                              <div style={{display:"flex",gap:6,alignItems:"center"}}>
                                 <button onClick={()=>setSelPartner(p=>({...p,sv_editando:false}))} style={{padding:"3px 10px",background:T.dangerDim,border:"1px solid rgba(255,77,106,0.3)",color:T.danger,borderRadius:5,fontSize:9,cursor:"pointer"}}>Cancelar</button>
-                                <button onClick={()=>setSelPartner(p=>({...p,sv_editando:false}))} style={{padding:"3px 10px",background:T.accent,color:"#000",borderRadius:5,fontSize:9,cursor:"pointer",fontWeight:700}}>Salvar angulo</button>
+                                <button onClick={()=>{
+                                  const h=selPartner.sv_heading_draft||0;
+                                  const p2=selPartner.sv_pitch_draft||0;
+                                  const addr=selPartner.endereco&&selPartner.endereco.rua?selPartner.endereco.rua+", "+selPartner.city+", "+selPartner.state+", Brasil":"";
+                                  const lat=selPartner.endereco&&selPartner.endereco.lat;
+                                  const lng=selPartner.endereco&&selPartner.endereco.lng;
+                                  const loc=lat&&lng?(lat+","+lng):encodeURIComponent(addr);
+                                  const newUrl="https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+loc+"&heading="+h+"&pitch="+p2+"&fov=90&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8";
+                                  setSelPartner(prev=>({...prev,foto_fachada:newUrl,sv_editando:false}));
+                                  pushNotif("Fachada salva!","Angulo "+h+"° salvo com sucesso",T.accent);
+                                }} style={{padding:"3px 10px",background:T.accent,color:"#000",borderRadius:5,fontSize:9,cursor:"pointer",fontWeight:700}}>Salvar angulo</button>
                               </div>
                             ):(
-                              <button onClick={()=>setSelPartner(p=>({...p,sv_editando:true}))} style={{padding:"3px 10px",background:T.infoDim,border:"1px solid rgba(61,158,255,0.3)",color:T.info,borderRadius:5,fontSize:9,cursor:"pointer"}}>Reposicionar</button>
+                              <button onClick={()=>setSelPartner(p=>({...p,sv_editando:true,sv_heading_draft:0,sv_pitch_draft:0}))} style={{padding:"3px 10px",background:T.infoDim,border:"1px solid rgba(61,158,255,0.3)",color:T.info,borderRadius:5,fontSize:9,cursor:"pointer"}}>Reposicionar</button>
                             )}
                           </div>
                           {(()=>{
@@ -7161,9 +7171,23 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                               <div>
                                 {selPartner.sv_editando?(
                                   embedUrl&&location?(
-                                    <div style={{borderRadius:8,overflow:"hidden",marginBottom:8,height:220,background:T.surface,position:"relative"}}>
-                                      <iframe src={embedUrl} width="100%" height="220" style={{border:"none",display:"block"}} allowFullScreen/>
-                                      <div style={{position:"absolute",bottom:0,left:0,right:0,background:"rgba(0,0,0,0.7)",padding:"6px 10px",fontSize:9,color:"#fff",textAlign:"center"}}>Navegue pelo Street View e clique "Salvar angulo" quando estiver no angulo certo</div>
+                                    <div style={{marginBottom:8}}>
+                                      <div style={{borderRadius:8,overflow:"hidden",height:200,background:T.surface,position:"relative",marginBottom:8}}>
+                                        <iframe src={"https://www.google.com/maps/embed/v1/streetview?key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8&location="+location+"&heading="+(selPartner.sv_heading_draft||0)+"&pitch="+(selPartner.sv_pitch_draft||0)+"&fov=90"} width="100%" height="200" style={{border:"none",display:"block"}} allowFullScreen/>
+                                      </div>
+                                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                                        <div>
+                                          <div style={{fontSize:8,color:T.muted,marginBottom:3}}>Direcao (0-360°) — 0=Norte, 90=Leste</div>
+                                          <input type="range" min="0" max="360" value={selPartner.sv_heading_draft||0} onChange={e=>setSelPartner(p=>({...p,sv_heading_draft:Number(e.target.value)}))} style={{width:"100%"}}/>
+                                          <div style={{fontSize:9,color:T.accent,textAlign:"center"}}>{selPartner.sv_heading_draft||0}°</div>
+                                        </div>
+                                        <div>
+                                          <div style={{fontSize:8,color:T.muted,marginBottom:3}}>Inclinacao (-90 a 90°)</div>
+                                          <input type="range" min="-45" max="45" value={selPartner.sv_pitch_draft||0} onChange={e=>setSelPartner(p=>({...p,sv_pitch_draft:Number(e.target.value)}))} style={{width:"100%"}}/>
+                                          <div style={{fontSize:9,color:T.accent,textAlign:"center"}}>{selPartner.sv_pitch_draft||0}°</div>
+                                        </div>
+                                      </div>
+                                      <div style={{fontSize:8,color:T.muted,marginTop:4,textAlign:"center"}}>Ajuste a direcao ate encontrar a fachada, depois clique "Salvar angulo"</div>
                                     </div>
                                   ):(
                                     <div style={{borderRadius:8,padding:"20px",background:T.surface,marginBottom:8,textAlign:"center",border:"1px solid "+T.border}}>
