@@ -7127,7 +7127,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       {/* Fotos do Parceiro */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:16,marginBottom:14}}>
                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Fotos do Parceiro</div>
-                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
                           <div>
                             <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>WhatsApp</div>
                             <input value={selPartner.whatsapp||""} onChange={e=>setSelPartner(p=>({...p,whatsapp:e.target.value}))} placeholder="(11) 99999-9999" style={inpS}/>
@@ -7137,49 +7137,68 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <input type="number" value={selPartner.instagram_seguidores||""} onChange={e=>setSelPartner(p=>({...p,instagram_seguidores:Number(e.target.value)}))} placeholder="0" style={inpS}/>
                           </div>
                         </div>
-                        {/* Upload fotos */}
+                        <div style={{marginBottom:12}}>
+                          <div style={{fontSize:8,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Foto da Fachada</div>
+                          {(()=>{
+                            const addr=selPartner.endereco&&selPartner.endereco.rua?selPartner.endereco.rua+", "+selPartner.city+", "+selPartner.state+", Brasil":"";
+                            const svUrl=addr?"https://maps.googleapis.com/maps/api/streetview?size=400x200&location="+encodeURIComponent(addr)+"&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8&fov=90&pitch=0":"";
+                            const src=selPartner.foto_fachada||svUrl;
+                            return(
+                              <div>
+                                {src&&(
+                                  <div style={{position:"relative",borderRadius:8,overflow:"hidden",marginBottom:8,height:160,background:T.surface}}>
+                                    <img src={src} alt="Fachada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none";}}/>
+                                    <div style={{position:"absolute",top:4,right:4,background:"rgba(0,0,0,0.65)",borderRadius:4,padding:"2px 8px",fontSize:8,color:"#fff"}}>
+                                      {selPartner.foto_fachada?"Manual":"Street View auto"}
+                                    </div>
+                                  </div>
+                                )}
+                                <div style={{display:"flex",gap:6}}>
+                                  <input value={selPartner.foto_fachada||""} onChange={e=>setSelPartner(p=>({...p,foto_fachada:e.target.value}))} placeholder="Colar link: Google Maps, Instagram, Drive..." style={{...inpS,flex:1,fontSize:10}}/>
+                                  {selPartner.foto_fachada&&(<button onClick={()=>setSelPartner(p=>({...p,foto_fachada:""}))} style={{padding:"6px 10px",background:T.dangerDim,border:"1px solid rgba(255,77,106,0.3)",color:T.danger,borderRadius:6,fontSize:9,cursor:"pointer"}}>Limpar</button>)}
+                                </div>
+                                <div style={{fontSize:8,color:T.muted,marginTop:3}}>Sem link = busca automatica via Street View pelo endereco</div>
+                              </div>
+                            );
+                          })()}
+                        </div>
                         <label style={{display:"block",cursor:"pointer",marginBottom:10}}>
                           <input type="file" accept="image/*" multiple style={{display:"none"}} onChange={async(e)=>{
                             const files=Array.from(e.target.files);
                             for(const file of files){
                               const ext=file.name.split('.').pop().toLowerCase();
-                              const path=`${selPartner.id}/${Date.now()}.${ext}`;
-                              const{data:up,error}=await supabase.storage.from('parceiros').upload(path,file,{upsert:true});
+                              const path=selPartner.id+"/"+Date.now()+"."+ext;
+                              const{error}=await supabase.storage.from("parceiros").upload(path,file,{upsert:true});
                               if(!error){
-                                const url=supabase.storage.from('parceiros').getPublicUrl(path).data.publicUrl;
+                                const url=supabase.storage.from("parceiros").getPublicUrl(path).data.publicUrl;
                                 const fotos=[...(selPartner.fotos||[]),{url,path,tipo:"foto"}];
                                 setSelPartner(p=>({...p,fotos}));
                                 setBasePartners(prev=>prev.map(p=>p.id===selPartner.id?{...p,fotos}:p));
-                                await supabase.from('parceiros').upsert({id:selPartner.id,data:{...selPartner,fotos},updated_at:new Date().toISOString()});
+                                await supabase.from("parceiros").upsert({id:selPartner.id,data:{...selPartner,fotos},updated_at:new Date().toISOString()});
                               }
                             }
                           }}/>
-                          <div style={{border:`2px dashed ${T.border}`,borderRadius:9,padding:"14px",textAlign:"center",transition:"all 0.2s",background:T.surface}}
-                            onMouseEnter={e=>e.currentTarget.style.borderColor=T.accent}
-                            onMouseLeave={e=>e.currentTarget.style.borderColor=T.border}>
-                            <div style={{fontSize:20,marginBottom:3}}>+</div>
-                            <div style={{fontSize:11,fontWeight:700,fontFamily:"Arial,sans-serif",marginBottom:2}}>Adicionar fotos</div>
-                            <div style={{fontSize:9,color:T.muted}}>Fachada · Interior · Produto · JPG ou PNG até 5MB</div>
+                          <div style={{border:"2px dashed "+T.border,borderRadius:9,padding:"12px",textAlign:"center",background:T.surface}} onMouseEnter={e=>e.currentTarget.style.borderColor=T.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=T.border}>
+                            <div style={{fontSize:11,fontWeight:700,fontFamily:"Arial,sans-serif",marginBottom:2}}>+ Adicionar fotos</div>
+                            <div style={{fontSize:9,color:T.muted}}>Interior · Produto · JPG ou PNG ate 5MB</div>
                           </div>
                         </label>
-                        {/* Grid de fotos */}
                         {(selPartner.fotos||[]).length>0&&(
                           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-                            {(selPartner.fotos||[]).map((foto,i)=>(
-                              <div key={i} style={{position:"relative",borderRadius:8,overflow:"hidden",aspectRatio:"1"}}>
-                                <img src={foto.url||foto} alt={`Foto ${i+1}`} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                            {(selPartner.fotos||[]).map((foto,idx2)=>(
+                              <div key={idx2} style={{position:"relative",borderRadius:8,overflow:"hidden",aspectRatio:"1"}}>
+                                <img src={foto.url||foto} alt={"Foto "+(idx2+1)} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                                 <div onClick={async()=>{
-                                  if(foto.path)await supabase.storage.from('parceiros').remove([foto.path]);
-                                  const fotos=(selPartner.fotos||[]).filter((_,j)=>j!==i);
+                                  if(foto.path)await supabase.storage.from("parceiros").remove([foto.path]);
+                                  const fotos=(selPartner.fotos||[]).filter((_,j)=>j!==idx2);
                                   setSelPartner(p=>({...p,fotos}));
                                   setBasePartners(prev=>prev.map(p=>p.id===selPartner.id?{...p,fotos}:p));
-                                  await supabase.from('parceiros').upsert({id:selPartner.id,data:{...selPartner,fotos},updated_at:new Date().toISOString()});
-                                }} style={{position:"absolute",top:4,right:4,width:20,height:20,borderRadius:"50%",background:"rgba(255,0,0,0.85)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,cursor:"pointer",fontWeight:700}}>×</div>
+                                  await supabase.from("parceiros").upsert({id:selPartner.id,data:{...selPartner,fotos},updated_at:new Date().toISOString()});
+                                }} style={{position:"absolute",top:4,right:4,width:20,height:20,borderRadius:"50%",background:"rgba(255,0,0,0.85)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,cursor:"pointer",fontWeight:700}}>x</div>
                               </div>
                             ))}
                           </div>
                         )}
-
                       {/* Contract */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:16}}>
                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Contrato de Exclusividade</div>
