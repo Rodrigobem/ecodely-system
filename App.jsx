@@ -7152,7 +7152,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           {(()=>{
                             const addr=selPartner.endereco&&selPartner.endereco.rua?selPartner.endereco.rua+", "+selPartner.city+", "+selPartner.state+", Brasil":"";
                             const svUrl=addr?"https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+encodeURIComponent(addr)+"&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8&fov=90&pitch=0":"";
-                            const embedUrl=addr?"https://www.google.com/maps/embed/v1/streetview?key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8&location="+encodeURIComponent(addr):"";
+                            const lat=selPartner.endereco&&selPartner.endereco.lat;
+                            const lng=selPartner.endereco&&selPartner.endereco.lng;
+                            const location=lat&&lng?(lat+","+lng):addr?encodeURIComponent(addr):null;
+                            const embedUrl=location?"https://www.google.com/maps/embed/v1/streetview?key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8&location="+location+"&heading=0&pitch=0&fov=90":"";
                             const src=selPartner.foto_fachada||svUrl;
                             return(
                               <div>
