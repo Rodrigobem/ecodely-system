@@ -7159,7 +7159,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             const src=selPartner.foto_fachada||svUrl;
                             return(
                               <div>
-                                {selPartner.sv_editando&&embedUrl?(
+                                {selPartner.sv_editando&&embedUrl&&location?(
                                   <div style={{borderRadius:8,overflow:"hidden",marginBottom:8,height:220,background:T.surface,position:"relative"}}>
                                     <iframe src={embedUrl} width="100%" height="220" style={{border:"none",display:"block"}} allowFullScreen/>
                                     <div style={{position:"absolute",bottom:0,left:0,right:0,background:"rgba(0,0,0,0.7)",padding:"6px 10px",fontSize:9,color:"#fff",textAlign:"center"}}>Navegue pelo Street View e clique "Salvar angulo" quando estiver no angulo certo</div>
