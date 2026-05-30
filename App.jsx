@@ -7178,6 +7178,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             );
                           })()}
                         </div>
+                        <label style={{display:"block",cursor:"pointer",marginBottom:10}}>
                           <input type="file" accept="image/*" multiple style={{display:"none"}} onChange={async(e)=>{
                             const files=Array.from(e.target.files);
                             for(const file of files){
