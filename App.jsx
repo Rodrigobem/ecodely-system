@@ -7180,7 +7180,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           }}/>
                           <div style={{border:"2px dashed "+T.border,borderRadius:9,padding:"12px",textAlign:"center",background:T.surface}} onMouseEnter={e=>e.currentTarget.style.borderColor=T.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=T.border}>
                             <div style={{fontSize:11,fontWeight:700,fontFamily:"Arial,sans-serif",marginBottom:2}}>+ Adicionar fotos</div>
-                            <div style={{fontSize:9,color:T.muted}}>Interior · Produto · JPG ou PNG ate 5MB</div>
+                            <div style={{fontSize:9,color:T.muted}}>Interior - Produto - JPG ou PNG ate 5MB</div>
                           </div>
                         </label>
                         {(selPartner.fotos||[]).length>0&&(
@@ -7199,6 +7199,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             ))}
                           </div>
                         )}
+                      </div>
+
                       {/* Contract */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:16}}>
                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Contrato de Exclusividade</div>
