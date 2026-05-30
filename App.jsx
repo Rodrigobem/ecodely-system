@@ -7138,31 +7138,46 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           </div>
                         </div>
                         <div style={{marginBottom:12}}>
-                          <div style={{fontSize:8,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Foto da Fachada</div>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                            <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>Foto da Fachada</div>
+                            {selPartner.sv_editando?(
+                              <div style={{display:"flex",gap:6}}>
+                                <button onClick={()=>setSelPartner(p=>({...p,sv_editando:false}))} style={{padding:"3px 10px",background:T.dangerDim,border:"1px solid rgba(255,77,106,0.3)",color:T.danger,borderRadius:5,fontSize:9,cursor:"pointer"}}>Cancelar</button>
+                                <button onClick={()=>setSelPartner(p=>({...p,sv_editando:false}))} style={{padding:"3px 10px",background:T.accent,color:"#000",borderRadius:5,fontSize:9,cursor:"pointer",fontWeight:700}}>Salvar angulo</button>
+                              </div>
+                            ):(
+                              <button onClick={()=>setSelPartner(p=>({...p,sv_editando:true}))} style={{padding:"3px 10px",background:T.infoDim,border:"1px solid rgba(61,158,255,0.3)",color:T.info,borderRadius:5,fontSize:9,cursor:"pointer"}}>Reposicionar</button>
+                            )}
+                          </div>
                           {(()=>{
                             const addr=selPartner.endereco&&selPartner.endereco.rua?selPartner.endereco.rua+", "+selPartner.city+", "+selPartner.state+", Brasil":"";
-                            const svUrl=addr?"https://maps.googleapis.com/maps/api/streetview?size=400x200&location="+encodeURIComponent(addr)+"&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8&fov=90&pitch=0":"";
+                            const svUrl=addr?"https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+encodeURIComponent(addr)+"&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8&fov=90&pitch=0":"";
+                            const embedUrl=addr?"https://www.google.com/maps/embed/v1/streetview?key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8&location="+encodeURIComponent(addr):"";
                             const src=selPartner.foto_fachada||svUrl;
                             return(
                               <div>
-                                {src&&(
+                                {selPartner.sv_editando&&embedUrl?(
+                                  <div style={{borderRadius:8,overflow:"hidden",marginBottom:8,height:220,background:T.surface,position:"relative"}}>
+                                    <iframe src={embedUrl} width="100%" height="220" style={{border:"none",display:"block"}} allowFullScreen/>
+                                    <div style={{position:"absolute",bottom:0,left:0,right:0,background:"rgba(0,0,0,0.7)",padding:"6px 10px",fontSize:9,color:"#fff",textAlign:"center"}}>Navegue pelo Street View e clique "Salvar angulo" quando estiver no angulo certo</div>
+                                  </div>
+                                ):src?(
                                   <div style={{position:"relative",borderRadius:8,overflow:"hidden",marginBottom:8,height:160,background:T.surface}}>
                                     <img src={src} alt="Fachada" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none";}}/>
                                     <div style={{position:"absolute",top:4,right:4,background:"rgba(0,0,0,0.65)",borderRadius:4,padding:"2px 8px",fontSize:8,color:"#fff"}}>
                                       {selPartner.foto_fachada?"Manual":"Street View auto"}
                                     </div>
                                   </div>
-                                )}
+                                ):null}
                                 <div style={{display:"flex",gap:6}}>
-                                  <input value={selPartner.foto_fachada||""} onChange={e=>setSelPartner(p=>({...p,foto_fachada:e.target.value}))} placeholder="Colar link: Google Maps, Instagram, Drive..." style={{...inpS,flex:1,fontSize:10}}/>
+                                  <input value={selPartner.foto_fachada||""} onChange={e=>setSelPartner(p=>({...p,foto_fachada:e.target.value}))} placeholder="Colar link manual: Google Maps, Instagram, Drive..." style={{...inpS,flex:1,fontSize:10}}/>
                                   {selPartner.foto_fachada&&(<button onClick={()=>setSelPartner(p=>({...p,foto_fachada:""}))} style={{padding:"6px 10px",background:T.dangerDim,border:"1px solid rgba(255,77,106,0.3)",color:T.danger,borderRadius:6,fontSize:9,cursor:"pointer"}}>Limpar</button>)}
                                 </div>
-                                <div style={{fontSize:8,color:T.muted,marginTop:3}}>Sem link = busca automatica via Street View pelo endereco</div>
+                                <div style={{fontSize:8,color:T.muted,marginTop:3}}>Clique "Reposicionar" para navegar no Street View e salvar o melhor angulo</div>
                               </div>
                             );
                           })()}
                         </div>
-                        <label style={{display:"block",cursor:"pointer",marginBottom:10}}>
                           <input type="file" accept="image/*" multiple style={{display:"none"}} onChange={async(e)=>{
                             const files=Array.from(e.target.files);
                             for(const file of files){
