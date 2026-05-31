@@ -7363,16 +7363,31 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       return ms&&mq&&ms2&&mc&&mEstado&&mCidade&&mSeg;
                     }).map((p,i)=>(
                       <div key={i} className="hr" onClick={()=>{
-                          // Auto-separar numero do campo rua se estiver embutido
+                          // Auto-separar numero e bairro do campo rua se estiver embutido
                           let parceiro={...p};
-                          if(parceiro.endereco?.rua&&!parceiro.endereco?.numero){
-                            const match=parceiro.endereco.rua.match(/,\s*(\d+[\w-]*)/);
-                            if(match){
-                              parceiro={...parceiro,endereco:{...parceiro.endereco,
-                                rua:parceiro.endereco.rua.replace(match[0],"").trim().replace(/,\s*$/,""),
-                                numero:match[1]
-                              }};
+                          if(parceiro.endereco?.rua){
+                            const rua=parceiro.endereco.rua;
+                            // Extrai numero: primeiro numero apos virgula
+                            if(!parceiro.endereco?.numero){
+                              const numMatch=rua.match(/,\s*(\d+[\w/-]*)/);
+                              if(numMatch){
+                                parceiro={...parceiro,endereco:{...parceiro.endereco,
+                                  numero:numMatch[1]
+                                }};
+                              }
                             }
+                            // Extrai bairro: texto entre " - " e proxima virgula ou " - "
+                            if(!parceiro.endereco?.bairro||parceiro.endereco.bairro===""){
+                              const bairroMatch=rua.match(/ - ([^,\-]+?)(?:,| - |$)/);
+                              if(bairroMatch){
+                                parceiro={...parceiro,endereco:{...parceiro.endereco,
+                                  bairro:bairroMatch[1].trim()
+                                }};
+                              }
+                            }
+                            // Limpa a rua deixando so nome + numero
+                            const ruaLimpa=rua.split(" - ")[0].trim();
+                            parceiro={...parceiro,endereco:{...parceiro.endereco,rua:ruaLimpa}};
                           }
                           setSelPartner(parceiro);
                         }} style={{display:"grid",gridTemplateColumns:"2.5fr 1fr 1fr 0.8fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
