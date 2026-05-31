@@ -7082,9 +7082,12 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           <button className="btn" onClick={async()=>{
                             if(!selPartner.city)return;
                             pushNotif("Buscando...","Localizando coordenadas",T.info);
-                            const ruaSimples=(selPartner.endereco?.rua||"").split("-")[0].split(",")[0].trim();
+                            const ruaFull=(selPartner.endereco?.rua||"").split("-")[0].trim();
+                            const numField=(selPartner.endereco?.numero||"").trim();
+                            const ruaComNum=ruaFull+(numField?" "+numField:"");
                             const queries=[
-                              ruaSimples&&selPartner.city?ruaSimples+", "+selPartner.city+", Brasil":"",
+                              ruaComNum&&selPartner.city?ruaComNum+", "+selPartner.city+", Brasil":"",
+                              ruaFull&&selPartner.city?ruaFull+", "+selPartner.city+", Brasil":"",
                               selPartner.name+", "+selPartner.city+", Brasil",
                               selPartner.city+", "+(selPartner.state||"")+", Brasil",
                             ].filter(Boolean);
@@ -7359,7 +7362,20 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       const mc=baseContratoFilter==="todos"||p.contrato.status===baseContratoFilter;
                       return ms&&mq&&ms2&&mc&&mEstado&&mCidade&&mSeg;
                     }).map((p,i)=>(
-                      <div key={i} className="hr" onClick={()=>setSelPartner(p)} style={{display:"grid",gridTemplateColumns:"2.5fr 1fr 1fr 0.8fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
+                      <div key={i} className="hr" onClick={()=>{
+                          // Auto-separar numero do campo rua se estiver embutido
+                          let parceiro={...p};
+                          if(parceiro.endereco?.rua&&!parceiro.endereco?.numero){
+                            const match=parceiro.endereco.rua.match(/,\s*(\d+[\w-]*)/);
+                            if(match){
+                              parceiro={...parceiro,endereco:{...parceiro.endereco,
+                                rua:parceiro.endereco.rua.replace(match[0],"").trim().replace(/,\s*$/,""),
+                                numero:match[1]
+                              }};
+                            }
+                          }
+                          setSelPartner(parceiro);
+                        }} style={{display:"grid",gridTemplateColumns:"2.5fr 1fr 1fr 0.8fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
                         <div>
                           <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div>
                           <div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{p.handle}</div>
