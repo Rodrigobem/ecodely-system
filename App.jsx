@@ -7085,7 +7085,9 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             const ruaFull=(selPartner.endereco?.rua||"").split("-")[0].trim();
                             const numField=(selPartner.endereco?.numero||"").trim();
                             const ruaComNum=ruaFull+(numField?" "+numField:"");
+                            const cep=selPartner.endereco?.cep||"";
                             const queries=[
+                              cep?cep+", Brasil":"",
                               ruaComNum&&selPartner.city?ruaComNum+", "+selPartner.city+", Brasil":"",
                               ruaFull&&selPartner.city?ruaFull+", "+selPartner.city+", Brasil":"",
                               selPartner.name+", "+selPartner.city+", Brasil",
@@ -7382,6 +7384,15 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                               if(bairroMatch){
                                 parceiro={...parceiro,endereco:{...parceiro.endereco,
                                   bairro:bairroMatch[1].trim()
+                                }};
+                              }
+                            }
+                            // Extrai CEP: padrao 00000-000 ou 00000000
+                            if(!parceiro.endereco?.cep||parceiro.endereco.cep===""){
+                              const cepMatch=rua.match(/(\d{5}-\d{3}|\d{8})/);
+                              if(cepMatch){
+                                parceiro={...parceiro,endereco:{...parceiro.endereco,
+                                  cep:cepMatch[1]
                                 }};
                               }
                             }
