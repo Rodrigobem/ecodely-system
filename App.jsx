@@ -7079,19 +7079,33 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:16,marginBottom:14}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                           <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Endereço</div>
-                          <button className="btn" onClick={()=>{
-                            if(!selPartner.endereco?.rua)return;
-                            const addr=`${selPartner.endereco.rua} ${selPartner.endereco.numero}, ${selPartner.endereco.bairro}, ${selPartner.city}`;
-                            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}&limit=1`)
-                              .then(r=>r.json())
-                              .then(data=>{
+                          <button className="btn" onClick={async()=>{
+                            if(!selPartner.city)return;
+                            pushNotif("Buscando...","Localizando coordenadas",T.info);
+                            const ruaSimples=(selPartner.endereco?.rua||"").split("-")[0].split(",")[0].trim();
+                            const queries=[
+                              ruaSimples&&selPartner.city?ruaSimples+", "+selPartner.city+", Brasil":"",
+                              selPartner.name+", "+selPartner.city+", Brasil",
+                              selPartner.city+", "+(selPartner.state||"")+", Brasil",
+                            ].filter(Boolean);
+                            let found=false;
+                            for(const q of queries){
+                              try{
+                                const r=await fetch("https://nominatim.openstreetmap.org/search?format=json&q="+encodeURIComponent(q)+"&limit=1",{headers:{"User-Agent":"EcodelyApp/1.0"}});
+                                const data=await r.json();
                                 if(data[0]){
                                   const lat=Number(data[0].lat),lng=Number(data[0].lon);
                                   const updated={...selPartner,endereco:{...selPartner.endereco,lat,lng}};
                                   setSelPartner(updated);
                                   setBasePartners(prev=>prev.map(p=>p.id===selPartner.id?{...p,endereco:{...p.endereco,lat,lng}}:p));
+                                  await supabase.from("parceiros").upsert({id:selPartner.id,data:updated,updated_at:new Date().toISOString()});
+                                  pushNotif("Coordenadas salvas!","Lat: "+lat.toFixed(4)+" Lng: "+lng.toFixed(4),T.accent);
+                                  found=true;
+                                  break;
                                 }
-                              }).catch(()=>{});
+                              }catch(e){}
+                            }
+                            if(!found)pushNotif("Nao encontrado","Cole o link manualmente na foto",T.warn);
                           }} style={{fontSize:10,padding:"5px 12px",background:T.infoDim,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6}}>
                             - Buscar coordenadas
                           </button>
