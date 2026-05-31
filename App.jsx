@@ -7369,10 +7369,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           let parceiro={...p};
                           if(parceiro.endereco?.rua){
                             const rua=parceiro.endereco.rua;
-                            // Extrai numero: primeiro numero apos virgula
+                            // Extrai numero: primeiro numero apos virgula (ignora CEP)
                             if(!parceiro.endereco?.numero){
-                              const numMatch=rua.match(/,\s*(\d+[\w/-]*)/);
-                              if(numMatch){
+                              const cepPattern=/\d{5}-\d{3}/;
+                              const numMatch=rua.match(/,\s*(\d+[\w/-]{0,5})/);
+                              if(numMatch&&!cepPattern.test(numMatch[1])){
                                 parceiro={...parceiro,endereco:{...parceiro.endereco,
                                   numero:numMatch[1]
                                 }};
