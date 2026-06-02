@@ -7142,12 +7142,18 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Bairro</div>
                             <input value={selPartner.endereco?.bairro||""} onChange={e=>setSelPartner(p=>({...p,endereco:{...p.endereco,bairro:e.target.value}}))} placeholder="Centro" style={inpS}/>
                           </div>
-                          <div>
-                            <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>CEP</div>
-                            <input value={selPartner.endereco?.cep||""} onChange={e=>setSelPartner(p=>({...p,endereco:{...p.endereco,cep:e.target.value}}))} placeholder="00000-000" style={inpS}/>
-                          </div>
+                        <div>
+                          <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>CEP</div>
+                          <input value={selPartner.endereco?.cep||""} onChange={e=>setSelPartner(p=>({...p,endereco:{...p.endereco,cep:e.target.value}}))} placeholder="00000-000" style={inpS}/>
                         </div>
-                        {selPartner.endereco?.lat&&(
+                        <div>
+                          <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Cidade</div>
+                          <input value={selPartner.city||""} onChange={e=>setSelPartner(p=>({...p,city:e.target.value}))} placeholder="São Paulo" style={inpS}/>
+                        </div>
+                        <div>
+                          <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Estado (UF)</div>
+                          <input value={selPartner.state||""} onChange={e=>setSelPartner(p=>({...p,state:e.target.value.toUpperCase().slice(0,2)}))} placeholder="SP" style={{...inpS,textTransform:"uppercase"}} maxLength={2}/>
+                        </div>
                           <div style={{padding:"8px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,borderRadius:7,fontSize:10,color:T.accent,fontFamily:"Arial,sans-serif"}}>
                             - Coordenadas: {selPartner.endereco.lat.toFixed(4)}, {selPartner.endereco.lng.toFixed(4)}
                           </div>
