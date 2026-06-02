@@ -7085,13 +7085,25 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             const ruaFull=(selPartner.endereco?.rua||"").split("-")[0].trim();
                             const numField=(selPartner.endereco?.numero||"").trim();
                             const ruaComNum=ruaFull+(numField?" "+numField:"");
-                            const cep=selPartner.endereco?.cep||"";
+                            const cep=(selPartner.endereco?.cep||"").trim();
+                            const bairro=(selPartner.endereco?.bairro||"").trim();
+                            const cidade=(selPartner.city||"").trim();
+                            const estado=(selPartner.state||"").trim();
                             const queries=[
+                              // 1. CEP e mais preciso
                               cep?cep+", Brasil":"",
-                              ruaComNum&&selPartner.city?ruaComNum+", "+selPartner.city+", Brasil":"",
-                              ruaFull&&selPartner.city?ruaFull+", "+selPartner.city+", Brasil":"",
-                              selPartner.name+", "+selPartner.city+", Brasil",
-                              selPartner.city+", "+(selPartner.state||"")+", Brasil",
+                              // 2. Rua + numero + bairro + cidade + estado
+                              ruaComNum&&bairro&&cidade?ruaComNum+", "+bairro+", "+cidade+" - "+estado+", Brasil":"",
+                              // 3. Rua + numero + cidade + estado
+                              ruaComNum&&cidade?ruaComNum+", "+cidade+" - "+estado+", Brasil":"",
+                              // 4. Rua + bairro + cidade
+                              ruaFull&&bairro&&cidade?ruaFull+", "+bairro+", "+cidade+", Brasil":"",
+                              // 5. Rua + cidade
+                              ruaFull&&cidade?ruaFull+", "+cidade+", Brasil":"",
+                              // 6. Nome do parceiro + cidade
+                              selPartner.name&&cidade?selPartner.name+", "+cidade+", Brasil":"",
+                              // 7. Bairro + cidade + estado
+                              bairro&&cidade?bairro+", "+cidade+" - "+estado+", Brasil":"",
                             ].filter(Boolean);
                             let found=false;
                             for(const q of queries){
