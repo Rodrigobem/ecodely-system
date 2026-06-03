@@ -2907,6 +2907,41 @@ const StreetViewInterativo = ({lat, lng, apiKey, onSave, onCancel}) => {
 };
 
 
+const SvInitializer=({lat,lng,apiKey})=>{
+  useEffect(()=>{
+    const init=()=>{
+      const el=document.getElementById('sv-fullscreen-div');
+      if(!el||!window.google||!window.google.maps)return;
+      window._svPano=new window.google.maps.StreetViewPanorama(el,{
+        position:{lat:Number(lat),lng:Number(lng)},
+        pov:{heading:0,pitch:0},
+        zoom:1,
+        clickToGo:true,
+        addressControl:true,
+        fullscreenControl:false,
+        motionTracking:false,
+        showRoadLabels:true,
+      });
+    };
+    const sid='gmaps-sv-script';
+    if(window.google&&window.google.maps){
+      setTimeout(init,100);
+    }else if(!document.getElementById(sid)){
+      window._svCb=init;
+      const s=document.createElement('script');
+      s.id=sid;
+      s.src='https://maps.googleapis.com/maps/api/js?key='+apiKey+'&callback=_svCb';
+      s.async=true;
+      document.head.appendChild(s);
+    }else{
+      const t=setInterval(()=>{if(window.google&&window.google.maps){clearInterval(t);init();}},200);
+    }
+    return()=>{try{if(window._svPano)window._svPano.setVisible(false);}catch(e){}};
+  },[lat,lng]);
+  return null;
+};
+
+
 export default function App(){
   const[user,setUser]=useState(()=>{try{const s=localStorage.getItem("ecodely_user");return s?JSON.parse(s):null;}catch{return null;}});
   const[loginForm,setLoginForm]=useState({email:"",pass:""});
@@ -3022,6 +3057,7 @@ export default function App(){
   const[waNovoModo,setWaNovoModo]=useState("prospecto");
   const[baseTab,setBaseTab]=useState("parceiros"); // parceiros | contratos | score
   const[selPartner,setSelPartner]=useState(null);
+  const[svFullscreen,setSvFullscreen]=useState(null);
   const[contratoTableFilter,setContratoTableFilter]=useState("todos");
   const[cadTab,setCadTab]=useState("clientes");
   const[filterSeg,setFilterSeg]=useState("todos");
@@ -4293,6 +4329,32 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
         .drop-col{transition:background 0.15s,border-color 0.15s;}
         .drop-col.drag-over{background:#00E5A010!important;border:1px dashed #00E5A066!important;border-radius:10px;}
       `}</style>
+
+      {svFullscreen&&(
+        <div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",flexDirection:"column",background:"#000"}}>
+          <div style={{background:"#0C0E18",padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0,borderBottom:"1px solid #1A1E30"}}>
+            <div style={{fontSize:11,color:"#E6E8F0"}}>Navegue ate a fachada e clique Salvar angulo</div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{
+                if(window._svPano){
+                  const pov=window._svPano.getPov();
+                  const pos=window._svPano.getPosition();
+                  const h=Math.round(pov.heading||0);
+                  const p2=Math.round(pov.pitch||0);
+                  const loc=pos?(pos.lat()+","+pos.lng()):(svFullscreen.lat+","+svFullscreen.lng);
+                  const url="https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+loc+"&heading="+h+"&pitch="+p2+"&fov=90&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8";
+                  setSelPartner(prev=>({...prev,foto_fachada:url,sv_editando:false}));
+                }
+                setSvFullscreen(null);
+                pushNotif("Fachada salva!","Angulo salvo com sucesso",T.accent);
+              }} style={{padding:"8px 18px",background:"#00E5A0",color:"#000",borderRadius:7,fontSize:12,fontWeight:700,cursor:"pointer",border:"none"}}>Salvar angulo</button>
+              <button onClick={()=>{setSvFullscreen(null);setSelPartner(p=>p?({...p,sv_editando:false}):p);}} style={{padding:"8px 14px",background:"#1A1E30",color:"#8A90A8",borderRadius:7,fontSize:12,cursor:"pointer",border:"1px solid #252940"}}>Cancelar</button>
+            </div>
+          </div>
+          <div id="sv-fullscreen-div" style={{flex:1,width:"100%"}}/>
+          <SvInitializer lat={svFullscreen.lat} lng={svFullscreen.lng} apiKey="AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8"/>
+        </div>
+      )}
 
       {/* TOAST */}
       <Toast notifs={notifs} onDismiss={()=>setNotifs(p=>p.slice(1))}/>
@@ -7262,7 +7324,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                 <button onClick={()=>setSelPartner(p=>({...p,sv_editando:false}))} style={{padding:"3px 10px",background:T.accent,color:"#000",borderRadius:5,fontSize:9,cursor:"pointer",fontWeight:700}}>Fechar</button>
                               </div>
                             ):(
-                              <button onClick={()=>setSelPartner(p=>({...p,sv_editando:true,sv_heading_draft:0,sv_pitch_draft:0}))} style={{padding:"3px 10px",background:T.infoDim,border:"1px solid rgba(61,158,255,0.3)",color:T.info,borderRadius:5,fontSize:9,cursor:"pointer"}}>Reposicionar</button>
+                              <button onClick={()=>{setSelPartner(p=>({...p,sv_editando:true}));setSvFullscreen({lat:selPartner.endereco?.lat,lng:selPartner.endereco?.lng})}} style={{padding:"3px 10px",background:T.infoDim,border:"1px solid rgba(61,158,255,0.3)",color:T.info,borderRadius:5,fontSize:9,cursor:"pointer"}}>Reposicionar</button>
                             )}
                           </div>
                           {(()=>{
