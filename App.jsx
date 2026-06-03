@@ -7212,7 +7212,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                   embedUrl&&location?(
                                     <div style={{marginBottom:8}}>
                                       <div style={{borderRadius:8,overflow:"hidden",height:200,background:T.surface,position:"relative",marginBottom:8}}>
-                                        <iframe src={"https://www.google.com/maps/embed/v1/streetview?key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8&location="+location+"&heading="+(selPartner.sv_heading_draft||0)+"&pitch="+(selPartner.sv_pitch_draft||0)+"&fov=90"} width="100%" height="200" style={{border:"none",display:"block"}} allowFullScreen/>
+                                        <iframe src={"https://www.google.com/maps/embed/v1/streetview?key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8&location="+location+"&heading="+(selPartner.sv_heading_draft||0)+"&pitch="+(selPartner.sv_pitch_draft||0)+"&fov=90&source=outdoor"} width="100%" height="200" style={{border:"none",display:"block"}} allowFullScreen/>
                                       </div>
                                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                                         <div>
