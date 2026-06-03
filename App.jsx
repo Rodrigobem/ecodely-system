@@ -2830,6 +2830,81 @@ function CategoriasFin({lancamentos,finMesRef,T}){
 }
 
 
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------
+// STREET VIEW INTERATIVO - Google Maps JavaScript API
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------
+const StreetViewInterativo = ({lat, lng, apiKey, onSave, onCancel}) => {
+  const divId = 'sv-' + Math.random().toString(36).slice(2);
+  const svRef = React.useRef(null);
+  const panoramaRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const initSV = () => {
+      const el = document.getElementById(divId);
+      if (!el || !window.google) return;
+      const panorama = new window.google.maps.StreetViewPanorama(el, {
+        position: { lat: Number(lat), lng: Number(lng) },
+        pov: { heading: 0, pitch: 0 },
+        zoom: 1,
+        addressControl: true,
+        fullscreenControl: false,
+        motionTracking: false,
+        motionTrackingControl: false,
+        showRoadLabels: true,
+      });
+      panoramaRef.current = panorama;
+    };
+
+    if (window.google && window.google.maps) {
+      initSV();
+    } else {
+      const scriptId = 'gmaps-script';
+      if (!document.getElementById(scriptId)) {
+        const script = document.createElement('script');
+        script.id = scriptId;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initGMaps`;
+        script.async = true;
+        script.defer = true;
+        window.initGMaps = initSV;
+        document.head.appendChild(script);
+      } else {
+        // Script loading, wait
+        const interval = setInterval(() => {
+          if (window.google && window.google.maps) {
+            clearInterval(interval);
+            initSV();
+          }
+        }, 300);
+      }
+    }
+  }, [lat, lng, divId]);
+
+  const handleSave = () => {
+    if (!panoramaRef.current) return;
+    const pov = panoramaRef.current.getPov();
+    const pos = panoramaRef.current.getPosition();
+    const heading = Math.round(pov.heading);
+    const pitch = Math.round(pov.pitch);
+    const location = pos ? pos.lat() + "," + pos.lng() : lat + "," + lng;
+    const url = `https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${location}&heading=${heading}&pitch=${pitch}&fov=90&key=${apiKey}`;
+    onSave(heading, pitch, url);
+  };
+
+  return (
+    <div>
+      <div id={divId} ref={svRef} style={{width:"100%",height:220,borderRadius:8,overflow:"hidden",marginBottom:8,background:"#1a1e30"}}/>
+      <div style={{fontSize:9,color:"#8A90A8",marginBottom:8,textAlign:"center"}}>
+        Navegue livremente — clique e arraste para girar, use os botoes para andar pela rua
+      </div>
+      <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+        <button onClick={onCancel} style={{padding:"6px 14px",background:"rgba(255,77,106,0.12)",border:"1px solid rgba(255,77,106,0.3)",color:"#FF4D6A",borderRadius:6,fontSize:10,cursor:"pointer"}}>Cancelar</button>
+        <button onClick={handleSave} style={{padding:"6px 14px",background:"#00E5A0",color:"#000",borderRadius:6,fontSize:10,cursor:"pointer",fontWeight:700}}>Salvar angulo</button>
+      </div>
+    </div>
+  );
+};
+
+
 export default function App(){
   const[user,setUser]=useState(()=>{try{const s=localStorage.getItem("ecodely_user");return s?JSON.parse(s):null;}catch{return null;}});
   const[loginForm,setLoginForm]=useState({email:"",pass:""});
@@ -7182,17 +7257,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             {selPartner.sv_editando?(
                               <div style={{display:"flex",gap:6,alignItems:"center"}}>
                                 <button onClick={()=>setSelPartner(p=>({...p,sv_editando:false}))} style={{padding:"3px 10px",background:T.dangerDim,border:"1px solid rgba(255,77,106,0.3)",color:T.danger,borderRadius:5,fontSize:9,cursor:"pointer"}}>Cancelar</button>
-                                <button onClick={()=>{
-                                  const h=selPartner.sv_heading_draft||0;
-                                  const p2=selPartner.sv_pitch_draft||0;
-                                  const addr=selPartner.endereco&&selPartner.endereco.rua?selPartner.endereco.rua+", "+selPartner.city+", "+selPartner.state+", Brasil":"";
-                                  const lat=selPartner.endereco&&selPartner.endereco.lat;
-                                  const lng=selPartner.endereco&&selPartner.endereco.lng;
-                                  const loc=lat&&lng?(lat+","+lng):encodeURIComponent(addr);
-                                  const newUrl="https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+loc+"&heading="+h+"&pitch="+p2+"&fov=90&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8";
-                                  setSelPartner(prev=>({...prev,foto_fachada:newUrl,sv_editando:false}));
-                                  pushNotif("Fachada salva!","Angulo "+h+"° salvo com sucesso",T.accent);
-                                }} style={{padding:"3px 10px",background:T.accent,color:"#000",borderRadius:5,fontSize:9,cursor:"pointer",fontWeight:700}}>Salvar angulo</button>
+                                <button onClick={()=>setSelPartner(p=>({...p,sv_editando:false}))} style={{padding:"3px 10px",background:T.accent,color:"#000",borderRadius:5,fontSize:9,cursor:"pointer",fontWeight:700}}>Fechar</button>
                               </div>
                             ):(
                               <button onClick={()=>setSelPartner(p=>({...p,sv_editando:true,sv_heading_draft:0,sv_pitch_draft:0}))} style={{padding:"3px 10px",background:T.infoDim,border:"1px solid rgba(61,158,255,0.3)",color:T.info,borderRadius:5,fontSize:9,cursor:"pointer"}}>Reposicionar</button>
@@ -7211,22 +7276,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                 {selPartner.sv_editando?(
                                   embedUrl&&location?(
                                     <div style={{marginBottom:8}}>
-                                      <div style={{borderRadius:8,overflow:"hidden",height:200,background:T.surface,position:"relative",marginBottom:8}}>
-                                        <iframe src={"https://www.google.com/maps/embed/v1/streetview?key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8&location="+location+"&heading="+(selPartner.sv_heading_draft||0)+"&pitch="+(selPartner.sv_pitch_draft||0)+"&fov=90&source=outdoor"} width="100%" height="200" style={{border:"none",display:"block"}} allowFullScreen/>
-                                      </div>
-                                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                                        <div>
-                                          <div style={{fontSize:8,color:T.muted,marginBottom:3}}>Direcao (0-360°) — 0=Norte, 90=Leste</div>
-                                          <input type="range" min="0" max="360" value={selPartner.sv_heading_draft||0} onChange={e=>setSelPartner(p=>({...p,sv_heading_draft:Number(e.target.value)}))} style={{width:"100%"}}/>
-                                          <div style={{fontSize:9,color:T.accent,textAlign:"center"}}>{selPartner.sv_heading_draft||0}°</div>
-                                        </div>
-                                        <div>
-                                          <div style={{fontSize:8,color:T.muted,marginBottom:3}}>Inclinacao (-90 a 90°)</div>
-                                          <input type="range" min="-45" max="45" value={selPartner.sv_pitch_draft||0} onChange={e=>setSelPartner(p=>({...p,sv_pitch_draft:Number(e.target.value)}))} style={{width:"100%"}}/>
-                                          <div style={{fontSize:9,color:T.accent,textAlign:"center"}}>{selPartner.sv_pitch_draft||0}°</div>
-                                        </div>
-                                      </div>
-                                      <div style={{fontSize:8,color:T.muted,marginTop:4,textAlign:"center"}}>Ajuste a direcao ate encontrar a fachada, depois clique "Salvar angulo"</div>
+                                      <StreetViewInterativo
+                                        lat={selPartner.endereco?.lat}
+                                        lng={selPartner.endereco?.lng}
+                                        apiKey="AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8"
+                                        onSave={(heading,pitch,url)=>{
+                                          setSelPartner(p=>({...p,foto_fachada:url,sv_heading_draft:heading,sv_pitch_draft:pitch,sv_editando:false}));
+                                          pushNotif("Fachada salva!","Angulo salvo com sucesso",T.accent);
+                                        }}
+                                        onCancel={()=>setSelPartner(p=>({...p,sv_editando:false}))}
+                                      />
                                     </div>
                                   ):(
                                     <div style={{borderRadius:8,padding:"20px",background:T.surface,marginBottom:8,textAlign:"center",border:"1px solid "+T.border}}>
