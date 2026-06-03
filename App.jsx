@@ -63,7 +63,7 @@ const now=()=>new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",h
 
 // --- AUTH --------------------------------------------------------------------
 const USERS_DB=[
-  {id:1,name:"Rodrigo Bem",email:"rodrigo@ecodely.com.br",pass:"admin123",role:"admin",avatar:"RB",active:true},
+  {id:1,name:"Rodrigo Bem",email:"rodrigobem@ecodely.com.br",pass:"admin123",role:"admin",avatar:"RB",active:true},
   // Adicione os demais membros da equipe pelo painel Usuários
 ];
 const ROLE_LABELS={admin:"Administrador",comercial:"Comercial",operacional:"Operacional",marketing:"Marketing",financeiro:"Financeiro",base:"Base"};
@@ -881,7 +881,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
     const ext=file.name.split(".").pop();
     const path=`campanhas/${camp.id}/${Date.now()}_${file.name.replace(/\s/g,"_")}`;
     const{data,error}=await supabase.storage.from("ecodely-files").upload(path,file,{upsert:true});
-    if(error){console.error("Storage upload error:",error);setUploading(false);return;}
+    if(error){console.error("Storage upload error:",error);setUploading(false);alert("Erro ao enviar arquivo: "+error.message+"\nVerifique se o bucket 'ecodely-files' existe no Supabase.");return;}
     const{data:{publicUrl}}=supabase.storage.from("ecodely-files").getPublicUrl(path);
     const tipo=["pdf","doc","docx"].includes(ext)?"outro":["jpg","jpeg","png","gif","webp"].includes(ext)?"arte":["mp4","mov","avi"].includes(ext)?"outro":"outro";
     const kb=Math.round(file.size/1024);
@@ -1346,7 +1346,7 @@ const ImpactosTab=({camp,allPartners,onUpdate})=>{
     setUploadingKey(`${parceiroId}_${categoria}`);
     const path=`campanhas/${camp.id}/evidencias/${parceiroId}_${categoria}_${Date.now()}_${file.name.replace(/\s/g,"_")}`;
     const{error}=await supabase.storage.from("ecodely-files").upload(path,file,{upsert:true});
-    if(error){setUploadingKey(null);return;}
+    if(error){setUploadingKey(null);alert("Erro ao enviar: "+error.message+"\nVerifique o bucket 'ecodely-files' no Supabase.");return;}
     const{data:{publicUrl}}=supabase.storage.from("ecodely-files").getPublicUrl(path);
     const arr=ev[parceiroId]?.[categoria]||[];
     updEv(parceiroId,categoria,[...arr,{url:publicUrl,at:new Date().toLocaleDateString("pt-BR"),legenda:file.name.replace(/\.[^.]+$/,"")}]);
@@ -3288,10 +3288,25 @@ export default function App(){
   </div>);
 
   // --- HANDLERS ------------------------------------------------------------
-  const handleLogin=()=>{
-    const u=users.find(u=>u.email===loginForm.email&&u.pass===loginForm.pass&&u.active!==false);
-    if(u&&u.active){setUser(u);localStorage.setItem("ecodely_user",JSON.stringify(u));setTab("minha-fila");setLoginErr("");}
-    else setLoginErr("E-mail ou senha incorretos.");
+  const handleLogin=async()=>{
+    setLoginErr("Verificando...");
+    // Tenta primeiro no estado local (já carregado)
+    let u=users.find(x=>x.email===loginForm.email&&x.pass===loginForm.pass&&x.active!==false);
+    // Se não achou (usuários ainda não carregaram do Supabase), busca direto
+    if(!u){
+      const{data}=await supabase.from("usuarios").select("*").eq("email",loginForm.email).eq("pass",loginForm.pass).eq("active",true).limit(1);
+      if(data&&data.length>0)u=data[0];
+    }
+    if(u&&u.active!==false){
+      setUser(u);
+      localStorage.setItem("ecodely_user",JSON.stringify(u));
+      setTab("minha-fila");
+      setLoginErr("");
+      // Atualizar lastAccess no Supabase
+      try{await supabase.from("usuarios").update({lastAccess:new Date().toISOString()}).eq("id",u.id);}catch(e){}
+    } else {
+      setLoginErr("E-mail ou senha incorretos.");
+    }
   };
 
   const pushNotif=(title,msg,color)=>{
@@ -3305,7 +3320,8 @@ export default function App(){
     setInbox(p=>[entry,...p]);
     pushNotif(title,msg,color);
     if(user?.id){
-      await supabase.from("notificacoes").insert({id:entry.id,user_id:user.id,tipo:type,titulo:title,mensagem:msg,link_tab:tab||null,lida:false});
+      try{await supabase.from("notificacoes").insert({id:entry.id,user_id:user.id,tipo:type,titulo:title,mensagem:msg,link_tab:tab||null,lida:false});}
+      catch(e){/* tabela notificacoes opcional */}
     }
   };
 
@@ -6596,7 +6612,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           </div>
                         )}
                         {[...custosFix].sort((a,b)=>a.dia-b.dia).map(c=>(
-                          <div key={c.id} style={{display:"grid",gridTemplateColumns:"30px 1fr 80px 80px 60px",gap:8,alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${T.border}`}}>
+                          <div key={c.id} style={{display:"grid",gridTemplateColumns:"30px 1fr 80px 80px 50px 30px",gap:8,alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${T.border}`}}>
                             <span style={{fontSize:9,color:T.muted,textAlign:"center"}}>{c.dia}</span>
                             <div>
                               <div style={{fontSize:11}}>{c.descricao}</div>
@@ -6605,6 +6621,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <span style={{fontSize:11,color:T.danger,fontFamily:"Arial,sans-serif"}}>{fmt(c.valor)}</span>
                             <Badge label={c.ativo?"Ativo":"Inativo"} color={c.ativo?T.accent:T.muted}/>
                             <div onClick={async()=>{const novoAtivo=!c.ativo;setCustosFix(p=>p.map(x=>x.id===c.id?{...x,ativo:novoAtivo}:x));await supabase.from("custos_fixos").update({ativo:novoAtivo}).eq("id",c.id);}} style={{fontSize:9,color:T.muted,cursor:"pointer",textAlign:"center"}}>Toggle</div>
+                            <div onClick={async()=>{if(!window.confirm(`Excluir "${c.descricao}"?`))return;setCustosFix(p=>p.filter(x=>x.id!==c.id));await supabase.from("custos_fixos").delete().eq("id",c.id);}} style={{fontSize:11,color:T.danger,cursor:"pointer",textAlign:"center"}} title="Excluir">×</div>
                           </div>
                         ))}
                       </div>
@@ -6961,7 +6978,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             {[["aprovado",uA,T.accent],["pago",uP,T.green],["a pagar",uA-uP,T.danger]].map(([l,v,c])=>(
                               <div key={l} style={{textAlign:"center"}}><div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:c}}>{fmt(v)}</div><div style={{fontSize:8,color:T.muted}}>{l}</div></div>
                             ))}
-                            <button className="btn" onClick={()=>setUsers(p=>p.map(x=>x.id===u.id?{...x,active:false}:x))} style={{padding:"5px 10px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,fontSize:9,fontWeight:700}}>Remover</button>
+                            <button className="btn" onClick={async()=>{setUsers(p=>p.map(x=>x.id===u.id?{...x,active:false}:x));await supabase.from("usuarios").update({active:false}).eq("id",u.id);}} style={{padding:"5px 10px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,fontSize:9,fontWeight:700}}>Remover</button>
                           </div>
                         );
                       })}
