@@ -2907,40 +2907,6 @@ const StreetViewInterativo = ({lat, lng, apiKey, onSave, onCancel}) => {
 };
 
 
-const SvInitializer=({lat,lng,apiKey})=>{
-  useEffect(()=>{
-    const init=()=>{
-      const el=document.getElementById('sv-fullscreen-div');
-      if(!el||!window.google||!window.google.maps)return;
-      window._svPano=new window.google.maps.StreetViewPanorama(el,{
-        position:{lat:Number(lat),lng:Number(lng)},
-        pov:{heading:0,pitch:0},
-        zoom:1,
-        clickToGo:true,
-        addressControl:true,
-        fullscreenControl:false,
-        motionTracking:false,
-        showRoadLabels:true,
-      });
-    };
-    const sid='gmaps-sv-script';
-    if(window.google&&window.google.maps){
-      setTimeout(init,100);
-    }else if(!document.getElementById(sid)){
-      window._svCb=init;
-      const s=document.createElement('script');
-      s.id=sid;
-      s.src='https://maps.googleapis.com/maps/api/js?key='+apiKey+'&callback=_svCb';
-      s.async=true;
-      document.head.appendChild(s);
-    }else{
-      const t=setInterval(()=>{if(window.google&&window.google.maps){clearInterval(t);init();}},200);
-    }
-    return()=>{try{if(window._svPano)window._svPano.setVisible(false);}catch(e){}};
-  },[lat,lng]);
-  return null;
-};
-
 
 export default function App(){
   const[user,setUser]=useState(()=>{try{const s=localStorage.getItem("ecodely_user");return s?JSON.parse(s):null;}catch{return null;}});
@@ -3058,6 +3024,52 @@ export default function App(){
   const[baseTab,setBaseTab]=useState("parceiros"); // parceiros | contratos | score
   const[selPartner,setSelPartner]=useState(null);
   const[svFullscreen,setSvFullscreen]=useState(null);
+
+  // Inicializa Street View quando overlay fullscreen abre
+  useEffect(()=>{
+    if(!svFullscreen)return;
+    const apiKey='AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8';
+    const doInit=()=>{
+      const el=document.getElementById('sv-fullscreen-div');
+      if(!el){setTimeout(doInit,150);return;}
+      if(!window.google||!window.google.maps){setTimeout(doInit,150);return;}
+      try{
+        if(window._svPano){window._svPano.setVisible(false);window._svPano=null;}
+        window._svPano=new window.google.maps.StreetViewPanorama(el,{
+          position:{lat:Number(svFullscreen.lat),lng:Number(svFullscreen.lng)},
+          pov:{heading:0,pitch:0},
+          zoom:1,
+          clickToGo:true,
+          linksControl:true,
+          panControl:true,
+          zoomControl:true,
+          addressControl:true,
+          fullscreenControl:false,
+          motionTracking:false,
+          motionTrackingControl:false,
+          showRoadLabels:true,
+        });
+      }catch(e){console.error('SV error:',e);}
+    };
+    const sid='gmaps-sv-script';
+    if(window.google&&window.google.maps){
+      requestAnimationFrame(()=>setTimeout(doInit,200));
+    }else if(!document.getElementById(sid)){
+      window._svCb=()=>requestAnimationFrame(()=>setTimeout(doInit,200));
+      const s=document.createElement('script');
+      s.id=sid;
+      s.src='https://maps.googleapis.com/maps/api/js?key='+apiKey+'&callback=_svCb';
+      s.async=true;
+      document.head.appendChild(s);
+    }else{
+      const t=setInterval(()=>{
+        if(window.google&&window.google.maps){clearInterval(t);requestAnimationFrame(()=>setTimeout(doInit,200));}
+      },200);
+    }
+    return()=>{
+      try{if(window._svPano){window._svPano.setVisible(false);window._svPano=null;}}catch(e){}
+    };
+  },[svFullscreen]);
   const[contratoTableFilter,setContratoTableFilter]=useState("todos");
   const[cadTab,setCadTab]=useState("clientes");
   const[filterSeg,setFilterSeg]=useState("todos");
@@ -4352,7 +4364,6 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             </div>
           </div>
           <div id="sv-fullscreen-div" style={{flex:1,width:"100%"}}/>
-          <SvInitializer lat={svFullscreen.lat} lng={svFullscreen.lng} apiKey="AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8"/>
         </div>
       )}
 
