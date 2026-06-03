@@ -2834,67 +2834,69 @@ function CategoriasFin({lancamentos,finMesRef,T}){
 // STREET VIEW INTERATIVO - Google Maps JavaScript API
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 const StreetViewInterativo = ({lat, lng, apiKey, onSave, onCancel}) => {
-  const [divId] = useState('sv-' + Math.random().toString(36).slice(2));
-  const svRef = useRef(null);
+  const divRef = useRef(null);
   const panoramaRef = useRef(null);
 
   useEffect(() => {
+    let pano = null;
+
     const initSV = () => {
-      const el = document.getElementById(divId);
-      if (!el || !window.google) return;
-      const panorama = new window.google.maps.StreetViewPanorama(el, {
+      const el = divRef.current;
+      if (!el || !window.google || !window.google.maps) return;
+      if (pano) pano.setVisible(false);
+      pano = new window.google.maps.StreetViewPanorama(el, {
         position: { lat: Number(lat), lng: Number(lng) },
-        pov: { heading: 0, pitch: 0 },
+        pov: { heading: 34, pitch: 0 },
         zoom: 1,
         addressControl: true,
         fullscreenControl: false,
         motionTracking: false,
         motionTrackingControl: false,
         showRoadLabels: true,
+        clickToGo: true,
       });
-      panoramaRef.current = panorama;
+      panoramaRef.current = pano;
     };
 
-    if (window.google && window.google.maps) {
-      initSV();
-    } else {
-      const scriptId = 'gmaps-script';
-      if (!document.getElementById(scriptId)) {
+    const loadAndInit = () => {
+      const scriptId = 'gmaps-sv-script';
+      if (window.google && window.google.maps) {
+        initSV();
+      } else if (!document.getElementById(scriptId)) {
+        window._svInitCallback = initSV;
         const script = document.createElement('script');
         script.id = scriptId;
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initGMaps`;
+        script.src = 'https://maps.googleapis.com/maps/api/js?key=' + apiKey + '&callback=_svInitCallback';
         script.async = true;
-        script.defer = true;
-        window.initGMaps = initSV;
         document.head.appendChild(script);
       } else {
-        // Script loading, wait
-        const interval = setInterval(() => {
-          if (window.google && window.google.maps) {
-            clearInterval(interval);
-            initSV();
-          }
-        }, 300);
+        const t = setInterval(() => {
+          if (window.google && window.google.maps) { clearInterval(t); initSV(); }
+        }, 200);
       }
-    }
-  }, [lat, lng, divId]);
+    };
+
+    loadAndInit();
+
+    return () => { if (pano) try { pano.setVisible(false); } catch(e) {} };
+  }, [lat, lng]);
 
   const handleSave = () => {
     if (!panoramaRef.current) return;
     const pov = panoramaRef.current.getPov();
     const pos = panoramaRef.current.getPosition();
-    const heading = Math.round(pov.heading);
-    const pitch = Math.round(pov.pitch);
-    const location = pos ? pos.lat() + "," + pos.lng() : lat + "," + lng;
-    const url = `https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${location}&heading=${heading}&pitch=${pitch}&fov=90&key=${apiKey}`;
+    const heading = Math.round(pov.heading || 0);
+    const pitch = Math.round(pov.pitch || 0);
+    const locStr = pos ? (pos.lat() + ',' + pos.lng()) : (lat + ',' + lng);
+    const url = 'https://maps.googleapis.com/maps/api/streetview?size=600x300&location=' + locStr + '&heading=' + heading + '&pitch=' + pitch + '&fov=90&key=' + apiKey;
     onSave(heading, pitch, url);
   };
 
   return (
     <div>
-      <div id={divId} ref={svRef} style={{width:"100%",height:220,borderRadius:8,overflow:"hidden",marginBottom:8,background:"#1a1e30"}}/>
+      <div ref={divRef} style={{width:"100%",height:240,borderRadius:8,overflow:"hidden",marginBottom:8,background:"#1a1e30"}}/>
       <div style={{fontSize:9,color:"#8A90A8",marginBottom:8,textAlign:"center"}}>
-        Navegue livremente — clique e arraste para girar, use os botoes para andar pela rua
+        Clique e arraste para girar - Use as setas no chao para andar pela rua
       </div>
       <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
         <button onClick={onCancel} style={{padding:"6px 14px",background:"rgba(255,77,106,0.12)",border:"1px solid rgba(255,77,106,0.3)",color:"#FF4D6A",borderRadius:6,fontSize:10,cursor:"pointer"}}>Cancelar</button>
