@@ -2866,7 +2866,7 @@ const StreetViewInterativo = ({lat, lng, apiKey, onSave, onCancel}) => {
         window._svInitCallback = initSV;
         const script = document.createElement('script');
         script.id = scriptId;
-        script.src = 'https://maps.googleapis.com/maps/api/js?key=' + apiKey + '&callback=_svInitCallback';
+        script.src = 'https://maps.googleapis.com/maps/api/js?key=' + apiKey + '&callback=_svInitCallback&loading=async'; script.defer = true;
         script.async = true;
         document.head.appendChild(script);
       } else {
@@ -3058,18 +3058,21 @@ export default function App(){
     };
     const sid='gmaps-sv-script';
     if(window.google&&window.google.maps){
-      requestAnimationFrame(()=>setTimeout(doInit,200));
+      requestAnimationFrame(()=>setTimeout(doInit,300));
     }else if(!document.getElementById(sid)){
-      window._svCb=()=>requestAnimationFrame(()=>setTimeout(doInit,200));
+      const old=document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]');
+      if(old&&!old.id)old.remove();
+      window._svCb=()=>requestAnimationFrame(()=>setTimeout(doInit,300));
       const s=document.createElement('script');
       s.id=sid;
-      s.src='https://maps.googleapis.com/maps/api/js?key='+apiKey+'&callback=_svCb';
+      s.src='https://maps.googleapis.com/maps/api/js?key='+apiKey+'&callback=_svCb&loading=async';
       s.async=true;
+      s.defer=true;
       document.head.appendChild(s);
     }else{
       const t=setInterval(()=>{
-        if(window.google&&window.google.maps){clearInterval(t);requestAnimationFrame(()=>setTimeout(doInit,200));}
-      },200);
+        if(window.google&&window.google.maps){clearInterval(t);requestAnimationFrame(()=>setTimeout(doInit,300));}
+      },100);
     }
     return()=>{
       try{if(window._svPano){window._svPano.setVisible(false);window._svPano=null;}}catch(e){}
