@@ -7408,14 +7408,20 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                 }};
                               }
                             }
-                            // Extrai CEP: padrao 00000-000 ou 00000000
+                            // Extrai CEP: varios formatos (00000-000, 00.000-000, CEP:00000-000)
                             if(!parceiro.endereco?.cep||parceiro.endereco.cep===""){
-                              const cepMatch=rua.match(/(\d{5}-\d{3}|\d{8})/);
+                              const cepMatch=rua.match(/(?:CEP[:\s]*)?(\d{2}[.]?\d{3}-\d{3}|\d{8})/i);
                               if(cepMatch){
-                                parceiro={...parceiro,endereco:{...parceiro.endereco,
-                                  cep:cepMatch[1]
-                                }};
+                                // Normaliza para 00000-000
+                                const cepLimpo=cepMatch[1].replace(".","");
+                                parceiro={...parceiro,endereco:{...parceiro.endereco,cep:cepLimpo}};
                               }
+                            }
+                            // Limpa prefixo CEP: da rua se estiver embutido
+                            if(parceiro.endereco?.rua){
+                              parceiro={...parceiro,endereco:{...parceiro.endereco,
+                                rua:parceiro.endereco.rua.replace(/\s*CEP[:\s]*[\d.\-]+/gi,"").trim()
+                              }};
                             }
                             // Limpa a rua deixando so nome + numero
                             const ruaLimpa=rua.split(" - ")[0].trim();
