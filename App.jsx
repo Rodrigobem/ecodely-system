@@ -3062,8 +3062,13 @@ export default function App(){
           };
           if(status===window.google.maps.StreetViewStatus.OK&&data.location){
             panoOpts.pano=data.location.pano;
+            // Guardar pano ID outdoor para usar no save (garante foto de rua)
+            window._svOutdoorPano=data.location.pano;
+            window._svOutdoorLatLng={lat:data.location.latLng.lat(),lng:data.location.latLng.lng()};
           }else{
             panoOpts.position=latLng;
+            window._svOutdoorPano=null;
+            window._svOutdoorLatLng=null;
           }
           window._svPano=new window.google.maps.StreetViewPanorama(el,panoOpts);
           setTimeout(()=>{try{el.focus();}catch(e){}},300);
@@ -4374,9 +4379,14 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   const pov=window._svPano.getPov();
                   const h=Math.round(pov.heading||0);
                   const p2=Math.round(pov.pitch||0);
-                  // Sempre usa coordenadas originais do parceiro (evita pegar posição de panorama indoor)
-                  const loc=svFullscreen.lat+","+svFullscreen.lng;
-                  const url="https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+loc+"&heading="+h+"&pitch="+p2+"&fov=90&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8";
+                  // Usar pano ID outdoor se disponível (garante foto de rua, não indoor)
+                  let url;
+                  if(window._svOutdoorPano){
+                    url="https://maps.googleapis.com/maps/api/streetview?size=600x300&pano="+window._svOutdoorPano+"&heading="+h+"&pitch="+p2+"&fov=90&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8";
+                  }else{
+                    const loc=svFullscreen.lat+","+svFullscreen.lng;
+                    url="https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+loc+"&heading="+h+"&pitch="+p2+"&fov=90&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8";
+                  }
                   // Atualiza estado local
                   setSelPartner(prev=>({...prev,foto_fachada:url,sv_editando:false}));
                   // Salva no Supabase para persistir após refresh
