@@ -3037,23 +3037,37 @@ export default function App(){
         if(window._svPano){window._svPano.setVisible(false);window._svPano=null;}
         el.style.pointerEvents='all';
         el.style.touchAction='auto';
-        window._svPano=new window.google.maps.StreetViewPanorama(el,{
-          position:{lat:Number(svFullscreen.lat),lng:Number(svFullscreen.lng)},
-          pov:{heading:0,pitch:0},
-          zoom:1,
-          clickToGo:true,
-          linksControl:true,
-          panControl:true,
-          zoomControl:true,
-          addressControl:false,
-          fullscreenControl:false,
-          motionTracking:false,
-          motionTrackingControl:false,
-          showRoadLabels:true,
-          enableCloseButton:false,
+        // Buscar panorama de rua mais próximo (evita cair em panorama indoor)
+        const svService=new window.google.maps.StreetViewService();
+        const latLng=new window.google.maps.LatLng(Number(svFullscreen.lat),Number(svFullscreen.lng));
+        svService.getPanorama({
+          location:latLng,
+          radius:100,
+          source:window.google.maps.StreetViewSource.OUTDOOR,
+          preference:window.google.maps.StreetViewPreference.NEAREST,
+        },(data,status)=>{
+          const panoOpts={
+            pov:{heading:svFullscreen.heading||0,pitch:0},
+            zoom:1,
+            clickToGo:true,
+            linksControl:true,
+            panControl:true,
+            zoomControl:true,
+            addressControl:false,
+            fullscreenControl:false,
+            motionTracking:false,
+            motionTrackingControl:false,
+            showRoadLabels:true,
+            enableCloseButton:false,
+          };
+          if(status===window.google.maps.StreetViewStatus.OK&&data.location){
+            panoOpts.pano=data.location.pano;
+          }else{
+            panoOpts.position=latLng;
+          }
+          window._svPano=new window.google.maps.StreetViewPanorama(el,panoOpts);
+          setTimeout(()=>{try{el.focus();}catch(e){}},300);
         });
-        // Forçar foco para capturar eventos de teclado/mouse
-        setTimeout(()=>{try{el.focus();}catch(e){}},300);
       }catch(e){console.error('SV error:',e);}
     };
     const sid='gmaps-sv-script';
