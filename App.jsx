@@ -3035,6 +3035,8 @@ export default function App(){
       if(!window.google||!window.google.maps){setTimeout(doInit,150);return;}
       try{
         if(window._svPano){window._svPano.setVisible(false);window._svPano=null;}
+        el.style.pointerEvents='all';
+        el.style.touchAction='auto';
         window._svPano=new window.google.maps.StreetViewPanorama(el,{
           position:{lat:Number(svFullscreen.lat),lng:Number(svFullscreen.lng)},
           pov:{heading:0,pitch:0},
@@ -3043,12 +3045,15 @@ export default function App(){
           linksControl:true,
           panControl:true,
           zoomControl:true,
-          addressControl:true,
+          addressControl:false,
           fullscreenControl:false,
           motionTracking:false,
           motionTrackingControl:false,
           showRoadLabels:true,
+          enableCloseButton:false,
         });
+        // Forçar foco para capturar eventos de teclado/mouse
+        setTimeout(()=>{try{el.focus();}catch(e){}},300);
       }catch(e){console.error('SV error:',e);}
     };
     const sid='gmaps-sv-script';
@@ -4343,8 +4348,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
       `}</style>
 
       {svFullscreen&&(
-        <div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",flexDirection:"column",background:"#000"}}>
-          <div style={{background:"#0C0E18",padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0,borderBottom:"1px solid #1A1E30"}}>
+        <div style={{position:"fixed",inset:0,zIndex:10000,display:"flex",flexDirection:"column",background:"#000",pointerEvents:"all"}}>
+          <div style={{background:"#0C0E18",padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0,borderBottom:"1px solid #1A1E30",zIndex:10001,position:"relative"}}>
             <div style={{fontSize:11,color:"#E6E8F0"}}>Navegue ate a fachada e clique Salvar angulo</div>
             <div style={{display:"flex",gap:8}}>
               <button onClick={()=>{
@@ -4363,7 +4368,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               <button onClick={()=>{setSvFullscreen(null);setSelPartner(p=>p?({...p,sv_editando:false}):p);}} style={{padding:"8px 14px",background:"#1A1E30",color:"#8A90A8",borderRadius:7,fontSize:12,cursor:"pointer",border:"1px solid #252940"}}>Cancelar</button>
             </div>
           </div>
-          <div id="sv-fullscreen-div" style={{flex:1,width:"100%"}}/>
+          <div id="sv-fullscreen-div" style={{flex:1,width:"100%",position:"relative",zIndex:10000,pointerEvents:"all",touchAction:"auto"}}/>
         </div>
       )}
 
