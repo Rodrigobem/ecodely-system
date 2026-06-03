@@ -4369,15 +4369,22 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           <div style={{background:"#0C0E18",padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0,borderBottom:"1px solid #1A1E30",zIndex:10001,position:"relative"}}>
             <div style={{fontSize:11,color:"#E6E8F0"}}>Navegue ate a fachada e clique Salvar angulo</div>
             <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{
+              <button onClick={async()=>{
                 if(window._svPano){
                   const pov=window._svPano.getPov();
-                  const pos=window._svPano.getPosition();
                   const h=Math.round(pov.heading||0);
                   const p2=Math.round(pov.pitch||0);
-                  const loc=pos?(pos.lat()+","+pos.lng()):(svFullscreen.lat+","+svFullscreen.lng);
+                  // Sempre usa coordenadas originais do parceiro (evita pegar posição de panorama indoor)
+                  const loc=svFullscreen.lat+","+svFullscreen.lng;
                   const url="https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+loc+"&heading="+h+"&pitch="+p2+"&fov=90&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8";
+                  // Atualiza estado local
                   setSelPartner(prev=>({...prev,foto_fachada:url,sv_editando:false}));
+                  // Salva no Supabase para persistir após refresh
+                  setBasePartners(prev=>prev.map(p=>{
+                    if(p.id!==svFullscreen.id)return p;
+                    return {...p,foto_fachada:url};
+                  }));
+                  await supabase.from("parceiros").upsert({id:svFullscreen.id,data:{...svFullscreen,foto_fachada:url},updated_at:new Date().toISOString()});
                 }
                 setSvFullscreen(null);
                 pushNotif("Fachada salva!","Angulo salvo com sucesso",T.accent);
@@ -7357,7 +7364,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                 <button onClick={()=>setSelPartner(p=>({...p,sv_editando:false}))} style={{padding:"3px 10px",background:T.accent,color:"#000",borderRadius:5,fontSize:9,cursor:"pointer",fontWeight:700}}>Fechar</button>
                               </div>
                             ):(
-                              <button onClick={()=>{setSelPartner(p=>({...p,sv_editando:true}));setSvFullscreen({lat:selPartner.endereco?.lat,lng:selPartner.endereco?.lng})}} style={{padding:"3px 10px",background:T.infoDim,border:"1px solid rgba(61,158,255,0.3)",color:T.info,borderRadius:5,fontSize:9,cursor:"pointer"}}>Reposicionar</button>
+                              <button onClick={()=>{setSelPartner(p=>({...p,sv_editando:true}));setSvFullscreen({id:selPartner.id,lat:selPartner.endereco?.lat,lng:selPartner.endereco?.lng,...selPartner})}} style={{padding:"3px 10px",background:T.infoDim,border:"1px solid rgba(61,158,255,0.3)",color:T.info,borderRadius:5,fontSize:9,cursor:"pointer"}}>Reposicionar</button>
                             )}
                           </div>
                           {(()=>{
