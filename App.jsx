@@ -3071,6 +3071,11 @@ export default function App(){
             window._svOutdoorLatLng=null;
           }
           window._svPano=new window.google.maps.StreetViewPanorama(el,panoOpts);
+          // Salvar pov em tempo real para não perder ao clicar no botão
+          window._svCurrentPov={heading:0,pitch:0};
+          window._svPano.addListener('pov_changed',()=>{
+            try{window._svCurrentPov=window._svPano.getPov();}catch(e){}
+          });
           setTimeout(()=>{try{el.focus();}catch(e){}},300);
         });
       }catch(e){console.error('SV error:',e);}
@@ -4375,8 +4380,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             <div style={{fontSize:11,color:"#E6E8F0"}}>Navegue ate a fachada e clique Salvar angulo</div>
             <div style={{display:"flex",gap:8}}>
               <button onClick={async()=>{
-                if(window._svPano){
-                  const pov=window._svPano.getPov();
+                if(window._svCurrentPov!==undefined){
+                  const pov=window._svCurrentPov||{heading:0,pitch:0};
                   const h=Math.round(pov.heading||0);
                   const p2=Math.round(pov.pitch||0);
                   // Usar pano ID outdoor se disponível (garante foto de rua, não indoor)
