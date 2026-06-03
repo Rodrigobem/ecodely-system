@@ -2834,11 +2834,11 @@ function CategoriasFin({lancamentos,finMesRef,T}){
 // STREET VIEW INTERATIVO - Google Maps JavaScript API
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 const StreetViewInterativo = ({lat, lng, apiKey, onSave, onCancel}) => {
-  const divId = 'sv-' + Math.random().toString(36).slice(2);
-  const svRef = React.useRef(null);
-  const panoramaRef = React.useRef(null);
+  const [divId] = useState('sv-' + Math.random().toString(36).slice(2));
+  const svRef = useRef(null);
+  const panoramaRef = useRef(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const initSV = () => {
       const el = document.getElementById(divId);
       if (!el || !window.google) return;
