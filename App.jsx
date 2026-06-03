@@ -810,6 +810,12 @@ const MapaPlano=({clienteLat,clienteLng,clienteNome,parceiros=[]})=>{
   return <div ref={mapRef} style={{height:420,width:"100%",borderRadius:12,border:"1px solid #2A2E45",zIndex:1}}/>;
 };
 
+// Hash SHA-256 para senhas (Web Crypto API nativa)
+const hashPass=async(pass)=>{
+  const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(pass));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+};
+
 const GaleriaItem=({g,onRemove,editable=false})=>{
   const[playing,setPlaying]=useState(false);
   const embed=toEmbedUrl(g.url);
@@ -2937,6 +2943,13 @@ export default function App(){
   const[tema,setTema]=useState(()=>localStorage.getItem("ecodely_tema")||"escuro");
   useEffect(()=>{localStorage.setItem("ecodely_tab",tab);},[tab]);
   T=THEMES[tema]||THEMES.escuro;
+  // Recalcular constantes que dependem de T (para troca de tema funcionar)
+  STAGES_CAMP[0].color=T.info;STAGES_CAMP[1].color=T.purple;STAGES_CAMP[2].color=T.warn;STAGES_CAMP[3].color=T.pink;STAGES_CAMP[4].color=T.accent;
+  PIPE_STAGES[0].color=T.muted;PIPE_STAGES[1].color=T.info;PIPE_STAGES[2].color=T.purple;PIPE_STAGES[3].color=T.warn;PIPE_STAGES[4].color=T.accent;
+  CONTRATO_COLOR["sem contrato"]=T.muted;CONTRATO_COLOR["pendente"]=T.warn;CONTRATO_COLOR["assinado"]=T.accent;CONTRATO_COLOR["expirando"]=T.danger;CONTRATO_COLOR["expirado"]=T.danger;
+  STATUS_PARTNER["prospectado"]=T.info;STATUS_PARTNER["negociando"]=T.warn;STATUS_PARTNER["ativo"]=T.accent;STATUS_PARTNER["inativo"]=T.muted;
+  ROLE_COLOR.admin=T.accent;ROLE_COLOR.comercial=T.info;ROLE_COLOR.operacional=T.purple;ROLE_COLOR.marketing=T.pink;ROLE_COLOR.financeiro=T.warn;ROLE_COLOR.base=T.green;
+  SEC_COLOR.comercial=T.info;SEC_COLOR.financeiro=T.warn;SEC_COLOR.marketing=T.pink;SEC_COLOR.base=T.accent;SEC_COLOR.operacional=T.purple;SEC_COLOR.grafica=T.purple;SEC_COLOR.logistica=T.info;
   useEffect(()=>{localStorage.setItem("ecodely_tema",tema);document.body.style.background=T.bg;},[tema]);
   const[editLanc,setEditLanc]=useState(null);
   const[colWidths,setColWidths]=useState([90,340,120,120,110,110,130,36,180]);
@@ -3290,12 +3303,24 @@ export default function App(){
   // --- HANDLERS ------------------------------------------------------------
   const handleLogin=async()=>{
     setLoginErr("Verificando...");
-    // Tenta primeiro no estado local (já carregado)
-    let u=users.find(x=>x.email===loginForm.email&&x.pass===loginForm.pass&&x.active!==false);
+    const passHash=await hashPass(loginForm.pass);
+    // Tenta primeiro com hash, depois com texto plano (retrocompatibilidade)
+    let u=users.find(x=>x.email===loginForm.email&&(x.pass===passHash||x.pass===loginForm.pass)&&x.active!==false);
     // Se não achou (usuários ainda não carregaram do Supabase), busca direto
     if(!u){
-      const{data}=await supabase.from("usuarios").select("*").eq("email",loginForm.email).eq("pass",loginForm.pass).eq("active",true).limit(1);
-      if(data&&data.length>0)u=data[0];
+      // Tenta hash primeiro
+      const{data:d1}=await supabase.from("usuarios").select("*").eq("email",loginForm.email).eq("pass",passHash).eq("active",true).limit(1);
+      if(d1&&d1.length>0){u=d1[0];}
+      else{
+        // Fallback: texto plano (senhas antigas ainda não hasheadas)
+        const{data:d2}=await supabase.from("usuarios").select("*").eq("email",loginForm.email).eq("pass",loginForm.pass).eq("active",true).limit(1);
+        if(d2&&d2.length>0){
+          u=d2[0];
+          // Migrar para hash automaticamente
+          await supabase.from("usuarios").update({pass:passHash}).eq("id",u.id);
+          u={...u,pass:passHash};
+        }
+      }
     }
     if(u&&u.active!==false){
       setUser(u);
@@ -4334,7 +4359,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
   const addUser=async()=>{
     if(!newUser.name||!newUser.email||!newUser.pass)return;
-    const rec={id:Date.now(),...newUser,avatar:newUser.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2),active:true,lastAccess:"nunca"};
+    const passHash=await hashPass(newUser.pass);
+    const rec={id:Date.now(),...newUser,pass:passHash,avatar:newUser.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2),active:true,lastAccess:"nunca"};
     setUsers(p=>[...p,rec]);
     setNewUser({name:"",email:"",pass:"",role:"base"});setShowNewUser(false);
     const{error}=await supabase.from("usuarios").insert(rec);
@@ -4454,26 +4480,71 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
       {pdfCamp&&<PDFReport camp={pdfCamp} onClose={()=>setPdfCamp(null)}/>}
 
       {/* PROSPECT MODAL */}
-      {selProsp&&(
+      {selProsp&&(()=>{
+        const[prospEdit,setProspEdit]=window._prospEditState||[selProsp,()=>{}];
+        // Estado local de edição via ref no window (evita re-render do pai)
+        const[editingProsp,setEditingProsp]=window._prospEditMode||[false,()=>{}];
+        return(
         <div style={{position:"fixed",inset:0,background:"#000000BB",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setSelProsp(null)}>
-          <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:16,width:"100%",maxWidth:460,padding:24}} onClick={e=>e.stopPropagation()}>
+          <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:16,width:"100%",maxWidth:500,padding:24}} onClick={e=>e.stopPropagation()}>
             <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}>
               <div><div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,marginBottom:5}}>{selProsp.name}</div><div style={{display:"flex",gap:5}}><Badge label={selProsp.segment} color={T.purple}/><Badge label={PIPE_STAGES.find(s=>s.id===selProsp.stage)?.label||""} color={PIPE_STAGES.find(s=>s.id===selProsp.stage)?.color||T.muted}/></div></div>
-              <div onClick={()=>setSelProsp(null)} style={{cursor:"pointer",color:T.muted,fontSize:20}}>×</div>
-            </div>
-            {[["Contato",selProsp.contact],["E-mail",selProsp.email||"-"],["Responsável",selProsp.owner],["Valor estimado",fmtK(selProsp.value||selProsp.ltv||0)]].map(([l,v])=>(
-              <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"9px 0",borderBottom:`1px solid ${T.border}`}}>
-                <span style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>{l}</span>
-                <span style={{fontSize:11}}>{v}</span>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <div onClick={()=>{const d={...selProsp};window._prospDraft=d;setSelProsp({...selProsp,_editing:!selProsp._editing});}} style={{fontSize:10,color:selProsp._editing?T.accent:T.muted,cursor:"pointer",padding:"4px 10px",border:`1px solid ${selProsp._editing?T.accentBorder:T.border}`,borderRadius:6}}>{selProsp._editing?"✕ Cancelar":"✎ Editar"}</div>
+                <div onClick={()=>setSelProsp(null)} style={{cursor:"pointer",color:T.muted,fontSize:20}}>×</div>
               </div>
-            ))}
-            {selProsp.notes&&<div style={{marginTop:12,padding:"10px",background:T.card,borderRadius:8,fontSize:11,color:T.soft,fontStyle:"italic"}}>"{selProsp.notes}"</div>}
-            {["negociacao","fechado"].includes(selProsp.stage)&&(
-              <button className="btn" onClick={()=>{addProspectToBase(selProsp);setSelProsp(null);}} style={{width:"100%",marginTop:14,padding:"10px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12}}>- Adicionar à Base de Parceiros</button>
+            </div>
+            {selProsp._editing?(
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {[["Nome","name","text"],["Contato","contact","text"],["E-mail","email","email"],["Telefone","phone","text"]].map(([l,k,t])=>(
+                  <div key={k}>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+                    <input type={t} value={selProsp[k]||""} onChange={e=>setSelProsp(p=>({...p,[k]:e.target.value}))} style={{...inpS}}/>
+                  </div>
+                ))}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                  <div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Valor estimado (R$)</div>
+                    <input type="number" value={selProsp.value||""} onChange={e=>setSelProsp(p=>({...p,value:Number(e.target.value)}))} style={{...inpS}}/>
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Etapa</div>
+                    <select value={selProsp.stage} onChange={e=>setSelProsp(p=>({...p,stage:e.target.value}))} style={{...inpS}}>
+                      {PIPE_STAGES.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <div style={{fontSize:9,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Observações</div>
+                  <textarea value={selProsp.notes||""} onChange={e=>setSelProsp(p=>({...p,notes:e.target.value}))} rows={3} style={{...inpS,resize:"vertical"}}/>
+                </div>
+                <button onClick={async()=>{
+                  const upd={...selProsp};
+                  delete upd._editing;
+                  setProspects(p=>p.map(x=>x.id===upd.id?upd:x));
+                  await supabase.from("prospects").update({name:upd.name,contact:upd.contact,email:upd.email,phone:upd.phone||"",notes:upd.notes,stage:upd.stage,value:upd.value}).eq("id",upd.id);
+                  setSelProsp({...upd});
+                  pushNotif("Lead atualizado",upd.name,T.accent);
+                }} style={{padding:"10px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,border:"none",cursor:"pointer"}}>Salvar alterações</button>
+              </div>
+            ):(
+              <>
+                {[["Contato",selProsp.contact],["E-mail",selProsp.email||"-"],["Telefone",selProsp.phone||"-"],["Responsável",selProsp.owner],["Valor estimado",fmtK(selProsp.value||selProsp.ltv||0)]].map(([l,v])=>(
+                  <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"9px 0",borderBottom:`1px solid ${T.border}`}}>
+                    <span style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>{l}</span>
+                    <span style={{fontSize:11}}>{v}</span>
+                  </div>
+                ))}
+                {selProsp.notes&&<div style={{marginTop:12,padding:"10px",background:T.card,borderRadius:8,fontSize:11,color:T.soft,fontStyle:"italic"}}>"{selProsp.notes}"</div>}
+                {["negociacao","fechado"].includes(selProsp.stage)&&(
+                  <button className="btn" onClick={()=>{addProspectToBase(selProsp);setSelProsp(null);}} style={{width:"100%",marginTop:14,padding:"10px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12}}>- Adicionar à Base de Parceiros</button>
+                )}
+              </>
             )}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* SIDEBAR — overlay no mobile */}
       {mobileMenuOpen&&<div onClick={()=>setMobileMenuOpen(false)} style={{position:"fixed",inset:0,background:"#00000077",zIndex:299,display:"none"}} className="mob-overlay"/>}
@@ -8318,14 +8389,23 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                        <th style={{padding:"6px 10px",fontSize:8,color:T.muted,textAlign:"center",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>Parcelas</th>
                        <th style={{padding:"6px 10px",fontSize:8,color:T.muted,textAlign:"right",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>Mensal</th>
                        <th style={{padding:"6px 10px",fontSize:8,color:T.muted,textAlign:"right",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}>Saldo dev.</th>
+                       <th style={{padding:"6px 10px",fontSize:8,color:T.muted,textAlign:"center",textTransform:"uppercase",letterSpacing:1,borderBottom:`1px solid ${T.border}`}}></th>
                      </tr></thead>
-                     <tbody>{comprasCartao.map((cc,i)=>{const cart=cartoes.find(c=>c.id===cc.cartaoId);const saldo=(cc.valorParcela||0)*(cc.parcelas-(cc.parcelaAtual||0)+1);return(
-                       <tr key={i} style={{background:i%2===0?T.surface:"transparent"}}>
-                         <td style={{padding:"5px 10px",fontSize:10,fontWeight:600}}>{cc.projeto||cc.descricao}</td>
+                     <tbody>{comprasCartao.map((cc,i)=>{const cart=cartoes.find(c=>c.id===cc.cartaoId);const saldo=(cc.valorParcela||0)*(cc.parcelas-(cc.parcelaAtual||0)+1);const quitada=cc.parcelaAtual>cc.parcelas;return(
+                       <tr key={i} style={{background:quitada?"#00E5A008":i%2===0?T.surface:"transparent",opacity:quitada?0.5:1}}>
+                         <td style={{padding:"5px 10px",fontSize:10,fontWeight:600}}>{cc.projeto||cc.descricao}{quitada&&<span style={{fontSize:8,color:T.accent,marginLeft:6}}>✓ quitada</span>}</td>
                          <td style={{padding:"5px 10px",fontSize:9,color:T.muted}}>{cart?.nome||"—"}</td>
-                         <td style={{padding:"5px 10px",fontSize:9,textAlign:"center",fontFamily:"Arial,sans-serif"}}>{cc.parcelaAtual||1}/{cc.parcelas}</td>
+                         <td style={{padding:"5px 10px",fontSize:9,textAlign:"center",fontFamily:"Arial,sans-serif"}}>
+                           <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+                             <span>{cc.parcelaAtual||1}/{cc.parcelas}</span>
+                             {!quitada&&<div onClick={async()=>{const nova=Math.min((cc.parcelaAtual||1)+1,cc.parcelas+1);setComprasCartao(p=>p.map(x=>x.id===cc.id?{...x,parcelaAtual:nova}:x));await supabase.from("compras_cartao").update({parcelaAtual:nova}).eq("id",cc.id);}} title="Avançar parcela" style={{cursor:"pointer",fontSize:9,color:T.accent,border:`1px solid ${T.accentBorder}`,borderRadius:4,padding:"1px 5px"}}>+1</div>}
+                           </div>
+                         </td>
                          <td style={{padding:"5px 10px",fontSize:10,textAlign:"right",fontFamily:"Arial,sans-serif",color:T.warn,fontWeight:700}}>{(cc.valorParcela||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
-                         <td style={{padding:"5px 10px",fontSize:10,textAlign:"right",fontFamily:"Arial,sans-serif",color:T.danger}}>{saldo.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                         <td style={{padding:"5px 10px",fontSize:10,textAlign:"right",fontFamily:"Arial,sans-serif",color:quitada?T.accent:T.danger}}>{quitada?"Quitada":saldo.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</td>
+                         <td style={{padding:"5px 10px",textAlign:"center"}}>
+                           <div onClick={async()=>{if(!window.confirm(`Excluir "${cc.projeto||cc.descricao}"?`))return;setComprasCartao(p=>p.filter(x=>x.id!==cc.id));await supabase.from("compras_cartao").delete().eq("id",cc.id);}} style={{cursor:"pointer",color:T.danger,fontSize:11}} title="Excluir">×</div>
+                         </td>
                        </tr>
                      );})}
                      </tbody>
