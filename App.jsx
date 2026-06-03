@@ -810,6 +810,15 @@ const MapaPlano=({clienteLat,clienteLng,clienteNome,parceiros=[]})=>{
   return <div ref={mapRef} style={{height:420,width:"100%",borderRadius:12,border:"1px solid #2A2E45",zIndex:1}}/>;
 };
 
+// Sanitiza nome de arquivo para o Supabase Storage (remove acentos, espaços e chars especiais)
+const sanitizeFileName=(name)=>{
+  return name
+    .normalize("NFD").replace(/[̀-ͯ]/g,"") // remove acentos
+    .replace(/[^a-zA-Z0-9._-]/g,"_")                // substitui tudo que não é alfanum/ponto/hífen por _
+    .replace(/_+/g,"_")                              // colapsa múltiplos underscores
+    .replace(/^_|_$/g,"");                           // remove _ do início/fim
+};
+
 // Hash SHA-256 para senhas (Web Crypto API nativa)
 const hashPass=async(pass)=>{
   const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(pass));
@@ -885,7 +894,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
     if(!file)return;
     setUploading(true);
     const ext=file.name.split(".").pop();
-    const path=`campanhas/${camp.id}/${Date.now()}_${file.name.replace(/\s/g,"_")}`;
+    const path=`campanhas/${camp.id}/${Date.now()}_${sanitizeFileName(file.name)}`;
     const{data,error}=await supabase.storage.from("ecodely-files").upload(path,file,{upsert:true});
     if(error){console.error("Storage upload error:",error);setUploading(false);alert("Erro ao enviar arquivo: "+error.message+"\nVerifique se o bucket 'ecodely-files' existe no Supabase.");return;}
     const{data:{publicUrl}}=supabase.storage.from("ecodely-files").getPublicUrl(path);
@@ -1350,7 +1359,7 @@ const ImpactosTab=({camp,allPartners,onUpdate})=>{
     if(!file||!uploadTarget)return;
     const{parceiroId,categoria}=uploadTarget;
     setUploadingKey(`${parceiroId}_${categoria}`);
-    const path=`campanhas/${camp.id}/evidencias/${parceiroId}_${categoria}_${Date.now()}_${file.name.replace(/\s/g,"_")}`;
+    const path=`campanhas/${camp.id}/evidencias/${parceiroId}_${categoria}_${Date.now()}_${sanitizeFileName(file.name)}`;
     const{error}=await supabase.storage.from("ecodely-files").upload(path,file,{upsert:true});
     if(error){setUploadingKey(null);alert("Erro ao enviar: "+error.message+"\nVerifique o bucket 'ecodely-files' no Supabase.");return;}
     const{data:{publicUrl}}=supabase.storage.from("ecodely-files").getPublicUrl(path);
