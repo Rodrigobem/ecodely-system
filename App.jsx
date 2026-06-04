@@ -1493,6 +1493,8 @@ const ImpactosTab=({camp,allPartners,onUpdate})=>{
 const ClientPanel=({camp,allPartners,onClose,onPDF})=>{
   const sacolas=camp.sacolasDistribuidas||camp.sacolas||0;
   const imp=camp.impactos||{stories:[],influencer:[],impulsionado:[],galeria:[]};
+  // Conteúdo de influenciador vem de evidencias.influencer.conteudo
+  const influencerConteudo=(imp.evidencias?.influencer?.conteudo||imp.influencer||[]);
   const offline=Math.round(sacolas*3.3);
   const stTotal=imp.stories.reduce((a,s)=>a+Number(s.impressoes),0);
   const inTotal=imp.influencer.reduce((a,i)=>a+Number(i.alcance),0);
@@ -1632,6 +1634,28 @@ const ClientPanel=({camp,allPartners,onClose,onPDF})=>{
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))',gap:10}}>
               {imp.galeria.map((g,i)=>(
                 <GaleriaItem key={i} g={g}/>
+              ))}
+            </div>
+          </div>
+        )}
+        {influencerConteudo.length>0&&(
+          <div className="cp-card" style={{padding:'20px 24px',marginBottom:20}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+              <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:'#fff'}}>Conteúdo de Influenciador</div>
+              {imp.influencerMetricas&&(imp.influencerMetricas.alcance||imp.influencerMetricas.visualizacoes)&&(
+                <div style={{display:'flex',gap:12}}>
+                  {imp.influencerMetricas.visualizacoes>0&&<div style={{textAlign:'center'}}><div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:16,color:'#F5A623'}}>{Number(imp.influencerMetricas.visualizacoes).toLocaleString()}</div><div style={{fontSize:8,color:'#556'}}>visualizações</div></div>}
+                  {imp.influencerMetricas.alcance>0&&<div style={{textAlign:'center'}}><div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:16,color:'#00C48C'}}>{Number(imp.influencerMetricas.alcance).toLocaleString()}</div><div style={{fontSize:8,color:'#556'}}>alcance</div></div>}
+                  {imp.influencerMetricas.comentarios>0&&<div style={{textAlign:'center'}}><div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:16,color:'#3D9EFF'}}>{Number(imp.influencerMetricas.comentarios).toLocaleString()}</div><div style={{fontSize:8,color:'#556'}}>comentários</div></div>}
+                </div>
+              )}
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:12}}>
+              {influencerConteudo.map((item,i)=>(
+                <div key={i} style={{borderRadius:12,overflow:'hidden',border:'1px solid #1E2240',background:'#080A14'}}>
+                  <img src={item.url||item} alt={'Influencer '+(i+1)} style={{width:'100%',aspectRatio:'1',objectFit:'cover',display:'block'}} onError={e=>{e.target.style.display='none';}}/>
+                  {item.legenda&&<div style={{padding:'8px 10px',fontSize:10,color:'#889'}}>{item.legenda}</div>}
+                </div>
               ))}
             </div>
           </div>
