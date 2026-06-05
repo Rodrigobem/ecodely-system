@@ -508,7 +508,7 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
                       <div style={{fontSize:8,color:T.muted}}>{p.category} · {p.city}</div>
                       {p.demograficos?.populacao_5km_estimada&&(
                         <div style={{fontSize:7,color:T.info,marginTop:1}}>
-                          {"\u{1F465}"} {p.demograficos.populacao_5km_estimada>=1000000?(p.demograficos.populacao_5km_estimada/1000000).toFixed(1)+"M":(p.demograficos.populacao_5km_estimada/1000).toFixed(0)+"k"} hab. · {(p.demograficos.densidade_hab_km2||0).toLocaleString("pt-BR")} hab/km²
+                          {"👥"} {p.demograficos.populacao_5km_estimada>=1000000?(p.demograficos.populacao_5km_estimada/1000000).toFixed(1)+"M":(p.demograficos.populacao_5km_estimada/1000).toFixed(0)+"k"} hab. · {(p.demograficos.densidade_hab_km2||0).toLocaleString("pt-BR")} hab/km²
                         </div>
                       )}
                     </div>
