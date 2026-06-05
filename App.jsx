@@ -487,9 +487,10 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
                   <div key={p.id} onClick={async()=>{
                     if(sel){setPlanAtivo(x=>({...x,parceiros:x.parceiros.filter(y=>y.id!==p.id)}));}
                     else{
-                      let lat=p.lat||null,lng=p.lng||null;
-                      if(!lat&&(p.city||p.address)){try{const g=await geocodeEndereco(`${p.name}, ${p.city||p.address}, Brasil`);if(g){lat=g.lat;lng=g.lng;}}catch(e){}}
-                      setPlanAtivo(x=>({...x,parceiros:[...x.parceiros,{id:p.id,nome:p.name,segmento:p.category,endereco:p.address||p.city||"",lat,lng,embalagens:500,tabela:6,desconto:0,raio:5,manual:false}]}));
+                      let lat=p.endereco?.lat||null,lng=p.endereco?.lng||null;
+                      if(!lat&&(p.city||p.endereco?.rua)){try{const g=await geocodeEndereco(p.endereco?.rua?`${p.endereco.rua}, ${p.endereco.numero||""}, ${p.city||""}, Brasil`:`${p.name}, ${p.city}, Brasil`);if(g){lat=g.lat;lng=g.lng;}}catch(e){}}
+                      const endStr=p.endereco?.rua?`${p.endereco.rua}, ${p.endereco.numero||""} — ${p.endereco.bairro||""}, ${p.city||""}`:p.city||"";
+                      setPlanAtivo(x=>({...x,parceiros:[...x.parceiros,{id:p.id,nome:p.name,segmento:p.category,endereco:endStr,lat,lng,embalagens:500,tabela:6,desconto:0,raio:5,manual:false}]}));
                     }
                   }} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",borderRadius:7,cursor:"pointer",marginBottom:4,background:sel?T.accentDim:isRec?T.purpleDim:T.surface,border:`1px solid ${sel?T.accentBorder:isRec?T.purple+"66":T.border}`}}>
                     <div>
