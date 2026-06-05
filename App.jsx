@@ -496,7 +496,7 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
                         setGeocodingId(null);
                       }
                       const endStr=p.endereco?.rua?`${p.endereco.rua}, ${p.endereco.numero||""} — ${p.endereco.bairro||""}, ${p.city||""}`:p.city||"";
-                      setPlanAtivo(x=>({...x,parceiros:[...x.parceiros,{id:p.id,nome:p.name,segmento:p.category,endereco:endStr,lat,lng,embalagens:500,tabela:6,desconto:0,raio:5,manual:false}]}));
+                      setPlanAtivo(x=>({...x,parceiros:[...x.parceiros,{id:p.id,nome:p.name,segmento:p.category,endereco:endStr,lat,lng,embalagens:500,tabela:6,desconto:0,raio:5,manual:false,demograficos:p.demograficos||null}]}));
                     }
                   }} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",borderRadius:7,cursor:geocodingId===p.id?"wait":"pointer",marginBottom:4,background:sel?T.accentDim:isRec?T.purpleDim:T.surface,border:`1px solid ${sel?T.accentBorder:isRec?T.purple+"66":T.border}`,opacity:geocodingId&&geocodingId!==p.id?0.5:1}}>
                     <div>
@@ -506,6 +506,11 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
                         {!p.endereco?.lat&&!sel&&<span title="Sem GPS cadastrado — será geocodificado ao selecionar" style={{fontSize:7,background:T.warnDim,color:T.warn,borderRadius:4,padding:"1px 5px",border:`1px solid ${T.warn}33`}}>⚠ sem GPS</span>}
                       </div>
                       <div style={{fontSize:8,color:T.muted}}>{p.category} · {p.city}</div>
+                      {p.demograficos?.populacao_5km_estimada&&(
+                        <div style={{fontSize:7,color:T.info,marginTop:1}}>
+                          {"\u{1F465}"} {p.demograficos.populacao_5km_estimada>=1000000?(p.demograficos.populacao_5km_estimada/1000000).toFixed(1)+"M":(p.demograficos.populacao_5km_estimada/1000).toFixed(0)+"k"} hab. · {(p.demograficos.densidade_hab_km2||0).toLocaleString("pt-BR")} hab/km²
+                        </div>
+                      )}
                     </div>
                     <div style={{fontSize:10,color:sel?T.accent:isRec?T.purple:T.muted,minWidth:16,textAlign:"center"}}>
                       {geocodingId===p.id?"⏳":sel?"✓":"+"}
@@ -787,7 +792,13 @@ const _renderParcLayers=(L,grp,parceiros)=>{
   parceiros.forEach(p=>{
     if(!p.lat||!p.lng)return;
     const icon=L.divIcon({html:`<div style="width:14px;height:14px;border-radius:50%;background:#3D9EFF;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>`,className:"",iconSize:[14,14],iconAnchor:[7,7]});
-    L.marker([p.lat,p.lng],{icon}).addTo(grp).bindPopup(`<b>🏪 ${p.nome}</b><br/>${p.embalagens||0} emb.`);
+    const dem=p.demograficos;
+    const pop5k=dem?.populacao_5km_estimada;
+    const pop5Str=pop5k?(pop5k>=1000000?(pop5k/1000000).toFixed(1)+"M":(pop5k/1000).toFixed(0)+"k"):"—";
+    const densStr=dem?.densidade_hab_km2?dem.densidade_hab_km2.toLocaleString("pt-BR"):"—";
+    const faixaStr=dem?.faixa_predominante||"—";
+    const popupHtml=`<div style="font-family:Arial,sans-serif;min-width:160px"><b>🏪 ${p.nome}</b><br/><span style="color:#888;font-size:11px">${p.embalagens||0} emb. · raio ${p.raio||5}km</span>${dem?`<hr style="border:none;border-top:1px solid #eee;margin:5px 0"/><span style="font-size:11px">👥 ~${pop5Str} hab. raio 5km<br/>🏙️ ${densStr} hab/km²<br/>📊 Faixa: ${faixaStr}</span>`:""}`;
+    L.marker([p.lat,p.lng],{icon}).addTo(grp).bindPopup(popupHtml);
     L.circle([p.lat,p.lng],{radius:(p.raio||5)*1000,color:"#FF4D6A",fillColor:"#FF4D6A",fillOpacity:0.06,weight:1.5,dashArray:"4"}).addTo(grp);
   });
 };
@@ -7531,6 +7542,53 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         )}
                         <button className="btn" onClick={async()=>{let upd=null;setBasePartners(prev=>prev.map(p=>{if(p.id!==selPartner.id)return p;upd={...p,endereco:selPartner.endereco};return upd;}));if(upd)await supabase.from("parceiros").upsert({id:upd.id,data:upd});}} style={{width:"100%",marginTop:10,padding:"8px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>- Salvar endereco</button>
                       </div>
+
+                      {/* Perfil Demográfico */}
+                      {selPartner.demograficos&&(
+                        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:16,marginBottom:14}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:12}}>
+                            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Perfil Demográfico</div>
+                            <span style={{fontSize:8,color:T.muted}}>{selPartner.demograficos.fonte} · {selPartner.demograficos.municipio}/{selPartner.demograficos.uf}</span>
+                          </div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:selPartner.demograficos.faixa_percentuais?12:0}}>
+                            {[
+                              {l:"Pop. raio 5km (estimada)",v:selPartner.demograficos.populacao_5km_estimada?(selPartner.demograficos.populacao_5km_estimada>=1000000?(selPartner.demograficos.populacao_5km_estimada/1000000).toFixed(1)+"M":(selPartner.demograficos.populacao_5km_estimada/1000).toFixed(0)+"k")+" hab.":"—",c:T.info},
+                              {l:"Densidade hab/km²",v:selPartner.demograficos.densidade_hab_km2?selPartner.demograficos.densidade_hab_km2.toLocaleString("pt-BR"):"—",c:T.text},
+                              {l:"Pop. do município",v:selPartner.demograficos.populacao_municipio?(selPartner.demograficos.populacao_municipio>=1000000?(selPartner.demograficos.populacao_municipio/1000000).toFixed(1)+"M":(selPartner.demograficos.populacao_municipio/1000).toFixed(0)+"k"):"—",c:T.text},
+                              {l:"Faixa etária predominante",v:selPartner.demograficos.faixa_predominante||"—",c:T.purple},
+                            ].map((item,i)=>(
+                              <div key={i} style={{background:T.surface,borderRadius:7,padding:"9px 11px"}}>
+                                <div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{item.l}</div>
+                                <div style={{fontSize:13,fontWeight:700,color:item.c}}>{item.v}</div>
+                              </div>
+                            ))}
+                          </div>
+                          {selPartner.demograficos.faixa_percentuais&&(()=>{
+                            const FAIXAS=[["0-14","#4FC3F7"],["15-29","#66BB6A"],["30-44","#3D9EFF"],["45-59","#FFA726"],["60+","#EF5350"]];
+                            const pcts=selPartner.demograficos.faixa_percentuais;
+                            return(
+                              <div>
+                                <div style={{fontSize:8,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Distribuição etária (Censo 2022)</div>
+                                <div style={{display:"flex",gap:2,borderRadius:5,overflow:"hidden",height:18,marginBottom:6}}>
+                                  {FAIXAS.map(([k,cor])=>pcts[k]>0?(
+                                    <div key={k} title={`${k} anos: ${pcts[k]}%`} style={{flex:pcts[k],background:cor,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                                      {pcts[k]>=11&&<span style={{fontSize:7,color:"#fff",fontWeight:700}}>{pcts[k]}%</span>}
+                                    </div>
+                                  ):null)}
+                                </div>
+                                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                                  {FAIXAS.filter(([k])=>pcts[k]>0).map(([k,cor])=>(
+                                    <div key={k} style={{display:"flex",alignItems:"center",gap:3}}>
+                                      <div style={{width:8,height:8,borderRadius:2,background:cor}}/>
+                                      <span style={{fontSize:8,color:T.muted}}>{k} anos — {pcts[k]}%</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
 
                       {/* Fotos do Parceiro */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:16,marginBottom:14}}>
