@@ -197,7 +197,7 @@ const WizStep1=({visible,planAtivo,setPlanAtivo,planGeoLoading,setPlanGeoLoading
         <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Projeto vinculado</div>
         <select value={planAtivo.projectId||""} onChange={e=>setPlanAtivo(p=>({...p,projectId:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}>
           <option value="">Selecione...</option>
-          {(projects||[]).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+          {(projects||[]).filter(p=>p.active).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
       </div>
     </div>
@@ -1139,8 +1139,9 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
                 <div>
                   <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Projeto</div>
-                  <select value={editData.project||""} onChange={e=>setEditData(p=>({...p,project:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}>
-                    {(projects||[]).map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+                  <select value={editData.projectId||""} onChange={e=>{const sel=(projects||[]).find(p=>p.id===Number(e.target.value));setEditData(p=>({...p,projectId:sel?sel.id:null,project:sel?sel.name:p.project}));}} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}>
+                    <option value="">Selecione...</option>
+                    {(projects||[]).filter(p=>p.active).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -2958,13 +2959,15 @@ export default function App(){
   const[showNewCamp,setShowNewCamp]=useState(false);
   const[newCampStep,setNewCampStep]=useState(1);
   const[newCamp,setNewCamp]=useState({
-    name:"",client:"",agencia:"",numPI:"",project:"",responsavel:"",
+    name:"",client:"",agencia:"",numPI:"",project:"",projectId:"",responsavel:"",
     startDate:"",endDate:"",region:"",
     graficaFornecedor:"",material:"",graficaPrazo:"",
     logistica:"",logisticaFornecedor:"",logisticaPrazo:"",
     parceiros:"",sacolas:"",valorLiquido:"",
     briefing:"",segments:[]
   });
+  const[editingProjectId,setEditingProjectId]=useState(null);
+  const[editingProjectName,setEditingProjectName]=useState("");
   const[calMonth,setCalMonth]=useState(4); // 0-indexed, 4=May
   const[calYear,setCalYear]=useState(2025);
   const[calHover,setCalHover]=useState(null);
@@ -4324,16 +4327,36 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
   };
 
 
+  const renameProject=async(projId,newName)=>{
+    if(!newName.trim())return;
+    setProjects(p=>p.map(x=>x.id===projId?{...x,name:newName.trim()}:x));
+    const updated=[];
+    setCamps(p=>p.map(c=>{if(c.projectId!==projId)return c;const upd={...c,project:newName.trim()};updated.push(upd);return upd;}));
+    await supabase.from("projects").update({name:newName.trim()}).eq("id",projId);
+    for(const c of updated)await supabase.from("campanhas").upsert({id:c.id,data:c});
+    setEditingProjectId(null);
+  };
+
   const createCamp=async()=>{
     if(!newCamp.name||!newCamp.client)return;
     const id=Date.now();
+    let projId=newCamp.projectId?Number(newCamp.projectId):null;
+    let projName=newCamp.project||"";
+    if(!projId){
+      projId=id;
+      projName=newCamp.name;
+      const newProj={id:projId,name:projName,active:true};
+      setProjects(p=>[...p,newProj]);
+      supabase.from("projects").insert(newProj);
+    }
     const rec={
       id,
       name:newCamp.name,
       client:newCamp.client,
       agencia:newCamp.agencia,
       numPI:newCamp.numPI,
-      project:newCamp.project,
+      project:projName,
+      projectId:projId,
       responsavel:newCamp.responsavel,
       startDate:newCamp.startDate,
       endDate:newCamp.endDate,
@@ -4368,7 +4391,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     setCamps(p=>[...p,rec]);
     setShowNewCamp(false);
     setNewCampStep(1);
-    setNewCamp({name:"",client:"",agencia:"",numPI:"",project:"",responsavel:"",startDate:"",endDate:"",region:"",graficaFornecedor:"",material:"",graficaPrazo:"",logistica:"",logisticaFornecedor:"",logisticaPrazo:"",parceiros:"",sacolas:"",valorLiquido:"",briefing:"",segments:[]});
+    setNewCamp({name:"",client:"",agencia:"",numPI:"",project:"",projectId:"",responsavel:"",startDate:"",endDate:"",region:"",graficaFornecedor:"",material:"",graficaPrazo:"",logistica:"",logisticaFornecedor:"",logisticaPrazo:"",parceiros:"",sacolas:"",valorLiquido:"",briefing:"",segments:[]});
     const{error}=await supabase.from("campanhas").insert({id:rec.id,data:rec});
     if(error)console.error("SUPABASE createCamp:",error);
     else pushNotif("Campanha criada!",rec.name,T.accent);
@@ -5448,10 +5471,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           </div>
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
                             <div>
-                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Projeto</div>
-                              <select value={newCamp.project} onChange={e=>setNewCamp(p=>({...p,project:e.target.value}))} style={selS}>
-                                <option value="">Selecione...</option>
-                                {projects.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Projeto <span style={{fontWeight:400}}>(opcional)</span></div>
+                              <select value={newCamp.projectId||""} onChange={e=>{const sel=projects.find(p=>p.id===Number(e.target.value));setNewCamp(p=>({...p,projectId:e.target.value,project:sel?sel.name:""}));}} style={selS}>
+                                <option value="">Criar projeto com nome da campanha</option>
+                                {projects.filter(p=>p.active).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
                               </select>
                             </div>
                             <div>
@@ -5677,15 +5700,21 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 <div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
                     {projects.map(proj=>{
-                      const projCamps=camps.filter(c=>c.project===proj.name);
+                      const projCamps=camps.filter(c=>c.projectId===proj.id||(!c.projectId&&c.project===proj.name));
                       const done=projCamps.filter(c=>c.stage===5).length;
                       const emAndamento=projCamps.filter(c=>c.stage>1&&c.stage<5).length;
                       const totalVal=projCamps.reduce((a,c)=>a+(c.valorLiquido||0),0);
                       return(
                         <div key={proj.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"16px 18px",cursor:"pointer"}} onClick={()=>{setCampView("kanban");}}>
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                            <div>
-                              <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,marginBottom:3}}>{proj.name}</div>
+                            <div onClick={e=>e.stopPropagation()}>
+                              {editingProjectId===proj.id
+                                ?<input autoFocus value={editingProjectName} onChange={e=>setEditingProjectName(e.target.value)} onBlur={()=>renameProject(proj.id,editingProjectName)} onKeyDown={e=>{if(e.key==="Enter")renameProject(proj.id,editingProjectName);if(e.key==="Escape")setEditingProjectId(null);}} style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14,background:T.surface,border:`1px solid ${T.accent}`,borderRadius:5,padding:"2px 8px",color:T.text,outline:"none",width:170,marginBottom:3}}/>
+                                :<div style={{display:"flex",alignItems:"center",gap:5,cursor:"pointer"}} onClick={()=>{setEditingProjectId(proj.id);setEditingProjectName(proj.name);}}>
+                                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14}}>{proj.name}</div>
+                                  <span style={{fontSize:10,color:T.muted}}>✎</span>
+                                </div>
+                              }
                               <div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{projCamps.length} campanha{projCamps.length!==1?"s":""}</div>
                             </div>
                             <div style={{fontSize:9,padding:"3px 8px",borderRadius:4,background:proj.active?T.accentDim:T.border,color:proj.active?T.accent:T.muted,border:`1px solid ${proj.active?T.accentBorder:T.border}`}}>
@@ -5713,7 +5742,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             })}
                             {projCamps.length>3&&<div style={{fontSize:9,color:T.muted,textAlign:"center"}}>+{projCamps.length-3} mais</div>}
                           </div>
-                          <button onClick={e=>{e.stopPropagation();setNewCamp(p=>({...p,project:proj.name}));setShowNewCamp(true);setNewCampStep(1);}} style={{marginTop:10,width:"100%",padding:"7px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700,fontFamily:"Arial,sans-serif"}}>
+                          <button onClick={e=>{e.stopPropagation();setNewCamp(p=>({...p,project:proj.name,projectId:String(proj.id)}));setShowNewCamp(true);setNewCampStep(1);}} style={{marginTop:10,width:"100%",padding:"7px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700,fontFamily:"Arial,sans-serif"}}>
                             + Nova campanha neste projeto
                           </button>
                         </div>
