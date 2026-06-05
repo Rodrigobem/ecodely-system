@@ -365,6 +365,36 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
   );
 };
 
+// ── DADOS DEMOGRÁFICOS CONSOLIDADOS ──────────────────────────────────────
+const calcDemograficosConsolidados=(partners)=>{
+  const comDemo=partners.filter(p=>p.demograficos?.populacao_5km_estimada);
+  if(comDemo.length===0)return null;
+  const totalPop=comDemo.reduce((a,p)=>a+(p.demograficos.populacao_5km_estimada||0),0);
+  const densMedia=Math.round(comDemo.reduce((a,p)=>a+(p.demograficos.densidade_hab_km2||0),0)/comDemo.length);
+  // Distribuição etária ponderada pelo tamanho de cada raio
+  const grupos={'0-14':0,'15-29':0,'30-44':0,'45-59':0,'60+':0};
+  let totalPeso=0;
+  for(const p of comDemo){
+    const pop=p.demograficos.populacao_5km_estimada||1;
+    totalPeso+=pop;
+    const pcts=p.demograficos.faixa_percentuais||{};
+    for(const k of Object.keys(grupos))grupos[k]+=(pcts[k]||0)*pop;
+  }
+  const pctGrupos={};
+  for(const k of Object.keys(grupos))pctGrupos[k]=totalPeso>0?Math.round(grupos[k]/totalPeso):0;
+  const faixaPredominante=Object.entries(pctGrupos).sort((a,b)=>b[1]-a[1])[0]?.[0];
+  return{
+    parceiros_com_dados:comDemo.length,
+    parceiros_total:partners.length,
+    populacao_total_estimada:totalPop,
+    densidade_media:densMedia,
+    faixa_predominante:faixaPredominante?faixaPredominante+' anos':null,
+    faixa_percentuais:pctGrupos,
+  };
+};
+const DEMO_FAIXAS=[['0-14','#4FC3F7'],['15-29','#66BB6A'],['30-44','#3D9EFF'],['45-59','#FFA726'],['60+','#EF5350']];
+const fmtPop=n=>n>=1000000?(n/1000000).toFixed(1)+'M':(n/1000).toFixed(0)+'k';
+
 // ── WIZ STEP 3 ────────────────────────────────────────────────────────────
 const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEndereco,sugerirParceiros})=>{
   const [sugestao,setSugestao]=useState(null);
@@ -621,6 +651,37 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
           </div>
         </div>
         <div>
+          {(()=>{
+            const demo=calcDemograficosConsolidados(parc);
+            if(!demo)return null;
+            return(
+              <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:9,padding:"10px 12px",marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:8}}>
+                  <div style={{fontSize:10,fontWeight:700,color:T.text}}>Público alcançado estimado</div>
+                  <span style={{fontSize:8,color:T.muted}}>{demo.parceiros_com_dados}/{demo.parceiros_total} com dados IBGE</span>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:8}}>
+                  {[
+                    {l:"Pop. total raio 5km",v:fmtPop(demo.populacao_total_estimada)+" hab.",c:T.info},
+                    {l:"Densidade média",v:(demo.densidade_media||0).toLocaleString("pt-BR")+" h/km²",c:T.text},
+                    {l:"Faixa predominante",v:demo.faixa_predominante||"—",c:T.purple},
+                  ].map((item,i)=>(
+                    <div key={i} style={{background:T.surface,borderRadius:6,padding:"7px 9px"}}>
+                      <div style={{fontSize:7,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>{item.l}</div>
+                      <div style={{fontSize:11,fontWeight:700,color:item.c}}>{item.v}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{display:"flex",gap:2,borderRadius:4,overflow:"hidden",height:14}}>
+                  {DEMO_FAIXAS.map(([k,cor])=>demo.faixa_percentuais[k]>0?(
+                    <div key={k} title={`${k} anos: ${demo.faixa_percentuais[k]}%`} style={{flex:demo.faixa_percentuais[k],background:cor,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      {demo.faixa_percentuais[k]>=12&&<span style={{fontSize:6,color:"#fff",fontWeight:700}}>{demo.faixa_percentuais[k]}%</span>}
+                    </div>
+                  ):null)}
+                </div>
+              </div>
+            );
+          })()}
           <div style={{fontSize:10,color:T.muted,marginBottom:8,fontWeight:700}}>Mapa de cobertura (raio 5km)</div>
           <MapaPlano clienteLat={planAtivo.clienteLat} clienteLng={planAtivo.clienteLng} clienteNome={planAtivo.clienteNome} parceiros={parc}/>
           <div style={{display:"flex",gap:12,marginTop:8}}>
@@ -1665,6 +1726,49 @@ const ClientPanel=({camp,allPartners,onClose,onPDF})=>{
             })}
           </div>
         </div>
+        {(()=>{
+          const demo=calcDemograficosConsolidados(campPartners);
+          if(!demo)return null;
+          return(
+            <div className="cp-card" style={{padding:'20px 24px',marginBottom:20}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:14}}>
+                <div>
+                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:'#fff',marginBottom:2}}>Perfil do Público Alcançado</div>
+                  <div style={{fontSize:9,color:'#556'}}>IBGE Censo 2022 · estimativa raio 5km por parceiro</div>
+                </div>
+                <span style={{fontSize:9,color:'#334'}}>{demo.parceiros_com_dados}/{demo.parceiros_total} parceiros</span>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:16}}>
+                {[
+                  {l:"Pop. estimada no raio",v:fmtPop(demo.populacao_total_estimada)+" hab.",c:"#00C48C"},
+                  {l:"Densidade média",v:(demo.densidade_media||0).toLocaleString("pt-BR")+" hab/km²",c:"#3D9EFF"},
+                  {l:"Faixa predominante",v:demo.faixa_predominante||"—",c:"#9B7FFF"},
+                ].map((item,i)=>(
+                  <div key={i} style={{background:'#0E1020',border:'1px solid #1E2240',borderRadius:10,padding:'14px 16px'}}>
+                    <div style={{fontSize:8,color:'#556',textTransform:'uppercase',letterSpacing:1.5,marginBottom:6}}>{item.l}</div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:20,color:item.c}}>{item.v}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{fontSize:9,color:'#556',marginBottom:8}}>Distribuição etária da audiência</div>
+              <div style={{display:'flex',gap:2,borderRadius:6,overflow:'hidden',height:24,marginBottom:10}}>
+                {DEMO_FAIXAS.map(([k,cor])=>demo.faixa_percentuais[k]>0?(
+                  <div key={k} title={`${k} anos: ${demo.faixa_percentuais[k]}%`} style={{flex:demo.faixa_percentuais[k],background:cor,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                    {demo.faixa_percentuais[k]>=10&&<span style={{fontSize:8,color:'#fff',fontWeight:700}}>{demo.faixa_percentuais[k]}%</span>}
+                  </div>
+                ):null)}
+              </div>
+              <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
+                {DEMO_FAIXAS.filter(([k])=>demo.faixa_percentuais[k]>0).map(([k,cor])=>(
+                  <div key={k} style={{display:'flex',alignItems:'center',gap:5}}>
+                    <div style={{width:10,height:10,borderRadius:3,background:cor}}/>
+                    <span style={{fontSize:9,color:'#889'}}>{k} anos — {demo.faixa_percentuais[k]}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
         {imp.galeria.length>0&&(
           <div className="cp-card" style={{padding:'20px 24px',marginBottom:20}}>
             <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:'#fff',marginBottom:14}}>Campanha em campo</div>
@@ -4123,6 +4227,43 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     const numProposta=`ECO-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`;
     const custoImpacto=impactos>0?(total/impactos).toFixed(2):0;
 
+    // Dados demográficos consolidados dos parceiros
+    const demoConsolidado=calcDemograficosConsolidados(parceiros);
+    const demoSlide=(()=>{
+      if(!demoConsolidado)return"";
+      const d=demoConsolidado;
+      const CORES={'0-14':'#4FC3F7','15-29':'#66BB6A','30-44':'#3D9EFF','45-59':'#FFA726','60+':'#EF5350'};
+      const pct=d.faixa_percentuais||{};
+      const popStr=fmtPop(d.populacao_total_estimada);
+      const barHtml=Object.entries(pct).filter(([,v])=>v>0).map(([k,v])=>`<div title="${k} anos: ${v}%" style="flex:${v};background:${CORES[k]};display:flex;align-items:center;justify-content:center">${v>=8?`<span style="font-size:7px;color:#fff;font-weight:700">${v}%</span>`:""}</div>`).join("");
+      const legendaHtml=Object.entries(pct).filter(([,v])=>v>0).map(([k,v])=>`<div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:${CORES[k]}"></div><span style="font-size:9px;color:#666">${k} anos — ${v}%</span></div>`).join("");
+      const tabelaHtml=parceiros.filter(p=>p.demograficos?.populacao_5km_estimada).map((p,i)=>{
+        const pop5k=p.demograficos.populacao_5km_estimada;
+        const pop5Str=fmtPop(pop5k);
+        const dens=p.demograficos.densidade_hab_km2?(p.demograficos.densidade_hab_km2).toLocaleString("pt-BR"):"—";
+        return`<tr style="border-bottom:1px solid #f0f0f0;background:${i%2===0?"#fff":"#fafafa"}"><td style="padding:7px 10px;font-weight:600">${p.nome}</td><td style="padding:7px 10px;text-align:right;color:#00A36C;font-weight:700">${pop5Str} hab.</td><td style="padding:7px 10px;text-align:right;color:#888">${dens} h/km²</td><td style="padding:7px 10px;color:#888">${p.demograficos.faixa_predominante||"—"}</td></tr>`;
+      }).join("");
+      return`
+    <!-- PERFIL DEMOGRÁFICO -->
+    <div class="sec pb">
+      <div class="sec-lbl">Audiência</div>
+      <div class="sec-h">Perfil Demográfico do Público Alcançado</div>
+      <div class="bar"></div>
+      <div class="ibge-badge">📊 IBGE Censo 2022 — ${d.parceiros_com_dados} de ${d.parceiros_total} parceiros com dados</div>
+      <div class="g3" style="margin-bottom:24px">
+        <div class="card"><div class="lbl">Pop. estimada no raio (soma 5km)</div><div class="val green">${popStr} hab.</div><div class="sub">soma dos raios de 5km de cada parceiro</div></div>
+        <div class="card blue"><div class="lbl">Densidade média</div><div class="val blue sm">${(d.densidade_media||0).toLocaleString("pt-BR")} hab/km²</div><div class="sub">média ponderada por população</div></div>
+        <div class="card purple"><div class="lbl">Faixa etária predominante</div><div class="val purple sm">${d.faixa_predominante||"—"}</div><div class="sub">maior grupo da audiência</div></div>
+      </div>
+      <div style="margin-bottom:20px">
+        <div class="lbl" style="margin-bottom:8px">Distribuição etária da audiência (ponderada por parceiro)</div>
+        <div style="display:flex;gap:2px;border-radius:6px;overflow:hidden;height:28px;margin-bottom:8px">${barHtml}</div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap">${legendaHtml}</div>
+      </div>
+      ${tabelaHtml?`<div><div class="lbl" style="margin-bottom:8px">Detalhe demográfico por parceiro</div><table style="width:100%;border-collapse:collapse;font-size:10px"><thead><tr style="background:#f8fafb"><th style="padding:7px 10px;text-align:left;font-size:8px;color:#888;text-transform:uppercase">Parceiro</th><th style="padding:7px 10px;text-align:right;font-size:8px;color:#888;text-transform:uppercase">Pop. raio 5km</th><th style="padding:7px 10px;text-align:right;font-size:8px;color:#888;text-transform:uppercase">Densidade</th><th style="padding:7px 10px;text-align:left;font-size:8px;color:#888;text-transform:uppercase">Faixa</th></tr></thead><tbody>${tabelaHtml}</tbody></table></div>`:""}
+    </div>`;
+    })();
+
     // Apps com market share
     const appsArr=Array.isArray(analise?.appsLideres)&&typeof analise.appsLideres[0]==="object"
       ?analise.appsLideres
@@ -4328,6 +4469,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
         <tbody>${parceiros.map((p,i)=>`<tr style="border-bottom:1px solid #f0f0f0;background:${i%2===0?"#fff":"#fafafa"}"><td style="padding:8px 12px;font-weight:600">${p.nome}</td><td style="padding:8px 12px;text-align:right">${fmtN(p.embalagens)} un</td><td style="padding:8px 12px;color:#888">${p.segmento||"—"}</td><td style="padding:8px 12px;text-align:right;color:#888">${p.raio||5}km</td></tr>`).join("")}</tbody>
       </table>`:""}
     </div>
+
+    ${demoSlide}
 
     <!-- FINANCEIRO -->
     <div class="sec pb">
