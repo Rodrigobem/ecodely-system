@@ -772,13 +772,26 @@ const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanA
 const EMPTY_PLAN={id:null,projectId:"",clienteNome:"",clienteSegmento:"",clienteEndereco:"",clienteLat:null,clienteLng:null,publicoAlvo:"",faixaEtaria:"",rendaEstimada:"",objetivo:"",verba:"",prazo:"",regiao:"",preferenciaParceiro:"",analise:null,parceiros:[],outrasMidias:[],calc:{},createdBy:"",createdAt:""};
 
 // ── MAPA DE PLANEJAMENTO (Leaflet) ──────────────────────────────────────────
+const _renderParcLayers=(L,grp,parceiros)=>{
+  grp.clearLayers();
+  parceiros.forEach(p=>{
+    if(!p.lat||!p.lng)return;
+    const icon=L.divIcon({html:`<div style="width:14px;height:14px;border-radius:50%;background:#3D9EFF;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>`,className:"",iconSize:[14,14],iconAnchor:[7,7]});
+    L.marker([p.lat,p.lng],{icon}).addTo(grp).bindPopup(`<b>🏪 ${p.nome}</b><br/>${p.embalagens||0} emb.`);
+    L.circle([p.lat,p.lng],{radius:(p.raio||5)*1000,color:"#FF4D6A",fillColor:"#FF4D6A",fillOpacity:0.06,weight:1.5,dashArray:"4"}).addTo(grp);
+  });
+};
+
 const MapaPlano=({clienteLat,clienteLng,clienteNome,parceiros=[]})=>{
   const mapRef=useRef(null);
   const instRef=useRef(null);
+  const parcGrpRef=useRef(null);
+  // Effect 1: inicializa/recria o mapa quando a localização do cliente muda
   useEffect(()=>{
     const init=()=>{
       if(!mapRef.current)return;
       if(instRef.current){instRef.current.remove();instRef.current=null;}
+      if(mapRef.current._leaflet_id)delete mapRef.current._leaflet_id;
       const L=window.L;
       const lat=clienteLat||-23.5505,lng=clienteLng||-46.6333;
       const map=L.map(mapRef.current,{zoomControl:true}).setView([lat,lng],13);
@@ -787,13 +800,10 @@ const MapaPlano=({clienteLat,clienteLng,clienteNome,parceiros=[]})=>{
         const icon=L.divIcon({html:`<div style="width:22px;height:22px;border-radius:50%;background:#00E5A0;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#000">C</div>`,className:"",iconSize:[22,22],iconAnchor:[11,11]});
         L.marker([lat,lng],{icon}).addTo(map).bindPopup(`<b>📍 ${clienteNome||"Cliente"}</b>`);
       }
-      parceiros.forEach(p=>{
-        if(!p.lat||!p.lng)return;
-        const icon=L.divIcon({html:`<div style="width:14px;height:14px;border-radius:50%;background:#3D9EFF;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>`,className:"",iconSize:[14,14],iconAnchor:[7,7]});
-        L.marker([p.lat,p.lng],{icon}).addTo(map).bindPopup(`<b>🏪 ${p.nome}</b><br/>${p.embalagens||0} emb.`);
-        L.circle([p.lat,p.lng],{radius:(p.raio||5)*1000,color:"#FF4D6A",fillColor:"#FF4D6A",fillOpacity:0.06,weight:1.5,dashArray:"4"}).addTo(map);
-      });
+      const grp=L.layerGroup().addTo(map);
+      parcGrpRef.current=grp;
       instRef.current=map;
+      _renderParcLayers(L,grp,parceiros);
     };
     if(!document.getElementById("lf-css")){
       const l=document.createElement("link");l.id="lf-css";l.rel="stylesheet";
@@ -805,8 +815,13 @@ const MapaPlano=({clienteLat,clienteLng,clienteNome,parceiros=[]})=>{
       s.src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
       s.onload=init;document.head.appendChild(s);
     } else init();
-    return()=>{if(instRef.current){instRef.current.remove();instRef.current=null;}};
-  },[clienteLat,clienteLng,parceiros]);
+    return()=>{parcGrpRef.current=null;if(instRef.current){instRef.current.remove();instRef.current=null;}};
+  },[clienteLat,clienteLng]);
+  // Effect 2: atualiza marcadores/círculos sem recriar o mapa
+  useEffect(()=>{
+    if(!instRef.current||!parcGrpRef.current||!window.L)return;
+    _renderParcLayers(window.L,parcGrpRef.current,parceiros);
+  },[parceiros]);
   return <div ref={mapRef} style={{height:420,width:"100%",borderRadius:12,border:"1px solid #2A2E45",zIndex:1}}/>;
 };
 
