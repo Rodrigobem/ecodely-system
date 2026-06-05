@@ -369,6 +369,7 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
 const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEndereco,sugerirParceiros})=>{
   const [sugestao,setSugestao]=useState(null);
   const [loadingSug,setLoadingSug]=useState(false);
+  const [geocodingId,setGeocodingId]=useState(null);
   if(!visible)return null;
 
   // Calculadora de campanha
@@ -485,22 +486,30 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
                 const isRec=recsIds.includes(String(p.id));
                 return(
                   <div key={p.id} onClick={async()=>{
+                    if(geocodingId===p.id)return;
                     if(sel){setPlanAtivo(x=>({...x,parceiros:x.parceiros.filter(y=>y.id!==p.id)}));}
                     else{
                       let lat=p.endereco?.lat||null,lng=p.endereco?.lng||null;
-                      if(!lat&&(p.city||p.endereco?.rua)){try{const g=await geocodeEndereco(p.endereco?.rua?`${p.endereco.rua}, ${p.endereco.numero||""}, ${p.city||""}, Brasil`:`${p.name}, ${p.city}, Brasil`);if(g){lat=g.lat;lng=g.lng;}}catch(e){}}
+                      if(!lat&&(p.city||p.endereco?.rua)){
+                        setGeocodingId(p.id);
+                        try{const g=await geocodeEndereco(p.endereco?.rua?`${p.endereco.rua}, ${p.endereco.numero||""}, ${p.city||""}, Brasil`:`${p.name}, ${p.city}, Brasil`);if(g){lat=g.lat;lng=g.lng;}}catch(e){}
+                        setGeocodingId(null);
+                      }
                       const endStr=p.endereco?.rua?`${p.endereco.rua}, ${p.endereco.numero||""} — ${p.endereco.bairro||""}, ${p.city||""}`:p.city||"";
                       setPlanAtivo(x=>({...x,parceiros:[...x.parceiros,{id:p.id,nome:p.name,segmento:p.category,endereco:endStr,lat,lng,embalagens:500,tabela:6,desconto:0,raio:5,manual:false}]}));
                     }
-                  }} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",borderRadius:7,cursor:"pointer",marginBottom:4,background:sel?T.accentDim:isRec?T.purpleDim:T.surface,border:`1px solid ${sel?T.accentBorder:isRec?T.purple+"66":T.border}`}}>
+                  }} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",borderRadius:7,cursor:geocodingId===p.id?"wait":"pointer",marginBottom:4,background:sel?T.accentDim:isRec?T.purpleDim:T.surface,border:`1px solid ${sel?T.accentBorder:isRec?T.purple+"66":T.border}`,opacity:geocodingId&&geocodingId!==p.id?0.5:1}}>
                     <div>
                       <div style={{display:"flex",gap:5,alignItems:"center"}}>
                         <div style={{fontSize:10,fontWeight:sel||isRec?700:400,color:sel?T.accent:isRec?T.purple:T.text}}>{p.name}</div>
                         {isRec&&!sel&&<span style={{fontSize:7,background:T.purple,color:"#fff",borderRadius:4,padding:"1px 5px"}}>IA ✓</span>}
+                        {!p.endereco?.lat&&!sel&&<span title="Sem GPS cadastrado — será geocodificado ao selecionar" style={{fontSize:7,background:T.warnDim,color:T.warn,borderRadius:4,padding:"1px 5px",border:`1px solid ${T.warn}33`}}>⚠ sem GPS</span>}
                       </div>
                       <div style={{fontSize:8,color:T.muted}}>{p.category} · {p.city}</div>
                     </div>
-                    <div style={{fontSize:10,color:sel?T.accent:isRec?T.purple:T.muted}}>{sel?"✓":"+"}</div>
+                    <div style={{fontSize:10,color:sel?T.accent:isRec?T.purple:T.muted,minWidth:16,textAlign:"center"}}>
+                      {geocodingId===p.id?"⏳":sel?"✓":"+"}
+                    </div>
                   </div>
                 );
               });
@@ -564,7 +573,7 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
                 <div style={{display:"flex",gap:5,alignItems:"center"}}>
                   <span style={{fontSize:10,fontWeight:700}}>{p.nome}</span>
-                  <span title={p.lat?"Localizado no mapa":"Sem localização — não aparece no mapa"} style={{fontSize:9}}>{p.lat?"📍":"⚠️"}</span>
+                  <span title={p.lat?"Localizado no mapa":"Sem GPS — não aparece no mapa. Edite o endereço na Base de Parceiros para geocodificar."} style={{fontSize:9,color:p.lat?T.accent:T.warn}}>{p.lat?"📍":"⚠️ sem GPS"}</span>
                 </div>
                 <div onClick={()=>setPlanAtivo(x=>({...x,parceiros:x.parceiros.filter((_,j)=>j!==i)}))} style={{cursor:"pointer",color:T.muted,fontSize:14}}>×</div>
               </div>
