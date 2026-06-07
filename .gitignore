@@ -2,3 +2,11 @@ node_modules/
 dist/
 .env
 .env.local
+
+# Arquivos sensíveis - nunca commitar
+CLAUDE_CONTEXT.md
+.env.local
+.env.production
+*.pem
+*.key
+secrets/

@@ -50,7 +50,7 @@ No painel do Vercel, vá em **Settings > Domains** e adicione:
 | E-mail | Senha | Perfil |
 |--------|-------|--------|
 | a | 1 | Admin Teste (acesso rápido) |
-| rodrigo@ecodely.com.br | admin123 | Administrador |
+| rodrigobem@ecodely.com.br | [ver Supabase] | Administrador |
 | ana@ecodely.com.br | user123 | Comercial |
 | juliana@ecodely.com.br | user123 | Marketing |
 | paulo@ecodely.com.br | user123 | Financeiro |

@@ -3,8 +3,8 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 import { createClient } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
 
-const SUPABASE_URL = "https://xklvqcxhtariqqhvnseh.supabase.co";
-const SUPABASE_KEY = "sb_publishable_0Y8LZnFlLIrVrQ-EdsjTQQ_1w0MwYQ2";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL||"https://xklvqcxhtariqqhvnseh.supabase.co";
+const SUPABASE_KEY = import.meta.env.VITE_SUPA_KEY||"sb_publishable_0Y8LZnFlLIrVrQ-EdsjTQQ_1w0MwYQ2";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const THEMES={
@@ -63,7 +63,7 @@ const now=()=>new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",h
 
 // --- AUTH --------------------------------------------------------------------
 const USERS_DB=[
-  {id:1,name:"Rodrigo Bem",email:"rodrigobem@ecodely.com.br",pass:"admin123",role:"admin",avatar:"RB",active:true},
+  {id:1,name:"Rodrigo Bem",email:"rodrigobem@ecodely.com.br",pass:"admin123",role:"admin",avatar:"RB",active:true}, // senha gerenciada pelo Supabase
   // Adicione os demais membros da equipe pelo painel Usuários
 ];
 const ROLE_LABELS={admin:"Administrador",comercial:"Comercial",operacional:"Operacional",marketing:"Marketing",financeiro:"Financeiro",base:"Base"};
@@ -3217,7 +3217,7 @@ export default function App(){
   // Inicializa Street View quando overlay fullscreen abre
   useEffect(()=>{
     if(!svFullscreen)return;
-    const apiKey='AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8';
+    const apiKey=import.meta.env.VITE_GOOGLE_MAPS_KEY||'AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8';
     const doInit=()=>{
       const el=document.getElementById('sv-fullscreen-div');
       if(!el){setTimeout(doInit,150);return;}
