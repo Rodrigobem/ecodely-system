@@ -4664,10 +4664,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   // Usar pano ID outdoor se disponível (garante foto de rua, não indoor)
                   let url;
                   if(window._svOutdoorPano){
-                    url="https://maps.googleapis.com/maps/api/streetview?size=600x300&pano="+window._svOutdoorPano+"&heading="+h+"&pitch="+p2+"&fov=90&key=import.meta.env.VITE_GOOGLE_MAPS_KEY||"AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8"";
+                    url="https://maps.googleapis.com/maps/api/streetview?size=600x300&pano="+window._svOutdoorPano+"&heading="+h+"&pitch="+p2+"&fov=90&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8";
                   }else{
                     const loc=svFullscreen.lat+","+svFullscreen.lng;
-                    url="https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+loc+"&heading="+h+"&pitch="+p2+"&fov=90&key=import.meta.env.VITE_GOOGLE_MAPS_KEY||"AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8"";
+                    url="https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+loc+"&heading="+h+"&pitch="+p2+"&fov=90&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8";
                   }
                   // Atualiza estado local
                   setSelPartner(prev=>({...prev,foto_fachada:url,sv_editando:false}));
@@ -7760,7 +7760,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           </div>
                           {(()=>{
                             const addr=selPartner.endereco&&selPartner.endereco.rua?selPartner.endereco.rua+", "+selPartner.city+", "+selPartner.state+", Brasil":"";
-                            const svUrl=addr?"https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+encodeURIComponent(addr)+"&key=import.meta.env.VITE_GOOGLE_MAPS_KEY||"AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8"&fov=90&pitch=0":"";
+                            const svUrl=addr?"https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+encodeURIComponent(addr)+"&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8&fov=90&pitch=0":"";
                             const lat=selPartner.endereco&&selPartner.endereco.lat;
                             const lng=selPartner.endereco&&selPartner.endereco.lng;
                             const location=lat&&lng?(lat+","+lng):addr?encodeURIComponent(addr):null;
