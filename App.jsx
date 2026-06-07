@@ -63,7 +63,7 @@ const now=()=>new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",h
 
 // --- AUTH --------------------------------------------------------------------
 const USERS_DB=[
-  {id:1,name:"Rodrigo Bem",email:"rodrigobem@ecodely.com.br",pass:"admin123",role:"admin",avatar:"RB",active:true}, // senha gerenciada pelo Supabase
+  {id:1,name:"Rodrigo Bem",email:"rodrigobem@ecodely.com.br",pass:"[ver Supabase]",role:"admin",avatar:"RB",active:true}, // senha gerenciada pelo Supabase
   // Adicione os demais membros da equipe pelo painel Usuários
 ];
 const ROLE_LABELS={admin:"Administrador",comercial:"Comercial",operacional:"Operacional",marketing:"Marketing",financeiro:"Financeiro",base:"Base"};
@@ -3217,7 +3217,7 @@ export default function App(){
   // Inicializa Street View quando overlay fullscreen abre
   useEffect(()=>{
     if(!svFullscreen)return;
-    const apiKey=import.meta.env.VITE_GOOGLE_MAPS_KEY||'AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8';
+    const apiKey=import.meta.env.VITE_GOOGLE_MAPS_KEY||'import.meta.env.VITE_GOOGLE_MAPS_KEY||"AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8"';
     const doInit=()=>{
       const el=document.getElementById('sv-fullscreen-div');
       if(!el){setTimeout(doInit,150);return;}
@@ -4664,10 +4664,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   // Usar pano ID outdoor se disponível (garante foto de rua, não indoor)
                   let url;
                   if(window._svOutdoorPano){
-                    url="https://maps.googleapis.com/maps/api/streetview?size=600x300&pano="+window._svOutdoorPano+"&heading="+h+"&pitch="+p2+"&fov=90&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8";
+                    url="https://maps.googleapis.com/maps/api/streetview?size=600x300&pano="+window._svOutdoorPano+"&heading="+h+"&pitch="+p2+"&fov=90&key=import.meta.env.VITE_GOOGLE_MAPS_KEY||"AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8"";
                   }else{
                     const loc=svFullscreen.lat+","+svFullscreen.lng;
-                    url="https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+loc+"&heading="+h+"&pitch="+p2+"&fov=90&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8";
+                    url="https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+loc+"&heading="+h+"&pitch="+p2+"&fov=90&key=import.meta.env.VITE_GOOGLE_MAPS_KEY||"AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8"";
                   }
                   // Atualiza estado local
                   setSelPartner(prev=>({...prev,foto_fachada:url,sv_editando:false}));
@@ -7760,11 +7760,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           </div>
                           {(()=>{
                             const addr=selPartner.endereco&&selPartner.endereco.rua?selPartner.endereco.rua+", "+selPartner.city+", "+selPartner.state+", Brasil":"";
-                            const svUrl=addr?"https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+encodeURIComponent(addr)+"&key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8&fov=90&pitch=0":"";
+                            const svUrl=addr?"https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+encodeURIComponent(addr)+"&key=import.meta.env.VITE_GOOGLE_MAPS_KEY||"AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8"&fov=90&pitch=0":"";
                             const lat=selPartner.endereco&&selPartner.endereco.lat;
                             const lng=selPartner.endereco&&selPartner.endereco.lng;
                             const location=lat&&lng?(lat+","+lng):addr?encodeURIComponent(addr):null;
-                            const embedUrl=location?"https://www.google.com/maps/embed/v1/streetview?key=AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8&location="+location+"&heading=0&pitch=0&fov=90":"";
+                            const embedUrl=location?"https://www.google.com/maps/embed/v1/streetview?key=import.meta.env.VITE_GOOGLE_MAPS_KEY||"AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8"&location="+location+"&heading=0&pitch=0&fov=90":"";
                             const src=selPartner.foto_fachada||svUrl;
                             return(
                               <div>
@@ -7774,7 +7774,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                       <StreetViewInterativo
                                         lat={selPartner.endereco?.lat}
                                         lng={selPartner.endereco?.lng}
-                                        apiKey="AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8"
+                                        apiKey="import.meta.env.VITE_GOOGLE_MAPS_KEY||"AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8""
                                         onSave={(heading,pitch,url)=>{
                                           setSelPartner(p=>({...p,foto_fachada:url,sv_heading_draft:heading,sv_pitch_draft:pitch,sv_editando:false}));
                                           pushNotif("Fachada salva!","Angulo salvo com sucesso",T.accent);

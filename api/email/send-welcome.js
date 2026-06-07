@@ -4,12 +4,12 @@
 const RESEND_KEY = process.env.RESEND_API_KEY;
 
 const usuarios = [
-  { name: "Rodrigo Bem", email: "rodrigobem@ecodely.com.br", role: "Administrador", pass: "admin123" },
-  { name: "Pedro Camaor", email: "pedro.camaor@ecodely.com.br", role: "Administrador", pass: "ecodely2026" },
-  { name: "Priscila", email: "opec@ecodely.com.br", role: "Base & Operacional", pass: "ecodely2026" },
-  { name: "Larissa", email: "financeiro@ecodely.com.br", role: "Financeiro", pass: "ecodely2026" },
-  { name: "Victoria", email: "victoria@ecodely.com.br", role: "Base", pass: "ecodely2026" },
-  { name: "Pedro Henrique", email: "marketing@ecodely.com.br", role: "Marketing", pass: "ecodely2026" },
+  { name: "Rodrigo Bem", email: "rodrigobem@ecodely.com.br", role: "Administrador", pass: process.env.ADMIN_PASS||"[redacted]" },
+  { name: "Pedro Camaor", email: "pedro.camaor@ecodely.com.br", role: "Administrador", pass: "[redacted]" },
+  { name: "Priscila", email: "opec@ecodely.com.br", role: "Base & Operacional", pass: "[redacted]" },
+  { name: "Larissa", email: "financeiro@ecodely.com.br", role: "Financeiro", pass: "[redacted]" },
+  { name: "Victoria", email: "victoria@ecodely.com.br", role: "Base", pass: "[redacted]" },
+  { name: "Pedro Henrique", email: "marketing@ecodely.com.br", role: "Marketing", pass: "[redacted]" },
 ];
 
 function emailHtml(name, email, role, pass) {
@@ -106,7 +106,7 @@ export default async function handler(req, res) {
 
   // Verificar se é admin
   const { adminKey } = req.body || {};
-  if (adminKey !== "ecodely2026admin") {
+  if (adminKey !== process.env.ADMIN_KEY||"ecodely2026admin") {
     return res.status(401).json({ error: "Não autorizado" });
   }
 

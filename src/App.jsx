@@ -3,7 +3,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 import { createClient } from "@supabase/supabase-js";
 
 const SUPA_URL = "https://xklvqcxhtariqqhvnseh.supabase.co";
-const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhrbHZxY3hodGFyaXFxaHZuc2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NTYxMjYsImV4cCI6MjA5NDAzMjEyNn0.uZmJKJNTMpH65z3eztXKbip6jiZnsuKIUUl3ceWd5XU";
+const SUPA_KEY = import.meta.env.VITE_SUPA_KEY;
 const supabase = createClient(SUPA_URL, SUPA_KEY);
 
 const T={bg:"#06070D",surface:"#0C0E18",card:"#10121E",border:"#1A1E30",accent:"#00E5A0",accentDim:"#00E5A012",accentBorder:"#00E5A038",text:"#E6E8F0",muted:"#4A5070",soft:"#8A90A8",warn:"#F5A623",warnDim:"#F5A62315",danger:"#FF4D6A",dangerDim:"#FF4D6A12",info:"#3D9EFF",infoDim:"#3D9EFF12",purple:"#9B7FFF",purpleDim:"#9B7FFF12",pink:"#F472B6",green:"#25D366",greenDim:"#25D36612"};
@@ -99,12 +99,12 @@ const now=()=>new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",h
 
 // --- AUTH --------------------------------------------------------------------
 const USERS_DB=[
-  {id:1,name:"Rodrigo Bem",email:"rodrigobem@ecodely.com.br",pass:"admin123",role:"admin",avatar:"RB",active:true,lastAccess:"nunca",extraRoles:[],meta:500000},
-  {id:1779900001,name:"Pedro Camaor",email:"pedro.camaor@ecodely.com.br",pass:"ecodely2026",role:"admin",avatar:"PC",active:true,lastAccess:"nunca",extraRoles:[],meta:0},
-  {id:1779900002,name:"Priscila",email:"opec@ecodely.com.br",pass:"ecodely2026",role:"base",avatar:"P",active:true,lastAccess:"nunca",extraRoles:["operacional"],meta:0},
-  {id:1779900003,name:"Larissa",email:"financeiro@ecodely.com.br",pass:"ecodely2026",role:"financeiro",avatar:"L",active:true,lastAccess:"nunca",extraRoles:[],meta:0},
-  {id:1779900004,name:"Victoria",email:"victoria@ecodely.com.br",pass:"ecodely2026",role:"base",avatar:"V",active:true,lastAccess:"nunca",extraRoles:[],meta:0},
-  {id:1779900005,name:"Pedro Henrique",email:"marketing@ecodely.com.br",pass:"ecodely2026",role:"marketing",avatar:"PH",active:true,lastAccess:"nunca",extraRoles:[],meta:0},
+  {id:1,name:"Rodrigo Bem",email:"rodrigobem@ecodely.com.br",pass:"[ver Supabase]",role:"admin",avatar:"RB",active:true,lastAccess:"nunca",extraRoles:[],meta:500000},
+  {id:1779900001,name:"Pedro Camaor",email:"pedro.camaor@ecodely.com.br",pass:"[ver Supabase]",role:"admin",avatar:"PC",active:true,lastAccess:"nunca",extraRoles:[],meta:0},
+  {id:1779900002,name:"Priscila",email:"opec@ecodely.com.br",pass:"[ver Supabase]",role:"base",avatar:"P",active:true,lastAccess:"nunca",extraRoles:["operacional"],meta:0},
+  {id:1779900003,name:"Larissa",email:"financeiro@ecodely.com.br",pass:"[ver Supabase]",role:"financeiro",avatar:"L",active:true,lastAccess:"nunca",extraRoles:[],meta:0},
+  {id:1779900004,name:"Victoria",email:"victoria@ecodely.com.br",pass:"[ver Supabase]",role:"base",avatar:"V",active:true,lastAccess:"nunca",extraRoles:[],meta:0},
+  {id:1779900005,name:"Pedro Henrique",email:"marketing@ecodely.com.br",pass:"[ver Supabase]",role:"marketing",avatar:"PH",active:true,lastAccess:"nunca",extraRoles:[],meta:0},
 ];
 const ROLE_LABELS={admin:"Administrador",comercial:"Comercial",operacional:"Operacional",marketing:"Marketing",financeiro:"Financeiro",base:"Base"};
 const ROLE_COLOR={admin:T.accent,comercial:T.info,operacional:T.purple,marketing:T.pink,financeiro:T.warn,base:T.green};
@@ -1442,7 +1442,7 @@ export default function App(){
             <div style={{color:T.accent,fontWeight:700,marginBottom:4}}>Login rápido:</div>
             a · 1 (Admin Teste)<br/>
             <div style={{color:T.soft,marginTop:4,marginBottom:2}}>Outras contas demo:</div>
-            rodrigo@ecodely.com.br · admin123<br/>
+            [credenciais removidas]<br/>
             juliana@ecodely.com.br · user123 (Marketing)<br/>
             paulo@ecodely.com.br · user123 (Financeiro)<br/>
             mariana@ecodely.com.br · user123 (Base)

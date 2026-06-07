@@ -95,7 +95,7 @@ const now=()=>new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",h
 // --- AUTH --------------------------------------------------------------------
 const USERS_DB=[
   {id:0,name:"Admin Teste",email:"a",pass:"1",role:"admin",avatar:"AT",active:true},
-  {id:1,name:"Rodrigo Bem",email:"rodrigo@ecodely.com.br",pass:"admin123",role:"admin",avatar:"RB",active:true},
+  {id:1,name:"Rodrigo Bem",email:"rodrigo@ecodely.com.br",pass:"[ver Supabase]",role:"admin",avatar:"RB",active:true},
   {id:2,name:"Ana Lima",email:"ana@ecodely.com.br",pass:"user123",role:"comercial",avatar:"AL",active:true},
   {id:3,name:"Carlos Mendes",email:"carlos@ecodely.com.br",pass:"user123",role:"operacional",avatar:"CM",active:true},
   {id:4,name:"Juliana Faria",email:"juliana@ecodely.com.br",pass:"user123",role:"marketing",avatar:"JF",active:true},

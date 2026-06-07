@@ -10,3 +10,6 @@ CLAUDE_CONTEXT.md
 *.pem
 *.key
 secrets/
+ecodely_v3-2.jsx
+CLAUDE_CONTEXT.md
+src/
