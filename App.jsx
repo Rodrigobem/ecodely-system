@@ -66,13 +66,13 @@ const USERS_DB=[
   {id:1,name:"Rodrigo Bem",email:"rodrigobem@ecodely.com.br",pass:"[ver Supabase]",role:"admin",avatar:"RB",active:true}, // senha gerenciada pelo Supabase
   // Adicione os demais membros da equipe pelo painel Usuários
 ];
-const ROLE_LABELS={admin:"Administrador",comercial:"Comercial",operacional:"Operacional",marketing:"Marketing",financeiro:"Financeiro",base:"Base"};
-const ROLE_COLOR={admin:T.accent,comercial:T.info,operacional:T.purple,marketing:T.pink,financeiro:T.warn,base:T.green};
+const ROLE_LABELS={admin:"Administrador",comercial:"Comercial",operacional:"Operacional",marketing:"Marketing",financeiro:"Financeiro",base:"Base",representante:"Representante"};
+const ROLE_COLOR={admin:T.accent,comercial:T.info,operacional:T.purple,marketing:T.pink,financeiro:T.warn,base:T.green,representante:"#F59E0B"};
 const SEC_COLOR={comercial:T.info,financeiro:T.warn,marketing:T.pink,base:T.accent,operacional:T.purple,grafica:T.purple,logistica:T.info};
 const SEC_LABEL={comercial:"Comercial",financeiro:"Financeiro",marketing:"Marketing",base:"Base",operacional:"Operacional",grafica:"Gráfica",logistica:"Logística"};
 
 // Role - sector mapping
-const ROLE_TO_SEC={comercial:"comercial",financeiro:"financeiro",marketing:"marketing",base:"base",operacional:"operacional",admin:null};
+const ROLE_TO_SEC={comercial:"comercial",financeiro:"financeiro",marketing:"marketing",base:"base",operacional:"operacional",admin:null,representante:"comercial"};
 
 // --- CAMPAIGNS ---------------------------------------------------------------
 const STAGES_CAMP=[
@@ -122,16 +122,16 @@ const STATUS_PARTNER={"prospectado":T.info,"negociando":T.warn,"ativo":T.accent,
 
 // --- NAV ---------------------------------------------------------------------
 const getNav=(role,queueCount,notifCount,extraRoles=[])=>[
-  {id:"dashboard",label:"Dashboard",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base"]},
+  {id:"dashboard",label:"Dashboard",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base","representante"]},
   {id:"minha-fila",label:"Minha Fila",icon:"-",roles:["comercial","operacional","marketing","financeiro","base","admin"],badge:queueCount||null},
-  {id:"campanhas",label:"Campanhas",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro"]},
+  {id:"campanhas",label:"Campanhas",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","representante"]},
   {id:"calendario",label:"Calendário",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro"]},
   {id:"financeiro-modulo",label:"Financeiro",icon:"-",roles:["admin","financeiro"]},
-  {id:"comercial",label:"Comercial",icon:"-",roles:["admin","comercial","financeiro"]},
-  {id:"comissoes",label:"Comissões",icon:"-",roles:["admin","base"]},
+  {id:"comercial",label:"Comercial",icon:"-",roles:["admin","comercial","financeiro","representante"]},
+  {id:"comissoes",label:"Comissões",icon:"-",roles:["admin","base","representante"]},
   {id:"parceiros",label:"Buscar Parceiros",icon:"-",roles:["admin","base"]},
   {id:"base",label:"Base",icon:"-",roles:["admin","base","comercial"]},
-  {id:"planejamento-midia",label:"Planejamento de Mídia",icon:"-",roles:["admin","comercial"]},
+  {id:"planejamento-midia",label:"Planejamento de Mídia",icon:"-",roles:["admin","comercial","representante"]},
   {id:"relatorios",label:"Relatórios",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base"]},
   {id:"cadastros",label:"Cadastros",icon:"-",roles:["admin","comercial","operacional"]},
   {id:"whatsapp",label:"WhatsApp IA",icon:"-",roles:["admin","comercial","base"]},
@@ -3177,7 +3177,7 @@ export default function App(){
   const[newComm,setNewComm]=useState({typeId:"",projectId:"",value:""});
   const[users,setUsers]=useState(USERS_DB);
   const[showNewUser,setShowNewUser]=useState(false);
-  const[newUser,setNewUser]=useState({name:"",email:"",pass:"",role:"base"});
+  const[newUser,setNewUser]=useState({name:"",email:"",pass:"",role:"base",regiao:[],comissao_pct:5});
   const[baseSearch,setBaseSearch]=useState("");
   const[baseFilter,setBaseFilter]=useState("todos");
   const[baseScoreMin,setBaseScoreMin]=useState(0);
@@ -3558,6 +3558,7 @@ export default function App(){
     setProspects(prev=>prev.map(p=>p.id===dragProspId?{...p,stage:stageId}:p));
     supabase.from("prospects").update({stage:stageId}).eq("id",dragProspId).then(({error})=>{if(error)console.error("SUPABASE prosp stage:",error);});
     if(selProsp?.id===dragProspId)setSelProsp(prev=>({...prev,stage:stageId}));
+    if(stageId==="fechado"&&prevP?.stage!=="fechado")autoComissaoRepresentante(prevP);
     pushNotif("Prospect movido",`${prevP?.name} - ${PIPE_STAGES.find(s=>s.id===stageId)?.label}`,PIPE_STAGES.find(s=>s.id===stageId)?.color||T.accent);
     setDragProspId(null);setDragOverPipeStage(null);
   };
@@ -3610,6 +3611,7 @@ export default function App(){
       if(prevP?.stage===stageId)return;
       setProspects(prev=>prev.map(p=>p.id===prospId?{...p,stage:stageId}:p));
       supabase.from("prospects").update({stage:stageId}).eq("id",prospId).then(({error})=>{if(error)console.error("SUPABASE touch prosp:",error);});
+      if(stageId==="fechado"&&prevP?.stage!=="fechado")autoComissaoRepresentante(prevP);
       pushNotif("Prospect movido",`${prevP?.name} - ${PIPE_STAGES.find(s=>s.id===stageId)?.label}`,PIPE_STAGES.find(s=>s.id===stageId)?.color||T.accent);
     }
   };
@@ -3679,12 +3681,25 @@ export default function App(){
 
   const addProsp=async()=>{
     if(!newProsp.name)return;
-    const rec={...newProsp,id:Date.now(),value:Number(newProsp.value)||0};
+    const owner=user.role==="representante"?user.name:newProsp.owner;
+    const representante_id=user.role==="representante"?user.id:null;
+    const representante_nome=user.role==="representante"?user.name:null;
+    const rec={...newProsp,id:Date.now(),value:Number(newProsp.value)||0,owner,representante_id,representante_nome};
     setProspects(p=>[...p,rec]);
     setNewProsp({name:"",contact:"",email:"",segment:"Beleza",value:"",stage:"lead",owner:"Ana Lima",notes:""});
     setShowNewProsp(false);
-    const{error}=await supabase.from("prospects").insert({id:rec.id,name:rec.name,contact:rec.contact,email:rec.email,phone:rec.phone||"",notes:rec.notes,stage:rec.stage,value:rec.value,owner:rec.owner});
+    const{error}=await supabase.from("prospects").insert({id:rec.id,name:rec.name,contact:rec.contact,email:rec.email,phone:rec.phone||"",notes:rec.notes,stage:rec.stage,value:rec.value,owner:rec.owner,representante_id,representante_nome});
     if(error)console.error("SUPABASE addProsp:",error);
+  };
+
+  const autoComissaoRepresentante=async(prosp)=>{
+    const owner=users.find(u=>u.name===prosp.owner&&u.role==="representante");
+    if(!owner||!(owner.comissao_pct>0)||!(prosp.value>0))return;
+    const comVal=Math.round(prosp.value*(owner.comissao_pct/100)*100)/100;
+    const rec={id:Date.now(),user:owner.name,userId:owner.id,partner:prosp.name,type:"Prospecto",typeId:0,project:"Pipeline",projectId:0,value:comVal,date:now().slice(0,5),status:"pendente",pago:false,prospectId:prosp.id};
+    setClosings(p=>[...p,rec]);
+    await supabase.from("closings").insert(rec);
+    pushNotif("Comissão gerada",`${owner.name} — ${fmt(comVal)} (${owner.comissao_pct}%)`,T.accent);
   };
 
   const submitClosing=async()=>{
@@ -3721,6 +3736,7 @@ export default function App(){
     const newP={id:Date.now(),name:prosp.name,handle:`@${prosp.name.toLowerCase().replace(/\s/g,"_")}`,city:"-",state:"-",category:prosp.segment,deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:1,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},whatsapp:"",instagram_seguidores:0,foto_fachada:""};
     const withScore={...newP,score:calcScore(newP)};
     setBasePartners(prev=>[...prev,withScore]);
+    if(prosp.stage!=="fechado")autoComissaoRepresentante(prosp);
     setProspects(prev=>prev.map(p=>p.id===prosp.id?{...p,stage:"fechado"}:p));
     await supabase.from("parceiros").upsert({id:withScore.id,data:withScore});
     await supabase.from("prospects").update({stage:"fechado"}).eq("id",prosp.id);
@@ -4597,7 +4613,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     const passHash=await hashPass(newUser.pass);
     const rec={id:Date.now(),...newUser,pass:passHash,avatar:newUser.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2),active:true,lastAccess:"nunca"};
     setUsers(p=>[...p,rec]);
-    setNewUser({name:"",email:"",pass:"",role:"base"});setShowNewUser(false);
+    setNewUser({name:"",email:"",pass:"",role:"base",regiao:[],comissao_pct:5});setShowNewUser(false);
     const{error}=await supabase.from("usuarios").insert(rec);
     if(error)console.error("SUPABASE addUser erro:",error.message,error.details);
   };
@@ -5499,6 +5515,46 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             );
 
             // -- RENDER by role --
+            const DashRepresentante=()=>{
+              const meusPros=prospects.filter(p=>p.owner===user.name);
+              const meusFechados=meusPros.filter(p=>p.stage==="fechado");
+              const receitaGerada=meusFechados.reduce((a,p)=>a+(p.value||0),0);
+              const pipeline=meusPros.filter(p=>p.stage!=="fechado").reduce((a,p)=>a+(p.value||0),0);
+              const META_REP=user.meta||10000;
+              const myComm=closings.filter(c=>c.userId===user.id);
+              const comAprovada=myComm.filter(c=>c.status==="aprovado"&&!c.pago).reduce((a,c)=>a+c.value,0);
+              const campsAtivas=camps.filter(c=>c.stage<5);
+              const pct=META_REP>0?Math.min(Math.round(receitaGerada/META_REP*100),100):0;
+              return(
+                <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
+                  <KCard label="Pipeline ativo" value={fmt(pipeline)} sub={`${meusPros.filter(p=>p.stage!=="fechado").length} prospects`} color={T.info} icon="-"/>
+                  <KCard label="Receita gerada" value={fmt(receitaGerada)} sub={`${meusFechados.length} fechados`} color={T.accent} icon="-"/>
+                  <KCard label="Comissão a receber" value={fmt(comAprovada)} sub={`${user.comissao_pct||5}% sobre fechados`} color="#F59E0B" icon="-"/>
+                  <KCard label="Campanhas ativas" value={campsAtivas.length} sub="em andamento" color={T.purple} icon="-"/>
+                  <div style={{gridColumn:"1/-1",background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+                      <span style={{fontSize:11,color:T.soft,fontFamily:"Arial,sans-serif"}}>Meta mensal</span>
+                      <span style={{fontSize:11,fontWeight:700,color:pct>=100?T.accent:T.soft,fontFamily:"Arial,sans-serif"}}>{fmt(receitaGerada)} / {fmt(META_REP)} ({pct}%)</span>
+                    </div>
+                    <div style={{height:8,background:T.border,borderRadius:4,overflow:"hidden"}}>
+                      <div style={{width:`${pct}%`,height:"100%",background:`linear-gradient(90deg,${T.accent},#00B87A)`,borderRadius:4,transition:"width 0.5s"}}/>
+                    </div>
+                  </div>
+                  {myComm.filter(c=>c.status==="pendente").length>0&&(
+                    <div style={{gridColumn:"1/-1",background:T.card,border:`1px solid ${"#F59E0B"}44`,borderRadius:12,padding:14}}>
+                      <div style={{fontSize:11,color:"#F59E0B",fontWeight:700,fontFamily:"Arial,sans-serif",marginBottom:8}}>Comissões pendentes de aprovação</div>
+                      {myComm.filter(c=>c.status==="pendente").slice(0,5).map((c,i)=>(
+                        <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${T.border}`,alignItems:"center"}}>
+                          <span style={{fontSize:11,fontFamily:"Arial,sans-serif"}}>{c.partner}</span>
+                          <span style={{fontSize:11,fontWeight:700,color:"#F59E0B",fontFamily:"Arial,sans-serif"}}>{fmt(c.value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            };
+
             if(user.role==="admin"){
               const DASH_TABS=[["geral","Geral"],["comercial","Comercial"],["marketing","Marketing"],["financeiro","Financeiro"],["operacional","Operacional"],["base","Base"]];
               return(
@@ -5522,6 +5578,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             if(user.role==="financeiro") return <DashFinanceiro/>;
             if(user.role==="operacional") return <DashOperacional/>;
             if(user.role==="base") return <DashBase/>;
+            if(user.role==="representante") return <DashRepresentante/>;
             return <DashGeral/>;
           })()}
 
@@ -7037,8 +7094,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         ))}
                         <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Etapa</div>
                         <select value={newProsp.stage} onChange={e=>setNewProsp(p=>({...p,stage:e.target.value}))} style={selS}>{PIPE_STAGES.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select></div>
-                        <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Responsável</div>
-                        <select value={newProsp.owner} onChange={e=>setNewProsp(p=>({...p,owner:e.target.value}))} style={selS}><option>Rodrigo Bem</option><option>Ana Lima</option></select></div>
+                        {user.role!=="representante"&&<div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Responsável</div>
+                        <select value={newProsp.owner} onChange={e=>setNewProsp(p=>({...p,owner:e.target.value}))} style={selS}><option>Rodrigo Bem</option><option>Ana Lima</option></select></div>}
                       </div>
                       <div style={{display:"flex",gap:8}}>
                         <button className="btn" onClick={addProsp} style={{padding:"8px 16px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>Salvar</button>
@@ -7049,7 +7106,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   {pipeView==="kanban"&&(
                     <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,alignItems:"start"}}>
                       {PIPE_STAGES.map(stage=>{
-                        const items=(filterSeg==="todos"?prospects:prospects.filter(p=>p.segment===filterSeg)).filter(p=>p.stage===stage.id);
+                        const items=(filterSeg==="todos"?prospects:prospects.filter(p=>p.segment===filterSeg)).filter(p=>p.stage===stage.id).filter(p=>user.role==="representante"?p.owner===user.name:true);
                         return(
                           <div key={stage.id}
                             data-kanban-col={stage.id}
@@ -7100,7 +7157,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
                         {["Empresa","Segmento","Valor","Etapa","Responsável"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
                       </div>
-                      {(filterSeg==="todos"?prospects:prospects.filter(p=>p.segment===filterSeg)).map((p,i)=>{const s=PIPE_STAGES.find(x=>x.id===p.stage);return(
+                      {(filterSeg==="todos"?prospects:prospects.filter(p=>p.segment===filterSeg)).filter(p=>user.role==="representante"?p.owner===user.name:true).map((p,i)=>{const s=PIPE_STAGES.find(x=>x.id===p.stage);return(
                         <div key={i} className="hr" onClick={()=>setSelProsp(p)} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
                           <div><div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div><div style={{fontSize:9,color:T.muted}}>{p.email}</div></div>
                           <Badge label={p.segment} color={T.purple}/>
@@ -9870,7 +9927,19 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
                     {[["Nome","name","text"],["E-mail","email","email"],["Senha","pass","password"]].map(([l,k,t])=>(<div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}</div><input type={t} value={newUser[k]} onChange={e=>setNewUser(p=>({...p,[k]:e.target.value}))} style={inpS}/></div>))}
                     <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Perfil</div><select value={newUser.role} onChange={e=>setNewUser(p=>({...p,role:e.target.value}))} style={selS}>{Object.entries(ROLE_LABELS).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
+                    {newUser.role==="representante"&&<div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Comissão (%)</div><input type="number" min="0" max="100" step="0.5" value={newUser.comissao_pct} onChange={e=>setNewUser(p=>({...p,comissao_pct:Number(e.target.value)}))} style={inpS}/></div>}
                   </div>
+                  {newUser.role==="representante"&&(
+                    <div style={{marginBottom:10}}>
+                      <div style={{fontSize:9,color:T.muted,marginBottom:6,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Regiões de atuação</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                        {["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"].map(uf=>{
+                          const sel=(newUser.regiao||[]).includes(uf);
+                          return(<div key={uf} onClick={()=>setNewUser(p=>({...p,regiao:sel?p.regiao.filter(r=>r!==uf):[...(p.regiao||[]),uf]}))} style={{fontSize:10,padding:"3px 9px",borderRadius:5,cursor:"pointer",border:`1px solid ${sel?"#F59E0B66":T.border}`,background:sel?"#F59E0B22":T.surface,color:sel?"#F59E0B":T.muted,fontFamily:"Arial,sans-serif",fontWeight:sel?700:400,transition:"all 0.1s"}}>{uf}</div>);
+                        })}
+                      </div>
+                    </div>
+                  )}
                   <div style={{display:"flex",gap:8}}><button className="btn" onClick={addUser} style={{padding:"8px 16px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>Criar</button><button className="btn" onClick={()=>setShowNewUser(false)} style={{padding:"8px 12px",background:T.card,border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:11}}>Cancelar</button></div>
                 </div>
               )}
@@ -9881,8 +9950,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 {users.map((u,i)=>(
                   <div key={i} style={{display:"grid",gridTemplateColumns:"2fr 2fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"start",opacity:u.active?1:0.5}}>
                     <div style={{display:"flex",gap:8,alignItems:"center"}}><div style={{width:26,height:26,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",border:`1px solid ${ROLE_COLOR[u.role]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:ROLE_COLOR[u.role],fontWeight:700,flexShrink:0}}>{u.avatar}</div><span style={{fontSize:12,fontWeight:600,fontFamily:"Arial,sans-serif"}}>{u.name}</span></div>
-                    <div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>{u.email}</div>
-                    <Badge label={ROLE_LABELS[u.role]} color={ROLE_COLOR[u.role]}/>
+                    <div>
+                      <div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>{u.email}</div>
+                      {u.role==="representante"&&u.regiao?.length>0&&<div style={{fontSize:8,color:"#F59E0B",marginTop:2,fontFamily:"Arial,sans-serif"}}>{u.regiao.join(", ")} · {u.comissao_pct||5}% comissão</div>}
+                    </div>
+                    <Badge label={ROLE_LABELS[u.role]||u.role} color={ROLE_COLOR[u.role]||T.muted}/>
                     {/* Acessos extras — só aparece para não-admin */}
                     <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
                       {u.role!=="admin"&&Object.entries(ROLE_LABELS).filter(([r])=>r!=="admin"&&r!==u.role).map(([r,l])=>{
