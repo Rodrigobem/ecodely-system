@@ -7764,7 +7764,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             const lat=selPartner.endereco&&selPartner.endereco.lat;
                             const lng=selPartner.endereco&&selPartner.endereco.lng;
                             const location=lat&&lng?(lat+","+lng):addr?encodeURIComponent(addr):null;
-                            const embedUrl=location?"https://www.google.com/maps/embed/v1/streetview?key=import.meta.env.VITE_GOOGLE_MAPS_KEY||"AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8"&location="+location+"&heading=0&pitch=0&fov=90":"";
+                            const embedUrl=location?`https://www.google.com/maps/embed/v1/streetview?key=${import.meta.env.VITE_GOOGLE_MAPS_KEY||"AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8"}&location=${location}&heading=0&pitch=0&fov=90`:``;
+
                             const src=selPartner.foto_fachada||svUrl;
                             return(
                               <div>
