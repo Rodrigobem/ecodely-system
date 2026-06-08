@@ -60,6 +60,9 @@ const FORMAS_PAG=["PIX","Cartao","Boleto","Debito","DARF","Cheque","Dinheiro"];
 const fmt=(v)=>"R$\u00A0"+Number(v).toLocaleString("pt-BR",{minimumFractionDigits:0});
 const fmtK=(v)=>v>=1000?`R$ ${(v/1000).toFixed(0)}k`:fmt(v);
 const now=()=>new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+const maskCNPJ=v=>{const d=v.replace(/\D/g,"").slice(0,14);if(d.length<=2)return d;if(d.length<=5)return d.slice(0,2)+"."+d.slice(2);if(d.length<=8)return d.slice(0,2)+"."+d.slice(2,5)+"."+d.slice(5);if(d.length<=12)return d.slice(0,2)+"."+d.slice(2,5)+"."+d.slice(5,8)+"/"+d.slice(8);return d.slice(0,2)+"."+d.slice(2,5)+"."+d.slice(5,8)+"/"+d.slice(8,12)+"-"+d.slice(12);};
+const maskPhone=v=>{const d=v.replace(/\D/g,"").slice(0,11);if(!d.length)return"";if(d.length<=2)return"("+d;if(d.length<=6)return"("+d.slice(0,2)+") "+d.slice(2);if(d.length<=10)return"("+d.slice(0,2)+") "+d.slice(2,6)+"-"+d.slice(6);return"("+d.slice(0,2)+") "+d.slice(2,7)+"-"+d.slice(7);};
+const validCNPJ=v=>{const d=v.replace(/\D/g,"");if(d.length!==14||/^(\d)\1+$/.test(d))return false;const c=(s,l)=>{let sm=0,p=l-7;for(let i=l;i>=1;i--){sm+=parseInt(s[l-i])*p--;if(p<2)p=9;}return sm%11<2?0:11-sm%11;};return c(d,12)===parseInt(d[12])&&c(d,13)===parseInt(d[13]);};
 
 // --- AUTH --------------------------------------------------------------------
 const USERS_DB=[
@@ -477,6 +480,7 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
                 </div>
               ))}
             </div>
+            {(()=>{const pForn=suppliers.find(s=>s.principal&&s.type==="grafica");const cu=pForn?.custos?.ecoboxTradicional?Number(pForn.custos.ecoboxTradicional):null;if(!pForn||!cu||!cTotalEmb)return null;const custoProd=Math.round(cu*cTotalEmb*100)/100;const margem=cTotalEmb*cValorBruto>0?Math.round((1-(custoProd/(cTotalEmb*cValorBruto)))*100):null;return(<div style={{background:T.surface,border:`1px solid ${T.purple}33`,borderRadius:7,padding:"7px 10px",marginBottom:8,display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>  <span style={{fontSize:8,color:T.purple,fontFamily:"Arial,sans-serif",fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Custo de Produção — {pForn.name}</span><span style={{fontSize:11,fontFamily:"Arial,sans-serif",fontWeight:800,color:T.purple}}>{fmt(custoProd)}</span><span style={{fontSize:8,color:T.muted}}>({cu.toLocaleString("pt-BR",{minimumFractionDigits:2})} × {cTotalEmb.toLocaleString("pt-BR")} un.)</span>{margem!=null&&<span style={{fontSize:10,fontFamily:"Arial,sans-serif",fontWeight:700,color:margem>=50?T.accent:margem>=30?T.warn:T.danger}}>Margem bruta estimada: {margem}%</span>}</div>);})()}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div style={{fontSize:8,color:parc.length<cParcNecessarios?T.warn:T.muted}}>
                 {parc.length<cParcNecessarios
@@ -3295,7 +3299,10 @@ export default function App(){
   const[cadTab,setCadTab]=useState("clientes");
   const[filterSeg,setFilterSeg]=useState("todos");
   const[filterFrom,setFilterFrom]=useState("2024-11");
-  const[nf,setNf]=useState({name:"",type:"grafica",contact:"",phone:"",email:"",leadTime:"7 dias",rating:4});
+  const NF_EMPTY={name:"",type:"grafica",contact:"",phone:"",email:"",cnpj:"",razaoSocial:"",site:"",endRua:"",endNum:"",endCidade:"",endEstado:"",leadTime:"7",prazoEntrega:"3",formaPagamento:"boleto",condicaoPagamento:"30dd",obs:"",custos:{ecoboxTradicional:"",megaBox:"",chapaParcerios:""},outrosProdutos:[],principal:false,rating:4};
+  const[nf,setNf]=useState(NF_EMPTY);
+  const[selForn,setSelForn]=useState(null);
+  const[showNewForn,setShowNewForn]=useState(false);
   const[showNewCliente,setShowNewCliente]=useState(false);
   const[novoCliente,setNovoCliente]=useState({name:"",contact:"",email:"",phone:"",segment:"",agency:""});
   const[filterTo,setFilterTo]=useState("2025-06");
@@ -3315,7 +3322,7 @@ export default function App(){
   // --- FINANCEIRO STATES (movidos do IIFE para nivel do componente) --------
   const[showAdd,setShowAdd]=useState(false);
   const todayISO=new Date().toISOString().slice(0,10);
-  const[novoLanc,setNovoLanc]=useState({data:todayISO,descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1,cartaoId:null,parcelas:1});
+  const[novoLanc,setNovoLanc]=useState({data:todayISO,descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1,cartaoId:null,parcelas:1,fornecedorId:null});
   const[showAddCartao,setShowAddCartao]=useState(false);
   const[showAddCompra,setShowAddCompra]=useState(false);
   const[novoCartao,setNovoCartao]=useState({nome:"",titular:"",vencimento:15,limite:0,banco:"",cor:"#3D9EFF"});
@@ -3384,7 +3391,7 @@ export default function App(){
       if(pts.data?.length)setPtypes(pts.data);
       if(usrs.data?.length)setUsers(usrs.data);
       if(centros.data?.length)setCentrosCusto(centros.data.map(r=>r.nome));
-      if(forn.data?.length)setSuppliers(forn.data);
+      if(forn.data?.length)setSuppliers(forn.data.map(r=>r.data&&typeof r.data==="object"?{...r.data,id:r.id}:r));
       if(cfgs.data?.length){
         const cfg=Object.fromEntries(cfgs.data.map(r=>[r.chave,r.valor]));
         if(cfg.reservaCaixaPct!=null)setReservaCaixaPct(Number(cfg.reservaCaixaPct));
@@ -3700,6 +3707,25 @@ export default function App(){
     setClosings(p=>[...p,rec]);
     await supabase.from("closings").insert(rec);
     pushNotif("Comissão gerada",`${owner.name} — ${fmt(comVal)} (${owner.comissao_pct}%)`,T.accent);
+  };
+
+  const addFornecedor=async()=>{
+    if(!nf.name)return;
+    if(nf.cnpj&&!validCNPJ(nf.cnpj)){pushNotif("CNPJ inválido","Verifique o número digitado",T.danger);return;}
+    if(nf.principal){setSuppliers(prev=>prev.map(s=>s.type===nf.type?{...s,principal:false}:s));await supabase.from("fornecedores").update({data:null}).match({});}
+    const rec={...nf,id:Date.now()};
+    setSuppliers(p=>[...p,rec]);
+    setNf(NF_EMPTY);setShowNewForn(false);
+    await supabase.from("fornecedores").insert({id:rec.id,name:rec.name,type:rec.type,data:rec});
+    pushNotif("Fornecedor cadastrado",rec.name,T.accent);
+  };
+  const updateFornecedor=async(s)=>{
+    if(s.cnpj&&!validCNPJ(s.cnpj)){pushNotif("CNPJ inválido","Verifique o número digitado",T.danger);return;}
+    if(s.principal){setSuppliers(prev=>prev.map(x=>x.id!==s.id&&x.type===s.type?{...x,principal:false}:x));await supabase.from("fornecedores").update({data:null}).neq("id",s.id);}
+    setSuppliers(prev=>prev.map(x=>x.id===s.id?s:x));
+    setSelForn(s);
+    await supabase.from("fornecedores").update({name:s.name,type:s.type,data:s}).eq("id",s.id);
+    pushNotif("Fornecedor atualizado",s.name,T.accent);
   };
 
   const submitClosing=async()=>{
@@ -6543,10 +6569,25 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             </div>
                             <div>
                               <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Categoria</div>
-                              <select value={novoLanc.categoria} onChange={e=>setNovoLanc(p=>({...p,categoria:e.target.value}))} style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}>
+                              <select value={novoLanc.categoria} onChange={e=>setNovoLanc(p=>({...p,categoria:e.target.value,fornecedorId:e.target.value==="Grafica"?p.fornecedorId:null}))} style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}>
                                 {(novoLanc.tipo==="Receita"?CAT_RECEITA:CAT_DESPESA).map(c=><option key={c}>{c}</option>)}
                               </select>
                             </div>
+                            {novoLanc.categoria==="Grafica"&&suppliers.filter(s=>s.type==="grafica").length>0&&(
+                              <div style={{gridColumn:"1/-1"}}>
+                                <div style={{fontSize:9,color:"#7c3aed",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Fornecedor gráfica</div>
+                                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                                  {suppliers.filter(s=>s.type==="grafica").map(s=>{
+                                    const sel=novoLanc.fornecedorId===s.id;
+                                    return(
+                                      <div key={s.id} onClick={()=>setNovoLanc(p=>({...p,fornecedorId:sel?null:s.id,descricao:sel?p.descricao:p.descricao||s.name}))} style={{padding:"5px 10px",borderRadius:6,cursor:"pointer",border:`1px solid ${sel?"#7c3aed66":"#ddd"}`,background:sel?"#7c3aed11":"#f9f9f9",fontFamily:"Arial,sans-serif",fontSize:10,color:sel?"#7c3aed":"#555"}}>
+                                        {s.name}{s.principal&&" ★"}{s.custos?.ecoboxTradicional?` · Ecobox R$ ${s.custos.ecoboxTradicional}`:""}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
                             <div>
                               <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Forma de Pagamento</div>
                               <select value={novoLanc.forma} onChange={e=>setNovoLanc(p=>({...p,forma:e.target.value}))} style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}>
@@ -6603,7 +6644,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                               }
                               setLancamentos(prev=>[...prev,...novos]);
                               setShowAdd(false);
-                              setNovoLanc({data:new Date().toISOString().slice(0,10),descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1,parcelas:1});
+                              setNovoLanc({data:new Date().toISOString().slice(0,10),descricao:"",entrada:0,saida:0,tipo:"Despesa",categoria:"Outros",centrosCusto:"Administrativo",forma:"PIX",projeto:"",contaBancoId:1,cartaoId:null,parcelas:1,fornecedorId:null});
                               for(const rec of novos){
                                 await supabase.from("lancamentos").upsert({...rec,centrosCusto:rec.centrosCusto,contaBancoId:rec.contaBancoId});
                               }
@@ -9874,35 +9915,131 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 </div>
               )}
 
-              {cadTab==="fornecedores"&&(
-                <div>
-                  <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16,marginBottom:12}}>
-                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,marginBottom:12,fontSize:11}}>Novo Fornecedor</div>
-                    <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr",gap:8,marginBottom:8}}>
-                      <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Nome *</div><input placeholder="Ex: Gráfica Rápida" value={nf.name} onChange={e=>setNf(p=>({...p,name:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}/></div>
-                      <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Tipo</div><select value={nf.type} onChange={e=>setNf(p=>({...p,type:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}><option value="grafica">Gráfica</option><option value="logistica">Logística</option></select></div>
-                      <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Contato</div><input placeholder="Nome" value={nf.contact} onChange={e=>setNf(p=>({...p,contact:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}/></div>
-                      <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Email</div><input placeholder="email@fornecedor.com" value={nf.email} onChange={e=>setNf(p=>({...p,email:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}/></div>
-                      <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Prazo</div><input placeholder="7 dias" value={nf.leadTime} onChange={e=>setNf(p=>({...p,leadTime:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}/></div>
+              {cadTab==="fornecedores"&&(()=>{
+                const fi=inpS;
+                const fs=selS;
+                const secH=(label,color)=><div style={{fontSize:8,color:color||T.purple,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"Arial,sans-serif",fontWeight:700,marginBottom:8,marginTop:4,paddingBottom:4,borderBottom:`1px solid ${T.border}`}}>{label}</div>;
+                const lbl=(t)=><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1,fontFamily:"Arial,sans-serif"}}>{t}</div>;
+                const FornForm=({data,setData,onSave,onCancel,saveLbl})=>(
+                  <div>
+                    {secH("Dados da Empresa")}
+                    <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:8,marginBottom:8}}>
+                      <div>{lbl("Nome Fantasia *")}<input value={data.name} onChange={e=>setData(p=>({...p,name:e.target.value}))} placeholder="Ex: Gráfica Rápida" style={fi}/></div>
+                      <div>{lbl("Tipo")}<select value={data.type} onChange={e=>setData(p=>({...p,type:e.target.value}))} style={fs}><option value="grafica">Gráfica</option><option value="logistica">Logística</option><option value="outro">Outro</option></select></div>
+                      <div>{lbl("Razão Social")}<input value={data.razaoSocial||""} onChange={e=>setData(p=>({...p,razaoSocial:e.target.value}))} placeholder="Razão Social Ltda" style={fi}/></div>
+                      <div>{lbl(`CNPJ${data.cnpj&&!validCNPJ(data.cnpj)?" — inválido":""}`)}<input value={data.cnpj||""} onChange={e=>setData(p=>({...p,cnpj:maskCNPJ(e.target.value)}))} placeholder="00.000.000/0000-00" maxLength={18} style={{...fi,borderColor:data.cnpj&&!validCNPJ(data.cnpj)?T.danger:undefined}}/></div>
+                      <div>{lbl("Telefone")}<input value={data.phone||""} onChange={e=>setData(p=>({...p,phone:maskPhone(e.target.value)}))} placeholder="(11) 99999-9999" maxLength={15} style={fi}/></div>
+                      <div>{lbl("E-mail Comercial")}<input value={data.email||""} onChange={e=>setData(p=>({...p,email:e.target.value}))} placeholder="comercial@fornecedor.com.br" style={fi}/></div>
+                      <div>{lbl("Contato (pessoa)")}<input value={data.contact||""} onChange={e=>setData(p=>({...p,contact:e.target.value}))} placeholder="Nome do responsável" style={fi}/></div>
+                      <div style={{gridColumn:"span 2"}}>{lbl("Site")}<input value={data.site||""} onChange={e=>setData(p=>({...p,site:e.target.value}))} placeholder="https://..." style={fi}/></div>
                     </div>
-                    <button onClick={async()=>{if(!nf.name)return;const rec={...nf,id:Date.now(),campaigns:0};setSuppliers(p=>[...p,rec]);setNf({name:"",type:"grafica",contact:"",phone:"",email:"",leadTime:"7 dias",rating:4});await supabase.from("fornecedores").insert(rec);pushNotif("Fornecedor cadastrado",rec.name,"Adicionado com sucesso",T.accent);}} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>+ Adicionar Fornecedor</button>
-                  </div>
-                  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
-                    <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 0.8fr 0.6fr 0.3fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
-                      {["Fornecedor","Tipo","Contato","Prazo","Rating",""].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
+                    <div style={{display:"grid",gridTemplateColumns:"2fr 0.4fr 1fr 0.5fr",gap:8,marginBottom:12}}>
+                      <div>{lbl("Rua / Logradouro")}<input value={data.endRua||""} onChange={e=>setData(p=>({...p,endRua:e.target.value}))} placeholder="Rua das Flores" style={fi}/></div>
+                      <div>{lbl("Nº")}<input value={data.endNum||""} onChange={e=>setData(p=>({...p,endNum:e.target.value}))} placeholder="123" style={fi}/></div>
+                      <div>{lbl("Cidade")}<input value={data.endCidade||""} onChange={e=>setData(p=>({...p,endCidade:e.target.value}))} placeholder="São Paulo" style={fi}/></div>
+                      <div>{lbl("UF")}<input value={data.endEstado||""} onChange={e=>setData(p=>({...p,endEstado:e.target.value.toUpperCase().slice(0,2)}))} placeholder="SP" maxLength={2} style={fi}/></div>
                     </div>
-                    {suppliers.length===0&&<div style={{padding:"20px 16px",fontSize:11,color:T.muted,textAlign:"center"}}>Nenhum fornecedor cadastrado ainda.</div>}
-                    {suppliers.map((s,i)=>(<div key={i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 0.8fr 0.6fr 0.3fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
-                      <div><div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{s.name}</div><div style={{fontSize:9,color:T.muted}}>{s.email}</div></div>
-                      <Badge label={s.type==="grafica"?"Gráfica":"Logística"} color={s.type==="grafica"?T.purple:T.warn}/>
-                      <div style={{fontSize:11,color:T.soft}}>{s.contact}</div>
-                      <div style={{fontSize:10,color:T.soft,fontFamily:"Arial,sans-serif"}}>{s.leadTime}</div>
-                      <div style={{fontSize:11,color:T.warn}}>{"★".repeat(s.rating||0)}</div>
-                      <div onClick={async()=>{setSuppliers(p=>p.filter(x=>x.id!==s.id));await supabase.from("fornecedores").delete().eq("id",s.id);}} style={{fontSize:9,color:T.danger,cursor:"pointer",textAlign:"center"}}>✕</div>
-                    </div>))}
+                    {secH("Dados Comerciais",T.warn)}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                      <div>{lbl("Prazo produção (d.u.)")}<input type="number" value={data.leadTime||""} onChange={e=>setData(p=>({...p,leadTime:e.target.value}))} placeholder="7" style={fi}/></div>
+                      <div>{lbl("Prazo entrega (d.u.)")}<input type="number" value={data.prazoEntrega||""} onChange={e=>setData(p=>({...p,prazoEntrega:e.target.value}))} placeholder="3" style={fi}/></div>
+                      <div>{lbl("Forma de pagamento")}<select value={data.formaPagamento||"boleto"} onChange={e=>setData(p=>({...p,formaPagamento:e.target.value}))} style={fs}><option value="boleto">Boleto</option><option value="pix">PIX</option><option value="transferencia">Transferência</option><option value="cheque">Cheque</option></select></div>
+                      <div>{lbl("Condição de pagamento")}<select value={data.condicaoPagamento||"30dd"} onChange={e=>setData(p=>({...p,condicaoPagamento:e.target.value}))} style={fs}><option value="avista">À vista</option><option value="15dd">15 dias</option><option value="30dd">30 dias</option><option value="45dd">45 dias</option><option value="60dd">60 dias</option><option value="28/35">28/35 dias</option></select></div>
+                    </div>
+                    <div style={{marginBottom:12}}>{lbl("Observações")}<textarea value={data.obs||""} onChange={e=>setData(p=>({...p,obs:e.target.value}))} rows={2} placeholder="Informações adicionais, acordos especiais..." style={{...fi,resize:"vertical",lineHeight:1.4}}/></div>
+                    {secH("Tabela de Custos Unitários",T.info)}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                      {[["Ecobox Tradicional (R$/un)","ecoboxTradicional"],["Mega Box (R$/un)","megaBox"],["Chapa para Parceiros (R$/un)","chapaParcerios"]].map(([l,k])=>(
+                        <div key={k}>{lbl(l)}<input type="number" step="0.01" value={(data.custos||{})[k]||""} onChange={e=>setData(p=>({...p,custos:{...(p.custos||{}),[k]:e.target.value}}))} placeholder="0,00" style={fi}/></div>
+                      ))}
+                    </div>
+                    {(data.outrosProdutos||[]).map((op,i)=>(
+                      <div key={i} style={{display:"grid",gridTemplateColumns:"2fr 1fr 0.3fr",gap:8,marginBottom:6}}>
+                        <div>{i===0&&lbl("Nome do produto")}<input value={op.nome} onChange={e=>setData(p=>({...p,outrosProdutos:p.outrosProdutos.map((x,j)=>j===i?{...x,nome:e.target.value}:x)}))} placeholder="Nome do produto" style={fi}/></div>
+                        <div>{i===0&&lbl("Custo unitário (R$)")}<input type="number" step="0.01" value={op.custo} onChange={e=>setData(p=>({...p,outrosProdutos:p.outrosProdutos.map((x,j)=>j===i?{...x,custo:e.target.value}:x)}))} placeholder="0,00" style={fi}/></div>
+                        <div style={{display:"flex",alignItems:"flex-end"}}><div onClick={()=>setData(p=>({...p,outrosProdutos:p.outrosProdutos.filter((_,j)=>j!==i)}))} style={{padding:"7px 10px",background:T.dangerDim,border:`1px solid ${T.danger}33`,color:T.danger,borderRadius:6,cursor:"pointer",fontSize:11,lineHeight:1}}>✕</div></div>
+                      </div>
+                    ))}
+                    <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12}}>
+                      <button onClick={()=>setData(p=>({...p,outrosProdutos:[...(p.outrosProdutos||[]),{nome:"",custo:""}]}))} style={{fontSize:9,padding:"4px 10px",background:T.surface,border:`1px solid ${T.border}`,color:T.muted,borderRadius:5,cursor:"pointer"}}>+ Produto extra</button>
+                      <label style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:T.soft,cursor:"pointer",userSelect:"none"}}>
+                        <input type="checkbox" checked={!!data.principal} onChange={e=>setData(p=>({...p,principal:e.target.checked}))}/>
+                        <span>Fornecedor principal (usado no Planejamento de Mídia)</span>
+                      </label>
+                    </div>
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={onSave} style={{padding:"8px 18px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,cursor:"pointer"}}>{saveLbl||"Salvar"}</button>
+                      <button onClick={onCancel} style={{padding:"8px 14px",background:T.card,border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:11,cursor:"pointer"}}>Cancelar</button>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+                const gastoPorForn=s=>lancamentos.filter(l=>l.fornecedorId===s.id&&(l.saida||0)>0).reduce((a,l)=>a+(l.saida||0),0);
+                return(
+                  <div>
+                    <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
+                      <button onClick={()=>{setNf(NF_EMPTY);setShowNewForn(v=>!v);setSelForn(null);}} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>+ Novo Fornecedor</button>
+                    </div>
+                    {showNewForn&&(
+                      <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16,marginBottom:14}} className="fade">
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,marginBottom:12,fontSize:12}}>Novo Fornecedor</div>
+                        <FornForm data={nf} setData={setNf} onSave={addFornecedor} onCancel={()=>setShowNewForn(false)} saveLbl="Cadastrar Fornecedor"/>
+                      </div>
+                    )}
+                    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
+                      <div style={{display:"grid",gridTemplateColumns:"2fr 0.8fr 1fr 0.8fr 0.7fr 0.5fr 0.3fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
+                        {["Fornecedor","Tipo","E-mail / Contato","Prazo Prod.","Custo Ecobox","Gasto Total",""].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"Arial,sans-serif"}}>{h}</div>)}
+                      </div>
+                      {suppliers.length===0&&<div style={{padding:"24px 16px",fontSize:11,color:T.muted,textAlign:"center"}}>Nenhum fornecedor cadastrado ainda. Clique em "+ Novo Fornecedor" para começar.</div>}
+                      {suppliers.map((s,i)=>{
+                        const gasto=gastoPorForn(s);
+                        const isOpen=selForn?.id===s.id;
+                        return(
+                          <div key={i} style={{borderBottom:`1px solid ${T.border}`}}>
+                            <div onClick={()=>setSelForn(isOpen?null:{...s})} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 0.8fr 1fr 0.8fr 0.7fr 0.5fr 0.3fr",padding:"12px 16px",gap:10,alignItems:"center",cursor:"pointer",background:isOpen?T.accentDim:"transparent"}}>
+                              <div>
+                                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                                  <span style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{s.name}</span>
+                                  {s.principal&&<span style={{fontSize:7,padding:"1px 5px",background:T.accent+"22",color:T.accent,border:`1px solid ${T.accent}44`,borderRadius:3,fontFamily:"Arial,sans-serif",fontWeight:700}}>PRINCIPAL</span>}
+                                </div>
+                                {s.razaoSocial&&<div style={{fontSize:8,color:T.muted,marginTop:1}}>{s.razaoSocial}</div>}
+                                {s.cnpj&&<div style={{fontSize:8,color:T.muted}}>{s.cnpj}</div>}
+                              </div>
+                              <Badge label={s.type==="grafica"?"Gráfica":s.type==="logistica"?"Logística":"Outro"} color={s.type==="grafica"?T.purple:s.type==="logistica"?T.warn:T.info}/>
+                              <div>
+                                <div style={{fontSize:10,color:T.soft}}>{s.email||"—"}</div>
+                                <div style={{fontSize:9,color:T.muted}}>{s.contact||""}{s.phone?" · "+s.phone:""}</div>
+                              </div>
+                              <div style={{fontSize:10,color:T.soft,fontFamily:"Arial,sans-serif"}}>{s.leadTime?""+s.leadTime+" d.u.":"—"}</div>
+                              <div style={{fontSize:10,color:T.info,fontFamily:"Arial,sans-serif",fontWeight:700}}>{s.custos?.ecoboxTradicional?fmt(Number(s.custos.ecoboxTradicional)):"—"}</div>
+                              <div style={{fontSize:10,color:gasto>0?T.accent:T.muted,fontFamily:"Arial,sans-serif",fontWeight:gasto>0?700:400}}>{gasto>0?fmtK(gasto):"—"}</div>
+                              <div onClick={e=>{e.stopPropagation();setSuppliers(p=>p.filter(x=>x.id!==s.id));supabase.from("fornecedores").delete().eq("id",s.id);}} style={{fontSize:9,color:T.danger,cursor:"pointer",textAlign:"center",padding:"4px"}}>✕</div>
+                            </div>
+                            {isOpen&&(
+                              <div style={{padding:"16px",background:T.surface,borderTop:`1px solid ${T.border}`}} className="fade">
+                                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
+                                  <div style={{background:T.card,borderRadius:8,padding:"10px 12px",borderTop:`2px solid ${T.accent}`}}>
+                                    <div style={{fontSize:9,color:T.muted,marginBottom:2,textTransform:"uppercase",letterSpacing:1}}>Total gasto</div>
+                                    <div style={{fontSize:16,fontWeight:800,color:T.accent,fontFamily:"Arial,sans-serif"}}>{gasto>0?fmt(gasto):"—"}</div>
+                                  </div>
+                                  <div style={{background:T.card,borderRadius:8,padding:"10px 12px",borderTop:`2px solid ${T.info}`}}>
+                                    <div style={{fontSize:9,color:T.muted,marginBottom:2,textTransform:"uppercase",letterSpacing:1}}>Pedidos vinculados</div>
+                                    <div style={{fontSize:16,fontWeight:800,color:T.info,fontFamily:"Arial,sans-serif"}}>{lancamentos.filter(l=>l.fornecedorId===s.id).length}</div>
+                                  </div>
+                                  <div style={{background:T.card,borderRadius:8,padding:"10px 12px",borderTop:`2px solid ${T.purple}`}}>
+                                    <div style={{fontSize:9,color:T.muted,marginBottom:2,textTransform:"uppercase",letterSpacing:1}}>Prazo total (prod+entrega)</div>
+                                    <div style={{fontSize:16,fontWeight:800,color:T.purple,fontFamily:"Arial,sans-serif"}}>{(Number(s.leadTime)||0)+(Number(s.prazoEntrega)||0)} d.u.</div>
+                                  </div>
+                                </div>
+                                <FornForm data={selForn} setData={setSelForn} onSave={()=>updateFornecedor(selForn)} onCancel={()=>setSelForn(null)} saveLbl="Salvar alterações"/>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
