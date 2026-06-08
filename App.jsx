@@ -3217,7 +3217,7 @@ export default function App(){
   // Inicializa Street View quando overlay fullscreen abre
   useEffect(()=>{
     if(!svFullscreen)return;
-    const apiKey=import.meta.env.VITE_GOOGLE_MAPS_KEY||'import.meta.env.VITE_GOOGLE_MAPS_KEY||"AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8"';
+    const apiKey=import.meta.env.VITE_GOOGLE_MAPS_KEY||"AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8";
     const doInit=()=>{
       const el=document.getElementById('sv-fullscreen-div');
       if(!el){setTimeout(doInit,150);return;}
@@ -7775,7 +7775,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                       <StreetViewInterativo
                                         lat={selPartner.endereco?.lat}
                                         lng={selPartner.endereco?.lng}
-                                        apiKey="import.meta.env.VITE_GOOGLE_MAPS_KEY||"AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8""
+                                        apiKey={import.meta.env.VITE_GOOGLE_MAPS_KEY||"AIzaSyCQDy31u0Rm3iZuisHvdS9ZHpGOL0rc1l8"}
                                         onSave={(heading,pitch,url)=>{
                                           setSelPartner(p=>({...p,foto_fachada:url,sv_heading_draft:heading,sv_pitch_draft:pitch,sv_editando:false}));
                                           pushNotif("Fachada salva!","Angulo salvo com sucesso",T.accent);
