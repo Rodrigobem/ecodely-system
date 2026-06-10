@@ -83,8 +83,8 @@ const STAGES_CAMP=[
   {id:2,label:"Gráfica",color:T.purple},
   {id:3,label:"Logística",color:T.warn},
   {id:4,label:"Checking",color:T.pink},
-  {id:5,label:"Veiculando",color:"#0EA5E9"},
-  {id:6,label:"Finalizada",color:T.accent},
+  {id:5,label:"Finalizada",color:T.accent},
+  {id:6,label:"Veiculando",color:"#0EA5E9"},
 ];
 
 const mkTimeline=(entries)=>entries;
@@ -1391,7 +1391,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                     {[
                       {l:"Embalagens",v:(camp.sacolasDistribuidas||camp.sacolas).toLocaleString(),c:T.accent},
                       {l:"Parceiros",v:camp.parceiros,c:T.purple},
-                      {l:"Progresso",v:`${camp.progress}%`,c:camp.stage===6?T.accent:T.info},
+                      {l:"Progresso",v:`${camp.progress}%`,c:camp.stage>=5?T.accent:T.info},
                     ].map((k,i)=>(
                       <div key={i} style={{background:T.surface,borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:k.c}}>{k.v}</div>
@@ -1617,7 +1617,7 @@ const ClientPanel=({camp,allPartners,onClose,onPDF,clients=[]})=>{
   const imTotal=imp.impulsionado.reduce((a,i)=>a+Number(i.alcance),0);
   const total=offline+stTotal+inTotal+imTotal;
   const stage=STAGES_CAMP.find(s=>s.id===camp.stage)||STAGES_CAMP[0];
-  const isFin=camp.stage===6;
+  const isFin=camp.stage===5;
   const campPartners=allPartners.filter(p=>camp.parceirosIds&&camp.parceirosIds.includes(p.id));
   const pieData=[{name:'Offline',value:offline,color:'#00C48C'},{name:'Stories',value:stTotal,color:'#E1306C'},{name:'Influencer',value:inTotal,color:'#F5A623'},{name:'Impulsionado',value:imTotal,color:'#3D9EFF'}].filter(d=>d.value>0);
   const barData=campPartners.map(p=>{const st=imp.stories.find(s=>s.parceiro===p.name);return{name:p.name.split(' ').slice(0,2).join(' '),entregas:p.deliveries,stories:st?Number(st.impressoes):0};});
@@ -3138,7 +3138,7 @@ export default function App(){
   useEffect(()=>{localStorage.setItem("ecodely_tab",tab);},[tab]);
   T=THEMES[tema]||THEMES.escuro;
   // Recalcular constantes que dependem de T (para troca de tema funcionar)
-  STAGES_CAMP[0].color=T.info;STAGES_CAMP[1].color=T.purple;STAGES_CAMP[2].color=T.warn;STAGES_CAMP[3].color=T.pink;STAGES_CAMP[4].color="#0EA5E9";STAGES_CAMP[5].color=T.accent;
+  STAGES_CAMP[0].color=T.info;STAGES_CAMP[1].color=T.purple;STAGES_CAMP[2].color=T.warn;STAGES_CAMP[3].color=T.pink;STAGES_CAMP[4].color=T.accent;STAGES_CAMP[5].color="#0EA5E9";
   PIPE_STAGES[0].color=T.muted;PIPE_STAGES[1].color=T.info;PIPE_STAGES[2].color=T.purple;PIPE_STAGES[3].color=T.warn;PIPE_STAGES[4].color=T.accent;
   CONTRATO_COLOR["sem contrato"]=T.muted;CONTRATO_COLOR["pendente"]=T.warn;CONTRATO_COLOR["assinado"]=T.accent;CONTRATO_COLOR["expirando"]=T.danger;CONTRATO_COLOR["expirado"]=T.danger;
   STATUS_PARTNER["prospectado"]=T.info;STATUS_PARTNER["negociando"]=T.warn;STATUS_PARTNER["ativo"]=T.accent;STATUS_PARTNER["inativo"]=T.muted;
@@ -4979,8 +4979,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               const im=(imp.impulsionado||[]).reduce((s,x)=>s+Number(x.alcance),0);
               return a+offline+st+inf+im;
             },0);
-            const campsAtivas=camps.filter(c=>c.stage<6);
-            const campsFin=camps.filter(c=>c.stage===6);
+            const campsAtivas=camps.filter(c=>c.stage<5);
+            const campsFin=camps.filter(c=>c.stage>=5);
             const myProspects=prospects.filter(p=>p.owner===user.name||user.role==="admin");
             const myPipeTotal=myProspects.reduce((a,p)=>a+(p.value||0),0);
 
@@ -5984,7 +5984,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
                     {projects.map(proj=>{
                       const projCamps=camps.filter(c=>c.projectId===proj.id||(!c.projectId&&c.project===proj.name));
-                      const done=projCamps.filter(c=>c.stage===6).length;
+                      const done=projCamps.filter(c=>c.stage>=5).length;
                       const emAndamento=projCamps.filter(c=>c.stage>1&&c.stage<6).length;
                       const totalVal=projCamps.reduce((a,c)=>a+(c.valorLiquido||0),0);
                       return(
@@ -6106,8 +6106,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:20}}>
                   {[
                     {l:"Campanhas no mês",v:camps.filter(c=>{const s=parseDate(c.startDate),e=parseDate(c.endDate);const ms=new Date(calYear,calMonth,1),me=new Date(calYear,calMonth+1,0);return s&&e&&s<=me&&e>=ms;}).length,c:T.accent},
-                    {l:"Em andamento",v:camps.filter(c=>c.stage<6).length,c:T.info},
-                    {l:"Finalizadas",v:camps.filter(c=>c.stage===6).length,c:T.purple},
+                    {l:"Em andamento",v:camps.filter(c=>c.stage<5).length,c:T.info},
+                    {l:"Finalizadas",v:camps.filter(c=>c.stage>=5).length,c:T.purple},
                     {l:"Conflitos de prazo",v:conflicts.length,c:conflicts.length>0?T.danger:T.accent},
                   ].map((k,i)=>(
                     <div key={i} style={{background:T.card,border:`1px solid ${k.c}33`,borderRadius:10,padding:"14px 16px"}}>
