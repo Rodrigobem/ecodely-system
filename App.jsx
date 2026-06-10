@@ -3317,6 +3317,7 @@ export default function App(){
   const[selForn,setSelForn]=useState(null);
   const[showNewForn,setShowNewForn]=useState(false);
   const[showNewCliente,setShowNewCliente]=useState(false);
+  const[selCliente,setSelCliente]=useState(null);
   const[clientesDB,setClientesDB]=useState([]);
   const NC_EMPTY={name:"",razaoSocial:"",cnpj:"",inscricaoEstadual:"",inscricaoMunicipal:"",segment:"",cep:"",endRua:"",endNum:"",endComplemento:"",endBairro:"",endCidade:"",endEstado:"",contact:"",cargo:"",phone:"",email:"",whatsapp:"",formaPagamento:"pix",condicaoPagamento:"30dd",banco:"",agenciaBanco:"",contaBanco:"",chavePix:"",emailNF:"",obsFinanceiro:"",possuiAgencia:false,agencia:{nome:"",cnpj:"",nomeMedia:"",telefoneMedia:"",emailMedia:"",nomeAtendimento:"",telefoneAtendimento:"",emailAtendimento:"",obs:""}};
   const[novoCliente,setNovoCliente]=useState(NC_EMPTY);
@@ -9899,7 +9900,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     <div key={v} onClick={()=>setCadTab(v)} className="tb" style={{padding:"7px 12px",borderRadius:6,fontSize:10,background:cadTab===v?T.accentDim:T.card,border:`1px solid ${cadTab===v?T.accentBorder:T.border}`,color:cadTab===v?T.accent:T.muted,cursor:"pointer"}}>{l}</div>
                   ))}
                 </div>
-                {cadTab==="clientes"&&<button onClick={()=>setShowNewCliente(v=>!v)} style={{padding:"7px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>+ Novo Cliente</button>}
+                {cadTab==="clientes"&&<button onClick={()=>{setSelCliente(null);setNovoCliente(NC_EMPTY);setShowNewCliente(v=>!v);}} style={{padding:"7px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>+ Novo Cliente</button>}
               </div>
 
               {cadTab==="clientes"&&(()=>{
@@ -9948,22 +9949,39 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   }catch(e){pushNotif("Erro ao buscar CNPJ","API ReceitaWS indisponível",T.warn);}
                 };
                 const maskCEP=v=>{const d=v.replace(/\D/g,"").slice(0,8);return d.length>5?d.slice(0,5)+"-"+d.slice(5):d;};
+                const closeForm=()=>{setShowNewCliente(false);setSelCliente(null);setNovoCliente(NC_EMPTY);};
                 const saveCliente=async()=>{
                   if(!novoCliente.name&&!novoCliente.razaoSocial)return pushNotif("Preencha ao menos o Nome Fantasia ou Razão Social","",T.warn);
                   if(novoCliente.cnpj&&!validCNPJ(novoCliente.cnpj))return pushNotif("CNPJ inválido","Verifique o número",T.danger);
-                  const rec={...novoCliente,name:novoCliente.name||novoCliente.razaoSocial,id:Date.now()};
-                  setClientesDB(p=>[...p,rec]);
-                  setShowNewCliente(false);
-                  setNovoCliente(NC_EMPTY);
-                  await supabase.from("clientes").insert({id:rec.id,name:rec.name,data:rec});
-                  pushNotif("Cliente cadastrado",rec.name,T.accent);
+                  if(selCliente){
+                    const upd={...novoCliente,name:novoCliente.name||novoCliente.razaoSocial,id:selCliente.id};
+                    setClientesDB(p=>p.map(c=>c.id===selCliente.id?upd:c));
+                    closeForm();
+                    await supabase.from("clientes").update({name:upd.name,data:upd}).eq("id",selCliente.id);
+                    pushNotif("Cliente atualizado",upd.name,T.accent);
+                  } else {
+                    const rec={...novoCliente,name:novoCliente.name||novoCliente.razaoSocial,id:Date.now()};
+                    setClientesDB(p=>[...p,rec]);
+                    closeForm();
+                    await supabase.from("clientes").insert({id:rec.id,name:rec.name,data:rec});
+                    pushNotif("Cliente cadastrado",rec.name,T.accent);
+                  }
+                };
+                const deleteCliente=async(c)=>{
+                  if(!window.confirm(`Excluir o cliente "${c.name}"? Esta ação não pode ser desfeita.`))return;
+                  setClientesDB(p=>p.filter(x=>x.id!==c.id));
+                  await supabase.from("clientes").delete().eq("id",c.id);
+                  pushNotif("Cliente excluído",c.name,T.danger);
                 };
                 const clientesCamps=clientesDB.map(c=>({...c,campaigns:camps.filter(x=>x.client===c.name).length,ltv:camps.filter(x=>x.client===c.name).reduce((a,x)=>a+(x.valorLiquido||0),0)}));
                 return(
                 <div>
                   {showNewCliente&&(
                     <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16,marginBottom:12}}>
-                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,marginBottom:4,fontSize:12}}>Novo Cliente / Anunciante</div>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,fontSize:12}}>{selCliente?"Editar Cliente: "+selCliente.name:"Novo Cliente / Anunciante"}</div>
+                        {selCliente&&<button onClick={()=>deleteCliente(selCliente)} style={{padding:"5px 12px",background:"transparent",border:`1px solid ${T.danger}`,color:T.danger,borderRadius:6,fontSize:10,cursor:"pointer",fontWeight:700}}>Excluir cliente</button>}
+                      </div>
 
                       {secH2("Dados da Empresa")}
                       <div style={{display:"grid",gridTemplateColumns:"2fr 2fr 1fr",gap:8,marginBottom:6}}>
@@ -10032,18 +10050,18 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       )}
 
                       <div style={{display:"flex",gap:8,marginTop:8}}>
-                        <button onClick={saveCliente} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>Salvar Cliente</button>
-                        <button onClick={()=>{setShowNewCliente(false);setNovoCliente(NC_EMPTY);}} style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10,cursor:"pointer"}}>Cancelar</button>
+                        <button onClick={saveCliente} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>{selCliente?"Salvar alterações":"Salvar Cliente"}</button>
+                        <button onClick={closeForm} style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10,cursor:"pointer"}}>Cancelar</button>
                       </div>
                     </div>
                   )}
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
-                    <div style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 1fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
-                      {["Cliente / Empresa","Contato","Segmento","Campanhas","LTV"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
+                    <div style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 1fr 1fr 80px",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
+                      {["Cliente / Empresa","Contato","Segmento","Campanhas","LTV",""].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
                     </div>
                     {clientesCamps.length===0&&<div style={{padding:"24px 16px",textAlign:"center",fontSize:11,color:T.muted}}>Nenhum cliente cadastrado ainda.</div>}
                     {clientesCamps.map((c,i)=>(
-                      <div key={c.id||i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
+                      <div key={c.id||i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 1fr 1fr 80px",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
                         <div>
                           <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{c.name}</div>
                           <div style={{fontSize:9,color:T.muted}}>{c.razaoSocial||c.email}{c.cnpj?<span style={{marginLeft:6}}>{c.cnpj}</span>:""}{c.possuiAgencia&&c.agencia?.nome?<span style={{marginLeft:6,color:T.purple}}>via {c.agencia.nome}</span>:""}</div>
@@ -10052,6 +10070,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <Badge label={c.segment||"—"} color={T.purple}/>
                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:T.info}}>{c.campaigns}</div>
                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmtK(c.ltv)}</div>
+                        <button onClick={()=>{const{campaigns,ltv,...cd}=c;setNovoCliente({...NC_EMPTY,...cd,agencia:{...NC_EMPTY.agencia,...(cd.agencia||{})}});setSelCliente(cd);setShowNewCliente(true);window.scrollTo({top:0,behavior:"smooth"});}} style={{padding:"5px 10px",background:T.surface,border:`1px solid ${T.border}`,color:T.soft,borderRadius:6,fontSize:10,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Editar</button>
                       </div>
                     ))}
                   </div>
