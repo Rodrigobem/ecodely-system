@@ -3318,7 +3318,7 @@ export default function App(){
   const[showNewForn,setShowNewForn]=useState(false);
   const[showNewCliente,setShowNewCliente]=useState(false);
   const[clientesDB,setClientesDB]=useState([]);
-  const NC_EMPTY={name:"",contact:"",email:"",phone:"",segment:"",possuiAgencia:false,agencia:{nome:"",cnpj:"",nomeMedia:"",telefoneMedia:"",emailMedia:"",nomeAtendimento:"",telefoneAtendimento:"",emailAtendimento:"",obs:""}};
+  const NC_EMPTY={name:"",razaoSocial:"",cnpj:"",inscricaoEstadual:"",inscricaoMunicipal:"",segment:"",cep:"",endRua:"",endNum:"",endComplemento:"",endBairro:"",endCidade:"",endEstado:"",contact:"",cargo:"",phone:"",email:"",whatsapp:"",formaPagamento:"pix",condicaoPagamento:"30dd",banco:"",agenciaBanco:"",contaBanco:"",chavePix:"",emailNF:"",obsFinanceiro:"",possuiAgencia:false,agencia:{nome:"",cnpj:"",nomeMedia:"",telefoneMedia:"",emailMedia:"",nomeAtendimento:"",telefoneAtendimento:"",emailAtendimento:"",obs:""}};
   const[novoCliente,setNovoCliente]=useState(NC_EMPTY);
   const[filterTo,setFilterTo]=useState("2025-06");
   const[showNewProsp,setShowNewProsp]=useState(false);
@@ -4413,6 +4413,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
         <div class="capa-tag">Proposta Comercial de Mídia</div>
         <div class="capa-h">${plano.clienteNome||"Cliente"}</div>
         <div class="capa-seg">${plano.clienteSegmento||""} ${plano.regiao?`· ${plano.regiao}`:""}</div>
+        ${(()=>{const cli=clientesDB.find(c=>c.name===plano.clienteNome);const linhas=[];if(cli?.razaoSocial)linhas.push(`Razão Social: ${cli.razaoSocial}`);if(cli?.cnpj)linhas.push(`CNPJ: ${cli.cnpj}`);if(cli?.endCidade&&cli?.endEstado)linhas.push(`${cli.endCidade} — ${cli.endEstado}`);return linhas.length?`<div class="capa-reg" style="margin-bottom:6px">${linhas.join(" &nbsp;·&nbsp; ")}</div>`:"";})()}
         <div class="capa-reg">Responsável: ${plano.createdBy||user?.name||"—"} · ${new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"})}</div>
       </div>
       <div class="capa-foot">
@@ -6636,6 +6637,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <div>
                               <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Projeto / NF</div>
                               <input value={novoLanc.projeto} onChange={e=>setNovoLanc(p=>({...p,projeto:e.target.value}))} placeholder="Opcional" style={{width:"100%",border:"1px solid #ddd",borderRadius:7,padding:"9px 12px",fontSize:12,fontFamily:"Arial,sans-serif",outline:"none",boxSizing:"border-box"}}/>
+                              {novoLanc.tipo==="Receita"&&novoLanc.projeto&&(()=>{const campRef=camps.find(c=>c.name?.toLowerCase().includes(novoLanc.projeto.toLowerCase())||novoLanc.projeto.toLowerCase().includes((c.name||"").toLowerCase()));const cli=campRef?clientesDB.find(c=>c.name===campRef.client):null;if(!cli)return null;return(<div style={{marginTop:6,background:"#f0f9f4",border:"1px solid #00E5A044",borderRadius:6,padding:"7px 10px",fontSize:10,fontFamily:"Arial,sans-serif"}}><div style={{fontWeight:700,color:"#00A36C",marginBottom:3}}>Cliente: {cli.name}</div>{cli.razaoSocial&&<div style={{color:"#555"}}>Razão Social: {cli.razaoSocial}</div>}{cli.cnpj&&<div style={{color:"#555"}}>CNPJ: {cli.cnpj}</div>}{cli.formaPagamento&&<div style={{color:"#555"}}>Pgto preferencial: {cli.formaPagamento}{cli.condicaoPagamento?` · ${cli.condicaoPagamento}`:""}</div>}{cli.emailNF&&<div style={{color:"#555"}}>Email NF: {cli.emailNF}</div>}</div>);})()}
                             </div>
                             <div>
                               <div style={{fontSize:9,color:"#666",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Nº de Parcelas</div>
@@ -9901,12 +9903,55 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               </div>
 
               {cadTab==="clientes"&&(()=>{
-                const fi2={width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"};
+                const fi2={width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none",boxSizing:"border-box"};
                 const lbl2=(t)=><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1,fontFamily:"Arial,sans-serif"}}>{t}</div>;
-                const secH2=(label,col)=><div style={{fontSize:8,color:col||T.purple,textTransform:"uppercase",letterSpacing:1.5,fontWeight:700,marginBottom:8,marginTop:4,paddingBottom:4,borderBottom:`1px solid ${T.border}`}}>{label}</div>;
+                const secH2=(label,col)=><div style={{fontSize:8,color:col||T.purple,textTransform:"uppercase",letterSpacing:1.5,fontWeight:700,marginBottom:8,marginTop:12,paddingBottom:4,borderBottom:`1px solid ${T.border}`}}>{label}</div>;
+                const toggle=(label,field)=>(
+                  <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:12}} onClick={()=>setNovoCliente(p=>({...p,[field]:!p[field]}))}>
+                    <div style={{width:32,height:18,borderRadius:9,background:novoCliente[field]?T.accent:T.border,position:"relative",transition:"background 0.2s",flexShrink:0}}>
+                      <div style={{position:"absolute",top:2,left:novoCliente[field]?14:2,width:14,height:14,borderRadius:"50%",background:"#fff",transition:"left 0.2s"}}/>
+                    </div>
+                    <span style={{fontSize:11,color:novoCliente[field]?T.accent:T.muted,fontWeight:novoCliente[field]?700:400}}>{label}</span>
+                  </div>
+                );
+                const set=(k,v)=>setNovoCliente(p=>({...p,[k]:v}));
+                const setAg=(k,v)=>setNovoCliente(p=>({...p,agencia:{...p.agencia,[k]:v}}));
+                const buscarCEP=async(cep)=>{
+                  const d=cep.replace(/\D/g,"");
+                  if(d.length!==8)return;
+                  try{
+                    const r=await fetch(`https://viacep.com.br/ws/${d}/json/`);
+                    const j=await r.json();
+                    if(j.erro)return pushNotif("CEP não encontrado","Verifique o número",T.warn);
+                    setNovoCliente(p=>({...p,endRua:j.logradouro||p.endRua,endBairro:j.bairro||p.endBairro,endCidade:j.localidade||p.endCidade,endEstado:j.uf||p.endEstado}));
+                  }catch(e){pushNotif("Erro ao buscar CEP","Verifique sua conexão",T.danger);}
+                };
+                const buscarCNPJ=async(cnpj)=>{
+                  const d=cnpj.replace(/\D/g,"");
+                  if(!validCNPJ(cnpj))return;
+                  try{
+                    const r=await fetch(`https://receitaws.com.br/v1/cnpj/${d}`);
+                    const j=await r.json();
+                    if(j.status==="ERROR")return pushNotif("CNPJ não encontrado","Verifique o número",T.warn);
+                    setNovoCliente(p=>({...p,
+                      razaoSocial:j.nome||p.razaoSocial,
+                      name:p.name||j.fantasia||j.nome||p.name,
+                      endRua:j.logradouro||p.endRua,
+                      endNum:j.numero||p.endNum,
+                      endComplemento:j.complemento||p.endComplemento,
+                      endBairro:j.bairro||p.endBairro,
+                      endCidade:j.municipio||p.endCidade,
+                      endEstado:j.uf||p.endEstado,
+                      cep:maskCEP(j.cep||p.cep),
+                    }));
+                    pushNotif("CNPJ encontrado",j.nome,T.accent);
+                  }catch(e){pushNotif("Erro ao buscar CNPJ","API ReceitaWS indisponível",T.warn);}
+                };
+                const maskCEP=v=>{const d=v.replace(/\D/g,"").slice(0,8);return d.length>5?d.slice(0,5)+"-"+d.slice(5):d;};
                 const saveCliente=async()=>{
-                  if(!novoCliente.name)return;
-                  const rec={...novoCliente,id:Date.now()};
+                  if(!novoCliente.name&&!novoCliente.razaoSocial)return pushNotif("Preencha ao menos o Nome Fantasia ou Razão Social","",T.warn);
+                  if(novoCliente.cnpj&&!validCNPJ(novoCliente.cnpj))return pushNotif("CNPJ inválido","Verifique o número",T.danger);
+                  const rec={...novoCliente,name:novoCliente.name||novoCliente.razaoSocial,id:Date.now()};
                   setClientesDB(p=>[...p,rec]);
                   setShowNewCliente(false);
                   setNovoCliente(NC_EMPTY);
@@ -9918,61 +9963,92 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 <div>
                   {showNewCliente&&(
                     <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16,marginBottom:12}}>
-                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,marginBottom:12,fontSize:12}}>Novo Cliente</div>
-                      {secH2("Dados do Cliente")}
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
-                        <div>{lbl2("Nome *")}<input value={novoCliente.name} onChange={e=>setNovoCliente(p=>({...p,name:e.target.value}))} placeholder="Ex: Selfit Academias" style={fi2}/></div>
-                        <div>{lbl2("Contato (responsável)")}<input value={novoCliente.contact} onChange={e=>setNovoCliente(p=>({...p,contact:e.target.value}))} placeholder="Nome do responsável" style={fi2}/></div>
-                        <div>{lbl2("Segmento")}<input value={novoCliente.segment} onChange={e=>setNovoCliente(p=>({...p,segment:e.target.value}))} placeholder="Ex: Academia, Varejo" style={fi2}/></div>
-                        <div>{lbl2("Email")}<input value={novoCliente.email} onChange={e=>setNovoCliente(p=>({...p,email:e.target.value}))} placeholder="email@empresa.com" style={fi2}/></div>
-                        <div>{lbl2("Telefone")}<input value={novoCliente.phone} onChange={e=>setNovoCliente(p=>({...p,phone:maskPhone(e.target.value)}))} placeholder="(11) 99999-9999" maxLength={15} style={fi2}/></div>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,marginBottom:4,fontSize:12}}>Novo Cliente / Anunciante</div>
+
+                      {secH2("Dados da Empresa")}
+                      <div style={{display:"grid",gridTemplateColumns:"2fr 2fr 1fr",gap:8,marginBottom:6}}>
+                        <div>{lbl2("Nome Fantasia *")}<input value={novoCliente.name} onChange={e=>set("name",e.target.value)} placeholder="Ex: Selfit Academias" style={fi2}/></div>
+                        <div>{lbl2("Razão Social")}<input value={novoCliente.razaoSocial} onChange={e=>set("razaoSocial",e.target.value)} placeholder="Selfit Academias S.A." style={fi2}/></div>
+                        <div>{lbl2("Segmento")}<input value={novoCliente.segment} onChange={e=>set("segment",e.target.value)} placeholder="Academia" style={fi2}/></div>
+                        <div>{lbl2(`CNPJ${novoCliente.cnpj&&!validCNPJ(novoCliente.cnpj)?" — inválido":""}`)}<input value={novoCliente.cnpj} onChange={e=>set("cnpj",maskCNPJ(e.target.value))} onBlur={e=>buscarCNPJ(e.target.value)} placeholder="00.000.000/0000-00" maxLength={18} style={{...fi2,borderColor:novoCliente.cnpj&&!validCNPJ(novoCliente.cnpj)?T.danger:undefined}}/></div>
+                        <div>{lbl2("Inscrição Estadual")}<input value={novoCliente.inscricaoEstadual} onChange={e=>set("inscricaoEstadual",e.target.value)} placeholder="Opcional" style={fi2}/></div>
+                        <div>{lbl2("Inscrição Municipal")}<input value={novoCliente.inscricaoMunicipal} onChange={e=>set("inscricaoMunicipal",e.target.value)} placeholder="Opcional" style={fi2}/></div>
                       </div>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,cursor:"pointer"}} onClick={()=>setNovoCliente(p=>({...p,possuiAgencia:!p.possuiAgencia}))}>
-                        <div style={{width:32,height:18,borderRadius:9,background:novoCliente.possuiAgencia?T.accent:T.border,position:"relative",transition:"background 0.2s",flexShrink:0}}>
-                          <div style={{position:"absolute",top:2,left:novoCliente.possuiAgencia?14:2,width:14,height:14,borderRadius:"50%",background:"#fff",transition:"left 0.2s"}}/>
-                        </div>
-                        <span style={{fontSize:11,color:novoCliente.possuiAgencia?T.accent:T.muted,fontWeight:novoCliente.possuiAgencia?700:400}}>Possui agência?</span>
+
+                      {secH2("Endereço",T.info)}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 3fr 0.5fr 1.5fr 0.5fr",gap:8,marginBottom:6}}>
+                        <div>{lbl2("CEP")}<div style={{display:"flex",gap:4}}><input value={novoCliente.cep} onChange={e=>set("cep",maskCEP(e.target.value))} onBlur={e=>buscarCEP(e.target.value)} placeholder="00000-000" maxLength={9} style={{...fi2,flex:1}}/><button onClick={()=>buscarCEP(novoCliente.cep)} style={{padding:"0 8px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,cursor:"pointer",fontSize:11,whiteSpace:"nowrap"}}>Buscar</button></div></div>
+                        <div style={{gridColumn:"span 2"}}>{lbl2("Rua / Logradouro")}<input value={novoCliente.endRua} onChange={e=>set("endRua",e.target.value)} placeholder="Rua das Flores" style={fi2}/></div>
+                        <div>{lbl2("Número")}<input value={novoCliente.endNum} onChange={e=>set("endNum",e.target.value)} placeholder="123" style={fi2}/></div>
+                        <div>{lbl2("UF")}<input value={novoCliente.endEstado} onChange={e=>set("endEstado",e.target.value.toUpperCase().slice(0,2))} placeholder="SP" maxLength={2} style={fi2}/></div>
+                        <div style={{gridColumn:"span 2"}}>{lbl2("Complemento")}<input value={novoCliente.endComplemento} onChange={e=>set("endComplemento",e.target.value)} placeholder="Sala 12, 3º andar" style={fi2}/></div>
+                        <div>{lbl2("Bairro")}<input value={novoCliente.endBairro} onChange={e=>set("endBairro",e.target.value)} placeholder="Centro" style={fi2}/></div>
+                        <div style={{gridColumn:"span 2"}}>{lbl2("Cidade")}<input value={novoCliente.endCidade} onChange={e=>set("endCidade",e.target.value)} placeholder="São Paulo" style={fi2}/></div>
                       </div>
+
+                      {secH2("Contato Principal",T.warn)}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr",gap:8,marginBottom:6}}>
+                        <div style={{gridColumn:"span 2"}}>{lbl2("Nome do responsável")}<input value={novoCliente.contact} onChange={e=>set("contact",e.target.value)} placeholder="Maria Silva" style={fi2}/></div>
+                        <div>{lbl2("Cargo")}<input value={novoCliente.cargo} onChange={e=>set("cargo",e.target.value)} placeholder="Gerente de Marketing" style={fi2}/></div>
+                        <div>{lbl2("Telefone")}<input value={novoCliente.phone} onChange={e=>set("phone",maskPhone(e.target.value))} placeholder="(11) 99999-9999" maxLength={15} style={fi2}/></div>
+                        <div>{lbl2("WhatsApp")}<input value={novoCliente.whatsapp} onChange={e=>set("whatsapp",maskPhone(e.target.value))} placeholder="(11) 99999-9999" maxLength={15} style={fi2}/></div>
+                        <div style={{gridColumn:"span 2"}}>{lbl2("Email")}<input value={novoCliente.email} onChange={e=>set("email",e.target.value)} placeholder="email@empresa.com" style={fi2}/></div>
+                      </div>
+
+                      {secH2("Dados Financeiros",T.accent)}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:6}}>
+                        <div>{lbl2("Forma de pagamento preferencial")}<select value={novoCliente.formaPagamento} onChange={e=>set("formaPagamento",e.target.value)} style={{...fi2,background:T.surface}}><option value="pix">PIX</option><option value="boleto">Boleto</option><option value="transferencia">Transferência</option><option value="cartao">Cartão de Crédito</option></select></div>
+                        <div>{lbl2("Condição de pagamento")}<select value={novoCliente.condicaoPagamento} onChange={e=>set("condicaoPagamento",e.target.value)} style={{...fi2,background:T.surface}}><option value="avista">À vista</option><option value="15dd">15 dias</option><option value="30dd">30 dias</option><option value="45dd">45 dias</option><option value="60dd">60 dias</option></select></div>
+                        <div>{lbl2("Chave PIX")}<input value={novoCliente.chavePix} onChange={e=>set("chavePix",e.target.value)} placeholder="CNPJ, email ou aleatória" style={fi2}/></div>
+                        <div>{lbl2("Email para envio de NF")}<input value={novoCliente.emailNF} onChange={e=>set("emailNF",e.target.value)} placeholder="nf@empresa.com.br" style={fi2}/></div>
+                        <div>{lbl2("Banco (transferência)")}<input value={novoCliente.banco} onChange={e=>set("banco",e.target.value)} placeholder="Itaú, Bradesco..." style={fi2}/></div>
+                        <div>{lbl2("Agência")}<input value={novoCliente.agenciaBanco} onChange={e=>set("agenciaBanco",e.target.value)} placeholder="0001" style={fi2}/></div>
+                        <div style={{gridColumn:"span 2"}}>{lbl2("Conta")}<input value={novoCliente.contaBanco} onChange={e=>set("contaBanco",e.target.value)} placeholder="12345-6" style={fi2}/></div>
+                        <div style={{gridColumn:"span 4"}}>{lbl2("Observações financeiras")}<textarea value={novoCliente.obsFinanceiro} onChange={e=>set("obsFinanceiro",e.target.value)} rows={2} placeholder="Prazo preferencial, contato de cobrança, etc." style={{...fi2,resize:"vertical",lineHeight:1.4}}/></div>
+                      </div>
+
+                      {toggle("Possui agência?","possuiAgencia")}
                       {novoCliente.possuiAgencia&&(
                         <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"12px 14px",marginBottom:12}}>
                           {secH2("Dados da Agência",T.purple)}
-                          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:8,marginBottom:10}}>
-                            <div>{lbl2("Nome da agência")}<input value={novoCliente.agencia.nome} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,nome:e.target.value}}))} placeholder="Ex: WMcCann, Publicis" style={fi2}/></div>
-                            <div>{lbl2(`CNPJ${novoCliente.agencia.cnpj&&!validCNPJ(novoCliente.agencia.cnpj)?" — inválido":""}`)}<input value={novoCliente.agencia.cnpj} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,cnpj:maskCNPJ(e.target.value)}}))} placeholder="00.000.000/0000-00" maxLength={18} style={{...fi2,borderColor:novoCliente.agencia.cnpj&&!validCNPJ(novoCliente.agencia.cnpj)?T.danger:undefined}}/></div>
+                          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:8,marginBottom:8}}>
+                            <div>{lbl2("Nome da agência")}<input value={novoCliente.agencia.nome} onChange={e=>setAg("nome",e.target.value)} placeholder="Ex: WMcCann, Publicis" style={fi2}/></div>
+                            <div>{lbl2(`CNPJ${novoCliente.agencia.cnpj&&!validCNPJ(novoCliente.agencia.cnpj)?" — inválido":""}`)}<input value={novoCliente.agencia.cnpj} onChange={e=>setAg("cnpj",maskCNPJ(e.target.value))} placeholder="00.000.000/0000-00" maxLength={18} style={{...fi2,borderColor:novoCliente.agencia.cnpj&&!validCNPJ(novoCliente.agencia.cnpj)?T.danger:undefined}}/></div>
                           </div>
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
-                            <div style={{fontWeight:600,color:T.soft,fontSize:9,gridColumn:"span 3",paddingBottom:2}}>RESPONSÁVEL DE MÍDIA</div>
-                            <div>{lbl2("Nome do mídia")}<input value={novoCliente.agencia.nomeMedia} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,nomeMedia:e.target.value}}))} placeholder="Nome completo" style={fi2}/></div>
-                            <div>{lbl2("Telefone")}<input value={novoCliente.agencia.telefoneMedia} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,telefoneMedia:maskPhone(e.target.value)}}))} placeholder="(11) 99999-9999" maxLength={15} style={fi2}/></div>
-                            <div>{lbl2("Email")}<input value={novoCliente.agencia.emailMedia} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,emailMedia:e.target.value}}))} placeholder="midia@agencia.com.br" style={fi2}/></div>
+                            <div style={{fontSize:8,color:T.soft,textTransform:"uppercase",letterSpacing:1,gridColumn:"span 3",paddingBottom:2}}>Responsável de Mídia</div>
+                            <div>{lbl2("Nome")}<input value={novoCliente.agencia.nomeMedia} onChange={e=>setAg("nomeMedia",e.target.value)} placeholder="Nome completo" style={fi2}/></div>
+                            <div>{lbl2("Telefone")}<input value={novoCliente.agencia.telefoneMedia} onChange={e=>setAg("telefoneMedia",maskPhone(e.target.value))} placeholder="(11) 99999-9999" maxLength={15} style={fi2}/></div>
+                            <div>{lbl2("Email")}<input value={novoCliente.agencia.emailMedia} onChange={e=>setAg("emailMedia",e.target.value)} placeholder="midia@agencia.com.br" style={fi2}/></div>
                           </div>
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
-                            <div style={{fontWeight:600,color:T.soft,fontSize:9,gridColumn:"span 3",paddingBottom:2}}>RESPONSÁVEL DE ATENDIMENTO</div>
-                            <div>{lbl2("Nome do atendimento")}<input value={novoCliente.agencia.nomeAtendimento} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,nomeAtendimento:e.target.value}}))} placeholder="Nome completo" style={fi2}/></div>
-                            <div>{lbl2("Telefone")}<input value={novoCliente.agencia.telefoneAtendimento} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,telefoneAtendimento:maskPhone(e.target.value)}}))} placeholder="(11) 99999-9999" maxLength={15} style={fi2}/></div>
-                            <div>{lbl2("Email")}<input value={novoCliente.agencia.emailAtendimento} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,emailAtendimento:e.target.value}}))} placeholder="atendimento@agencia.com.br" style={fi2}/></div>
+                            <div style={{fontSize:8,color:T.soft,textTransform:"uppercase",letterSpacing:1,gridColumn:"span 3",paddingBottom:2}}>Responsável de Atendimento</div>
+                            <div>{lbl2("Nome")}<input value={novoCliente.agencia.nomeAtendimento} onChange={e=>setAg("nomeAtendimento",e.target.value)} placeholder="Nome completo" style={fi2}/></div>
+                            <div>{lbl2("Telefone")}<input value={novoCliente.agencia.telefoneAtendimento} onChange={e=>setAg("telefoneAtendimento",maskPhone(e.target.value))} placeholder="(11) 99999-9999" maxLength={15} style={fi2}/></div>
+                            <div>{lbl2("Email")}<input value={novoCliente.agencia.emailAtendimento} onChange={e=>setAg("emailAtendimento",e.target.value)} placeholder="atendimento@agencia.com.br" style={fi2}/></div>
                           </div>
-                          <div>{lbl2("Observações da agência")}<textarea value={novoCliente.agencia.obs} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,obs:e.target.value}}))} rows={2} placeholder="Informações adicionais, condições de pagamento de comissão, etc." style={{...fi2,resize:"vertical",lineHeight:1.4}}/></div>
+                          <div>{lbl2("Observações da agência")}<textarea value={novoCliente.agencia.obs} onChange={e=>setAg("obs",e.target.value)} rows={2} placeholder="Informações adicionais..." style={{...fi2,resize:"vertical",lineHeight:1.4}}/></div>
                         </div>
                       )}
-                      <div style={{display:"flex",gap:8}}>
-                        <button onClick={saveCliente} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>Salvar</button>
+
+                      <div style={{display:"flex",gap:8,marginTop:8}}>
+                        <button onClick={saveCliente} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>Salvar Cliente</button>
                         <button onClick={()=>{setShowNewCliente(false);setNovoCliente(NC_EMPTY);}} style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10,cursor:"pointer"}}>Cancelar</button>
                       </div>
                     </div>
                   )}
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                     <div style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 1fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
-                      {["Cliente","Contato","Segmento","Campanhas","LTV"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
+                      {["Cliente / Empresa","Contato","Segmento","Campanhas","LTV"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
                     </div>
                     {clientesCamps.length===0&&<div style={{padding:"24px 16px",textAlign:"center",fontSize:11,color:T.muted}}>Nenhum cliente cadastrado ainda.</div>}
                     {clientesCamps.map((c,i)=>(
                       <div key={c.id||i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
                         <div>
                           <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{c.name}</div>
-                          <div style={{fontSize:9,color:T.muted}}>{c.email}{c.possuiAgencia&&c.agencia?.nome?<span style={{marginLeft:6,color:T.purple}}>via {c.agencia.nome}</span>:""}</div>
+                          <div style={{fontSize:9,color:T.muted}}>{c.razaoSocial||c.email}{c.cnpj?<span style={{marginLeft:6}}>{c.cnpj}</span>:""}{c.possuiAgencia&&c.agencia?.nome?<span style={{marginLeft:6,color:T.purple}}>via {c.agencia.nome}</span>:""}</div>
                         </div>
-                        <div style={{fontSize:11,color:T.soft}}>{c.contact}<br/><span style={{fontSize:9,color:T.muted}}>{c.phone}</span></div>
+                        <div style={{fontSize:11,color:T.soft}}>{c.contact}<br/><span style={{fontSize:9,color:T.muted}}>{c.cargo?c.cargo+" · ":""}{c.phone}</span></div>
                         <Badge label={c.segment||"—"} color={T.purple}/>
                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:T.info}}>{c.campaigns}</div>
                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmtK(c.ltv)}</div>
