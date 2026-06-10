@@ -975,7 +975,7 @@ const FILE_COLOR={arte:T.pink,pi:T.info,contrato:T.purple,base:T.green,nf:T.warn
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 // CAMPAIGN MODAL - with Tarefas, Etapas, Histórico, Arquivos
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
-const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddFile,onUpdateSacolas,onUpdateImpactos,onOpenClientPanel,onEditCamp,onGerarCheckin,onGerarPosVenda,projects,suppliers,users:allUsers})=>{
+const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddFile,onUpdateSacolas,onUpdateImpactos,onOpenClientPanel,onEditCamp,onGerarCheckin,onGerarPosVenda,projects,suppliers,users:allUsers,clients=[]})=>{
   const[iTab,setITab]=useState("tarefas");
   const[comment,setComment]=useState("");
   const[uploading,setUploading]=useState(false);
@@ -1068,10 +1068,23 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                   ))}
                 </div>
                 {(camp.valorLiquido>0||camp.numPI||camp.agencia)&&(
-                  <div style={{display:"flex",gap:16,marginTop:10,paddingTop:10,borderTop:`1px solid ${T.border}`}}>
-                    {camp.numPI&&<div><div style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Nº PI</div><div style={{fontSize:11,color:T.text}}>{camp.numPI}</div></div>}
-                    {camp.agencia&&<div><div style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Agência</div><div style={{fontSize:11,color:T.text}}>{camp.agencia}</div></div>}
-                    {camp.valorLiquido>0&&<div><div style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Valor Líquido</div><div style={{fontSize:12,color:T.accent,fontWeight:700,fontFamily:"Arial,sans-serif"}}>R$ {camp.valorLiquido.toLocaleString("pt-BR")}</div></div>}
+                  <div style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${T.border}`}}>
+                    <div style={{display:"flex",gap:16,marginBottom:camp.agencia?8:0}}>
+                      {camp.numPI&&<div><div style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Nº PI</div><div style={{fontSize:11,color:T.text}}>{camp.numPI}</div></div>}
+                      {camp.agencia&&<div><div style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Agência</div><div style={{fontSize:11,color:T.text}}>{camp.agencia}</div></div>}
+                      {camp.valorLiquido>0&&<div><div style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Valor Líquido</div><div style={{fontSize:12,color:T.accent,fontWeight:700,fontFamily:"Arial,sans-serif"}}>R$ {camp.valorLiquido.toLocaleString("pt-BR")}</div></div>}
+                    </div>
+                    {(()=>{const cli=clients.find(c=>c.name===camp.client);const ag=cli?.agencia;if(!ag?.nome)return null;return(
+                      <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 12px",marginTop:4}}>
+                        <div style={{fontSize:8,color:T.purple,textTransform:"uppercase",letterSpacing:1,fontWeight:700,marginBottom:8}}>Contatos da Agência — {ag.nome}</div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                          {ag.nomeMedia&&<div><div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>Mídia</div><div style={{fontSize:11,color:T.text,fontWeight:600}}>{ag.nomeMedia}</div>{ag.telefoneMedia&&<div style={{fontSize:10,color:T.soft}}>{ag.telefoneMedia}</div>}{ag.emailMedia&&<div style={{fontSize:10,color:T.info}}>{ag.emailMedia}</div>}</div>}
+                          {ag.nomeAtendimento&&<div><div style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1}}>Atendimento</div><div style={{fontSize:11,color:T.text,fontWeight:600}}>{ag.nomeAtendimento}</div>{ag.telefoneAtendimento&&<div style={{fontSize:10,color:T.soft}}>{ag.telefoneAtendimento}</div>}{ag.emailAtendimento&&<div style={{fontSize:10,color:T.info}}>{ag.emailAtendimento}</div>}</div>}
+                        </div>
+                        {ag.cnpj&&<div style={{fontSize:9,color:T.muted,marginTop:6}}>CNPJ: {ag.cnpj}</div>}
+                        {ag.obs&&<div style={{fontSize:9,color:T.muted,marginTop:4,fontStyle:"italic"}}>{ag.obs}</div>}
+                      </div>
+                    );})()}
                   </div>
                 )}
                 {camp.briefing&&(
@@ -1592,7 +1605,7 @@ const ImpactosTab=({camp,allPartners,onUpdate})=>{
 };
 
 // CLIENT PANEL
-const ClientPanel=({camp,allPartners,onClose,onPDF})=>{
+const ClientPanel=({camp,allPartners,onClose,onPDF,clients=[]})=>{
   const sacolas=camp.sacolasDistribuidas||camp.sacolas||0;
   const imp=camp.impactos||{stories:[],influencer:[],impulsionado:[],galeria:[]};
   // Conteúdo de influenciador vem de evidencias.influencer.conteudo
@@ -1614,7 +1627,7 @@ const ClientPanel=({camp,allPartners,onClose,onPDF})=>{
         <div style={{display:'flex',gap:14,alignItems:'center'}}>
           <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:20,color:'#00C48C',letterSpacing:-0.5}}>ECODELY</div>
           <div style={{width:1,height:18,background:'#1A1E30'}}/>
-          <div style={{fontSize:11,color:'#556'}}>{camp.client} - Painel da Campanha</div>
+          <div style={{fontSize:11,color:'#556'}}>{camp.client} - Painel da Campanha{(()=>{const ag=clients.find(c=>c.name===camp.client)?.agencia;return ag?.nome?<span style={{color:'#778',marginLeft:6}}>via {ag.nome}</span>:null;})()}</div>
         </div>
         <div style={{display:'flex',gap:10}}>
           {isFin&&<button onClick={onPDF} style={{padding:'8px 16px',background:'linear-gradient(135deg,#00C48C,#00A070)',color:'#000',borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:11,border:'none',cursor:'pointer'}}>PDF</button>}
@@ -3304,7 +3317,9 @@ export default function App(){
   const[selForn,setSelForn]=useState(null);
   const[showNewForn,setShowNewForn]=useState(false);
   const[showNewCliente,setShowNewCliente]=useState(false);
-  const[novoCliente,setNovoCliente]=useState({name:"",contact:"",email:"",phone:"",segment:"",agency:""});
+  const[clientesDB,setClientesDB]=useState([]);
+  const NC_EMPTY={name:"",contact:"",email:"",phone:"",segment:"",possuiAgencia:false,agencia:{nome:"",cnpj:"",nomeMedia:"",telefoneMedia:"",emailMedia:"",nomeAtendimento:"",telefoneAtendimento:"",emailAtendimento:"",obs:""}};
+  const[novoCliente,setNovoCliente]=useState(NC_EMPTY);
   const[filterTo,setFilterTo]=useState("2025-06");
   const[showNewProsp,setShowNewProsp]=useState(false);
   const[newProsp,setNewProsp]=useState({name:"",contact:"",email:"",segment:"Beleza",value:"",stage:"lead",owner:"Ana Lima",notes:""});
@@ -3401,6 +3416,9 @@ export default function App(){
       // Planejamentos
       const plans=await supabase.from("planejamentos").select("*").order("id");
       if(plans.data?.length)setPlanejamentos(plans.data.map(r=>r.data));
+      // Clientes
+      const clis=await supabase.from("clientes").select("*").order("id");
+      if(clis.data?.length)setClientesDB(clis.data.map(r=>r.data&&typeof r.data==="object"?{...r.data,id:r.id}:r));
     };
     load();
   },[]);
@@ -4748,10 +4766,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
       )}
 
       {/* MODAL */}
-      {selCamp&&<CampModal camp={selCamp} user={user} allPartners={basePartners} onClose={()=>setSelCamp(null)} onToggleTask={toggleTask} onAddComment={addComment} onAddFile={addFile} onUpdateSacolas={updateSacolas} onUpdateImpactos={updateImpactos} onOpenClientPanel={(c)=>{setClientPanelCamp(c);setSelCamp(null);}} onGerarCheckin={(c)=>gerarCheckinPDF(c,basePartners)} onGerarPosVenda={(c)=>gerarPosVendaPDF(c,basePartners)} onEditCamp={async(id,fields)=>{let upd=null;setCamps(p=>p.map(c=>{if(c.id!==id)return c;upd={...c,...fields};return upd;}));setSelCamp(p=>({...p,...fields}));if(upd)await supabase.from("campanhas").upsert({id:upd.id,data:upd});}} projects={projects} suppliers={suppliers} users={users}/>}
+      {selCamp&&<CampModal camp={selCamp} user={user} allPartners={basePartners} onClose={()=>setSelCamp(null)} onToggleTask={toggleTask} onAddComment={addComment} onAddFile={addFile} onUpdateSacolas={updateSacolas} onUpdateImpactos={updateImpactos} onOpenClientPanel={(c)=>{setClientPanelCamp(c);setSelCamp(null);}} onGerarCheckin={(c)=>gerarCheckinPDF(c,basePartners)} onGerarPosVenda={(c)=>gerarPosVendaPDF(c,basePartners)} onEditCamp={async(id,fields)=>{let upd=null;setCamps(p=>p.map(c=>{if(c.id!==id)return c;upd={...c,...fields};return upd;}));setSelCamp(p=>({...p,...fields}));if(upd)await supabase.from("campanhas").upsert({id:upd.id,data:upd});}} projects={projects} suppliers={suppliers} users={users} clients={clientesDB}/>}
 
       {/* CLIENT PANEL */}
-      {clientPanelCamp&&<ClientPanel camp={clientPanelCamp} allPartners={basePartners} onClose={()=>setClientPanelCamp(null)} onPDF={()=>setPdfCamp(clientPanelCamp)}/>}
+      {clientPanelCamp&&<ClientPanel camp={clientPanelCamp} allPartners={basePartners} onClose={()=>setClientPanelCamp(null)} onPDF={()=>setPdfCamp(clientPanelCamp)} clients={clientesDB}/>}
 
       {/* PDF REPORT */}
       {pdfCamp&&<PDFReport camp={pdfCamp} onClose={()=>setPdfCamp(null)}/>}
@@ -7282,12 +7300,13 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
                     <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Clientes Ativos</div>
-                    {CLIENTS_LIST.map((c,i)=>(
-                      <div key={i} className="hr" style={{padding:"10px 8px",borderRadius:8,display:"flex",gap:12,alignItems:"center",marginBottom:4}}>
-                        <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.segment} · {c.owner}</div></div>
-                        <div style={{textAlign:"right"}}><div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.accent}}>{fmtK(c.ltv)}</div><div style={{fontSize:9,color:T.muted}}>{c.campaigns} camps.</div></div>
+                    {clientesDB.map((c,i)=>{const nc=camps.filter(x=>x.client===c.name).length;const ltv=camps.filter(x=>x.client===c.name).reduce((a,x)=>a+(x.valorLiquido||0),0);return(
+                      <div key={c.id||i} className="hr" style={{padding:"10px 8px",borderRadius:8,display:"flex",gap:12,alignItems:"center",marginBottom:4}}>
+                        <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.segment}{c.possuiAgencia&&c.agencia?.nome?` · ${c.agencia.nome}`:""}</div></div>
+                        <div style={{textAlign:"right"}}><div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:13,color:T.accent}}>{fmtK(ltv)}</div><div style={{fontSize:9,color:T.muted}}>{nc} camps.</div></div>
                       </div>
-                    ))}
+                    );})}
+                    {clientesDB.length===0&&<div style={{fontSize:11,color:T.muted,textAlign:"center",padding:"16px 0"}}>Nenhum cliente cadastrado.</div>}
                   </div>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:18}}>
                     <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Prospects</div>
@@ -9881,39 +9900,88 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 {cadTab==="clientes"&&<button onClick={()=>setShowNewCliente(v=>!v)} style={{padding:"7px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>+ Novo Cliente</button>}
               </div>
 
-              {cadTab==="clientes"&&(
+              {cadTab==="clientes"&&(()=>{
+                const fi2={width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"};
+                const lbl2=(t)=><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1,fontFamily:"Arial,sans-serif"}}>{t}</div>;
+                const secH2=(label,col)=><div style={{fontSize:8,color:col||T.purple,textTransform:"uppercase",letterSpacing:1.5,fontWeight:700,marginBottom:8,marginTop:4,paddingBottom:4,borderBottom:`1px solid ${T.border}`}}>{label}</div>;
+                const saveCliente=async()=>{
+                  if(!novoCliente.name)return;
+                  const rec={...novoCliente,id:Date.now()};
+                  setClientesDB(p=>[...p,rec]);
+                  setShowNewCliente(false);
+                  setNovoCliente(NC_EMPTY);
+                  await supabase.from("clientes").insert({id:rec.id,name:rec.name,data:rec});
+                  pushNotif("Cliente cadastrado",rec.name,T.accent);
+                };
+                const clientesCamps=clientesDB.map(c=>({...c,campaigns:camps.filter(x=>x.client===c.name).length,ltv:camps.filter(x=>x.client===c.name).reduce((a,x)=>a+(x.valorLiquido||0),0)}));
+                return(
                 <div>
                   {showNewCliente&&(
                     <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16,marginBottom:12}}>
                       <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,marginBottom:12,fontSize:12}}>Novo Cliente</div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
-                        {[["Nome *","name","Ex: Selfit Academias"],["Contato","contact","Nome do responsável"],["Email","email","email@empresa.com"],["Telefone","phone","(11) 99999-9999"],["Segmento","segment","Ex: Academia, Varejo"],["Agência","agency","Nome da agência (opcional)"]].map(([l,k,ph])=>(
-                          <div key={k}>
-                            <div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
-                            <input value={novoCliente[k]||""} onChange={e=>setNovoCliente(p=>({...p,[k]:e.target.value}))} placeholder={ph} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}/>
-                          </div>
-                        ))}
+                      {secH2("Dados do Cliente")}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
+                        <div>{lbl2("Nome *")}<input value={novoCliente.name} onChange={e=>setNovoCliente(p=>({...p,name:e.target.value}))} placeholder="Ex: Selfit Academias" style={fi2}/></div>
+                        <div>{lbl2("Contato (responsável)")}<input value={novoCliente.contact} onChange={e=>setNovoCliente(p=>({...p,contact:e.target.value}))} placeholder="Nome do responsável" style={fi2}/></div>
+                        <div>{lbl2("Segmento")}<input value={novoCliente.segment} onChange={e=>setNovoCliente(p=>({...p,segment:e.target.value}))} placeholder="Ex: Academia, Varejo" style={fi2}/></div>
+                        <div>{lbl2("Email")}<input value={novoCliente.email} onChange={e=>setNovoCliente(p=>({...p,email:e.target.value}))} placeholder="email@empresa.com" style={fi2}/></div>
+                        <div>{lbl2("Telefone")}<input value={novoCliente.phone} onChange={e=>setNovoCliente(p=>({...p,phone:maskPhone(e.target.value)}))} placeholder="(11) 99999-9999" maxLength={15} style={fi2}/></div>
                       </div>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,cursor:"pointer"}} onClick={()=>setNovoCliente(p=>({...p,possuiAgencia:!p.possuiAgencia}))}>
+                        <div style={{width:32,height:18,borderRadius:9,background:novoCliente.possuiAgencia?T.accent:T.border,position:"relative",transition:"background 0.2s",flexShrink:0}}>
+                          <div style={{position:"absolute",top:2,left:novoCliente.possuiAgencia?14:2,width:14,height:14,borderRadius:"50%",background:"#fff",transition:"left 0.2s"}}/>
+                        </div>
+                        <span style={{fontSize:11,color:novoCliente.possuiAgencia?T.accent:T.muted,fontWeight:novoCliente.possuiAgencia?700:400}}>Possui agência?</span>
+                      </div>
+                      {novoCliente.possuiAgencia&&(
+                        <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"12px 14px",marginBottom:12}}>
+                          {secH2("Dados da Agência",T.purple)}
+                          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:8,marginBottom:10}}>
+                            <div>{lbl2("Nome da agência")}<input value={novoCliente.agencia.nome} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,nome:e.target.value}}))} placeholder="Ex: WMcCann, Publicis" style={fi2}/></div>
+                            <div>{lbl2(`CNPJ${novoCliente.agencia.cnpj&&!validCNPJ(novoCliente.agencia.cnpj)?" — inválido":""}`)}<input value={novoCliente.agencia.cnpj} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,cnpj:maskCNPJ(e.target.value)}}))} placeholder="00.000.000/0000-00" maxLength={18} style={{...fi2,borderColor:novoCliente.agencia.cnpj&&!validCNPJ(novoCliente.agencia.cnpj)?T.danger:undefined}}/></div>
+                          </div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                            <div style={{fontWeight:600,color:T.soft,fontSize:9,gridColumn:"span 3",paddingBottom:2}}>RESPONSÁVEL DE MÍDIA</div>
+                            <div>{lbl2("Nome do mídia")}<input value={novoCliente.agencia.nomeMedia} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,nomeMedia:e.target.value}}))} placeholder="Nome completo" style={fi2}/></div>
+                            <div>{lbl2("Telefone")}<input value={novoCliente.agencia.telefoneMedia} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,telefoneMedia:maskPhone(e.target.value)}}))} placeholder="(11) 99999-9999" maxLength={15} style={fi2}/></div>
+                            <div>{lbl2("Email")}<input value={novoCliente.agencia.emailMedia} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,emailMedia:e.target.value}}))} placeholder="midia@agencia.com.br" style={fi2}/></div>
+                          </div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                            <div style={{fontWeight:600,color:T.soft,fontSize:9,gridColumn:"span 3",paddingBottom:2}}>RESPONSÁVEL DE ATENDIMENTO</div>
+                            <div>{lbl2("Nome do atendimento")}<input value={novoCliente.agencia.nomeAtendimento} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,nomeAtendimento:e.target.value}}))} placeholder="Nome completo" style={fi2}/></div>
+                            <div>{lbl2("Telefone")}<input value={novoCliente.agencia.telefoneAtendimento} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,telefoneAtendimento:maskPhone(e.target.value)}}))} placeholder="(11) 99999-9999" maxLength={15} style={fi2}/></div>
+                            <div>{lbl2("Email")}<input value={novoCliente.agencia.emailAtendimento} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,emailAtendimento:e.target.value}}))} placeholder="atendimento@agencia.com.br" style={fi2}/></div>
+                          </div>
+                          <div>{lbl2("Observações da agência")}<textarea value={novoCliente.agencia.obs} onChange={e=>setNovoCliente(p=>({...p,agencia:{...p.agencia,obs:e.target.value}}))} rows={2} placeholder="Informações adicionais, condições de pagamento de comissão, etc." style={{...fi2,resize:"vertical",lineHeight:1.4}}/></div>
+                        </div>
+                      )}
                       <div style={{display:"flex",gap:8}}>
-                        <button onClick={()=>{if(!novoCliente.name)return;setShowNewCliente(false);setNovoCliente({name:"",contact:"",email:"",phone:"",segment:"",agency:""});pushNotif("Cliente cadastrado",novoCliente.name,"Novo cliente adicionado",T.accent);}} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>Salvar</button>
-                        <button onClick={()=>setShowNewCliente(false)} style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10,cursor:"pointer"}}>Cancelar</button>
+                        <button onClick={saveCliente} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer"}}>Salvar</button>
+                        <button onClick={()=>{setShowNewCliente(false);setNovoCliente(NC_EMPTY);}} style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10,cursor:"pointer"}}>Cancelar</button>
                       </div>
                     </div>
                   )}
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
-                    <div style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 0.8fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
+                    <div style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 1fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
                       {["Cliente","Contato","Segmento","Campanhas","LTV"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
                     </div>
-                    {CLIENTS_LIST.map((c,i)=>(<div key={i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 0.8fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
-                      <div><div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.email}</div></div>
-                      <div style={{fontSize:11,color:T.soft}}>{c.contact}</div>
-                      <Badge label={c.segment} color={T.purple}/>
-                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:T.info}}>{c.campaigns}</div>
-                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmtK(c.ltv)}</div>
-                    </div>))}
+                    {clientesCamps.length===0&&<div style={{padding:"24px 16px",textAlign:"center",fontSize:11,color:T.muted}}>Nenhum cliente cadastrado ainda.</div>}
+                    {clientesCamps.map((c,i)=>(
+                      <div key={c.id||i} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"center"}}>
+                        <div>
+                          <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{c.name}</div>
+                          <div style={{fontSize:9,color:T.muted}}>{c.email}{c.possuiAgencia&&c.agencia?.nome?<span style={{marginLeft:6,color:T.purple}}>via {c.agencia.nome}</span>:""}</div>
+                        </div>
+                        <div style={{fontSize:11,color:T.soft}}>{c.contact}<br/><span style={{fontSize:9,color:T.muted}}>{c.phone}</span></div>
+                        <Badge label={c.segment||"—"} color={T.purple}/>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18,color:T.info}}>{c.campaigns}</div>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>{fmtK(c.ltv)}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              )}
+                );
+              })()}
 
               {cadTab==="fornecedores"&&(()=>{
                 const fi=inpS;
