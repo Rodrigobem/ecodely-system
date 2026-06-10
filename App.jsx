@@ -83,7 +83,8 @@ const STAGES_CAMP=[
   {id:2,label:"Gráfica",color:T.purple},
   {id:3,label:"Logística",color:T.warn},
   {id:4,label:"Checking",color:T.pink},
-  {id:5,label:"Finalizada",color:T.accent},
+  {id:5,label:"Veiculando",color:"#0EA5E9"},
+  {id:6,label:"Finalizada",color:T.accent},
 ];
 
 const mkTimeline=(entries)=>entries;
@@ -1390,7 +1391,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                     {[
                       {l:"Embalagens",v:(camp.sacolasDistribuidas||camp.sacolas).toLocaleString(),c:T.accent},
                       {l:"Parceiros",v:camp.parceiros,c:T.purple},
-                      {l:"Progresso",v:`${camp.progress}%`,c:camp.stage===5?T.accent:T.info},
+                      {l:"Progresso",v:`${camp.progress}%`,c:camp.stage===6?T.accent:T.info},
                     ].map((k,i)=>(
                       <div key={i} style={{background:T.surface,borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:k.c}}>{k.v}</div>
@@ -1616,7 +1617,7 @@ const ClientPanel=({camp,allPartners,onClose,onPDF,clients=[]})=>{
   const imTotal=imp.impulsionado.reduce((a,i)=>a+Number(i.alcance),0);
   const total=offline+stTotal+inTotal+imTotal;
   const stage=STAGES_CAMP.find(s=>s.id===camp.stage)||STAGES_CAMP[0];
-  const isFin=camp.stage===5;
+  const isFin=camp.stage===6;
   const campPartners=allPartners.filter(p=>camp.parceirosIds&&camp.parceirosIds.includes(p.id));
   const pieData=[{name:'Offline',value:offline,color:'#00C48C'},{name:'Stories',value:stTotal,color:'#E1306C'},{name:'Influencer',value:inTotal,color:'#F5A623'},{name:'Impulsionado',value:imTotal,color:'#3D9EFF'}].filter(d=>d.value>0);
   const barData=campPartners.map(p=>{const st=imp.stories.find(s=>s.parceiro===p.name);return{name:p.name.split(' ').slice(0,2).join(' '),entregas:p.deliveries,stories:st?Number(st.impressoes):0};});
@@ -3137,7 +3138,7 @@ export default function App(){
   useEffect(()=>{localStorage.setItem("ecodely_tab",tab);},[tab]);
   T=THEMES[tema]||THEMES.escuro;
   // Recalcular constantes que dependem de T (para troca de tema funcionar)
-  STAGES_CAMP[0].color=T.info;STAGES_CAMP[1].color=T.purple;STAGES_CAMP[2].color=T.warn;STAGES_CAMP[3].color=T.pink;STAGES_CAMP[4].color=T.accent;
+  STAGES_CAMP[0].color=T.info;STAGES_CAMP[1].color=T.purple;STAGES_CAMP[2].color=T.warn;STAGES_CAMP[3].color=T.pink;STAGES_CAMP[4].color="#0EA5E9";STAGES_CAMP[5].color=T.accent;
   PIPE_STAGES[0].color=T.muted;PIPE_STAGES[1].color=T.info;PIPE_STAGES[2].color=T.purple;PIPE_STAGES[3].color=T.warn;PIPE_STAGES[4].color=T.accent;
   CONTRATO_COLOR["sem contrato"]=T.muted;CONTRATO_COLOR["pendente"]=T.warn;CONTRATO_COLOR["assinado"]=T.accent;CONTRATO_COLOR["expirando"]=T.danger;CONTRATO_COLOR["expirado"]=T.danger;
   STATUS_PARTNER["prospectado"]=T.info;STATUS_PARTNER["negociando"]=T.warn;STATUS_PARTNER["ativo"]=T.accent;STATUS_PARTNER["inativo"]=T.muted;
@@ -3435,7 +3436,7 @@ export default function App(){
 
     // Prazos de gráfica e logística
     if(["admin","operacional"].includes(user.role)){
-      camps.filter(c=>c.stage<5).forEach(c=>{
+      camps.filter(c=>c.stage<6).forEach(c=>{
         if(c.graficaPrazo){const d=diasAte(c.graficaPrazo);if(d!==null&&d<=7){geradas.push({id:Date.now()+Math.random(),type:"prazo",title:d<=0?"Prazo de gráfica VENCIDO":`Gráfica vence em ${d}d`,msg:`${c.name} · ${c.graficaFornecedor||"Gráfica não definida"}`,tab:"campanhas",at:now(),read:false,color:d<=0?T.danger:d<=3?T.warn:T.info});}}
         if(c.logisticaPrazo){const d=diasAte(c.logisticaPrazo);if(d!==null&&d<=7){geradas.push({id:Date.now()+Math.random(),type:"prazo",title:d<=0?"Prazo de logística VENCIDO":`Logística vence em ${d}d`,msg:`${c.name} · ${c.logistica||"Logística não definida"}`,tab:"campanhas",at:now(),read:false,color:d<=0?T.danger:d<=3?T.warn:T.purple});}}
         if(!c.graficaFornecedor&&c.stage>=1){geradas.push({id:Date.now()+Math.random(),type:"operacional",title:"Operacional pendente",msg:`${c.name} ainda não tem gráfica ou logística definida`,tab:"campanhas",at:now(),read:false,color:T.warn});}
@@ -4978,8 +4979,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               const im=(imp.impulsionado||[]).reduce((s,x)=>s+Number(x.alcance),0);
               return a+offline+st+inf+im;
             },0);
-            const campsAtivas=camps.filter(c=>c.stage<5);
-            const campsFin=camps.filter(c=>c.stage===5);
+            const campsAtivas=camps.filter(c=>c.stage<6);
+            const campsFin=camps.filter(c=>c.stage===6);
             const myProspects=prospects.filter(p=>p.owner===user.name||user.role==="admin");
             const myPipeTotal=myProspects.reduce((a,p)=>a+(p.value||0),0);
 
@@ -5002,7 +5003,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             // Prazos críticos reais — campanhas com prazo de gráfica ou logística
             const hoje=new Date();
             const parsePrazo=(s)=>{if(!s)return null;const p=s.includes("-")?new Date(s):new Date(s.split("/").reverse().join("-"));return isNaN(p)?null:p;};
-            const prazos=camps.filter(c=>c.stage<5).flatMap(c=>[
+            const prazos=camps.filter(c=>c.stage<6).flatMap(c=>[
               c.graficaPrazo?{camp:c.name,prazo:`Gráfica: ${c.graficaPrazo}`,dt:parsePrazo(c.graficaPrazo),id:c.id,color:T.purple}:null,
               c.logisticaPrazo?{camp:c.name,prazo:`Logística: ${c.logisticaPrazo}`,dt:parsePrazo(c.logisticaPrazo),id:c.id,color:T.warn}:null
             ]).filter(Boolean).filter(p=>p.dt).map(p=>({...p,dias:Math.ceil((p.dt-hoje)/(1000*60*60*24))}))
@@ -5438,7 +5439,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     </div>
                     <div style={{background:T.card,border:`1px solid ${T.warnDim}`,borderLeft:`3px solid ${T.warn}`,borderRadius:12,padding:16}}>
                       <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,color:T.warn,marginBottom:10}}>Prazos próximos</div>
-                      {camps.filter(c=>c.stage<5&&c.stage>1).slice(0,3).map(c=>({camp:c.name,prazo:`Etapa: ${c.stage}`,dias:5,id:c.id})).map((a,i)=>(
+                      {camps.filter(c=>c.stage<6&&c.stage>1).slice(0,3).map(c=>({camp:c.name,prazo:`Etapa: ${c.stage}`,dias:5,id:c.id})).map((a,i)=>(
                         <div key={i} onClick={()=>{const c=camps.find(x=>x.id===a.id);if(c)setSelCamp(c);}} className="hr" style={{marginBottom:8,padding:"5px 4px",borderRadius:6,cursor:"pointer"}}>
                           <div style={{fontSize:11,fontWeight:600}}>{a.camp}</div>
                           <div style={{fontSize:9,color:T.warn}}>{a.prazo} · {a.dias}d restantes</div>
@@ -5569,7 +5570,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               const META_REP=user.meta||10000;
               const myComm=closings.filter(c=>c.userId===user.id);
               const comAprovada=myComm.filter(c=>c.status==="aprovado"&&!c.pago).reduce((a,c)=>a+c.value,0);
-              const campsAtivas=camps.filter(c=>c.stage<5);
+              const campsAtivas=camps.filter(c=>c.stage<6);
               const pct=META_REP>0?Math.min(Math.round(receitaGerada/META_REP*100),100):0;
               return(
                 <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
@@ -5983,8 +5984,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
                     {projects.map(proj=>{
                       const projCamps=camps.filter(c=>c.projectId===proj.id||(!c.projectId&&c.project===proj.name));
-                      const done=projCamps.filter(c=>c.stage===5).length;
-                      const emAndamento=projCamps.filter(c=>c.stage>1&&c.stage<5).length;
+                      const done=projCamps.filter(c=>c.stage===6).length;
+                      const emAndamento=projCamps.filter(c=>c.stage>1&&c.stage<6).length;
                       const totalVal=projCamps.reduce((a,c)=>a+(c.valorLiquido||0),0);
                       return(
                         <div key={proj.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"16px 18px",cursor:"pointer"}} onClick={()=>{setCampView("kanban");}}>
@@ -6105,8 +6106,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:20}}>
                   {[
                     {l:"Campanhas no mês",v:camps.filter(c=>{const s=parseDate(c.startDate),e=parseDate(c.endDate);const ms=new Date(calYear,calMonth,1),me=new Date(calYear,calMonth+1,0);return s&&e&&s<=me&&e>=ms;}).length,c:T.accent},
-                    {l:"Em andamento",v:camps.filter(c=>c.stage<5).length,c:T.info},
-                    {l:"Finalizadas",v:camps.filter(c=>c.stage===5).length,c:T.purple},
+                    {l:"Em andamento",v:camps.filter(c=>c.stage<6).length,c:T.info},
+                    {l:"Finalizadas",v:camps.filter(c=>c.stage===6).length,c:T.purple},
                     {l:"Conflitos de prazo",v:conflicts.length,c:conflicts.length>0?T.danger:T.accent},
                   ].map((k,i)=>(
                     <div key={i} style={{background:T.card,border:`1px solid ${k.c}33`,borderRadius:10,padding:"14px 16px"}}>
@@ -6185,7 +6186,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     const start=parseDate(c.startDate);
                     const end=parseDate(c.endDate);
                     const dur=start&&end?Math.round((end-start)/86400000)+1:0;
-                    const isActive=c.stage<5;
+                    const isActive=c.stage<6;
                     return(
                       <div key={c.id} className="hr" onClick={()=>setSelCamp(c)}
                         style={{display:"flex",gap:14,alignItems:"center",padding:"13px 18px",borderBottom:`1px solid ${T.border}`,borderLeft:`4px solid ${hasConflict?T.danger:stg?.color}`,flexWrap:"wrap"}}>
@@ -8330,7 +8331,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 if(b.id==="camps_grafica"){const data=Object.entries(camps.reduce((acc,c)=>{const g=c.graficaFornecedor||"Não definido";acc[g]=(acc[g]||0)+1;return acc;},{}));const tot=data.reduce((a,[,v])=>a+v,0);return`<div>${data.map(([g,n])=>barH(g,n+" camp.",tot,"#9B7FFF")).join("")}</div>`;}
                 if(b.id==="parceiros_status")return`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${Object.entries(basePartners.reduce((acc,p)=>{acc[p.status]=(acc[p.status]||0)+1;return acc;},{})).map(([s,n])=>`<div style="background:#f8fafb;border-radius:6px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:#00E5A0">${n}</div><div style="font-size:9px;color:#888">${s}</div></div>`).join("")}</div>`;
                 if(b.id==="top_parceiros")return`<div>${[...basePartners].sort((a,c)=>c.score-a.score).slice(0,8).map((p,i)=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0f0f0"><div><strong style="font-size:11px">${i+1}. ${p.name}</strong><span style="font-size:9px;color:#999"> · ${p.category}</span></div><span style="font-size:12px;font-weight:700;color:${p.score>=80?"#00E5A0":"#F5A623"}">${p.score}</span></div>`).join("")}</div>`;
-                if(b.id==="prazos"){const pr=camps.filter(c=>c.stage<5).flatMap(c=>[c.graficaPrazo?{camp:c.name,tipo:"Gráfica",prazo:c.graficaPrazo,dias:Math.ceil((new Date(c.graficaPrazo.includes("-")?c.graficaPrazo:c.graficaPrazo.split("/").reverse().join("-"))-hj)/86400000)}:null,c.logisticaPrazo?{camp:c.name,tipo:"Logística",prazo:c.logisticaPrazo,dias:Math.ceil((new Date(c.logisticaPrazo.includes("-")?c.logisticaPrazo:c.logisticaPrazo.split("/").reverse().join("-"))-hj)/86400000)}:null]).filter(Boolean).sort((a,b)=>a.dias-b.dias);return pr.length===0?"<p style=\'color:#999;font-size:11px\'>Nenhum prazo cadastrado</p>":`<div>${pr.map(p=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0"><div><strong style="font-size:11px">${p.camp}</strong><span style="font-size:9px;color:#999"> · ${p.tipo}</span></div><span style="font-size:11px;font-weight:700;color:${p.dias<=0?"#FF4D6A":p.dias<=7?"#F5A623":"#888"}">${p.dias<=0?"VENCIDO":p.dias+"d"}</span></div>`).join("")}</div>`;}
+                if(b.id==="prazos"){const pr=camps.filter(c=>c.stage<6).flatMap(c=>[c.graficaPrazo?{camp:c.name,tipo:"Gráfica",prazo:c.graficaPrazo,dias:Math.ceil((new Date(c.graficaPrazo.includes("-")?c.graficaPrazo:c.graficaPrazo.split("/").reverse().join("-"))-hj)/86400000)}:null,c.logisticaPrazo?{camp:c.name,tipo:"Logística",prazo:c.logisticaPrazo,dias:Math.ceil((new Date(c.logisticaPrazo.includes("-")?c.logisticaPrazo:c.logisticaPrazo.split("/").reverse().join("-"))-hj)/86400000)}:null]).filter(Boolean).sort((a,b)=>a.dias-b.dias);return pr.length===0?"<p style=\'color:#999;font-size:11px\'>Nenhum prazo cadastrado</p>":`<div>${pr.map(p=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0"><div><strong style="font-size:11px">${p.camp}</strong><span style="font-size:9px;color:#999"> · ${p.tipo}</span></div><span style="font-size:11px;font-weight:700;color:${p.dias<=0?"#FF4D6A":p.dias<=7?"#F5A623":"#888"}">${p.dias<=0?"VENCIDO":p.dias+"d"}</span></div>`).join("")}</div>`;}
                 if(b.id==="impactos_canal"){const d=[{l:"Offline",v:camps.reduce((a,c)=>a+Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3),0)},{l:"Stories",v:camps.flatMap(c=>c.impactos?.stories||[]).reduce((a,s)=>a+Number(s.impressoes),0)},{l:"Influencer",v:camps.flatMap(c=>c.impactos?.influencer||[]).reduce((a,s)=>a+Number(s.alcance),0)}];const tot=d.reduce((a,x)=>a+x.v,0);const cores=["#00E5A0","#E1306C","#F5A623"];return`<div>${d.map((x,i)=>barH(x.l,x.v.toLocaleString("pt-BR"),tot,cores[i])).join("")}</div>`;}
                 if(b.id==="perf_campanhas")return`<div>${camps.filter(c=>c.sacolas>0).slice(0,6).map(c=>{const imp=c.impactos||{};const total=Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3)+(imp.stories||[]).reduce((a,s)=>a+Number(s.impressoes),0)+(imp.influencer||[]).reduce((a,s)=>a+Number(s.alcance),0);return barH(c.name.slice(0,30),total.toLocaleString("pt-BR"),camps.reduce((mx,x)=>{const t=Math.round((x.sacolasDistribuidas||x.sacolas||0)*3.3);return t>mx?t:mx;},0),"#3D9EFF");}).join("")}</div>`;
                 if(b.id==="conversao")return`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${users.filter(u=>["comercial","admin"].includes(u.role)&&u.active).map(u=>{const meus=prospects.filter(p=>p.owner===u.name);const conv=meus.length>0?Math.round(meus.filter(p=>p.stage==="fechado").length/meus.length*100):0;return kpiH(u.name.split(" ")[0],conv+"%",conv>=60?"#00E5A0":conv>=30?"#3D9EFF":"#FF4D6A");}).join("")}</div>`;
@@ -8342,7 +8343,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 if(b.id==="ticket_medio_seg"){const por=Object.entries(closings.filter(c=>c.status==="aprovado"&&c.value>0).reduce((acc,c)=>{const t=c.type||"Outros";if(!acc[t])acc[t]={total:0,count:0};acc[t].total+=c.value;acc[t].count++;return acc;},{})).map(([t,d])=>({t,media:Math.round(d.total/d.count)})).sort((a,b)=>b.media-a.media);const max=Math.max(...por.map(d=>d.media),1);return por.length===0?`<p style="color:#999;font-size:11px">Sem fechamentos</p>`:`<div>${por.map(d=>barH(d.t,fmt(d.media),max,"#3D9EFF")).join("")}</div>`;}
                 if(b.id==="ciclo_venda"){const ciclos=prospects.filter(p=>p.stage==="fechado"&&p.created_at).map(p=>Math.max(0,Math.ceil((new Date()-new Date(p.created_at))/86400000))).filter(n=>n>0&&n<730);const media=ciclos.length>0?Math.round(ciclos.reduce((a,n)=>a+n,0)/ciclos.length):null;return`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${kpiH("Ciclo Médio",media!=null?media+"d":"—","#9B7FFF")}${kpiH("Fechamentos",ciclos.length,"#3D9EFF")}</div>`;}
                 if(b.id==="ltv_cliente"){const por=Object.entries(closings.filter(c=>c.status==="aprovado").reduce((acc,c)=>{const n=c.partner||"Desconhecido";acc[n]=(acc[n]||0)+(c.value||0);return acc;},{})).map(([n,v])=>({n,v})).sort((a,b)=>b.v-a.v).slice(0,8);const max=Math.max(...por.map(c=>c.v),1);return por.length===0?`<p style="color:#999;font-size:11px">Sem fechamentos</p>`:`<div>${por.map(c=>barH(c.n,fmt(c.v),max,"#00E5A0")).join("")}</div>`;}
-                if(b.id==="churn"){const ativos=new Set(camps.filter(c=>c.stage<5).map(c=>c.client).filter(Boolean));const todos=new Set(camps.map(c=>c.client).filter(Boolean));const taxa=todos.size>0?Math.round(ativos.size/todos.size*100):0;return`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">${kpiH("Total",todos.size,"#3D9EFF")}${kpiH("Ativos",ativos.size,"#00E5A0")}${kpiH("Retenção",taxa+"%",taxa>=70?"#00E5A0":taxa>=50?"#F5A623":"#FF4D6A")}</div>`;}
+                if(b.id==="churn"){const ativos=new Set(camps.filter(c=>c.stage<6).map(c=>c.client).filter(Boolean));const todos=new Set(camps.map(c=>c.client).filter(Boolean));const taxa=todos.size>0?Math.round(ativos.size/todos.size*100):0;return`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">${kpiH("Total",todos.size,"#3D9EFF")}${kpiH("Ativos",ativos.size,"#00E5A0")}${kpiH("Retenção",taxa+"%",taxa>=70?"#00E5A0":taxa>=50?"#F5A623":"#FF4D6A")}</div>`;}
                 if(b.id==="parceiros_cidade"){const por=Object.entries(basePartners.reduce((acc,p)=>{const c=(p.city||"Sem cidade").trim();acc[c]=(acc[c]||0)+1;return acc;},{})).sort((a,b)=>b[1]-a[1]).slice(0,10);const max=por[0]?.[1]||1;const cores=["#10B981","#3D9EFF","#9B7FFF","#F5A623","#F472B6"];return`<div>${por.map(([c,n],i)=>barH(c,n+" parceiros",max,cores[i%cores.length])).join("")}</div>`;}
                 if(b.id==="base_ociosa"){const oc=basePartners.filter(p=>(p.campanhas||0)===0).length;const bx=basePartners.filter(p=>(p.campanhas||0)===1||(p.campanhas||0)===2).length;const at=basePartners.filter(p=>(p.campanhas||0)>2).length;return`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">${kpiH("Sem campanha",oc,"#FF4D6A")}${kpiH("1-2 camp.",bx,"#F5A623")}${kpiH("Ativos (3+)",at,"#00E5A0")}</div>`;}
                 if(b.id==="renovacao_contrato"){const com=basePartners.filter(p=>(p.campanhas||0)>1).length;const tot=basePartners.filter(p=>(p.campanhas||0)>0).length;const taxa=tot>0?Math.round(com/tot*100):0;return`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${kpiH("Taxa Geral",taxa+"%",taxa>=70?"#10B981":taxa>=40?"#F5A623":"#FF4D6A")}${kpiH("Renovados",com,"#10B981")}</div>`;}
@@ -8351,7 +8352,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 if(b.id==="perf_segmento"){const por=Object.entries(camps.reduce((acc,c)=>{const t=c.type||"Campanha";if(!acc[t])acc[t]={camps:0,imp:0};const im=c.impactos||{};acc[t].camps++;acc[t].imp+=Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3)+(im.stories||[]).reduce((a,s)=>a+Number(s.impressoes||0),0)+(im.influencer||[]).reduce((a,s)=>a+Number(s.alcance||0),0);return acc;},{})).sort((a,b)=>b[1].imp-a[1].imp);const max=por[0]?.[1]?.imp||1;const cores=["#9B7FFF","#3D9EFF","#00E5A0","#F5A623"];return`<div>${por.map(([seg,d],i)=>barH(seg+" ("+d.camps+")",d.imp.toLocaleString("pt-BR"),max,cores[i%cores.length])).join("")}</div>`;}
                 if(b.id==="sazonalidade"){const NM=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];const porMes=Array.from({length:12},(_,i)=>({m:NM[i],v:0}));fatMensais.forEach(f=>{const idx=NM.findIndex(n=>(f.mes||"").toLowerCase().startsWith(n.toLowerCase()));if(idx>=0)porMes[idx].v+=f.fat||0;});const top=porMes.filter(m=>m.v>0).sort((a,b)=>b.v-a.v).slice(0,4);const max=top[0]?.v||1;return top.length===0?`<p style="color:#999;font-size:11px">Sem dados mensais</p>`:`<div>${top.map(m=>barH(m.m,fmt(m.v),max,"#3D9EFF")).join("")}</div>`;}
                 if(b.id==="tempo_execucao"){const media2=camps.filter(c=>c.graficaPrazo&&(c.createdAt||c.created_at)).map(c=>{const ini=new Date(c.createdAt||c.created_at);const pra=new Date(c.graficaPrazo.includes("/")?c.graficaPrazo.split("/").reverse().join("-"):c.graficaPrazo);const d=Math.ceil((pra-ini)/86400000);return d>0&&d<365?d:null;}).filter(Boolean);const avg=media2.length>0?Math.round(media2.reduce((a,n)=>a+n,0)/media2.length):null;return`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${kpiH("Tempo Médio",avg!=null?avg+"d":"—","#F5A623")}${kpiH("Total Campanhas",camps.length,"#3D9EFF")}</div>`;}
-                if(b.id==="prazos_risco"){const hp=new Date();const parseP2=s=>{try{return new Date(s.includes("-")?s:s.split("/").reverse().join("-"));}catch(e){return null;}};const urg=camps.filter(c=>c.stage<5).flatMap(c=>[c.graficaPrazo?{camp:c.name,tipo:"Gráfica",dias:Math.ceil((parseP2(c.graficaPrazo)-hp)/86400000)}:null,c.logisticaPrazo?{camp:c.name,tipo:"Logística",dias:Math.ceil((parseP2(c.logisticaPrazo)-hp)/86400000)}:null]).filter(p=>p&&p.dias!=null&&p.dias<=7).sort((a,b)=>a.dias-b.dias);if(urg.length===0)return`<p style="color:#00E5A0;font-size:11px;text-align:center">✓ Nenhum prazo crítico nos próximos 7 dias</p>`;return`<div>${urg.map(p=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0"><div><strong style="font-size:11px">${p.camp}</strong><span style="font-size:9px;color:#999"> · ${p.tipo}</span></div><span style="font-size:11px;font-weight:700;color:${p.dias<=0?"#FF4D6A":p.dias<=3?"#F5A623":"#888"}">${p.dias<=0?"VENCIDO":p.dias+"d"}</span></div>`).join("")}</div>`;}
+                if(b.id==="prazos_risco"){const hp=new Date();const parseP2=s=>{try{return new Date(s.includes("-")?s:s.split("/").reverse().join("-"));}catch(e){return null;}};const urg=camps.filter(c=>c.stage<6).flatMap(c=>[c.graficaPrazo?{camp:c.name,tipo:"Gráfica",dias:Math.ceil((parseP2(c.graficaPrazo)-hp)/86400000)}:null,c.logisticaPrazo?{camp:c.name,tipo:"Logística",dias:Math.ceil((parseP2(c.logisticaPrazo)-hp)/86400000)}:null]).filter(p=>p&&p.dias!=null&&p.dias<=7).sort((a,b)=>a.dias-b.dias);if(urg.length===0)return`<p style="color:#00E5A0;font-size:11px;text-align:center">✓ Nenhum prazo crítico nos próximos 7 dias</p>`;return`<div>${urg.map(p=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0"><div><strong style="font-size:11px">${p.camp}</strong><span style="font-size:9px;color:#999"> · ${p.tipo}</span></div><span style="font-size:11px;font-weight:700;color:${p.dias<=0?"#FF4D6A":p.dias<=3?"#F5A623":"#888"}">${p.dias<=0?"VENCIDO":p.dias+"d"}</span></div>`).join("")}</div>`;}
                 if(b.id==="sla_etapa"){const hp2=new Date();const et=STAGES_CAMP.map(s=>{const cc=camps.filter(c=>c.stage===s.id);const ids=cc.map(c=>{const d=c.updatedAt||c.updated_at||c.createdAt||c.created_at;return d?Math.ceil((hp2-new Date(d))/86400000):null;}).filter(n=>n!=null&&n>=0);const avg=ids.length>0?Math.round(ids.reduce((a,n)=>a+n,0)/ids.length):null;return{...s,count:cc.length,avg};}).filter(s=>s.count>0);return`<div>${et.map(s=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0f0f0"><div style="display:flex;gap:6px;align-items:center"><span style="font-size:9px;padding:2px 6px;border-radius:3px;background:${s.color}22;color:${s.color};font-weight:600">${s.label}</span><span style="font-size:9px;color:#999">${s.count} camp.</span></div><span style="font-size:11px;font-weight:700;color:${s.avg&&s.avg>30?"#FF4D6A":s.avg&&s.avg>14?"#F5A623":"#888"}">${s.avg!=null?"~"+s.avg+"d":"—"}</span></div>`).join("")}</div>`;}
                 if(b.id==="top_clientes_receita"){const por2=Object.entries(closings.filter(c=>c.status==="aprovado").reduce((acc,c)=>{const n=c.partner||"Desconhecido";acc[n]=(acc[n]||0)+(c.value||0);return acc;},{})).map(([n,v])=>({n,v})).sort((a,b)=>b.v-a.v).slice(0,8);const max2=por2[0]?.v||1;return por2.length===0?`<p style="color:#999;font-size:11px">Sem fechamentos aprovados</p>`:`<div>${por2.map((c,i)=>barH("#"+(i+1)+" "+c.n.slice(0,25),fmt(c.v),max2,"#00E5A0")).join("")}</div>`;}
                 if(b.id==="top_parceiros_impacto"){const imp2={};camps.forEach(c=>{(c.impactos?.stories||[]).forEach(s=>{if(s.parceiro)imp2[s.parceiro]=(imp2[s.parceiro]||0)+Number(s.impressoes||0);});(c.impactos?.influencer||[]).forEach(s=>{const n=s.nome||s.parceiro||"";if(n)imp2[n]=(imp2[n]||0)+Number(s.alcance||0);});});const rank2=Object.entries(imp2).map(([n,v])=>({n,v})).sort((a,b)=>b.v-a.v).slice(0,8);const maxR=rank2[0]?.v||1;return rank2.length===0?`<p style="color:#999;font-size:11px">Sem dados de impacto por parceiro</p>`:`<div>${rank2.map((r,i)=>barH("#"+(i+1)+" "+r.n.slice(0,25),r.v.toLocaleString("pt-BR"),maxR,"#F472B6")).join("")}</div>`;}
@@ -8522,7 +8523,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                render:()=>{
                  const hoje=new Date();
                  const parse=s=>{if(!s)return null;const d=s.includes("-")?new Date(s):new Date(s.split("/").reverse().join("-"));return isNaN(d)?null:d;};
-                 const itens=camps.filter(c=>c.stage<5).flatMap(c=>[
+                 const itens=camps.filter(c=>c.stage<6).flatMap(c=>[
                    c.graficaPrazo?{camp:c.name,tipo:"Gráfica",prazo:c.graficaPrazo,dias:Math.ceil((parse(c.graficaPrazo)-hoje)/86400000)}:null,
                    c.logisticaPrazo?{camp:c.name,tipo:"Logística",prazo:c.logisticaPrazo,dias:Math.ceil((parse(c.logisticaPrazo)-hoje)/86400000)}:null
                  ]).filter(Boolean).filter(p=>p.dias!==null).sort((a,b)=>a.dias-b.dias);
@@ -9235,7 +9236,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
               {id:"churn",cat:"Comercial",label:"Churn — Retenção de Clientes",icon:"-",color:T.danger,roles:["admin","comercial"],
                render:()=>{
-                 const ativos=new Set(camps.filter(c=>c.stage<5).map(c=>c.client).filter(Boolean));
+                 const ativos=new Set(camps.filter(c=>c.stage<6).map(c=>c.client).filter(Boolean));
                  const todos=new Set(camps.map(c=>c.client).filter(Boolean));
                  const churnados=[...todos].filter(c=>!ativos.has(c));
                  const taxaRet=todos.size>0?Math.round(ativos.size/todos.size*100):0;
@@ -9453,7 +9454,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                render:()=>{
                  const parseP=s=>{try{return new Date(s.includes("-")?s:s.split("/").reverse().join("-"));}catch(e){return null;}};
                  const hoje=new Date();
-                 const urgentes=camps.filter(c=>c.stage<5).flatMap(c=>[
+                 const urgentes=camps.filter(c=>c.stage<6).flatMap(c=>[
                    c.graficaPrazo?{camp:c.name,cliente:c.client,tipo:"Gráfica",dias:Math.ceil((parseP(c.graficaPrazo)-hoje)/86400000)}:null,
                    c.logisticaPrazo?{camp:c.name,cliente:c.client,tipo:"Logística",dias:Math.ceil((parseP(c.logisticaPrazo)-hoje)/86400000)}:null,
                  ]).filter(p=>p&&p.dias!=null&&p.dias<=7).sort((a,b)=>a.dias-b.dias);
