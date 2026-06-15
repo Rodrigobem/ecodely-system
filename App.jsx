@@ -508,7 +508,8 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
                     const fmt=num>0?num.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}):"";
                     setPlanAtivo(p=>({...p,calc:{...(p.calc||{}),[k]:num,[k+"_raw"]:nr,[k+"_fmt"]:fmt}}));
                   }}
-                  style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none",cursor:"text",caretColor:T.accent}}
+                  autoComplete="off" spellCheck={false}
+                  style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:6,padding:"7px 9px",fontSize:11,color:T.text,outline:"none"}}
                 />
               )}
             </div>
