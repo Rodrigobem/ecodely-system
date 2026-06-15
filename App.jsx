@@ -83,8 +83,8 @@ const STAGES_CAMP=[
   {id:2,label:"Gráfica",color:T.purple},
   {id:3,label:"Logística",color:T.warn},
   {id:4,label:"Checking",color:T.pink},
-  {id:5,label:"Finalizada",color:T.accent},
   {id:6,label:"Veiculando",color:"#0EA5E9"},
+  {id:5,label:"Finalizada",color:T.accent},
 ];
 
 const mkTimeline=(entries)=>entries;
@@ -1129,7 +1129,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
           {iTab==="etapas"&&(
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {STAGES_CAMP.map(s=>{
-                const isCur=camp.stage===s.id,isDone=camp.stage>s.id;
+                const isCur=camp.stage===s.id,isDone=STAGES_CAMP.findIndex(x=>x.id===camp.stage)>STAGES_CAMP.findIndex(x=>x.id===s.id);
                 return(
                   <div key={s.id} style={{border:`1px solid ${isCur?s.color+"55":T.border}`,background:isCur?s.color+"08":T.card,borderRadius:10,padding:"14px 16px"}}>
                     <div style={{display:"flex",gap:10,alignItems:"center"}}>
@@ -1654,15 +1654,15 @@ const ClientPanel=({camp,allPartners,onClose,onPDF,clients=[]})=>{
               </div>
             </div>
             <div style={{display:'flex',alignItems:'center'}}>
-              {STAGES_CAMP.map((s,i)=>(
+              {STAGES_CAMP.map((s,i)=>{const campIdx=STAGES_CAMP.findIndex(x=>x.id===camp.stage);const sIdx=i;const done=campIdx>sIdx;const cur=camp.stage===s.id;return(
                 <div key={s.id} style={{display:'flex',flex:1,alignItems:'center'}}>
                   <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,flex:'none'}}>
-                    <div style={{width:28,height:28,borderRadius:'50%',background:camp.stage>s.id?'#00C48C':camp.stage===s.id?'#3D9EFF22':'transparent',border:'2px solid '+(camp.stage>s.id?'#00C48C':camp.stage===s.id?'#3D9EFF':'#2A2E45'),display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:camp.stage>s.id?'#000':camp.stage===s.id?'#3D9EFF':'#444',fontWeight:800}}>{camp.stage>s.id?'v':s.id}</div>
-                    <div style={{fontSize:8,color:camp.stage===s.id?'#3D9EFF':camp.stage>s.id?'#00C48C':'#445',whiteSpace:'nowrap'}}>{s.label}</div>
+                    <div style={{width:28,height:28,borderRadius:'50%',background:done?'#00C48C':cur?'#3D9EFF22':'transparent',border:'2px solid '+(done?'#00C48C':cur?'#3D9EFF':'#2A2E45'),display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:done?'#000':cur?'#3D9EFF':'#444',fontWeight:800}}>{done?'v':s.id}</div>
+                    <div style={{fontSize:8,color:cur?'#3D9EFF':done?'#00C48C':'#445',whiteSpace:'nowrap'}}>{s.label}</div>
                   </div>
-                  {i<STAGES_CAMP.length-1&&<div style={{flex:1,height:2,background:camp.stage>s.id?'#00C48C':'#1E2240',margin:'0 4px 16px'}}/>}
+                  {i<STAGES_CAMP.length-1&&<div style={{flex:1,height:2,background:done?'#00C48C':'#1E2240',margin:'0 4px 16px'}}/>}
                 </div>
-              ))}
+              )})}
             </div>
           </div>
         </div>
@@ -3138,7 +3138,7 @@ export default function App(){
   useEffect(()=>{localStorage.setItem("ecodely_tab",tab);},[tab]);
   T=THEMES[tema]||THEMES.escuro;
   // Recalcular constantes que dependem de T (para troca de tema funcionar)
-  STAGES_CAMP[0].color=T.info;STAGES_CAMP[1].color=T.purple;STAGES_CAMP[2].color=T.warn;STAGES_CAMP[3].color=T.pink;STAGES_CAMP[4].color=T.accent;STAGES_CAMP[5].color="#0EA5E9";
+  STAGES_CAMP[0].color=T.info;STAGES_CAMP[1].color=T.purple;STAGES_CAMP[2].color=T.warn;STAGES_CAMP[3].color=T.pink;STAGES_CAMP[4].color="#0EA5E9";STAGES_CAMP[5].color=T.accent;
   PIPE_STAGES[0].color=T.muted;PIPE_STAGES[1].color=T.info;PIPE_STAGES[2].color=T.purple;PIPE_STAGES[3].color=T.warn;PIPE_STAGES[4].color=T.accent;
   CONTRATO_COLOR["sem contrato"]=T.muted;CONTRATO_COLOR["pendente"]=T.warn;CONTRATO_COLOR["assinado"]=T.accent;CONTRATO_COLOR["expirando"]=T.danger;CONTRATO_COLOR["expirado"]=T.danger;
   STATUS_PARTNER["prospectado"]=T.info;STATUS_PARTNER["negociando"]=T.warn;STATUS_PARTNER["ativo"]=T.accent;STATUS_PARTNER["inativo"]=T.muted;
@@ -5885,7 +5885,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               )}
 
               {campView==="kanban"&&(
-                <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,alignItems:"start"}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(6,minmax(160px,1fr))",gap:8,alignItems:"start"}}>
                   {STAGES_CAMP.map(stage=>(
                     <div key={stage.id}
                       data-kanban-col={stage.id}
