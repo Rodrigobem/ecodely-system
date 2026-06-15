@@ -452,6 +452,9 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
   const [sugestao,setSugestao]=useState(null);
   const [loadingSug,setLoadingSug]=useState(false);
   const [geocodingId,setGeocodingId]=useState(null);
+  const [searchText,setSearchText]=useState("");
+  const [filterCity,setFilterCity]=useState("");
+  const [filterSeg,setFilterSeg]=useState("");
   if(!visible)return null;
 
   // Calculadora de campanha
@@ -463,6 +466,22 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
   const cTotalEmb=cValorBruto>0?Math.ceil(cValorProposta/cValorBruto):0;
   const cParcNecessarios=cTotalEmb>0?Math.ceil(cTotalEmb/1000):0;
   const cEmbPorParc=cParcNecessarios>0?Math.ceil(cTotalEmb/Math.max(cParcNecessarios,parc.length||1)):0;
+
+  // Filtros e ordenação por distância às regiões do plano
+  const ativosBase=(basePartners||[]).filter(p=>p.status==="ativo");
+  const cities=[...new Set(ativosBase.map(p=>p.city).filter(Boolean))].sort();
+  const segsDisponiveis=[...new Set(ativosBase.map(p=>p.category).filter(Boolean))].sort();
+  const geocodedRegioes=(planAtivo.regioes||[]).filter(r=>r.lat&&r.lng);
+  const distTo=p=>{
+    if(!p.endereco?.lat||!p.endereco?.lng||!geocodedRegioes.length)return Infinity;
+    return Math.min(...geocodedRegioes.map(r=>Math.hypot(r.lat-p.endereco.lat,r.lng-p.endereco.lng)));
+  };
+  const filteredBase=ativosBase.filter(p=>{
+    if(searchText&&!p.name.toLowerCase().includes(searchText.toLowerCase()))return false;
+    if(filterCity&&p.city!==filterCity)return false;
+    if(filterSeg&&p.category!==filterSeg)return false;
+    return true;
+  });
 
   const distribuir=()=>{
     if(!cTotalEmb)return alert("Preencha os campos da calculadora primeiro.");
@@ -559,15 +578,33 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
               <div style={{fontSize:8,color:T.muted,fontStyle:"italic"}}>{sugestao.justificativa}</div>
             </div>
           )}
+          {/* FILTROS */}
+          <div style={{display:"flex",gap:5,marginBottom:5,flexWrap:"wrap"}}>
+            <input value={searchText} onChange={e=>setSearchText(e.target.value)} placeholder="Buscar nome..." style={{flex:1,minWidth:80,background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 8px",fontSize:10,color:T.text,outline:"none"}}/>
+            <select value={filterCity} onChange={e=>setFilterCity(e.target.value)} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 6px",fontSize:10,color:filterCity?T.text:T.muted,outline:"none",maxWidth:130}}>
+              <option value="">Cidade</option>
+              {cities.map(c=><option key={c} value={c}>{c}</option>)}
+            </select>
+            <select value={filterSeg} onChange={e=>setFilterSeg(e.target.value)} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 6px",fontSize:10,color:filterSeg?T.text:T.muted,outline:"none",maxWidth:130}}>
+              <option value="">Segmento</option>
+              {segsDisponiveis.map(s=><option key={s} value={s}>{s}</option>)}
+            </select>
+            {(searchText||filterCity||filterSeg)&&<button onClick={()=>{setSearchText("");setFilterCity("");setFilterSeg("");}} style={{padding:"5px 8px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:5,color:T.muted,cursor:"pointer",fontSize:9}}>✕</button>}
+          </div>
+          <div style={{fontSize:8,color:T.muted,marginBottom:5}}>{filteredBase.length}{filteredBase.length!==ativosBase.length?` de ${ativosBase.length}`:""} parceiro(s)</div>
           <div style={{maxHeight:280,overflowY:"auto",marginBottom:10}}>
             {(()=>{
-              const ativos=(basePartners||[]).filter(p=>p.status==="ativo");
-              const recsIds=(sugestao&&sugestao.recomendados||[]).map(String);
-              const recs=ativos.filter(p=>recsIds.includes(String(p.id)));
-              const outros=ativos.filter(p=>!recsIds.includes(String(p.id)));
-              return [...recs,...outros].map(p=>{
+              const recsIds=(sugestao?.recomendados||[]).map(String);
+              const sorted=[...filteredBase].sort((a,b)=>{
+                const aRec=recsIds.includes(String(a.id)),bRec=recsIds.includes(String(b.id));
+                if(aRec&&!bRec)return -1;if(!aRec&&bRec)return 1;
+                return distTo(a)-distTo(b);
+              });
+              return sorted.map(p=>{
                 const sel=parc.find(x=>x.id===p.id);
                 const isRec=recsIds.includes(String(p.id));
+                const dRaw=geocodedRegioes.length&&p.endereco?.lat?distTo(p):null;
+                const dKm=dRaw!==null&&dRaw!==Infinity?Math.round(dRaw*111):null;
                 return(
                   <div key={p.id} onClick={async()=>{
                     if(geocodingId===p.id)return;
@@ -584,10 +621,11 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
                     }
                   }} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",borderRadius:7,cursor:geocodingId===p.id?"wait":"pointer",marginBottom:4,background:sel?T.accentDim:isRec?T.purpleDim:T.surface,border:`1px solid ${sel?T.accentBorder:isRec?T.purple+"66":T.border}`,opacity:geocodingId&&geocodingId!==p.id?0.5:1}}>
                     <div>
-                      <div style={{display:"flex",gap:5,alignItems:"center"}}>
+                      <div style={{display:"flex",gap:5,alignItems:"center",flexWrap:"wrap"}}>
                         <div style={{fontSize:10,fontWeight:sel||isRec?700:400,color:sel?T.accent:isRec?T.purple:T.text}}>{p.name}</div>
                         {isRec&&!sel&&<span style={{fontSize:7,background:T.purple,color:"#fff",borderRadius:4,padding:"1px 5px"}}>IA ✓</span>}
-                        {!p.endereco?.lat&&!sel&&<span title="Sem GPS cadastrado — será geocodificado ao selecionar" style={{fontSize:7,background:T.warnDim,color:T.warn,borderRadius:4,padding:"1px 5px",border:`1px solid ${T.warn}33`}}>⚠ sem GPS</span>}
+                        {!p.endereco?.lat&&!sel&&<span title="Sem GPS — será geocodificado ao selecionar" style={{fontSize:7,background:T.warnDim,color:T.warn,borderRadius:4,padding:"1px 5px",border:`1px solid ${T.warn}33`}}>⚠ sem GPS</span>}
+                        {dKm!==null&&<span style={{fontSize:7,color:T.muted,background:T.card,borderRadius:4,padding:"1px 5px",border:`1px solid ${T.border}`}}>~{dKm}km</span>}
                       </div>
                       <div style={{fontSize:8,color:T.muted}}>{p.category} · {p.city}</div>
                       {p.demograficos?.populacao_5km_estimada&&(
@@ -4296,8 +4334,18 @@ Retorne SOMENTE JSON válido sem markdown:
   };
 
   const sugerirParceiros=async(plano,parceirosBase)=>{
-    const ativos=parceirosBase.filter(p=>p.status==="ativo").slice(0,30); // max 30
+    // Ordena por distância às regiões geocodificadas (mais próximos primeiro)
+    const geocodedRegs=(plano.regioes||[]).filter(r=>r.lat&&r.lng);
+    const distToPlano=p=>{
+      if(!p.endereco?.lat||!p.endereco?.lng||!geocodedRegs.length)return Infinity;
+      return Math.min(...geocodedRegs.map(r=>Math.hypot(r.lat-p.endereco.lat,r.lng-p.endereco.lng)));
+    };
+    const ativos=parceirosBase
+      .filter(p=>p.status==="ativo")
+      .sort((a,b)=>distToPlano(a)-distToPlano(b))
+      .slice(0,30); // top 30 mais próximos
     if(!ativos.length)return null;
+    const regioesList=(plano.regioes||[]).map(r=>r.cidade).filter(Boolean).join(", ")||plano.regiao||"—";
     const ctrl=new AbortController();
     const timer=setTimeout(()=>ctrl.abort(),20000); // 20s timeout
     try{
@@ -4309,14 +4357,15 @@ Retorne SOMENTE JSON válido sem markdown:
 BRIEFING:
 - Cliente: ${plano.clienteNome||"—"} | Segmento: ${plano.clienteSegmento||"—"}
 - Público: ${plano.publicoAlvo||"—"} | Faixa etária: ${plano.faixaEtaria||"—"}
-- Renda: ${plano.rendaEstimada||"—"} | Regiões: ${(plano.regioes||[]).map(r=>r.cidade).filter(Boolean).join(", ")||plano.regiao||"—"}
+- Renda: ${plano.rendaEstimada||"—"} | Regiões da campanha: ${regioesList}
 - Objetivo: ${plano.objetivo||"—"}
 - Preferência de parceiro: ${plano.preferenciaParceiro||"sem preferência — identifique o perfil ideal"}
 
-PARCEIROS DISPONÍVEIS (id|nome|categoria|cidade):
-${ativos.map(p=>`${p.id}|${p.name}|${p.category||"—"}|${p.city||"—"}`).join("\n")}
+PARCEIROS DISPONÍVEIS (id|nome|categoria|cidade) — ordenados por proximidade às regiões:
+${ativos.map(p=>{const d=distToPlano(p);const dKm=d!==Infinity?` ~${Math.round(d*111)}km`:"";return`${p.id}|${p.name}|${p.category||"—"}|${p.city||"—"}${dKm}`;}).join("\n")}
 
-Identifique os parceiros mais adequados para esta campanha com base no briefing.
+REGRA PRIORITÁRIA: PRIORIZE parceiros na cidade e região exata informada no briefing (${regioesList}). Só sugira parceiros de outras cidades se não houver opções suficientes na região solicitada.
+Identifique os parceiros mais adequados para esta campanha com base no briefing e na proximidade geográfica.
 Retorne SOMENTE JSON: {"recomendados":["id1","id2","id3"],"perfilIdeal":"perfil ideal em 1 frase","justificativa":"justificativa em 2 frases"}`}]})
       });
       clearTimeout(timer);
