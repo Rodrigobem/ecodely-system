@@ -73,9 +73,9 @@ const ROLE_LABELS={admin:"Administrador",comercial:"Comercial",operacional:"Oper
 const ROLE_COLOR={admin:T.accent,comercial:T.info,operacional:T.purple,marketing:T.pink,financeiro:T.warn,base:T.green,representante:"#F59E0B"};
 const SEC_COLOR={comercial:T.info,financeiro:T.warn,marketing:T.pink,base:T.accent,operacional:T.purple,grafica:T.purple,logistica:T.info};
 const SEC_LABEL={comercial:"Comercial",financeiro:"Financeiro",marketing:"Marketing",base:"Base",operacional:"Operacional",grafica:"Gráfica",logistica:"Logística"};
-
-// Role - sector mapping
-const ROLE_TO_SEC={comercial:"comercial",financeiro:"financeiro",marketing:"marketing",base:"base",operacional:"operacional",admin:null,representante:"comercial"};
+// Mapeamento de role → setor que pode editar (null = todos)
+// Mapeamento de role → setor que pode editar (null = todos)
+const ROLE_TO_SEC={admin:null,base:"base",comercial:"comercial",marketing:"marketing",financeiro:"financeiro",operacional:"logistica",representante:null};
 
 // --- CAMPAIGNS ---------------------------------------------------------------
 const STAGES_CAMP=[
@@ -1434,8 +1434,10 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                 {Object.entries(camp.tasks).map(([sec,tasks])=>{
                   const done=tasks.filter(t=>t.done).length;
+                  const allowedSec=ROLE_TO_SEC[user?.role];
+                  const canEdit=allowedSec===null||allowedSec===sec;
                   return(
-                    <div key={sec} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden"}}>
+                    <div key={sec} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",opacity:canEdit?1:0.55}}>
                       <div style={{padding:"10px 14px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                         <span style={{fontSize:12,fontFamily:"Arial,sans-serif",fontWeight:700,color:SEC_COLOR[sec]||T.muted}}>{SEC_LABEL[sec]||sec}</span>
                         <span style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{done}/{tasks.length}</span>
@@ -1444,7 +1446,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                         <PBar pct={Math.round((done/tasks.length)*100)} color={SEC_COLOR[sec]||T.muted} h={4}/>
                         <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:4}}>
                           {tasks.map(t=>(
-                            <div key={t.id} onClick={()=>onToggleTask(camp.id,sec,t.id,user)} style={{display:"flex",gap:8,alignItems:"flex-start",cursor:"pointer",padding:"5px 6px",borderRadius:6}}>
+                            <div key={t.id} onClick={canEdit?()=>onToggleTask(camp.id,sec,t.id,user):undefined} style={{display:"flex",gap:8,alignItems:"flex-start",cursor:canEdit?"pointer":"not-allowed",padding:"5px 6px",borderRadius:6}}>
                               <div style={{width:15,height:15,borderRadius:4,border:`2px solid ${t.done?SEC_COLOR[sec]||T.accent:T.border}`,background:t.done?(SEC_COLOR[sec]||T.accent)+"33":"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:SEC_COLOR[sec]||T.accent,flexShrink:0,marginTop:1}}>{t.done&&"-"}</div>
                               <div style={{flex:1}}>
                                 <div style={{fontSize:11,color:t.done?T.muted:T.text,textDecoration:t.done?"line-through":"none",fontFamily:"Arial,sans-serif"}}>{t.label}</div>
