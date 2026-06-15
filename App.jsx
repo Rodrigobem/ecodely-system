@@ -411,11 +411,6 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
               <div style={{fontSize:11,color:T.soft}}>{planAnalise.callToAction}</div>
             </div>}
           </div>
-          {planAnalise.roi&&<div style={{background:T.accentDim,border:`1px solid ${T.accentBorder}`,borderRadius:10,padding:14}}>
-            <div style={{fontSize:9,color:T.accent,textTransform:"uppercase",letterSpacing:1,marginBottom:6,fontWeight:700}}>Estimativa de ROI</div>
-            <div style={{fontSize:12,color:T.accent,fontWeight:600}}>{planAnalise.roi}</div>
-          </div>}
-          <button onClick={()=>gerarAnaliseIA(planAtivo)} style={{alignSelf:"flex-start",padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,cursor:"pointer",fontSize:9}}>Regenerar análise</button>
         </div>
       )}
     </div>
