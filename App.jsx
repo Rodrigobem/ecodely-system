@@ -448,7 +448,7 @@ const DEMO_FAIXAS=[['0-14','#4FC3F7'],['15-29','#66BB6A'],['30-44','#3D9EFF'],['
 const fmtPop=n=>n>=1000000?(n/1000000).toFixed(1)+'M':(n/1000).toFixed(0)+'k';
 
 // ── WIZ STEP 3 ────────────────────────────────────────────────────────────
-const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEndereco,sugerirParceiros})=>{
+const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEndereco,sugerirParceiros,suppliers=[]})=>{
   const [sugestao,setSugestao]=useState(null);
   const [loadingSug,setLoadingSug]=useState(false);
   const [geocodingId,setGeocodingId]=useState(null);
@@ -804,7 +804,7 @@ const WizStep4=({visible,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCu
 };
 
 // ── PLAN WIZARD ───────────────────────────────────────────────────────────
-const PlanWizard=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,setShowPlanWizard,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCur,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,sugerirParceiros,user,basePartners,projects})=>{
+const PlanWizard=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,setShowPlanWizard,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCur,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,sugerirParceiros,user,basePartners,projects,suppliers=[]})=>{
   const avancar=async()=>{
     if(planStep===1){
       const pending=(planAtivo.regioes||[]).filter(r=>!r.lat);
@@ -835,7 +835,7 @@ const PlanWizard=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPl
     <div style={{padding:24}}>
       <WizStep1 visible={planStep===1} planAtivo={planAtivo} setPlanAtivo={setPlanAtivo} planGeoLoading={planGeoLoading} setPlanGeoLoading={setPlanGeoLoading} geocodeEndereco={geocodeEndereco} projects={projects}/>
       <WizStep2 visible={planStep===2} planAtivo={planAtivo} planAnalise={planAnalise} planLoading={planLoading} gerarAnaliseIA={gerarAnaliseIA}/>
-      <WizStep3 visible={planStep===3} planAtivo={planAtivo} setPlanAtivo={setPlanAtivo} parc={parc} basePartners={basePartners} geocodeEndereco={geocodeEndereco} sugerirParceiros={sugerirParceiros}/>
+      <WizStep3 visible={planStep===3} planAtivo={planAtivo} setPlanAtivo={setPlanAtivo} parc={parc} basePartners={basePartners} geocodeEndereco={geocodeEndereco} sugerirParceiros={sugerirParceiros} suppliers={suppliers}/>
       <WizStep4 visible={planStep===4} parc={parc} outras={outras} total={total} totalEmb={totalEmb} totalImpactos={totalImpactos} custoImp={custoImp} fmtCur={fmtCur} planAtivo={planAtivo} planAnalise={planAnalise} salvarPlano={salvarPlano} gerarPropostaPDF={gerarPropostaPDF} setPlanAtivo={setPlanAtivo}/>
     </div>
     <div style={{padding:"14px 24px",borderTop:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between"}}>
@@ -1103,7 +1103,7 @@ const OrgChart=({orgNodes,setOrgNodes,supabase,pushNotif})=>{
   );
 };
 
-const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,showPlanWizard,setShowPlanWizard,planejamentos,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,sugerirParceiros,user,basePartners,projects})=>{
+const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,showPlanWizard,setShowPlanWizard,planejamentos,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,sugerirParceiros,user,basePartners,projects,suppliers=[]})=>{
   const parc=(planAtivo&&Array.isArray(planAtivo.parceiros)?planAtivo.parceiros:[]);
   const outras=(planAtivo&&Array.isArray(planAtivo.outrasMidias)?planAtivo.outrasMidias:[]);
   const pl=Array.isArray(planejamentos)?planejamentos:[];
@@ -1166,7 +1166,7 @@ const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanA
           salvarPlano={salvarPlano} gerarPropostaPDF={gerarPropostaPDF}
           geocodeEndereco={geocodeEndereco} gerarAnaliseIA={gerarAnaliseIA}
           sugerirParceiros={sugerirParceiros}
-          user={user} basePartners={basePartners} projects={projects}
+          user={user} basePartners={basePartners} projects={projects} suppliers={suppliers}
         />
       )}
     </div>
