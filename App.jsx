@@ -798,7 +798,6 @@ const OrgChart=({orgNodes,setOrgNodes,supabase,pushNotif})=>{
     {id:10,name:"Priscila",role:"Operações / Base",funcoes:"",dept:"operações",status:"ativo",salary:null,costEst:null,deadline:"",parentId:5,x:1560,y:480,vaga:false},
   ];
   const [ns,setNs]=useState(()=>orgNodes&&orgNodes.length?orgNodes:DEF);
-  const [synced,setSynced]=useState(false);
   const [selId,setSelId]=useState(null);
   const [ef,setEf]=useState(null);
   const [showSal,setShowSal]=useState(false);
@@ -808,10 +807,20 @@ const OrgChart=({orgNodes,setOrgNodes,supabase,pushNotif})=>{
   const movedRef=useRef(false);
   const contRef=useRef(null);
   const tmr=useRef(null);
+  const nsRef=useRef(ns);
+  const loadedRef=useRef(false);
 
+  // Sync once when Supabase data arrives (only if table had data)
   useEffect(()=>{
-    if(!synced&&orgNodes&&orgNodes.length){setNs(orgNodes);setSynced(true);}
-  },[orgNodes,synced]);
+    if(!loadedRef.current&&orgNodes&&orgNodes.length){
+      loadedRef.current=true;
+      setNs(orgNodes);
+      nsRef.current=orgNodes;
+    }
+  },[orgNodes]);
+
+  // Keep nsRef in sync with ns (needed by drag/save callbacks)
+  useEffect(()=>{nsRef.current=ns;},[ns]);
 
   const save=(nodes)=>{
     clearTimeout(tmr.current);
@@ -829,23 +838,25 @@ const OrgChart=({orgNodes,setOrgNodes,supabase,pushNotif})=>{
       if(!rect)return;
       const x=Math.max(0,e.clientX-rect.left+(contRef.current.scrollLeft||0)-drag.ox);
       const y=Math.max(0,e.clientY-rect.top+(contRef.current.scrollTop||0)-drag.oy);
-      setNs(p=>p.map(n=>n.id===drag.id?{...n,x,y}:n));
+      setNs(p=>{const next=p.map(n=>n.id===drag.id?{...n,x,y}:n);nsRef.current=next;return next;});
     };
-    const onMU=()=>{if(drag){setNs(p=>{save(p);return p;});setDrag(null);}};
+    const onMU=()=>{if(drag){save(nsRef.current);setDrag(null);}};
     window.addEventListener("mousemove",onMM);
     window.addEventListener("mouseup",onMU);
     return()=>{window.removeEventListener("mousemove",onMM);window.removeEventListener("mouseup",onMU);};
   },[drag]);
 
+  const applyNs=(next)=>{setNs(next);nsRef.current=next;save(next);};
+
   const addVaga=()=>{
     const id=Date.now();
     const nn={id,name:"A contratar",role:"Cargo a definir",funcoes:"",dept:"comercial",status:"planejado",salary:null,costEst:null,deadline:"",parentId:null,x:120,y:120,vaga:true};
-    setNs(p=>{const n=[...p,nn];save(n);return n;});
+    applyNs([...nsRef.current,nn]);
     setSelId(id);setEf({...nn});
   };
 
   const removeNode=(id)=>{
-    setNs(p=>{const n=p.filter(x=>x.id!==id).map(x=>x.parentId===id?{...x,parentId:null}:x);save(n);return n;});
+    applyNs(nsRef.current.filter(x=>x.id!==id).map(x=>x.parentId===id?{...x,parentId:null}:x));
     setSelId(null);setEf(null);
   };
 
@@ -853,31 +864,30 @@ const OrgChart=({orgNodes,setOrgNodes,supabase,pushNotif})=>{
     if(!ef)return;
     const isV=ef.status==="planejado"||ef.status==="vaga aberta";
     const node={...ef,vaga:isV};
-    setNs(p=>{const n=p.map(x=>x.id===node.id?node:x);save(n);return n;});
+    applyNs(nsRef.current.map(x=>x.id===node.id?node:x));
     setEf(node);
-    pushNotif("Organograma","Card salvo","#534AB7");
+    pushNotif("Organograma","Salvo!","#534AB7");
   };
 
   const resetLayout=()=>{
-    const HGAP=30,VGAP=80;
+    const HGAP=30,VGAP=80,cur=nsRef.current;
     const lvs={};
-    const q=[...ns.filter(n=>!n.parentId)];
-    q.forEach(n=>{lvs[n.id]=0;});
-    let wave=q;
-    while(wave.length){const next=[];wave.forEach(n=>{ns.filter(c=>c.parentId===n.id).forEach(c=>{lvs[c.id]=(lvs[n.id]||0)+1;next.push(c);});});wave=next;}
+    cur.filter(n=>!n.parentId).forEach(n=>{lvs[n.id]=0;});
+    let wave=cur.filter(n=>!n.parentId);
+    while(wave.length){const nx=[];wave.forEach(n=>{cur.filter(c=>c.parentId===n.id).forEach(c=>{lvs[c.id]=(lvs[n.id]||0)+1;nx.push(c);});});wave=nx;}
     const maxLv=Math.max(...Object.values(lvs),0);
-    const byLv=Array.from({length:maxLv+1},(_,l)=>ns.filter(n=>lvs[n.id]===l));
+    const byLv=Array.from({length:maxLv+1},(_,l)=>cur.filter(n=>lvs[n.id]===l));
     const pos={};
     let leafX=20;
     (byLv[maxLv]||[]).forEach(n=>{pos[n.id]={x:leafX,y:maxLv*(CH+VGAP)+20};leafX+=CW+HGAP;});
     for(let l=maxLv-1;l>=0;l--){
       (byLv[l]||[]).forEach(n=>{
-        const ch=ns.filter(c=>c.parentId===n.id);
+        const ch=cur.filter(c=>c.parentId===n.id);
         if(ch.length){const xs=ch.map(c=>pos[c.id]?.x??0);pos[n.id]={x:(Math.min(...xs)+Math.max(...xs)+CW)/2-CW/2,y:l*(CH+VGAP)+20};}
         else{pos[n.id]={x:leafX,y:l*(CH+VGAP)+20};leafX+=CW+HGAP;}
       });
     }
-    setNs(p=>{const n=p.map(x=>pos[x.id]?{...x,...pos[x.id]}:x);save(n);return n;});
+    applyNs(cur.map(x=>pos[x.id]?{...x,...pos[x.id]}:x));
   };
 
   const cW=Math.max(1500,...ns.map(n=>n.x+CW+80));
