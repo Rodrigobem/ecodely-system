@@ -161,7 +161,45 @@ const toEmbedUrl=(url)=>{
 // ── PLAN TAB COMPONENT ────────────────────────────────────────────────────
 // ── WIZ STEP 1 ────────────────────────────────────────────────────────────
 const WizStep1=({visible,planAtivo,setPlanAtivo,planGeoLoading,setPlanGeoLoading,geocodeEndereco,projects})=>{
+  const [rInput,setRInput]=useState("");
+  // Backward compat: migrate old single regiao to regioes array on first open
+  useEffect(()=>{
+    if(planAtivo.regiao&&(!planAtivo.regioes||planAtivo.regioes.length===0)){
+      setPlanAtivo(p=>({...p,regioes:[{cidade:p.regiao,lat:p.clienteLat||null,lng:p.clienteLng||null}]}));
+    }
+  },[]);
   if(!visible)return null;
+  const regioes=planAtivo.regioes||[];
+
+  const addRegiao=()=>{
+    const v=rInput.trim();
+    if(!v||regioes.some(r=>r.cidade.toLowerCase()===v.toLowerCase()))return;
+    const nr=[...regioes,{cidade:v,lat:null,lng:null}];
+    setPlanAtivo(p=>({...p,regioes:nr,regiao:nr[0].cidade,clienteEndereco:nr[0].cidade}));
+    setRInput("");
+  };
+
+  const removeRegiao=(idx)=>{
+    setPlanAtivo(p=>{
+      const nr=(p.regioes||[]).filter((_,i)=>i!==idx);
+      return{...p,regioes:nr,regiao:nr[0]?.cidade||"",clienteLat:nr[0]?.lat||null,clienteLng:nr[0]?.lng||null};
+    });
+  };
+
+  const geocodificarTudo=async()=>{
+    const pending=regioes.filter(r=>!r.lat);
+    if(!pending.length)return;
+    setPlanGeoLoading(true);
+    const updated=[...regioes];
+    for(const r of pending){
+      const geo=await geocodeEndereco(r.cidade);
+      if(geo){const idx=updated.findIndex(x=>x.cidade===r.cidade);if(idx>=0)updated[idx]={...updated[idx],lat:geo.lat,lng:geo.lng};}
+    }
+    setPlanAtivo(p=>({...p,regioes:updated,clienteLat:updated[0]?.lat||null,clienteLng:updated[0]?.lng||null}));
+    setPlanGeoLoading(false);
+  };
+
+  const inp11={width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"};
   return(
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
       <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,fontSize:12,marginBottom:4}}>Etapa 1 — Cliente e Objetivo</div>
@@ -169,38 +207,52 @@ const WizStep1=({visible,planAtivo,setPlanAtivo,planGeoLoading,setPlanGeoLoading
         {[["Nome do cliente","clienteNome"],["Segmento","clienteSegmento"],["Público-alvo","publicoAlvo"],["Faixa etária","faixaEtaria"],["Renda estimada","rendaEstimada"],["Prazo da campanha","prazo"]].map(([l,k])=>(
           <div key={k}>
             <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
-            <input value={planAtivo[k]||""} onChange={e=>setPlanAtivo(p=>({...p,[k]:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+            <input value={planAtivo[k]||""} onChange={e=>setPlanAtivo(p=>({...p,[k]:e.target.value}))} style={inp11}/>
           </div>
         ))}
       </div>
       <div>
         <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Objetivo da campanha</div>
-        <textarea value={planAtivo.objetivo||""} onChange={e=>setPlanAtivo(p=>({...p,objetivo:e.target.value}))} rows={2} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none",resize:"vertical"}}/>
+        <textarea value={planAtivo.objetivo||""} onChange={e=>setPlanAtivo(p=>({...p,objetivo:e.target.value}))} rows={2} style={{...inp11,resize:"vertical"}}/>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:8}}>
-        <div>
-          <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Endereço / Região</div>
-          <input value={planAtivo.regiao||""} onChange={e=>setPlanAtivo(p=>({...p,regiao:e.target.value,clienteEndereco:e.target.value}))} placeholder="Ex: Vila Madalena, São Paulo · SP" style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
-        </div>
-        <div style={{display:"flex",alignItems:"flex-end"}}>
-          <button onClick={async()=>{setPlanGeoLoading(true);const geo=await geocodeEndereco(planAtivo.regiao||planAtivo.clienteEndereco);if(geo)setPlanAtivo(p=>({...p,clienteLat:geo.lat,clienteLng:geo.lng}));setPlanGeoLoading(false);}} style={{padding:"8px 14px",background:T.purpleDim,border:`1px solid ${T.purple}44`,color:T.purple,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>
+      {/* ── Multi-região ─────────────────────────────────────── */}
+      <div>
+        <div style={{fontSize:9,color:T.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Regiões da campanha <span style={{color:T.accent,fontWeight:700}}>*</span></div>
+        <div style={{display:"flex",gap:8,marginBottom:8}}>
+          <input value={rInput} onChange={e=>setRInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addRegiao()} placeholder="Ex: São Caetano do Sul · SP" style={{...inp11,flex:1,width:"auto"}}/>
+          <button onClick={addRegiao} disabled={!rInput.trim()} style={{padding:"8px 14px",background:rInput.trim()?T.accent:"transparent",color:rInput.trim()?"#000":T.muted,border:`1px solid ${rInput.trim()?T.accent:T.border}`,borderRadius:7,cursor:rInput.trim()?"pointer":"not-allowed",fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>+ Adicionar</button>
+          <button onClick={geocodificarTudo} disabled={planGeoLoading||!regioes.some(r=>!r.lat)} style={{padding:"8px 14px",background:T.purpleDim,border:`1px solid ${T.purple}44`,color:regioes.some(r=>!r.lat)?T.purple:T.muted,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>
             {planGeoLoading?"Buscando...":"📍 Geocodificar"}
           </button>
         </div>
+        {regioes.length>0?(
+          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+            {regioes.map((r,i)=>(
+              <div key={i} style={{display:"inline-flex",flexDirection:"column",gap:2,background:r.lat?T.accentDim:T.surface,border:`1px solid ${r.lat?T.accentBorder:T.border}`,borderRadius:8,padding:"5px 10px",minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:5}}>
+                  <span style={{fontSize:11,fontWeight:600,color:r.lat?T.accent:T.text}}>{r.cidade}</span>
+                  <span onClick={()=>removeRegiao(i)} style={{cursor:"pointer",color:T.muted,fontSize:15,lineHeight:1,marginLeft:2}}>×</span>
+                </div>
+                {r.lat?<div style={{fontSize:8,color:T.accent}}>✓ {r.lat.toFixed(4)}, {r.lng.toFixed(4)}</div>:<div style={{fontSize:8,color:T.muted}}>Não geocodificado</div>}
+              </div>
+            ))}
+          </div>
+        ):(
+          <div style={{fontSize:9,color:T.muted,background:T.surface,borderRadius:7,padding:"10px 12px",border:`1px dashed ${T.border}`}}>Adicione ao menos uma região para continuar.</div>
+        )}
       </div>
-      {planAtivo.clienteLat&&<div style={{fontSize:9,color:T.accent,fontFamily:"Arial,sans-serif"}}>✓ {planAtivo.clienteLat.toFixed(4)}, {planAtivo.clienteLng.toFixed(4)}</div>}
       <div>
         <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Preferência de segmento de parceiro <span style={{color:T.accent,fontWeight:700}}>(opcional)</span></div>
-        <input value={planAtivo.preferenciaParceiro||""} onChange={e=>setPlanAtivo(p=>({...p,preferenciaParceiro:e.target.value}))} placeholder="Ex: restaurantes japoneses, hamburguerias artesanais · Deixe em branco para a IA identificar" style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+        <input value={planAtivo.preferenciaParceiro||""} onChange={e=>setPlanAtivo(p=>({...p,preferenciaParceiro:e.target.value}))} placeholder="Ex: restaurantes japoneses, hamburguerias artesanais · Deixe em branco para a IA identificar" style={inp11}/>
         <div style={{fontSize:8,color:T.muted,marginTop:3}}>💡 Se não preenchido, a IA vai identificar o perfil de parceiro ideal com base no briefing</div>
       </div>
       <div>
         <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Verba disponível (R$)</div>
-        <input type="number" value={planAtivo.verba||""} onChange={e=>setPlanAtivo(p=>({...p,verba:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+        <input type="number" value={planAtivo.verba||""} onChange={e=>setPlanAtivo(p=>({...p,verba:e.target.value}))} style={inp11}/>
       </div>
       <div>
         <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Projeto vinculado</div>
-        <select value={planAtivo.projectId||""} onChange={e=>setPlanAtivo(p=>({...p,projectId:e.target.value}))} style={{width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}>
+        <select value={planAtivo.projectId||""} onChange={e=>setPlanAtivo(p=>({...p,projectId:e.target.value}))} style={inp11}>
           <option value="">Selecione...</option>
           {(projects||[]).filter(p=>p.active).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
@@ -221,7 +273,7 @@ const WizStep2=({visible,planAtivo,planAnalise,planLoading,gerarAnaliseIA})=>{
           <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,marginBottom:8}}>Análise demográfica por IA</div>
           <div style={{fontSize:11,color:T.muted,marginBottom:20}}>Com base na região e perfil do cliente, a IA gera dados demográficos, perfil de delivery e análise estratégica.</div>
           <button onClick={()=>gerarAnaliseIA(planAtivo)} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.purple},#7B5FE0)`,color:"#fff",borderRadius:9,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,border:"none"}}>
-            Analisar: {planAtivo.regiao||"(preencha a região)"}
+            Analisar: {((planAtivo.regioes||[]).map(r=>r.cidade).join(", "))||planAtivo.regiao||"(preencha a região)"}
           </button>
         </div>
       )}
@@ -689,7 +741,7 @@ const WizStep3=({visible,planAtivo,setPlanAtivo,parc,basePartners,geocodeEnderec
             );
           })()}
           <div style={{fontSize:10,color:T.muted,marginBottom:8,fontWeight:700}}>Mapa de cobertura (raio 5km)</div>
-          <MapaPlano clienteLat={planAtivo.clienteLat} clienteLng={planAtivo.clienteLng} clienteNome={planAtivo.clienteNome} parceiros={parc}/>
+          <MapaPlano regioes={planAtivo.regioes||[]} parceiros={parc}/>
           <div style={{display:"flex",gap:12,marginTop:8}}>
             <div style={{display:"flex",gap:5,alignItems:"center"}}><div style={{width:10,height:10,borderRadius:"50%",background:"#00E5A0"}}/><span style={{fontSize:9,color:T.muted}}>Cliente</span></div>
             <div style={{display:"flex",gap:5,alignItems:"center"}}><div style={{width:10,height:10,borderRadius:"50%",background:"#3D9EFF"}}/><span style={{fontSize:9,color:T.muted}}>Parceiro</span></div>
@@ -756,7 +808,24 @@ const WizStep4=({visible,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCu
 };
 
 // ── PLAN WIZARD ───────────────────────────────────────────────────────────
-const PlanWizard=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,setShowPlanWizard,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCur,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,sugerirParceiros,user,basePartners,projects})=>(
+const PlanWizard=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,setShowPlanWizard,parc,outras,total,totalEmb,totalImpactos,custoImp,fmtCur,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,sugerirParceiros,user,basePartners,projects})=>{
+  const avancar=async()=>{
+    if(planStep===1){
+      const pending=(planAtivo.regioes||[]).filter(r=>!r.lat);
+      if(pending.length>0){
+        setPlanGeoLoading(true);
+        const updated=[...(planAtivo.regioes||[])];
+        for(const r of pending){
+          const geo=await geocodeEndereco(r.cidade);
+          if(geo){const idx=updated.findIndex(x=>x.cidade===r.cidade);if(idx>=0)updated[idx]={...updated[idx],lat:geo.lat,lng:geo.lng};}
+        }
+        setPlanAtivo(p=>({...p,regioes:updated,clienteLat:updated[0]?.lat||null,clienteLng:updated[0]?.lng||null}));
+        setPlanGeoLoading(false);
+      }
+    }
+    setPlanStep(s=>s+1);
+  };
+  return(
   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden"}}>
     <div style={{padding:"16px 24px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
       <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:15}}>{planAtivo.clienteNome||"Novo Planejamento"}</div>
@@ -775,10 +844,11 @@ const PlanWizard=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPl
     </div>
     <div style={{padding:"14px 24px",borderTop:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between"}}>
       <button onClick={()=>planStep>1?setPlanStep(s=>s-1):setShowPlanWizard(false)} style={{padding:"8px 16px",background:T.surface,border:`1px solid ${T.border}`,color:T.muted,borderRadius:8,cursor:"pointer",fontSize:11}}>{planStep>1?"← Voltar":"Cancelar"}</button>
-      {planStep<4&&<button onClick={()=>setPlanStep(s=>s+1)} style={{padding:"8px 20px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,border:"none"}}>Próximo →</button>}
+      {planStep<4&&<button onClick={avancar} disabled={planGeoLoading} style={{padding:"8px 20px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,border:"none"}}>{planGeoLoading?"Geocodificando...":"Próximo →"}</button>}
     </div>
   </div>
-);
+  );
+};
 
 
 const OrgChart=({orgNodes,setOrgNodes,supabase,pushNotif})=>{
@@ -1107,7 +1177,7 @@ const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanA
   );
 };
 
-const EMPTY_PLAN={id:null,projectId:"",clienteNome:"",clienteSegmento:"",clienteEndereco:"",clienteLat:null,clienteLng:null,publicoAlvo:"",faixaEtaria:"",rendaEstimada:"",objetivo:"",verba:"",prazo:"",regiao:"",preferenciaParceiro:"",analise:null,parceiros:[],outrasMidias:[],calc:{},createdBy:"",createdAt:""};
+const EMPTY_PLAN={id:null,projectId:"",clienteNome:"",clienteSegmento:"",clienteEndereco:"",clienteLat:null,clienteLng:null,publicoAlvo:"",faixaEtaria:"",rendaEstimada:"",objetivo:"",verba:"",prazo:"",regiao:"",regioes:[],preferenciaParceiro:"",analise:null,parceiros:[],outrasMidias:[],calc:{},createdBy:"",createdAt:""};
 
 // ── MAPA DE PLANEJAMENTO (Leaflet) ──────────────────────────────────────────
 const _renderParcLayers=(L,grp,parceiros)=>{
@@ -1126,24 +1196,33 @@ const _renderParcLayers=(L,grp,parceiros)=>{
   });
 };
 
-const MapaPlano=({clienteLat,clienteLng,clienteNome,parceiros=[]})=>{
+const MapaPlano=({regioes=[],parceiros=[]})=>{
   const mapRef=useRef(null);
   const instRef=useRef(null);
   const parcGrpRef=useRef(null);
-  // Effect 1: inicializa/recria o mapa quando a localização do cliente muda
+  const regGrpRef=useRef(null);
+  const geoKey=regioes.map(r=>r.lat+","+r.lng).join("|");
+  // Effect 1: inicializa/recria o mapa quando as regiões mudam
   useEffect(()=>{
     const init=()=>{
       if(!mapRef.current)return;
       if(instRef.current){instRef.current.remove();instRef.current=null;}
       if(mapRef.current._leaflet_id)delete mapRef.current._leaflet_id;
       const L=window.L;
-      const lat=clienteLat||-23.5505,lng=clienteLng||-46.6333;
-      const map=L.map(mapRef.current,{zoomControl:true}).setView([lat,lng],13);
+      const geocoded=regioes.filter(r=>r.lat&&r.lng);
+      const lat0=geocoded[0]?.lat||-23.5505,lng0=geocoded[0]?.lng||-46.6333;
+      const map=L.map(mapRef.current,{zoomControl:true}).setView([lat0,lng0],12);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(map);
-      if(clienteLat&&clienteLng){
-        const icon=L.divIcon({html:`<div style="width:22px;height:22px;border-radius:50%;background:#00E5A0;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#000">C</div>`,className:"",iconSize:[22,22],iconAnchor:[11,11]});
-        L.marker([lat,lng],{icon}).addTo(map).bindPopup(`<b>📍 ${clienteNome||"Cliente"}</b>`);
-      }
+      const rGrp=L.layerGroup().addTo(map);
+      regGrpRef.current=rGrp;
+      const icon=L.divIcon({html:`<div style="width:22px;height:22px;border-radius:50%;background:#00E5A0;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#000">C</div>`,className:"",iconSize:[22,22],iconAnchor:[11,11]});
+      const bounds=[];
+      geocoded.forEach(r=>{
+        L.marker([r.lat,r.lng],{icon}).addTo(rGrp).bindPopup(`<b>📍 ${r.cidade}</b>`);
+        L.circle([r.lat,r.lng],{radius:5000,color:"#00E5A0",fillColor:"#00E5A0",fillOpacity:0.07,weight:1.5,dashArray:"4"}).addTo(rGrp);
+        bounds.push([r.lat,r.lng]);
+      });
+      if(bounds.length>1)map.fitBounds(bounds,{padding:[40,40]});
       const grp=L.layerGroup().addTo(map);
       parcGrpRef.current=grp;
       instRef.current=map;
@@ -1159,8 +1238,8 @@ const MapaPlano=({clienteLat,clienteLng,clienteNome,parceiros=[]})=>{
       s.src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
       s.onload=init;document.head.appendChild(s);
     } else init();
-    return()=>{parcGrpRef.current=null;if(instRef.current){instRef.current.remove();instRef.current=null;}};
-  },[clienteLat,clienteLng]);
+    return()=>{parcGrpRef.current=null;regGrpRef.current=null;if(instRef.current){instRef.current.remove();instRef.current=null;}};
+  },[geoKey]);
   // Effect 2: atualiza marcadores/círculos sem recriar o mapa
   useEffect(()=>{
     if(!instRef.current||!parcGrpRef.current||!window.L)return;
@@ -4068,21 +4147,25 @@ export default function App(){
       let ibgeData=null;
       let cidade="", uf="";
 
-      if(plano.clienteLat&&plano.clienteLng){
+      // Usa a primeira região geocodificada como referência para IBGE/Places
+      const primeiraReg=(plano.regioes||[]).find(r=>r.lat&&r.lng)||null;
+      const refLat=primeiraReg?.lat||plano.clienteLat||null;
+      const refLng=primeiraReg?.lng||plano.clienteLng||null;
+
+      if(refLat&&refLng){
         // Reverse geocoding via Nominatim para pegar cidade exata
         try{
-          const rgResp=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${plano.clienteLat}&lon=${plano.clienteLng}&format=json&accept-language=pt-BR`,{headers:{"User-Agent":"Ecodely-Sistema/1.0"}});
+          const rgResp=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${refLat}&lon=${refLng}&format=json&accept-language=pt-BR`,{headers:{"User-Agent":"Ecodely-Sistema/1.0"}});
           const rgData=await rgResp.json();
           cidade=rgData.address?.city||rgData.address?.town||rgData.address?.municipality||rgData.address?.county||"";
           uf=rgData.address?.state_code||rgData.address?.["ISO3166-2-lvl4"]?.replace("BR-","")||"";
         }catch(e){console.warn("Reverse geocoding falhou:",e.message);}
       }
 
-      // Fallback: extrai da string da região
+      // Fallback: extrai da string da primeira região
       if(!cidade){
-        const cidadeRaw=plano.regiao||plano.clienteEndereco||"";
+        const cidadeRaw=primeiraReg?.cidade||plano.regiao||plano.clienteEndereco||"";
         const partes=cidadeRaw.split(/[,\/\-–]/).map(s=>s.trim()).filter(Boolean);
-        // Pega a parte que parece uma cidade (mais de 3 chars, não é sigla de UF)
         cidade=partes.find(p=>p.length>3&&!/^[A-Z]{2}$/.test(p))||partes[0]||"";
         const ufMatch=cidadeRaw.match(/\b([A-Z]{2})\b/);
         uf=ufMatch?ufMatch[1]:"";
@@ -4099,14 +4182,14 @@ export default function App(){
         }catch(e){console.warn("IBGE indisponível:",e.message);}
       }
 
-      // 2. Busca dados reais de restaurantes via Google Maps
+      // 2. Busca dados reais de restaurantes via Google Maps (primeira região)
       let placesData=null;
-      if(plano.clienteLat&&plano.clienteLng){
+      if(refLat&&refLng){
         try{
           const pr=await fetch("/api/places",{
             method:"POST",
             headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({lat:plano.clienteLat,lng:plano.clienteLng,radius:5000})
+            body:JSON.stringify({lat:refLat,lng:refLng,radius:5000})
           });
           if(pr.ok)placesData=await pr.json();
         }catch(e){console.warn("Places API indisponível:",e.message);}
@@ -4139,7 +4222,8 @@ ${placesData.topDetailed.map((p,i)=>`${i+1}. ${p.name} — ${p.rating}★ (${p.t
 `:"(dados do Google Maps não disponíveis — use estimativas baseadas no perfil da região)";
 
 
-      const prompt=`Analise a região "${plano.regiao||plano.clienteEndereco||"Brasil"}" para campanha de mídia in-home (embalagens de delivery) para "${plano.clienteNome}" (${plano.clienteSegmento||"empresa"}). Público: ${plano.publicoAlvo||"geral"}, objetivo: ${plano.objetivo||"awareness"}.
+      const regioesList=(plano.regioes||[]).map(r=>r.cidade).filter(Boolean).join(", ")||plano.regiao||plano.clienteEndereco||"Brasil";
+      const prompt=`Analise as regiões "${regioesList}" para campanha de mídia in-home (embalagens de delivery) para "${plano.clienteNome}" (${plano.clienteSegmento||"empresa"}). Público: ${plano.publicoAlvo||"geral"}, objetivo: ${plano.objetivo||"awareness"}.
 
 ${ibgeContext}
 ${placesContext}
@@ -4227,7 +4311,7 @@ Retorne SOMENTE JSON válido sem markdown:
 BRIEFING:
 - Cliente: ${plano.clienteNome||"—"} | Segmento: ${plano.clienteSegmento||"—"}
 - Público: ${plano.publicoAlvo||"—"} | Faixa etária: ${plano.faixaEtaria||"—"}
-- Renda: ${plano.rendaEstimada||"—"} | Região: ${plano.regiao||"—"}
+- Renda: ${plano.rendaEstimada||"—"} | Regiões: ${(plano.regioes||[]).map(r=>r.cidade).filter(Boolean).join(", ")||plano.regiao||"—"}
 - Objetivo: ${plano.objetivo||"—"}
 - Preferência de parceiro: ${plano.preferenciaParceiro||"sem preferência — identifique o perfil ideal"}
 
@@ -4676,7 +4760,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
       <div class="capa-mid">
         <div class="capa-tag">Proposta Comercial de Mídia</div>
         <div class="capa-h">${plano.clienteNome||"Cliente"}</div>
-        <div class="capa-seg">${plano.clienteSegmento||""} ${plano.regiao?`· ${plano.regiao}`:""}</div>
+        <div class="capa-seg">${plano.clienteSegmento||""} ${(()=>{const rs=(plano.regioes||[]).map(r=>r.cidade).filter(Boolean);return rs.length?`· ${rs.join(" · ")}`:plano.regiao?`· ${plano.regiao}`:""})()}</div>
         ${(()=>{const cli=clientesDB.find(c=>c.name===plano.clienteNome);const linhas=[];if(cli?.razaoSocial)linhas.push(`Razão Social: ${cli.razaoSocial}`);if(cli?.cnpj)linhas.push(`CNPJ: ${cli.cnpj}`);if(cli?.endCidade&&cli?.endEstado)linhas.push(`${cli.endCidade} — ${cli.endEstado}`);return linhas.length?`<div class="capa-reg" style="margin-bottom:6px">${linhas.join(" &nbsp;·&nbsp; ")}</div>`:"";})()}
         <div class="capa-reg">Responsável: ${plano.createdBy||user?.name||"—"} · ${new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"})}</div>
       </div>
@@ -4704,7 +4788,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     <!-- INTELIGÊNCIA DE MERCADO -->
     <div class="sec pb">
       <div class="sec-lbl">Inteligência de mercado</div>
-      <div class="sec-h">Análise da região — ${plano.regiao||plano.clienteEndereco||""}</div>
+      <div class="sec-h">Análise da região — ${(()=>{const rs=(plano.regioes||[]).map(r=>r.cidade).filter(Boolean);return rs.length?rs.join(" · "):plano.regiao||plano.clienteEndereco||""})()}</div>
       <div class="bar"></div>
 
       ${analise.ibge?`
