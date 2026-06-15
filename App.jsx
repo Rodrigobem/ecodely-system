@@ -4680,282 +4680,170 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     const total=totalVal+totalMidia;
     const impactos=Math.round(totalEmb*3.3);
     const numProposta=`ECO-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`;
-    const custoImpacto=impactos>0?(total/impactos).toFixed(2):0;
-
-    // Dados demográficos consolidados dos parceiros
+    const ano=new Date().getFullYear();
+    const dataFormatada=new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"});
+    const regioesList=(plano.regioes||[]).map(r=>r.cidade).filter(Boolean).join(" · ")||plano.regiao||"";
     const demoConsolidado=calcDemograficosConsolidados(parceiros);
-    const demoSlide=(()=>{
+    const GV="#3DD68C",GD="#0D3320",TX="#1A2E1A";
+
+    const footerBar=(label)=>`<div style="background:${GV};height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;flex-shrink:0"><span style="font-size:8px;color:${GD};font-weight:800;letter-spacing:2px;text-transform:uppercase">ECODELY MÍDIA</span><span style="font-size:8px;color:${GD};font-weight:700;letter-spacing:1px;text-transform:uppercase">${label}</span><span style="font-size:8px;color:${GD};font-weight:700">${ano}</span></div>`;
+
+    const PG="min-height:297mm;width:100%;display:flex;flex-direction:column;overflow:hidden;page-break-after:always";
+    const PGB="flex:1;padding:44px 52px";
+
+    // P4 Demográfico (opcional)
+    const pgDemo=(()=>{
       if(!demoConsolidado)return"";
       const d=demoConsolidado;
-      const CORES={'0-14':'#4FC3F7','15-29':'#66BB6A','30-44':'#3D9EFF','45-59':'#FFA726','60+':'#EF5350'};
+      const CORES={"0-14":"#A8E6CF","15-29":"#3DD68C","30-44":"#0D3320","45-59":"#1A6B3C","60+":"#5DA880"};
       const pct=d.faixa_percentuais||{};
-      const popStr=fmtPop(d.populacao_total_estimada);
-      const barHtml=Object.entries(pct).filter(([,v])=>v>0).map(([k,v])=>`<div title="${k} anos: ${v}%" style="flex:${v};background:${CORES[k]};display:flex;align-items:center;justify-content:center">${v>=8?`<span style="font-size:7px;color:#fff;font-weight:700">${v}%</span>`:""}</div>`).join("");
-      const legendaHtml=Object.entries(pct).filter(([,v])=>v>0).map(([k,v])=>`<div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:${CORES[k]}"></div><span style="font-size:9px;color:#666">${k} anos — ${v}%</span></div>`).join("");
-      const tabelaHtml=parceiros.filter(p=>p.demograficos?.populacao_5km_estimada).map((p,i)=>{
-        const pop5k=p.demograficos.populacao_5km_estimada;
-        const pop5Str=fmtPop(pop5k);
-        const dens=p.demograficos.densidade_hab_km2?(p.demograficos.densidade_hab_km2).toLocaleString("pt-BR"):"—";
-        return`<tr style="border-bottom:1px solid #f0f0f0;background:${i%2===0?"#fff":"#fafafa"}"><td style="padding:7px 10px;font-weight:600">${p.nome}</td><td style="padding:7px 10px;text-align:right;color:#00A36C;font-weight:700">${pop5Str} hab.</td><td style="padding:7px 10px;text-align:right;color:#888">${dens} h/km²</td><td style="padding:7px 10px;color:#888">${p.demograficos.faixa_predominante||"—"}</td></tr>`;
-      }).join("");
-      return`
-    <!-- PERFIL DEMOGRÁFICO -->
-    <div class="sec pb">
-      <div class="sec-lbl">Audiência</div>
-      <div class="sec-h">Perfil Demográfico do Público Alcançado</div>
-      <div class="bar"></div>
-      <div class="ibge-badge">📊 IBGE Censo 2022 — ${d.parceiros_com_dados} de ${d.parceiros_total} parceiros com dados</div>
-      <div class="g3" style="margin-bottom:24px">
-        <div class="card"><div class="lbl">Pop. estimada no raio (soma 5km)</div><div class="val green">${popStr} hab.</div><div class="sub">soma dos raios de 5km de cada parceiro</div></div>
-        <div class="card blue"><div class="lbl">Densidade média</div><div class="val blue sm">${(d.densidade_media||0).toLocaleString("pt-BR")} hab/km²</div><div class="sub">média ponderada por população</div></div>
-        <div class="card purple"><div class="lbl">Faixa etária predominante</div><div class="val purple sm">${d.faixa_predominante||"—"}</div><div class="sub">maior grupo da audiência</div></div>
-      </div>
-      <div style="margin-bottom:20px">
-        <div class="lbl" style="margin-bottom:8px">Distribuição etária da audiência (ponderada por parceiro)</div>
-        <div style="display:flex;gap:2px;border-radius:6px;overflow:hidden;height:28px;margin-bottom:8px">${barHtml}</div>
-        <div style="display:flex;gap:14px;flex-wrap:wrap">${legendaHtml}</div>
-      </div>
-      ${tabelaHtml?`<div><div class="lbl" style="margin-bottom:8px">Detalhe demográfico por parceiro</div><table style="width:100%;border-collapse:collapse;font-size:10px"><thead><tr style="background:#f8fafb"><th style="padding:7px 10px;text-align:left;font-size:8px;color:#888;text-transform:uppercase">Parceiro</th><th style="padding:7px 10px;text-align:right;font-size:8px;color:#888;text-transform:uppercase">Pop. raio 5km</th><th style="padding:7px 10px;text-align:right;font-size:8px;color:#888;text-transform:uppercase">Densidade</th><th style="padding:7px 10px;text-align:left;font-size:8px;color:#888;text-transform:uppercase">Faixa</th></tr></thead><tbody>${tabelaHtml}</tbody></table></div>`:""}
-    </div>`;
+      const barHtml=Object.entries(pct).filter(([,v])=>v>0).map(([k,v])=>`<div style="flex:${v};background:${CORES[k]||GV};display:flex;align-items:center;justify-content:center">${v>=8?`<span style="font-size:8px;color:#fff;font-weight:800">${v}%</span>`:""}</div>`).join("");
+      const legHtml=Object.entries(pct).filter(([,v])=>v>0).map(([k,v])=>`<div style="display:flex;align-items:center;gap:5px;margin-right:14px"><div style="width:10px;height:10px;background:${CORES[k]||GV}"></div><span style="font-size:9px;color:${TX};font-weight:600">${k} anos — ${v}%</span></div>`).join("");
+      const ibgeBlock=analise?.ibge?`<div style="background:${GD};padding:20px 24px;margin-top:20px"><div style="font-size:9px;color:${GV};font-weight:800;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px">DADOS IBGE — ${analise.ibge.municipio||""}/${analise.ibge.uf||""}</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">${[["População",analise.ibge.populacao||"—"],["Renda per capita",analise.ibge.rendaMedia||"—"],["Ensino superior",analise.ibge.pctSuperior||"—"]].map(([l,v])=>`<div><div style="font-size:8px;color:${GV}88;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">${l}</div><div style="font-size:14px;color:#fff;font-weight:900">${v}</div></div>`).join("")}</div></div>`:"";
+      return`<div style="${PG}">
+        <div style="${PGB}">
+          <div style="font-size:9px;color:${GV};font-weight:800;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px">PERFIL DO PÚBLICO ALCANÇADO · FONTE IBGE CENSO 2022</div>
+          <div style="font-size:28px;font-weight:900;color:${TX};line-height:1.1;letter-spacing:-0.5px;margin-bottom:16px">Quem receberá<br>sua mensagem.</div>
+          <div style="height:3px;background:${GV};width:60px;margin-bottom:28px"></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px">
+            ${[
+              [fmtPop(d.populacao_total_estimada)+" hab.","Pop. estimada no raio (5km)"],
+              [d.faixa_predominante||"—","Faixa etária predominante"],
+              [(d.densidade_media||0).toLocaleString("pt-BR")+" hab/km²","Densidade média"],
+            ].map(([v,l])=>`<div style="border-top:3px solid ${GV};padding:20px 16px;background:#f8faf8"><div style="font-size:22px;font-weight:900;color:${GV};line-height:1;margin-bottom:8px">${v}</div><div style="font-size:8px;color:${TX};text-transform:uppercase;letter-spacing:1px;font-weight:700">${l}</div></div>`).join("")}
+          </div>
+          <div style="font-size:9px;color:${TX};font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">DISTRIBUIÇÃO ETÁRIA DA AUDIÊNCIA</div>
+          <div style="display:flex;height:32px;margin-bottom:10px;overflow:hidden">${barHtml}</div>
+          <div style="display:flex;flex-wrap:wrap;margin-bottom:20px">${legHtml}</div>
+          ${ibgeBlock}
+        </div>
+        ${footerBar("PERFIL DO PÚBLICO")}
+      </div>`;
     })();
 
-    // Apps com market share
-    const appsArr=Array.isArray(analise?.appsLideres)&&typeof analise.appsLideres[0]==="object"
-      ?analise.appsLideres
-      :(analise?.appsLideres||[]).map(a=>({nome:a,share:"—"}));
+    // Linhas da tabela financeira (sem nomes de parceiros)
+    const linhasParc=parceiros.length>0?`<tr style="border-bottom:1px solid #e8f0e8"><td style="padding:11px 14px;font-weight:600">Embalagem Branded Delivery</td><td style="padding:11px 14px;text-align:center;color:#666">${fmtN(totalEmb)} un</td><td style="padding:11px 14px;text-align:right;color:#666">—</td><td style="padding:11px 14px;text-align:center;color:#666">—</td><td style="padding:11px 14px;text-align:right;font-weight:800;color:${GV}">${fmt(totalVal)}</td></tr>`:"";
+    const linhasOutras=outras.map((m,i)=>{const t=Number(m.tabela||0),d=Number(m.desconto||0),b=t*(1-d/100);return`<tr style="border-bottom:1px solid #e8f0e8;background:${i%2===0?"#fff":"#f8faf8"}"><td style="padding:11px 14px;font-weight:600">${m.tipo||"Outra mídia"}${m.descricao?` — ${m.descricao}`:""}</td><td style="padding:11px 14px;text-align:center;color:#666">${m.qtd||1}</td><td style="padding:11px 14px;text-align:right;color:#666">${fmt(t)}</td><td style="padding:11px 14px;text-align:center;color:#666">${d>0?d+"%":"—"}</td><td style="padding:11px 14px;text-align:right;font-weight:800;color:${GV}">${fmt(b)}</td></tr>`;}).join("");
 
-    const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
-    <title>Proposta — ${plano.clienteNome}</title>
+    const html=`<!DOCTYPE html><html lang="pt-BR"><head>
+    <meta charset="UTF-8">
+    <title>Proposta — ${plano.clienteNome||"Cliente"}</title>
     <style>
       *{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#1a1a2e;background:#fff}
-      @page{margin:0;size:A4}
-      @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-      .pb{page-break-before:always}
-      .capa{height:100vh;min-height:260mm;background:linear-gradient(145deg,#050d1f 0%,#0d1f3c 60%,#050d1f 100%);display:flex;flex-direction:column;justify-content:space-between;padding:56px;position:relative;overflow:hidden}
-      .capa::before{content:"";position:absolute;top:-120px;right:-120px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,#00E5A033 0%,transparent 65%)}
-      .capa::after{content:"";position:absolute;bottom:-100px;left:-100px;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,#3D9EFF1a 0%,transparent 65%)}
-      .logo{font-size:30px;font-weight:900;color:#00E5A0;letter-spacing:-1px}
-      .slogan{font-size:10px;color:#00E5A066;letter-spacing:4px;text-transform:uppercase;margin-top:5px}
-      .capa-mid{flex:1;display:flex;flex-direction:column;justify-content:center;z-index:1;padding:40px 0}
-      .capa-tag{font-size:9px;color:#00E5A0;letter-spacing:5px;text-transform:uppercase;margin-bottom:18px;border-left:2px solid #00E5A0;padding-left:12px}
-      .capa-h{font-size:52px;font-weight:900;color:#fff;line-height:1.05;letter-spacing:-2px;margin-bottom:20px}
-      .capa-seg{font-size:15px;color:#00E5A0;font-weight:600;margin-bottom:6px}
-      .capa-reg{font-size:12px;color:#ffffff55}
-      .capa-foot{display:flex;justify-content:space-between;align-items:flex-end;z-index:1}
-      .capa-contact{font-size:9px;color:#ffffff33;line-height:1.8}
-      .capa-num{font-size:9px;color:#00E5A055;font-family:monospace;text-align:right;line-height:1.8}
-      .sec{padding:44px 52px}
-      .sec-lbl{font-size:8px;color:#00A36C;letter-spacing:5px;text-transform:uppercase;margin-bottom:10px;font-weight:700}
-      .sec-h{font-size:26px;font-weight:800;color:#0a1628;margin-bottom:20px;letter-spacing:-0.5px}
-      .bar{height:3px;background:linear-gradient(90deg,#00E5A0,#3D9EFF,transparent);border-radius:2px;margin-bottom:28px}
-      .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
-      .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
-      .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
-      .card{background:#f8fafc;border-radius:10px;padding:16px;border-left:3px solid #00E5A0}
-      .card.blue{border-left-color:#3D9EFF}
-      .card.purple{border-left-color:#9B7FFF}
-      .card.warn{border-left-color:#F5A623}
-      .card.pink{border-left-color:#F472B6}
-      .card.dark{background:#0a1628;border-left-color:#00E5A0}
-      .lbl{font-size:8px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
-      .val{font-size:15px;font-weight:800;color:#0a1628}
-      .val.sm{font-size:12px}
-      .val.green{color:#00A36C}
-      .val.blue{color:#3D9EFF}
-      .val.purple{color:#9B7FFF}
-      .val.white{color:#fff}
-      .sub{font-size:8px;color:#aaa;margin-top:2px}
-      .box{background:#f0faf6;border:1px solid #00E5A033;border-radius:10px;padding:20px;margin-bottom:16px}
-      .box.warn{background:#fff8f0;border-color:#F5A62333}
-      .box.blue{background:#f0f6ff;border-color:#3D9EFF33}
-      .box.purple{background:#f5f0ff;border-color:#9B7FFF33}
-      .box.dark{background:#050d1f;border-color:#00E5A033}
-      .box-lbl{font-size:8px;color:#00A36C;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;font-weight:700}
-      .box-txt{font-size:11px;color:#2a4a3a;line-height:1.85}
-      .ibge-badge{display:inline-flex;align-items:center;gap:5px;background:#e8f8f2;border:1px solid #00E5A044;border-radius:20px;padding:4px 10px;font-size:8px;color:#00A36C;font-weight:700;margin-bottom:14px}
-      .maps-badge{display:inline-flex;align-items:center;gap:5px;background:#e8f0ff;border:1px solid #3D9EFF44;border-radius:20px;padding:4px 10px;font-size:8px;color:#3D9EFF;font-weight:700;margin-bottom:14px;margin-left:8px}
-      .app-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f0}
-      .app-bar-bg{flex:1;background:#f0f0f0;border-radius:4px;height:6px}
-      .app-bar{background:#00E5A0;border-radius:4px;height:6px}
-      .imp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:20px 0}
-      .imp-card{text-align:center;background:#050d1f;border-radius:10px;padding:16px 10px}
-      .imp-num{font-size:20px;font-weight:900;color:#00E5A0}
-      .imp-lbl{font-size:8px;color:#ffffff55;margin-top:4px;text-transform:uppercase;letter-spacing:1px}
-      .fin-t{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:11px}
-      .fin-t th{background:#0a1628;color:#fff;padding:9px 12px;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:700}
-      .fin-t td{padding:9px 12px;border-bottom:1px solid #f0f0f0}
-      .fin-t tr:nth-child(even) td{background:#fafafa}
-      .fin-total td{background:#00E5A0;color:#000;font-weight:800;padding:11px 12px;font-size:13px}
-      .step{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid #f5f5f5}
-      .step-n{width:26px;height:26px;border-radius:50%;background:#00E5A0;color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px}
-      .step-t{font-size:11px;color:#333;line-height:1.65}
-      .foot-bar{background:#050d1f;padding:16px 52px;display:flex;justify-content:space-between;align-items:center}
-      .foot-t{font-size:8px;color:#ffffff33}
-      .section-title-box{background:linear-gradient(135deg,#00E5A011,#3D9EFF08);border-radius:10px;padding:12px 16px;margin-bottom:20px;border:1px solid #00E5A022}
-      .pill{display:inline-block;background:#f0f0f0;border-radius:20px;padding:3px 10px;font-size:9px;color:#555;margin:2px}
-      .pill.green{background:#e8f8f2;color:#00A36C}
-      .roi-box{background:linear-gradient(135deg,#050d1f,#0d1f3c);border-radius:12px;padding:24px;margin-bottom:16px;border:1px solid #00E5A033}
-      .roi-h{font-size:10px;color:#00E5A0;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
-      .roi-txt{font-size:12px;color:#00E5A0;font-weight:600;line-height:1.7}
-      .cta-box{background:linear-gradient(135deg,#F5A62311,#F5A62305);border:1px solid #F5A62333;border-radius:10px;padding:20px;margin-bottom:16px}
+      body{font-family:Arial,'Helvetica Neue',system-ui,sans-serif;color:${TX};background:#fff;width:210mm;margin:0 auto}
+      @page{margin:0;size:A4 portrait}
+      @media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
     </style></head><body>
 
-    <!-- CAPA -->
-    <div class="capa">
-      <div><div class="logo">ECODELY</div><div class="slogan">Onde tem Delivery, tem Ecodely</div></div>
-      <div class="capa-mid">
-        <div class="capa-tag">Proposta Comercial de Mídia</div>
-        <div class="capa-h">${plano.clienteNome||"Cliente"}</div>
-        <div class="capa-seg">${plano.clienteSegmento||""} ${(()=>{const rs=(plano.regioes||[]).map(r=>r.cidade).filter(Boolean);return rs.length?`· ${rs.join(" · ")}`:plano.regiao?`· ${plano.regiao}`:""})()}</div>
-        ${(()=>{const cli=clientesDB.find(c=>c.name===plano.clienteNome);const linhas=[];if(cli?.razaoSocial)linhas.push(`Razão Social: ${cli.razaoSocial}`);if(cli?.cnpj)linhas.push(`CNPJ: ${cli.cnpj}`);if(cli?.endCidade&&cli?.endEstado)linhas.push(`${cli.endCidade} — ${cli.endEstado}`);return linhas.length?`<div class="capa-reg" style="margin-bottom:6px">${linhas.join(" &nbsp;·&nbsp; ")}</div>`:"";})()}
-        <div class="capa-reg">Responsável: ${plano.createdBy||user?.name||"—"} · ${new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"})}</div>
+    <!-- P1: CAPA -->
+    <div style="${PG};background:${GD}">
+      <div style="flex:1;padding:52px;display:flex;flex-direction:column;justify-content:space-between">
+        <div>
+          <div style="font-size:26px;font-weight:900;letter-spacing:-1px;color:#fff;margin-bottom:6px">ecodel<span style="color:${GV}">y</span> mídia</div>
+          <div style="font-size:9px;color:${GV};letter-spacing:4px;text-transform:uppercase;margin-bottom:36px">PROPOSTA COMERCIAL</div>
+          <div style="height:2px;background:${GV};width:80px;margin-bottom:40px"></div>
+          <div style="font-size:48px;font-weight:900;color:#fff;line-height:1.0;letter-spacing:-2px;margin-bottom:18px;max-width:520px">${(plano.clienteNome||"Cliente").toUpperCase()}</div>
+          <div style="font-size:13px;color:${GV};font-weight:700;margin-bottom:8px">${regioesList}</div>
+          <div style="font-size:11px;color:#ffffff66">${dataFormatada} · Nº ${numProposta}</div>
+        </div>
+        <div>
+          <div style="height:1px;background:${GV}44;margin-bottom:20px"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end">
+            <div style="font-size:10px;color:#ffffff55;line-height:2">Responsável: ${plano.createdBy||"—"}<br>comercial@ecodely.com.br · ecodely.com.br</div>
+            <div style="text-align:right;font-size:9px;color:${GV}88;line-height:2">Proposta válida por 15 dias${plano.prazo?`<br>Período: ${plano.prazo}`:""}</div>
+          </div>
+        </div>
       </div>
-      <div class="capa-foot">
-        <div class="capa-contact">Mídia In-Home · Embalagens de Delivery<br>ecodely.com.br · comercial@ecodely.com.br</div>
-        <div class="capa-num">Nº ${numProposta}<br>Válida por 15 dias<br>${plano.prazo?`Período: ${plano.prazo}`:""}</div>
-      </div>
+      ${footerBar("PROPOSTA COMERCIAL · "+ano)}
     </div>
 
-    <!-- SOBRE A ECODELY -->
-    <div class="sec pb">
-      <div class="sec-lbl">Quem somos</div>
-      <div class="sec-h">A mídia que vai até o seu cliente</div>
-      <div class="bar"></div>
-      <p style="font-size:12px;color:#444;line-height:1.9;margin-bottom:14px">A <strong>Ecodely</strong> é uma plataforma de mídia in-home que transforma embalagens de delivery em poderosos canais de comunicação. Conectamos marcas ao consumidor final no momento mais receptivo: a chegada do pedido em casa.</p>
-      <p style="font-size:12px;color:#444;line-height:1.9;margin-bottom:24px">Nossa rede de restaurantes, dark kitchens e estabelecimentos parceiros garante distribuição inteligente, segmentada por região, perfil demográfico e comportamento de consumo. Cada embalagem é uma experiência — não um anúncio.</p>
-      <div class="g3">
-        <div class="card"><div class="lbl">Impactos por embalagem</div><div class="val green">3,3×</div><div class="sub">Visualizações médias únicas</div></div>
-        <div class="card blue"><div class="lbl">Modelo</div><div class="val blue">In-home</div><div class="sub">No ambiente do consumidor</div></div>
-        <div class="card purple"><div class="lbl">Segmentação</div><div class="val purple">Geo + Demo</div><div class="sub">Regional + comportamental</div></div>
+    <!-- P2: POR QUE A ECODELY? -->
+    <div style="${PG}">
+      <div style="flex:1;display:flex">
+        <div style="width:42%;background:${GD};padding:48px 36px;display:flex;flex-direction:column;justify-content:center">
+          <div style="font-size:9px;color:${GV};font-weight:800;letter-spacing:3px;text-transform:uppercase;margin-bottom:20px">POR QUE A ECODELY?</div>
+          <div style="font-size:24px;font-weight:900;color:#fff;line-height:1.25;margin-bottom:24px">Enquanto outros veículos piscam,<br><span style="color:${GV}">a Ecodely fica.</span></div>
+          <div style="height:2px;background:${GV};width:48px;margin-bottom:20px"></div>
+          <div style="font-size:11px;color:#ffffff88;line-height:1.9">Sua marca presente no momento mais íntimo e receptivo: quando o pedido chega em casa.</div>
+        </div>
+        <div style="flex:1;background:#fff;padding:48px 40px;display:flex;flex-direction:column;justify-content:center">
+          <div style="font-size:9px;color:${TX};font-weight:800;letter-spacing:3px;text-transform:uppercase;margin-bottom:28px">TEMPO DE CONTATO COM A MARCA</div>
+          ${[
+            ["ECODELY (Ecobox)","2 a 4 horas",100,GV,"#fff",TX],
+            ["Outdoor","3 a 5 seg",12,"#ccc",TX,"#999"],
+            ["Relógio de rua","2 a 4 seg",8,"#ccc",TX,"#999"],
+            ["Painel rodovia","1 a 3 seg",5,"#ccc",TX,"#999"],
+            ["Banner digital","1,7 seg",3,"#ccc",TX,"#999"],
+          ].map(([mid,dur,pct,bar,nc,vc])=>`<div style="margin-bottom:18px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:10px;font-weight:700;color:${nc}">${mid}</span><span style="font-size:10px;font-weight:800;color:${vc}">${dur}</span></div><div style="height:8px;background:#f0f0f0"><div style="height:8px;width:${pct}%;background:${bar}"></div></div></div>`).join("")}
+        </div>
       </div>
+      ${footerBar("POR QUE A ECODELY?")}
     </div>
 
-    ${analise?`
-    <!-- INTELIGÊNCIA DE MERCADO -->
-    <div class="sec pb">
-      <div class="sec-lbl">Inteligência de mercado</div>
-      <div class="sec-h">Análise da região — ${(()=>{const rs=(plano.regioes||[]).map(r=>r.cidade).filter(Boolean);return rs.length?rs.join(" · "):plano.regiao||plano.clienteEndereco||""})()}</div>
-      <div class="bar"></div>
-
-      ${analise.ibge?`
-      <div class="ibge-badge">📊 Dados Oficiais IBGE — ${analise.ibge.municipio}/${analise.ibge.uf}</div>
-      <div class="g3" style="margin-bottom:20px">
-        <div class="card"><div class="lbl">População</div><div class="val green">${analise.ibge.populacao||"—"}</div><div class="sub">Estimativa 2024</div></div>
-        <div class="card blue"><div class="lbl">Renda per capita</div><div class="val blue sm">${analise.ibge.rendaMedia||"—"}</div><div class="sub">Censo 2022</div></div>
-        <div class="card purple"><div class="lbl">Ensino superior</div><div class="val purple">${analise.ibge.pctSuperior||"—"}</div><div class="sub">% da população</div></div>
-      </div>`:""}
-
-      ${analise.totalRestaurantes?`
-      <div class="maps-badge">🗺️ Google Maps — raio 5km</div>
-      <div class="g4" style="margin-bottom:20px">
-        <div class="card"><div class="lbl">Restaurantes</div><div class="val">${analise.totalRestaurantes}</div><div class="sub">No raio de 5km</div></div>
-        <div class="card warn"><div class="lbl">Avaliação média</div><div class="val" style="color:#F5A623">${analise.avaliacaoMedia}★</div></div>
-        <div class="card blue"><div class="lbl">Total avaliações</div><div class="val blue sm">${Number(analise.totalReviews||0).toLocaleString("pt-BR")}</div></div>
-        <div class="card"><div class="lbl">Nível de preço</div><div class="val sm">${analise.nivelPreco||"—"}</div></div>
+    <!-- P3: A CAMPANHA -->
+    <div style="${PG}">
+      <div style="${PGB}">
+        <div style="font-size:9px;color:${GV};font-weight:800;letter-spacing:4px;text-transform:uppercase;margin-bottom:10px">A CAMPANHA</div>
+        <div style="font-size:28px;font-weight:900;color:${TX};line-height:1.1;letter-spacing:-0.5px;margin-bottom:16px">Embalagem Branded Delivery</div>
+        <div style="height:3px;background:${GV};width:60px;margin-bottom:28px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px">
+          ${[[fmtN(totalEmb),"Total de embalagens"],[String(parceiros.length),"Parceiros de distribuição"],[fmtN(impactos),"Total de impactos estimados"],[plano.prazo||"—","Período da campanha"]].map(([v,l])=>`<div style="border-top:3px solid ${GV};padding:20px 16px;background:#f8faf8"><div style="font-size:30px;font-weight:900;color:${GV};line-height:1;margin-bottom:8px">${v}</div><div style="font-size:9px;color:${TX};text-transform:uppercase;letter-spacing:1px;font-weight:700">${l}</div></div>`).join("")}
+        </div>
+        <div style="background:${GD};padding:24px 28px;margin-bottom:20px">
+          <div style="font-size:9px;color:${GV};font-weight:800;letter-spacing:3px;text-transform:uppercase;margin-bottom:16px">DETALHES DA CAMPANHA</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px">
+            ${[["Regiões",regioesList||"—"],["Público-alvo",plano.publicoAlvo||"—"],["Visualizações/emb","3,3× média"],["Customização","Arte exclusiva"]].map(([l,v])=>`<div><div style="font-size:8px;color:${GV}88;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">${l}</div><div style="font-size:10px;color:#fff;font-weight:700;line-height:1.4">${v}</div></div>`).join("")}
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+          ${[["3,3×","Visualizações por embalagem"],[plano.faixaEtaria||"18–45","Faixa etária alvo"],[plano.clienteSegmento||"—","Segmento do cliente"]].map(([v,l])=>`<div style="border:1px solid ${GV}44;padding:14px 16px;text-align:center"><div style="font-size:20px;font-weight:900;color:${GV};margin-bottom:4px">${v}</div><div style="font-size:8px;color:${TX};text-transform:uppercase;letter-spacing:0.5px">${l}</div></div>`).join("")}
+        </div>
       </div>
-      ${analise.distribuicao?`<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
-        <span class="pill green">⭐ ${analise.distribuicao.excelente} excelentes (4.5+)</span>
-        <span class="pill" style="background:#fff8e8;color:#c87000">👍 ${analise.distribuicao.bom} bons (4.0+)</span>
-        <span class="pill">😐 ${analise.distribuicao.regular} regulares</span>
-        ${(analise.topCulinarias||[]).map(c=>`<span class="pill">${typeof c==="object"?c.label:c}</span>`).join("")}
-      </div>`:""}
-      `:""}
-
-      <div class="g3">
-        <div class="card"><div class="lbl">Usuários delivery</div><div class="val green">${analise.usuariosDelivery||"—"}</div></div>
-        <div class="card warn"><div class="lbl">Ticket médio</div><div class="val" style="color:#F5A623">${analise.ticketMedioDelivery||"—"}</div></div>
-        <div class="card blue"><div class="lbl">Pedidos/mês na região</div><div class="val blue sm">${analise.pedidosMensais||"—"}</div></div>
-      </div>
-
-      ${appsArr.length>0?`
-      <div style="margin-bottom:20px">
-        <div class="lbl" style="margin-bottom:12px">Apps líderes de delivery na região</div>
-        ${appsArr.slice(0,3).map((a,i)=>{
-          const pct=parseInt(String(a.share||"").replace("%",""))||0;
-          const w=Math.max(pct,5);
-          return `<div class="app-row">
-            <div style="font-size:11px;font-weight:700;color:#0a1628;width:80px">${a.nome||a}</div>
-            <div class="app-bar-bg"><div class="app-bar" style="width:${w}%;background:${i===0?"#00E5A0":i===1?"#3D9EFF":"#9B7FFF"}"></div></div>
-            <div style="font-size:11px;font-weight:700;color:${i===0?"#00A36C":i===1?"#3D9EFF":"#9B7FFF"};width:40px;text-align:right">${a.share||"—"}</div>
-          </div>`;
-        }).join("")}
-      </div>`:""}
-
-      ${analise.perfilConsumidor?`<div class="box"><div class="box-lbl">Perfil do consumidor local</div><div class="box-txt">${analise.perfilConsumidor}</div></div>`:""}
-      ${analise.analise?`<div class="box"><div class="box-lbl">Análise estratégica</div><div class="box-txt">${analise.analise}</div></div>`:""}
-      ${analise.oportunidade?`<div class="box warn"><div class="box-lbl" style="color:#F5A623">Oportunidade identificada</div><div class="box-txt" style="color:#5a3a00">${analise.oportunidade}</div></div>`:""}
-      ${analise.potencialImpacto?`<div class="box blue"><div class="box-lbl" style="color:#3D9EFF">Potencial de impacto</div><div class="box-txt" style="color:#0a2a5a">${analise.potencialImpacto}</div></div>`:""}
+      ${footerBar("A CAMPANHA")}
     </div>
 
-    <!-- ROI E CALL-TO-ACTION -->
-    ${analise.roi||analise.callToAction||analise.melhorEpoca?`
-    <div class="sec pb">
-      <div class="sec-lbl">Estratégia</div>
-      <div class="sec-h">ROI e recomendações</div>
-      <div class="bar"></div>
-      ${analise.roi?`<div class="roi-box"><div class="roi-h">💰 Estimativa de ROI</div><div class="roi-txt">${analise.roi}</div></div>`:""}
-      <div class="g2">
-        ${analise.callToAction?`<div class="cta-box"><div class="lbl" style="color:#F5A623;margin-bottom:8px">📢 Call-to-action sugerido para a embalagem</div><div style="font-size:11px;color:#5a3a00;line-height:1.7">${analise.callToAction}</div></div>`:""}
-        ${analise.melhorEpoca?`<div class="box purple"><div class="box-lbl" style="color:#9B7FFF">📅 Melhor época para veicular</div><div class="box-txt" style="color:#2a1a5a">${analise.melhorEpoca}</div></div>`:""}
+    ${pgDemo}
+
+    <!-- P5: RESUMO FINANCEIRO -->
+    <div style="${PG}">
+      <div style="${PGB}">
+        <div style="font-size:9px;color:${GV};font-weight:800;letter-spacing:4px;text-transform:uppercase;margin-bottom:10px">INVESTIMENTO</div>
+        <div style="font-size:28px;font-weight:900;color:${TX};line-height:1.1;letter-spacing:-0.5px;margin-bottom:16px">Resumo financeiro</div>
+        <div style="height:3px;background:${GV};width:60px;margin-bottom:28px"></div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:4px;font-size:11px">
+          <thead><tr style="background:${GD}">
+            <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:left">ITEM</th>
+            <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:center">QTD</th>
+            <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">TABELA (R$)</th>
+            <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:center">DESC.</th>
+            <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">VALOR BRUTO</th>
+          </tr></thead>
+          <tbody>${linhasParc}${linhasOutras}</tbody>
+          <tfoot><tr style="background:${GV}"><td colspan="4" style="padding:13px 14px;font-size:12px;font-weight:900;color:${GD};text-transform:uppercase;letter-spacing:1px">INVESTIMENTO TOTAL</td><td style="padding:13px 14px;text-align:right;font-size:16px;font-weight:900;color:${GD}">${fmt(total)}</td></tr></tfoot>
+        </table>
+        <p style="font-size:8px;color:#888;margin-top:10px;line-height:1.7">* Valores em Reais (BRL). Impostos não inclusos quando aplicável. Proposta válida por 15 dias a partir da data de emissão.</p>
       </div>
-      ${analise.escolaridade?`<div class="box"><div class="box-lbl">🎓 Perfil educacional da região</div><div class="box-txt">${analise.escolaridade}</div></div>`:""}
-    </div>`:""}`:""}
+      ${footerBar("RESUMO FINANCEIRO")}
+    </div>
 
-    <!-- CAMPANHA -->
-    <div class="sec pb">
-      <div class="sec-lbl">A campanha</div>
-      <div class="sec-h">Embalagem Branded Delivery</div>
-      <div class="bar"></div>
-      <div class="g4">
-        <div class="card"><div class="lbl">Embalagens</div><div class="val green">${fmtN(totalEmb)}</div><div class="sub">unidades</div></div>
-        <div class="card blue"><div class="lbl">Parceiros</div><div class="val blue">${parceiros.length}</div><div class="sub">estabelecimentos</div></div>
-        <div class="card warn"><div class="lbl">Público-alvo</div><div class="val sm" style="color:#c87000">${plano.publicoAlvo||"—"}</div></div>
-        <div class="card purple"><div class="lbl">Período</div><div class="val purple sm">${plano.prazo||"—"}</div></div>
+    <!-- P6: PRÓXIMOS PASSOS -->
+    <div style="min-height:297mm;width:100%;display:flex;flex-direction:column;overflow:hidden;background:${GD}">
+      <div style="flex:1;padding:52px;display:flex;flex-direction:column;justify-content:space-between">
+        <div style="font-size:20px;font-weight:900;letter-spacing:-1px;color:#fff">ecodel<span style="color:${GV}">y</span> mídia</div>
+        <div>
+          <div style="font-size:9px;color:${GV};font-weight:800;letter-spacing:4px;text-transform:uppercase;margin-bottom:20px">VAMOS COLOCAR SUA MARCA</div>
+          <div style="font-size:44px;font-weight:900;color:#fff;line-height:1.1;margin-bottom:4px">Dentro da casa.</div>
+          <div style="font-size:44px;font-weight:900;color:#fff;line-height:1.1;margin-bottom:4px">No bar.</div>
+          <div style="font-size:44px;font-weight:900;color:${GV};line-height:1.1;margin-bottom:32px">Na tela do celular.</div>
+          <div style="height:1px;background:${GV}44;margin-bottom:24px"></div>
+          <div style="font-size:11px;color:${GV};font-weight:800;letter-spacing:3px;text-transform:uppercase;margin-bottom:20px">ONDE TEM DELIVERY, TEM ECODELY</div>
+          <div style="font-size:11px;color:#ffffff66;line-height:2">comercial@ecodely.com.br · ecodely.com.br</div>
+        </div>
+        <div style="font-size:9px;color:${GV}55">Proposta válida por 15 dias · Aprovação mediante assinatura de contrato · Nº ${numProposta}</div>
       </div>
-      <div class="imp-grid">
-        <div class="imp-card"><div class="imp-num">${fmtN(impactos)}</div><div class="imp-lbl">Impactos totais</div></div>
-        <div class="imp-card"><div class="imp-num">3,3×</div><div class="imp-lbl">Por embalagem</div></div>
-        <div class="imp-card"><div class="imp-num">R$ ${custoImpacto}</div><div class="imp-lbl">Custo/impacto</div></div>
-        <div class="imp-card"><div class="imp-num">${plano.faixaEtaria||"18–45"}</div><div class="imp-lbl">Faixa etária</div></div>
-      </div>
-      ${parceiros.length>0?`
-      <table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:11px">
-        <thead><tr style="background:#f8fafb"><th style="padding:8px 12px;font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#888;text-align:left">Parceiro</th><th style="padding:8px 12px;font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#888;text-align:right">Embalagens</th><th style="padding:8px 12px;font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#888;text-align:left">Segmento</th><th style="padding:8px 12px;font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#888;text-align:right">Raio</th></tr></thead>
-        <tbody>${parceiros.map((p,i)=>`<tr style="border-bottom:1px solid #f0f0f0;background:${i%2===0?"#fff":"#fafafa"}"><td style="padding:8px 12px;font-weight:600">${p.nome}</td><td style="padding:8px 12px;text-align:right">${fmtN(p.embalagens)} un</td><td style="padding:8px 12px;color:#888">${p.segmento||"—"}</td><td style="padding:8px 12px;text-align:right;color:#888">${p.raio||5}km</td></tr>`).join("")}</tbody>
-      </table>`:""}
+      ${footerBar("ONDE TEM DELIVERY, TEM ECODELY")}
     </div>
 
-    ${demoSlide}
-
-    <!-- FINANCEIRO -->
-    <div class="sec pb">
-      <div class="sec-lbl">Investimento</div>
-      <div class="sec-h">Resumo financeiro</div>
-      <div class="bar"></div>
-      <table class="fin-t">
-        <thead><tr><th style="text-align:left">Item</th><th style="text-align:center">Qtd</th><th style="text-align:right">Tabela (R$)</th><th style="text-align:center">Desconto</th><th style="text-align:right">Valor Bruto</th></tr></thead>
-        <tbody>
-          ${parceiros.map(p=>{const t=Number(p.tabela||6),q=Number(p.embalagens||0),d=Number(p.desconto||0),b=q*t*(1-d/100);return`<tr><td>Embalagem Branded — ${p.nome}</td><td style="text-align:center">${fmtN(q)} un</td><td style="text-align:right">${fmt(t)}/un</td><td style="text-align:center">${d>0?d+"%":"—"}</td><td style="text-align:right;font-weight:700;color:#00A36C">${fmt(b)}</td></tr>`;}).join("")}
-          ${outras.map(m=>{const t=Number(m.tabela||0),d=Number(m.desconto||0),b=t*(1-d/100);return`<tr><td>${m.tipo}${m.descricao?` — ${m.descricao}`:""}</td><td style="text-align:center">${m.qtd||1}</td><td style="text-align:right">${fmt(t)}</td><td style="text-align:center">${d>0?d+"%":"—"}</td><td style="text-align:right;font-weight:700;color:#00A36C">${fmt(b)}</td></tr>`;}).join("")}
-        </tbody>
-        <tfoot><tr class="fin-total"><td colspan="4">INVESTIMENTO TOTAL</td><td style="text-align:right">${fmt(total)}</td></tr></tfoot>
-      </table>
-      <p style="font-size:9px;color:#999;margin-top:8px">* Valores em Reais (BRL). Impostos não inclusos quando aplicável. Proposta válida por 15 dias.</p>
-    </div>
-
-    <!-- PRÓXIMOS PASSOS -->
-    <div class="sec">
-      <div class="sec-lbl">Para começar</div>
-      <div class="sec-h">Próximos passos</div>
-      <div class="bar"></div>
-      ${[["Aprovação","Proposta válida por 15 dias a partir da data de emissão. Confirme seu interesse pelo e-mail ou WhatsApp."],["Contrato","Aprovação mediante assinatura do contrato e emissão do PI (Pedido de Inserção)."],["Arte","Material criativo para embalagem enviado em até 5 dias úteis após aprovação. Fornecemos template."],["Produção","Gráfica inicia produção após recebimento da arte aprovada. Prazo médio: 7 dias úteis."],["Performance","Relatório de performance entregue ao final da campanha com dados de impacto, distribuição e alcance."]].map(([n,t],i)=>`<div class="step"><div class="step-n">${i+1}</div><div><strong style="font-size:11px;color:#0a1628">${n}</strong><div class="step-t">${t}</div></div></div>`).join("")}
-    </div>
-
-    <div class="foot-bar">
-      <div class="foot-t">ECODELY MÍDIA IN-HOME · ecodely.com.br · comercial@ecodely.com.br</div>
-      <div class="foot-t">Nº ${numProposta} · Documento Confidencial · ${new Date().getFullYear()}</div>
-    </div>
     <script>setTimeout(()=>window.print(),800);</script>
     </body></html>`;
     w.document.write(html);w.document.close();
