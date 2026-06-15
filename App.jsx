@@ -797,19 +797,19 @@ const OrgChart=({orgNodes,setOrgNodes,supabase,pushNotif})=>{
     {id:9,name:"Representante Bahia",role:"Representante Bahia",funcoes:"",dept:"comercial",status:"ativo",salary:null,costEst:null,deadline:"",parentId:4,x:1225,y:480,vaga:false},
     {id:10,name:"Priscila",role:"Operações / Base",funcoes:"",dept:"operações",status:"ativo",salary:null,costEst:null,deadline:"",parentId:5,x:1560,y:480,vaga:false},
   ];
-  const [ns,setNs]=React.useState(()=>orgNodes&&orgNodes.length?orgNodes:DEF);
-  const [synced,setSynced]=React.useState(false);
-  const [selId,setSelId]=React.useState(null);
-  const [ef,setEf]=React.useState(null);
-  const [showSal,setShowSal]=React.useState(false);
-  const [showLines,setShowLines]=React.useState(true);
-  const [presMode,setPresMode]=React.useState(false);
-  const [drag,setDrag]=React.useState(null);
-  const movedRef=React.useRef(false);
-  const contRef=React.useRef(null);
-  const tmr=React.useRef(null);
+  const [ns,setNs]=useState(()=>orgNodes&&orgNodes.length?orgNodes:DEF);
+  const [synced,setSynced]=useState(false);
+  const [selId,setSelId]=useState(null);
+  const [ef,setEf]=useState(null);
+  const [showSal,setShowSal]=useState(false);
+  const [showLines,setShowLines]=useState(true);
+  const [presMode,setPresMode]=useState(false);
+  const [drag,setDrag]=useState(null);
+  const movedRef=useRef(false);
+  const contRef=useRef(null);
+  const tmr=useRef(null);
 
-  React.useEffect(()=>{
+  useEffect(()=>{
     if(!synced&&orgNodes&&orgNodes.length){setNs(orgNodes);setSynced(true);}
   },[orgNodes,synced]);
 
@@ -821,7 +821,7 @@ const OrgChart=({orgNodes,setOrgNodes,supabase,pushNotif})=>{
     },900);
   };
 
-  React.useEffect(()=>{
+  useEffect(()=>{
     const onMM=(e)=>{
       if(!drag)return;
       movedRef.current=true;
