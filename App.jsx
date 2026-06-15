@@ -140,6 +140,7 @@ const getNav=(role,queueCount,notifCount,extraRoles=[])=>[
   {id:"cadastros",label:"Cadastros",icon:"-",roles:["admin","comercial","operacional"]},
   {id:"whatsapp",label:"WhatsApp IA",icon:"-",roles:["admin","comercial","base"]},
   {id:"usuarios",label:"Usuários",icon:"-",roles:["admin"]},
+  {id:"organograma",label:"Organograma",icon:"◈",roles:["admin"]},
 ].filter(n=>n.roles.includes(role)||extraRoles.some(r=>n.roles.includes(r)));
 
 // --- HELPERS -----------------------------------------------------------------
@@ -779,6 +780,252 @@ const PlanWizard=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPl
   </div>
 );
 
+
+const OrgChart=({orgNodes,setOrgNodes,supabase,pushNotif})=>{
+  const CW=200,CH=118;
+  const DC={"liderança":{bg:"#EEEDFE",cl:"#534AB7"},"operações":{bg:"#E1F5EE",cl:"#1D9E75"},"comercial":{bg:"#FAECE7",cl:"#D85A30"},"financeiro":{bg:"#EAF3DE",cl:"#639922"},"vaga":{bg:"#FAEEDA",cl:"#BA7517"}};
+  const SICO={"ativo":"🟢","ferias":"🟡","afastado":"🔴","vaga aberta":"⚡","planejado":"📅"};
+  const DEF=[
+    {id:1,name:"Rodrigo Bem",role:"Fundador / CEO",funcoes:"",dept:"liderança",status:"ativo",salary:null,costEst:null,deadline:"",parentId:null,x:666,y:30,vaga:false},
+    {id:2,name:"Pedro Camaor",role:"Sócio / Admin",funcoes:"",dept:"liderança",status:"ativo",salary:null,costEst:null,deadline:"",parentId:1,x:60,y:250,vaga:false},
+    {id:3,name:"Larissa",role:"Financeiro",funcoes:"",dept:"financeiro",status:"ativo",salary:null,costEst:null,deadline:"",parentId:1,x:310,y:250,vaga:false},
+    {id:4,name:"Diretoria Comercial",role:"Diretoria Comercial",funcoes:"",dept:"comercial",status:"planejado",salary:null,costEst:null,deadline:"",parentId:1,x:735,y:250,vaga:true},
+    {id:5,name:"Diretoria de Ops",role:"Diretoria de Operações",funcoes:"",dept:"operações",status:"planejado",salary:null,costEst:null,deadline:"",parentId:1,x:1560,y:250,vaga:true},
+    {id:6,name:"Victoria",role:"Comercial / Base",funcoes:"",dept:"comercial",status:"ativo",salary:null,costEst:null,deadline:"",parentId:4,x:535,y:480,vaga:false},
+    {id:7,name:"Pedro Henrique",role:"Marketing",funcoes:"",dept:"comercial",status:"ativo",salary:null,costEst:null,deadline:"",parentId:4,x:765,y:480,vaga:false},
+    {id:8,name:"Representante SP",role:"Representante SP",funcoes:"",dept:"comercial",status:"planejado",salary:null,costEst:null,deadline:"",parentId:4,x:995,y:480,vaga:true},
+    {id:9,name:"Representante Bahia",role:"Representante Bahia",funcoes:"",dept:"comercial",status:"ativo",salary:null,costEst:null,deadline:"",parentId:4,x:1225,y:480,vaga:false},
+    {id:10,name:"Priscila",role:"Operações / Base",funcoes:"",dept:"operações",status:"ativo",salary:null,costEst:null,deadline:"",parentId:5,x:1560,y:480,vaga:false},
+  ];
+  const [ns,setNs]=React.useState(()=>orgNodes&&orgNodes.length?orgNodes:DEF);
+  const [synced,setSynced]=React.useState(false);
+  const [selId,setSelId]=React.useState(null);
+  const [ef,setEf]=React.useState(null);
+  const [showSal,setShowSal]=React.useState(false);
+  const [showLines,setShowLines]=React.useState(true);
+  const [presMode,setPresMode]=React.useState(false);
+  const [drag,setDrag]=React.useState(null);
+  const movedRef=React.useRef(false);
+  const contRef=React.useRef(null);
+  const tmr=React.useRef(null);
+
+  React.useEffect(()=>{
+    if(!synced&&orgNodes&&orgNodes.length){setNs(orgNodes);setSynced(true);}
+  },[orgNodes,synced]);
+
+  const save=(nodes)=>{
+    clearTimeout(tmr.current);
+    tmr.current=setTimeout(async()=>{
+      await supabase.from("organograma").upsert({id:1,data:nodes});
+      setOrgNodes(nodes);
+    },900);
+  };
+
+  React.useEffect(()=>{
+    const onMM=(e)=>{
+      if(!drag)return;
+      movedRef.current=true;
+      const rect=contRef.current?.getBoundingClientRect();
+      if(!rect)return;
+      const x=Math.max(0,e.clientX-rect.left+(contRef.current.scrollLeft||0)-drag.ox);
+      const y=Math.max(0,e.clientY-rect.top+(contRef.current.scrollTop||0)-drag.oy);
+      setNs(p=>p.map(n=>n.id===drag.id?{...n,x,y}:n));
+    };
+    const onMU=()=>{if(drag){setNs(p=>{save(p);return p;});setDrag(null);}};
+    window.addEventListener("mousemove",onMM);
+    window.addEventListener("mouseup",onMU);
+    return()=>{window.removeEventListener("mousemove",onMM);window.removeEventListener("mouseup",onMU);};
+  },[drag]);
+
+  const addVaga=()=>{
+    const id=Date.now();
+    const nn={id,name:"A contratar",role:"Cargo a definir",funcoes:"",dept:"comercial",status:"planejado",salary:null,costEst:null,deadline:"",parentId:null,x:120,y:120,vaga:true};
+    setNs(p=>{const n=[...p,nn];save(n);return n;});
+    setSelId(id);setEf({...nn});
+  };
+
+  const removeNode=(id)=>{
+    setNs(p=>{const n=p.filter(x=>x.id!==id).map(x=>x.parentId===id?{...x,parentId:null}:x);save(n);return n;});
+    setSelId(null);setEf(null);
+  };
+
+  const saveEdit=()=>{
+    if(!ef)return;
+    const isV=ef.status==="planejado"||ef.status==="vaga aberta";
+    const node={...ef,vaga:isV};
+    setNs(p=>{const n=p.map(x=>x.id===node.id?node:x);save(n);return n;});
+    setEf(node);
+    pushNotif("Organograma","Card salvo","#534AB7");
+  };
+
+  const resetLayout=()=>{
+    const HGAP=30,VGAP=80;
+    const lvs={};
+    const q=[...ns.filter(n=>!n.parentId)];
+    q.forEach(n=>{lvs[n.id]=0;});
+    let wave=q;
+    while(wave.length){const next=[];wave.forEach(n=>{ns.filter(c=>c.parentId===n.id).forEach(c=>{lvs[c.id]=(lvs[n.id]||0)+1;next.push(c);});});wave=next;}
+    const maxLv=Math.max(...Object.values(lvs),0);
+    const byLv=Array.from({length:maxLv+1},(_,l)=>ns.filter(n=>lvs[n.id]===l));
+    const pos={};
+    let leafX=20;
+    (byLv[maxLv]||[]).forEach(n=>{pos[n.id]={x:leafX,y:maxLv*(CH+VGAP)+20};leafX+=CW+HGAP;});
+    for(let l=maxLv-1;l>=0;l--){
+      (byLv[l]||[]).forEach(n=>{
+        const ch=ns.filter(c=>c.parentId===n.id);
+        if(ch.length){const xs=ch.map(c=>pos[c.id]?.x??0);pos[n.id]={x:(Math.min(...xs)+Math.max(...xs)+CW)/2-CW/2,y:l*(CH+VGAP)+20};}
+        else{pos[n.id]={x:leafX,y:l*(CH+VGAP)+20};leafX+=CW+HGAP;}
+      });
+    }
+    setNs(p=>{const n=p.map(x=>pos[x.id]?{...x,...pos[x.id]}:x);save(n);return n;});
+  };
+
+  const cW=Math.max(1500,...ns.map(n=>n.x+CW+80));
+  const cH=Math.max(700,...ns.map(n=>n.y+CH+80));
+  const ativos=ns.filter(n=>n.status==="ativo").length;
+  const vCnt=ns.filter(n=>n.vaga||n.status==="planejado"||n.status==="vaga aberta").length;
+  const folha=ns.reduce((a,n)=>a+Number(n.salary||0),0);
+  const cEst=ns.reduce((a,n)=>a+Number(n.costEst||0),0);
+  const fR=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0});
+  const inp={background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"7px 10px",fontSize:11,color:T.text,outline:"none",width:"100%",boxSizing:"border-box",fontFamily:"Arial,sans-serif"};
+  const toolBtns=[
+    {label:"+ Nova vaga",onClick:addVaga,s:{background:"#FAEEDA",color:"#BA7517",border:"1px solid #BA751744"}},
+    {label:showLines?"▬ Ocultar linhas":"─ Mostrar linhas",onClick:()=>setShowLines(p=>!p),s:{background:showLines?T.accentDim:"transparent",color:showLines?T.accent:T.muted,border:`1px solid ${showLines?T.accentBorder:T.border}`}},
+    {label:showSal?"◎ Ocultar salários":"○ Mostrar salários",onClick:()=>setShowSal(p=>!p),s:{background:showSal?"#EEEDFE":"transparent",color:showSal?"#534AB7":T.muted,border:`1px solid ${showSal?"#534AB744":T.border}`}},
+    {label:"↺ Resetar layout",onClick:resetLayout,s:{color:T.muted,border:`1px solid ${T.border}`,background:"transparent"}},
+    {label:"⊞ Apresentação",onClick:()=>setPresMode(true),s:{background:"linear-gradient(135deg,#7B5FE0,#534AB7)",color:"#fff",border:"none"}},
+    {label:"↓ Exportar PDF",onClick:()=>window.print(),s:{color:T.muted,border:`1px solid ${T.border}`,background:"transparent"}},
+  ];
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:12,height:"calc(100vh - 130px)"}}>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",padding:"10px 14px",background:T.card,border:`1px solid ${T.border}`,borderRadius:12,flexShrink:0}}>
+        <span style={{fontSize:12,fontWeight:800,fontFamily:"Arial,sans-serif",color:"#534AB7",marginRight:4}}>◈ Organograma</span>
+        {toolBtns.map(b=><button key={b.label} onClick={b.onClick} style={{padding:"6px 12px",borderRadius:7,fontSize:10,fontFamily:"Arial,sans-serif",fontWeight:700,cursor:"pointer",...b.s}}>{b.label}</button>)}
+      </div>
+      <div style={{display:"flex",gap:12,flex:1,overflow:"hidden"}}>
+        <div ref={contRef} style={{flex:1,overflow:"auto",position:"relative",background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,cursor:drag?"grabbing":"default"}}>
+          {showLines&&(
+            <svg style={{position:"absolute",top:0,left:0,width:cW,height:cH,pointerEvents:"none",zIndex:0}}>
+              {ns.filter(n=>n.parentId).map(n=>{
+                const par=ns.find(p=>p.id===n.parentId);
+                if(!par)return null;
+                const x1=par.x+CW/2,y1=par.y+CH,x2=n.x+CW/2,y2=n.y,cy=(y1+y2)/2;
+                const isV=n.vaga||n.status==="planejado"||n.status==="vaga aberta";
+                const dc=DC[isV?"vaga":n.dept]||DC.liderança;
+                return <path key={n.id} d={`M${x1},${y1} C${x1},${cy} ${x2},${cy} ${x2},${y2}`} stroke={dc.cl} strokeWidth={2} fill="none" strokeDasharray={isV?"6,4":undefined} opacity={0.5}/>;
+              })}
+            </svg>
+          )}
+          <div style={{position:"relative",width:cW,height:cH}}>
+            {ns.map(n=>{
+              const isV=n.vaga||n.status==="planejado"||n.status==="vaga aberta";
+              const dc=DC[isV?"vaga":n.dept]||DC.liderança;
+              const isSel=selId===n.id,isDrg=drag?.id===n.id;
+              const ini=isV?"?":n.name.split(" ").filter(Boolean).map(w=>w[0]?.toUpperCase()||"").join("").slice(0,2);
+              return(
+                <div key={n.id}
+                  onMouseDown={e=>{
+                    if(e.button!==0)return;
+                    e.stopPropagation();
+                    movedRef.current=false;
+                    const rect=contRef.current.getBoundingClientRect();
+                    setDrag({id:n.id,ox:e.clientX-rect.left+(contRef.current.scrollLeft||0)-n.x,oy:e.clientY-rect.top+(contRef.current.scrollTop||0)-n.y});
+                  }}
+                  onClick={()=>{if(!movedRef.current){setSelId(n.id);setEf({...n});}}}
+                  style={{position:"absolute",left:n.x,top:n.y,width:CW,background:dc.bg,border:`2px solid ${isSel?dc.cl:dc.cl+"55"}`,borderRadius:12,padding:"10px 12px",cursor:isDrg?"grabbing":"grab",userSelect:"none",boxShadow:isDrg?`0 8px 24px ${dc.cl}55`:"none",zIndex:isDrg?100:isSel?10:2,boxSizing:"border-box"}}>
+                  <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:7}}>
+                    <div style={{width:34,height:34,borderRadius:"50%",background:dc.cl+"22",border:`2px solid ${dc.cl}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:dc.cl,flexShrink:0}}>{ini}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:11,fontWeight:700,fontFamily:"Arial,sans-serif",color:"#1a1a2e",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{isV?"A contratar":n.name}</div>
+                      <div style={{fontSize:9,color:"#555",fontFamily:"Arial,sans-serif",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.role}</div>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:4,flexWrap:"wrap"}}>
+                    <span style={{fontSize:8,color:dc.cl,background:dc.cl+"22",padding:"2px 6px",borderRadius:4,fontFamily:"Arial,sans-serif",whiteSpace:"nowrap"}}>{SICO[n.status]||"◌"} {n.status}</span>
+                    {showSal&&n.salary>0&&<span style={{fontSize:8,fontWeight:700,color:dc.cl}}>{fR(n.salary)}</span>}
+                    {isV&&n.costEst>0&&<span style={{fontSize:8,color:"#BA7517"}}>Est. {fR(n.costEst)}</span>}
+                  </div>
+                  {isV&&n.deadline&&<div style={{fontSize:8,color:"#BA7517",marginTop:4}}>📅 {n.deadline}</div>}
+                  <div style={{fontSize:7,color:dc.cl+"99",marginTop:3,textTransform:"capitalize",fontFamily:"Arial,sans-serif",fontWeight:600}}>{n.dept}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        {selId&&ef&&(
+          <div style={{width:264,flexShrink:0,background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:14,overflow:"auto",display:"flex",flexDirection:"column",gap:11}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}>
+              <span style={{fontSize:11,fontWeight:700,fontFamily:"Arial,sans-serif",color:"#534AB7"}}>Editar card</span>
+              <button onClick={()=>{setSelId(null);setEf(null);}} style={{background:"none",border:"none",color:T.muted,cursor:"pointer",fontSize:18,lineHeight:1}}>×</button>
+            </div>
+            {[["Nome","name"],["Cargo","role"],["Funções","funcoes"]].map(([l,k])=>(
+              <div key={k}>
+                <div style={{fontSize:9,color:T.muted,marginBottom:3,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+                <input value={ef[k]||""} onChange={e=>setEf(p=>({...p,[k]:e.target.value}))} style={inp}/>
+              </div>
+            ))}
+            <div>
+              <div style={{fontSize:9,color:T.muted,marginBottom:3,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Departamento</div>
+              <select value={ef.dept||"liderança"} onChange={e=>setEf(p=>({...p,dept:e.target.value}))} style={inp}>
+                {["liderança","operações","comercial","financeiro"].map(d=><option key={d} value={d}>{d.charAt(0).toUpperCase()+d.slice(1)}</option>)}
+              </select>
+            </div>
+            <div>
+              <div style={{fontSize:9,color:T.muted,marginBottom:3,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Status</div>
+              <select value={ef.status||"ativo"} onChange={e=>setEf(p=>({...p,status:e.target.value}))} style={inp}>
+                {["ativo","ferias","afastado","vaga aberta","planejado"].map(s=><option key={s} value={s}>{SICO[s]} {s}</option>)}
+              </select>
+            </div>
+            <div>
+              <div style={{fontSize:9,color:T.muted,marginBottom:3,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Salário (R$)</div>
+              <input type="number" min="0" value={ef.salary||""} onChange={e=>setEf(p=>({...p,salary:e.target.value?Number(e.target.value):null}))} style={inp} placeholder="0"/>
+            </div>
+            {(ef.status==="planejado"||ef.status==="vaga aberta")&&<>
+              <div>
+                <div style={{fontSize:9,color:T.muted,marginBottom:3,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Custo est. contratação (R$)</div>
+                <input type="number" min="0" value={ef.costEst||""} onChange={e=>setEf(p=>({...p,costEst:e.target.value?Number(e.target.value):null}))} style={inp} placeholder="0"/>
+              </div>
+              <div>
+                <div style={{fontSize:9,color:T.muted,marginBottom:3,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Prazo previsto</div>
+                <input value={ef.deadline||""} onChange={e=>setEf(p=>({...p,deadline:e.target.value}))} style={inp} placeholder="Ex: Q2 2025"/>
+              </div>
+            </>}
+            <div>
+              <div style={{fontSize:9,color:T.muted,marginBottom:3,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Reporta para</div>
+              <select value={ef.parentId||""} onChange={e=>setEf(p=>({...p,parentId:e.target.value?Number(e.target.value):null}))} style={inp}>
+                <option value="">— Nenhum (raiz) —</option>
+                {ns.filter(n=>n.id!==ef.id).map(n=><option key={n.id} value={n.id}>{n.name} ({n.role})</option>)}
+              </select>
+            </div>
+            <div style={{display:"flex",gap:8,paddingTop:4}}>
+              <button onClick={saveEdit} style={{flex:1,padding:"8px 0",background:"#EEEDFE",color:"#534AB7",border:"1px solid #534AB744",borderRadius:7,fontSize:11,fontFamily:"Arial,sans-serif",fontWeight:700,cursor:"pointer"}}>Salvar</button>
+              <button onClick={()=>removeNode(ef.id)} style={{padding:"8px 10px",background:T.dangerDim,color:T.danger,border:`1px solid ${T.danger}33`,borderRadius:7,fontSize:11,cursor:"pointer"}}>✕</button>
+            </div>
+          </div>
+        )}
+      </div>
+      {presMode&&(
+        <div style={{position:"fixed",inset:0,background:"#0D0F1E",zIndex:9999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:36}}>
+          <div style={{fontSize:26,fontWeight:900,color:"#fff",fontFamily:"Arial,sans-serif",letterSpacing:2,textAlign:"center"}}>ECODELY — ORGANOGRAMA</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:20}}>
+            {[
+              {l:"Pessoas ativas",v:ativos,c:"#00C48C"},
+              {l:"Vagas abertas / planejadas",v:vCnt,c:"#BA7517"},
+              {l:"Folha atual",v:folha>0?fR(folha):"—",c:"#534AB7"},
+              {l:"Custo est. contratações",v:cEst>0?fR(cEst):"—",c:"#D85A30"},
+            ].map(s=>(
+              <div key={s.l} style={{background:"rgba(255,255,255,0.06)",border:`1px solid ${s.c}44`,borderRadius:16,padding:"24px 28px",textAlign:"center",minWidth:200}}>
+                <div style={{fontSize:36,fontWeight:900,color:s.c,fontFamily:"Arial,sans-serif"}}>{s.v}</div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginTop:8,fontFamily:"Arial,sans-serif"}}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+          <button onClick={()=>setPresMode(false)} style={{padding:"12px 32px",background:"rgba(255,255,255,0.08)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:"Arial,sans-serif"}}>Fechar apresentação</button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,showPlanWizard,setShowPlanWizard,planejamentos,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,sugerirParceiros,user,basePartners,projects})=>{
   const parc=(planAtivo&&Array.isArray(planAtivo.parceiros)?planAtivo.parceiros:[]);
@@ -3153,6 +3400,8 @@ export default function App(){
   const[relPeriodo,setRelPeriodo]=useState(new Date().toLocaleDateString("pt-BR",{month:"long",year:"numeric"}));
   const[relDateStart,setRelDateStart]=useState("");
   const[relDateEnd,setRelDateEnd]=useState("");
+  // Organograma
+  const[orgNodes,setOrgNodes]=useState([]);
   // Planejamento de Mídia
   const[planejamentos,setPlanejamentos]=useState([]);
   const[showPlanWizard,setShowPlanWizard]=useState(false);
@@ -3415,6 +3664,9 @@ export default function App(){
         if(cfg.socios!=null&&Array.isArray(cfg.socios))setSocios(cfg.socios);
         if(cfg.dasAjuste!=null&&cfg.dasAjuste!=="null")setDasAjuste(Number(cfg.dasAjuste));
       }
+      // Organograma
+      const orgR=await supabase.from("organograma").select("*").limit(1);
+      if(orgR.data?.length&&orgR.data[0].data)setOrgNodes(orgR.data[0].data);
       // Planejamentos
       const plans=await supabase.from("planejamentos").select("*").order("id");
       if(plans.data?.length)setPlanejamentos(plans.data.map(r=>r.data));
@@ -10282,6 +10534,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 ))}
               </div>
             </div>
+          )}
+
+          {tab==="organograma"&&user.role==="admin"&&(
+            <OrgChart orgNodes={orgNodes} setOrgNodes={setOrgNodes} supabase={supabase} pushNotif={pushNotif}/>
           )}
 
         </div>
