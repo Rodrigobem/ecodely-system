@@ -4763,14 +4763,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">VALOR NEGOCIADO</th>
             </tr></thead>
             <tbody>${rows}</tbody>
-            <tfoot><tr style="background:${GV}">
-              <td colspan="3" style="padding:9px 10px;font-weight:900;color:${GD};font-size:10px">TOTAL</td>
-              <td style="padding:9px 10px;text-align:right;font-weight:900;color:${GD};font-size:10px">${fmtN(totalEmb)}</td>
-              <td style="padding:9px 10px;text-align:right;font-weight:900;color:${GD};font-size:10px">${fmt(totalValTabela)}</td>
-              <td style="padding:9px 10px;text-align:center;color:${GD};font-size:10px">${avgDescPct>0?avgDescPct+"%":"—"}</td>
-              <td style="padding:9px 10px;text-align:right;font-weight:900;color:${GD};font-size:12px">${fmt(totalVal)}</td>
-            </tr></tfoot>
           </table>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 10px 0;border-top:2px solid ${GV}">
+            <span style="font-size:9px;color:#888">${parceiros.length} parceiro${parceiros.length!==1?"s":""} selecionado${parceiros.length!==1?"s":""}</span>
+            <span style="font-size:9px;color:#888">Total: <strong style="color:${TX}">${fmtN(totalEmb)} embalagens</strong></span>
+          </div>
           ${MAPSKEY?`<img src="${mapUrl}" style="width:100%;height:auto;display:block;border:1px solid #e0ede0" alt="Mapa de distribuição" onerror="this.style.display='none'">`:`<div style="background:#f8faf8;border:1px solid #e0ede0;padding:20px;text-align:center;font-size:10px;color:#999">Mapa indisponível</div>`}
         </div>
         ${footerBar("PARCEIROS DE DISTRIBUIÇÃO")}
