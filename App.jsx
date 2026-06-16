@@ -4684,6 +4684,12 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     const dataFormatada=new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"});
     const regioesList=(plano.regioes||[]).map(r=>r.cidade).filter(Boolean).join(" · ")||plano.regiao||"";
     const demoConsolidado=calcDemograficosConsolidados(parceiros);
+    const totalValTabela=parceiros.reduce((a,p)=>a+Number(p.embalagens||0)*Number(p.tabela||6),0);
+    const avgTabeUn=totalEmb>0?totalValTabela/totalEmb:0;
+    const avgDescPct=totalValTabela>0?Math.round((1-totalVal/totalValTabela)*100):0;
+    const impFisicas=Math.round(totalEmb*49.5);
+    const alcanceDigital=parceiros.length*500;
+    const totalImpacts=impFisicas+alcanceDigital;
     const GV="#3DD68C",GD="#0D3320",TX="#1A2E1A";
 
     const footerBar=(label)=>`<div style="background:${GV};height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;flex-shrink:0"><span style="font-size:8px;color:${GD};font-weight:800;letter-spacing:2px;text-transform:uppercase">ECODELY MÍDIA</span><span style="font-size:8px;color:${GD};font-weight:700;letter-spacing:1px;text-transform:uppercase">${label}</span><span style="font-size:8px;color:${GD};font-weight:700">${ano}</span></div>`;
@@ -4722,8 +4728,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     })();
 
     // Linhas da tabela financeira (sem nomes de parceiros)
-    const linhasParc=parceiros.length>0?`<tr style="border-bottom:1px solid #e8f0e8"><td style="padding:11px 14px;font-weight:600">Embalagem Branded Delivery</td><td style="padding:11px 14px;text-align:center;color:#666">${fmtN(totalEmb)} un</td><td style="padding:11px 14px;text-align:right;color:#666">—</td><td style="padding:11px 14px;text-align:center;color:#666">—</td><td style="padding:11px 14px;text-align:right;font-weight:800;color:${GV}">${fmt(totalVal)}</td></tr>`:"";
-    const linhasOutras=outras.map((m,i)=>{const t=Number(m.tabela||0),d=Number(m.desconto||0),b=t*(1-d/100);return`<tr style="border-bottom:1px solid #e8f0e8;background:${i%2===0?"#fff":"#f8faf8"}"><td style="padding:11px 14px;font-weight:600">${m.tipo||"Outra mídia"}${m.descricao?` — ${m.descricao}`:""}</td><td style="padding:11px 14px;text-align:center;color:#666">${m.qtd||1}</td><td style="padding:11px 14px;text-align:right;color:#666">${fmt(t)}</td><td style="padding:11px 14px;text-align:center;color:#666">${d>0?d+"%":"—"}</td><td style="padding:11px 14px;text-align:right;font-weight:800;color:${GV}">${fmt(b)}</td></tr>`;}).join("");
+    const linhasParc=parceiros.length>0?`<tr style="border-bottom:1px solid #e8f0e8"><td style="padding:11px 14px;font-weight:600">Embalagem Branded Delivery</td><td style="padding:11px 14px;text-align:center;color:#666">${fmtN(totalEmb)} un</td><td style="padding:11px 14px;text-align:right;color:#666">${fmt(avgTabeUn)}/un</td><td style="padding:11px 14px;text-align:center;color:#666">${avgDescPct>0?avgDescPct+"%":"—"}</td><td style="padding:11px 14px;text-align:right;font-weight:800;color:${GV}">${fmt(totalVal)}</td></tr>`:"";
+    const linhasOutras=outras.map((m,i)=>{const t=Number(m.tabela||0),d=Number(m.desconto||0),b=t*(1-d/100);return`<tr style="border-bottom:1px solid #e8f0e8;background:${i%2===0?"#fff":"#f8faf8"}"><td style="padding:11px 14px;font-weight:600">${m.tipo||"Outra mídia"}${m.descricao?` — ${m.descricao}`:""}</td><td style="padding:11px 14px;text-align:center;color:#666">${m.qtd||1}</td><td style="padding:11px 14px;text-align:right;color:#666">${fmt(t)}/un</td><td style="padding:11px 14px;text-align:center;color:#666">${d>0?d+"%":"—"}</td><td style="padding:11px 14px;text-align:right;font-weight:800;color:${GV}">${fmt(b)}</td></tr>`;}).join("");
 
     const html=`<!DOCTYPE html><html lang="pt-BR"><head>
     <meta charset="UTF-8">
@@ -4814,14 +4820,20 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           <thead><tr style="background:${GD}">
             <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:left">ITEM</th>
             <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:center">QTD</th>
-            <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">TABELA (R$)</th>
-            <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:center">DESC.</th>
-            <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">VALOR BRUTO</th>
+            <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">VALOR TABELA (R$/un)</th>
+            <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:center">DESCONTO (%)</th>
+            <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">VALOR BRUTO NEGOCIADO</th>
           </tr></thead>
           <tbody>${linhasParc}${linhasOutras}</tbody>
           <tfoot><tr style="background:${GV}"><td colspan="4" style="padding:13px 14px;font-size:12px;font-weight:900;color:${GD};text-transform:uppercase;letter-spacing:1px">INVESTIMENTO TOTAL</td><td style="padding:13px 14px;text-align:right;font-size:16px;font-weight:900;color:${GD}">${fmt(total)}</td></tr></tfoot>
         </table>
         <p style="font-size:8px;color:#888;margin-top:10px;line-height:1.7">* Valores em Reais (BRL). Impostos não inclusos quando aplicável. Proposta válida por 15 dias a partir da data de emissão.</p>
+        <div style="margin-top:28px">
+          <div style="font-size:9px;color:${GV};font-weight:800;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px">ESTIMATIVA DE IMPACTOS</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            ${[[fmtN(impFisicas),"Impressões físicas estimadas",`${fmtN(totalEmb)} embalagens × 49,5`],[fmtN(alcanceDigital),"Alcance digital estimado",`${parceiros.length} parceiros × 500 views`],[fmtN(totalImpacts),"Total de impactos","físico + digital"],[totalImpacts>0?fmt(total/totalImpacts):"—","Custo por impacto","investimento ÷ impactos"]].map(([v,l,s])=>`<div style="background:#f8faf8;border-top:3px solid ${GV};padding:16px 18px"><div style="font-size:22px;font-weight:900;color:${GV};line-height:1;margin-bottom:6px">${v}</div><div style="font-size:9px;color:${TX};text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:2px">${l}</div><div style="font-size:8px;color:#888">${s}</div></div>`).join("")}
+          </div>
+        </div>
       </div>
       ${footerBar("RESUMO FINANCEIRO")}
     </div>
