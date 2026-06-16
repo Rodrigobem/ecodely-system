@@ -4727,6 +4727,56 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
       </div>`;
     })();
 
+    // Mapa estático Google Maps
+    const clientLat=(plano.regioes||[])[0]?.lat||plano.clienteLat||null;
+    const clientLng=(plano.regioes||[])[0]?.lng||plano.clienteLng||null;
+    const MAPSKEY=import.meta.env.VITE_GOOGLE_MAPS_KEY||"";
+    const mapUrl=(()=>{
+      let url=`https://maps.googleapis.com/maps/api/staticmap?size=800x350&maptype=roadmap&scale=2`;
+      if(clientLat&&clientLng)url+=`&markers=color:0x3DD68C|size:large|label:C|${clientLat},${clientLng}`;
+      const pCoords=parceiros.filter(p=>p.endereco?.lat&&p.endereco?.lng);
+      if(pCoords.length)url+=`&markers=color:red|size:small|${pCoords.map(p=>`${p.endereco.lat},${p.endereco.lng}`).join("|")}`;
+      if(MAPSKEY)url+=`&key=${MAPSKEY}`;
+      return url;
+    })();
+
+    // Página de parceiros de distribuição
+    const pgParceiros=(()=>{
+      if(!parceiros.length)return"";
+      const rows=parceiros.map((p,i)=>{
+        const q=Number(p.embalagens||0),t=Number(p.tabela||6),d=Number(p.desconto||0),tab=q*t,neg=tab*(1-d/100);
+        return`<tr style="border-bottom:1px solid #e8f0e8;background:${i%2===0?"#fff":"#f8faf8"}"><td style="padding:8px 10px;font-weight:700;font-size:10px">${p.nome||"—"}</td><td style="padding:8px 10px;color:#555;font-size:10px">${p.cidade||p.city||"—"}</td><td style="padding:8px 10px;color:#555;font-size:10px">${p.segmento||p.category||"—"}</td><td style="padding:8px 10px;text-align:right;font-size:10px">${fmtN(q)}</td><td style="padding:8px 10px;text-align:right;color:#555;font-size:10px">${fmt(tab)}</td><td style="padding:8px 10px;text-align:center;color:#555;font-size:10px">${d>0?d+"%":"—"}</td><td style="padding:8px 10px;text-align:right;font-weight:800;color:${GV};font-size:10px">${fmt(neg)}</td></tr>`;
+      }).join("");
+      return`<div style="${PG}">
+        <div style="${PGB}">
+          <div style="font-size:9px;color:${GV};font-weight:800;letter-spacing:4px;text-transform:uppercase;margin-bottom:10px">DETALHAMENTO</div>
+          <div style="font-size:28px;font-weight:900;color:${TX};line-height:1.1;letter-spacing:-0.5px;margin-bottom:16px">Parceiros de distribuição</div>
+          <div style="height:3px;background:${GV};width:60px;margin-bottom:20px"></div>
+          <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:16px">
+            <thead><tr style="background:${GD}">
+              <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:left">PARCEIRO</th>
+              <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:left">CIDADE</th>
+              <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:left">SEGMENTO</th>
+              <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">EMBALAGENS</th>
+              <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">VALOR TABELA</th>
+              <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:center">DESCONTO</th>
+              <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">VALOR NEGOCIADO</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+            <tfoot><tr style="background:${GV}">
+              <td colspan="3" style="padding:9px 10px;font-weight:900;color:${GD};font-size:10px">TOTAL</td>
+              <td style="padding:9px 10px;text-align:right;font-weight:900;color:${GD};font-size:10px">${fmtN(totalEmb)}</td>
+              <td style="padding:9px 10px;text-align:right;font-weight:900;color:${GD};font-size:10px">${fmt(totalValTabela)}</td>
+              <td style="padding:9px 10px;text-align:center;color:${GD};font-size:10px">${avgDescPct>0?avgDescPct+"%":"—"}</td>
+              <td style="padding:9px 10px;text-align:right;font-weight:900;color:${GD};font-size:12px">${fmt(totalVal)}</td>
+            </tr></tfoot>
+          </table>
+          ${MAPSKEY?`<img src="${mapUrl}" style="width:100%;height:auto;display:block;border:1px solid #e0ede0" alt="Mapa de distribuição" onerror="this.style.display='none'">`:`<div style="background:#f8faf8;border:1px solid #e0ede0;padding:20px;text-align:center;font-size:10px;color:#999">Mapa indisponível</div>`}
+        </div>
+        ${footerBar("PARCEIROS DE DISTRIBUIÇÃO")}
+      </div>`;
+    })();
+
     // Linhas da tabela financeira (sem nomes de parceiros)
     const linhasParc=parceiros.length>0?`<tr style="border-bottom:1px solid #e8f0e8"><td style="padding:11px 14px;font-weight:600">Embalagem Branded Delivery</td><td style="padding:11px 14px;text-align:center;color:#666">${fmtN(totalEmb)} un</td><td style="padding:11px 14px;text-align:right;color:#666">${fmt(totalValTabela)}</td><td style="padding:11px 14px;text-align:center;color:#666">${avgDescPct>0?avgDescPct+"%":"—"}</td><td style="padding:11px 14px;text-align:right;font-weight:800;color:${GV}">${fmt(totalVal)}</td></tr>`:"";
     const linhasOutras=outras.map((m,i)=>{const t=Number(m.tabela||0),d=Number(m.desconto||0),b=t*(1-d/100);return`<tr style="border-bottom:1px solid #e8f0e8;background:${i%2===0?"#fff":"#f8faf8"}"><td style="padding:11px 14px;font-weight:600">${m.tipo||"Outra mídia"}${m.descricao?` — ${m.descricao}`:""}</td><td style="padding:11px 14px;text-align:center;color:#666">${m.qtd||1}</td><td style="padding:11px 14px;text-align:right;color:#666">${fmt(t)}</td><td style="padding:11px 14px;text-align:center;color:#666">${d>0?d+"%":"—"}</td><td style="padding:11px 14px;text-align:right;font-weight:800;color:${GV}">${fmt(b)}</td></tr>`;}).join("");
@@ -4809,6 +4859,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     </div>
 
     ${pgDemo}
+
+    ${pgParceiros}
 
     <!-- P5: RESUMO FINANCEIRO -->
     <div style="${PG}">
