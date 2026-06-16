@@ -4743,32 +4743,44 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     // Página de parceiros de distribuição
     const pgParceiros=(()=>{
       if(!parceiros.length)return"";
+      const totalImp=Math.round(totalEmb*49.5);
+      const totalPop5km=parceiros.reduce((a,p)=>a+Number(p.demograficos?.populacao_5km_estimada||0),0);
+      const faixasCount={};
+      parceiros.forEach(p=>{const f=p.demograficos?.faixa_predominante;if(f)faixasCount[f]=(faixasCount[f]||0)+1;});
+      const faixaGeral=Object.entries(faixasCount).sort((a,b)=>b[1]-a[1])[0]?.[0]||"—";
       const rows=parceiros.map((p,i)=>{
-        const q=Number(p.embalagens||0),t=Number(p.tabela||6),d=Number(p.desconto||0),tab=q*t,neg=tab*(1-d/100);
-        return`<tr style="border-bottom:1px solid #e8f0e8;background:${i%2===0?"#fff":"#f8faf8"}"><td style="padding:8px 10px;font-weight:700;font-size:10px">${p.nome||"—"}</td><td style="padding:8px 10px;color:#555;font-size:10px">${p.cidade||p.city||"—"}</td><td style="padding:8px 10px;color:#555;font-size:10px">${p.segmento||p.category||"—"}</td><td style="padding:8px 10px;text-align:right;font-size:10px">${fmtN(q)}</td><td style="padding:8px 10px;text-align:right;color:#555;font-size:10px">${fmt(tab)}</td><td style="padding:8px 10px;text-align:center;color:#555;font-size:10px">${d>0?d+"%":"—"}</td><td style="padding:8px 10px;text-align:right;font-weight:800;color:${GV};font-size:10px">${fmt(neg)}</td></tr>`;
+        const q=Number(p.embalagens||0),imp=Math.round(q*49.5);
+        const pop5k=p.demograficos?.populacao_5km_estimada;
+        const faixa=p.demograficos?.faixa_predominante||"—";
+        return`<tr style="border-bottom:1px solid #e8f0e8;background:${i%2===0?"#fff":"#f8faf8"}"><td style="padding:8px 10px;font-weight:700;font-size:10px">${p.nome||"—"}</td><td style="padding:8px 10px;color:#555;font-size:10px">${p.cidade||p.city||"—"}</td><td style="padding:8px 10px;color:#555;font-size:10px">${p.segmento||p.category||"—"}</td><td style="padding:8px 10px;text-align:right;font-size:10px">${fmtN(q)}</td><td style="padding:8px 10px;text-align:right;color:${GV};font-weight:700;font-size:10px">${fmtN(imp)}</td><td style="padding:8px 10px;text-align:right;color:#555;font-size:10px">${pop5k?fmtPop(pop5k):"—"}</td><td style="padding:8px 10px;text-align:center;color:#555;font-size:10px">${faixa}</td></tr>`;
       }).join("");
       return`<div style="${PG}">
         <div style="${PGB}">
           <div style="font-size:9px;color:${GV};font-weight:800;letter-spacing:4px;text-transform:uppercase;margin-bottom:10px">DETALHAMENTO</div>
           <div style="font-size:28px;font-weight:900;color:${TX};line-height:1.1;letter-spacing:-0.5px;margin-bottom:16px">Parceiros de distribuição</div>
           <div style="height:3px;background:${GV};width:60px;margin-bottom:20px"></div>
-          <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:16px">
+          <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:0">
             <thead><tr style="background:${GD}">
               <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:left">PARCEIRO</th>
               <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:left">CIDADE</th>
               <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:left">SEGMENTO</th>
               <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">EMBALAGENS</th>
-              <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">VALOR TABELA</th>
-              <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:center">DESCONTO</th>
-              <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">VALOR NEGOCIADO</th>
+              <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">IMPRESSÕES EST.</th>
+              <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">POPULAÇÃO 5KM</th>
+              <th style="padding:9px 10px;color:#fff;font-size:7px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:center">FAIXA ETÁRIA</th>
             </tr></thead>
             <tbody>${rows}</tbody>
+            <tfoot><tr style="background:${GV}">
+              <td colspan="3" style="padding:9px 10px;font-weight:900;color:${GD};font-size:10px">TOTAL</td>
+              <td style="padding:9px 10px;text-align:right;font-weight:900;color:${GD};font-size:10px">${fmtN(totalEmb)}</td>
+              <td style="padding:9px 10px;text-align:right;font-weight:900;color:${GD};font-size:10px">${fmtN(totalImp)}</td>
+              <td style="padding:9px 10px;text-align:right;font-weight:900;color:${GD};font-size:10px">${totalPop5km>0?fmtPop(totalPop5km):"—"}</td>
+              <td style="padding:9px 10px;text-align:center;font-weight:900;color:${GD};font-size:10px">${faixaGeral}</td>
+            </tr></tfoot>
           </table>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 10px 0;border-top:2px solid ${GV}">
-            <span style="font-size:9px;color:#888">${parceiros.length} parceiro${parceiros.length!==1?"s":""} selecionado${parceiros.length!==1?"s":""}</span>
-            <span style="font-size:9px;color:#888">Total: <strong style="color:${TX}">${fmtN(totalEmb)} embalagens</strong></span>
+          <div style="margin-top:16px">
+            ${MAPSKEY?`<img src="${mapUrl}" style="width:100%;height:auto;display:block;border:1px solid #e0ede0" alt="Mapa de distribuição" onerror="this.style.display='none'">`:`<div style="background:#f8faf8;border:1px solid #e0ede0;padding:20px;text-align:center;font-size:10px;color:#999">Mapa indisponível</div>`}
           </div>
-          ${MAPSKEY?`<img src="${mapUrl}" style="width:100%;height:auto;display:block;border:1px solid #e0ede0" alt="Mapa de distribuição" onerror="this.style.display='none'">`:`<div style="background:#f8faf8;border:1px solid #e0ede0;padding:20px;text-align:center;font-size:10px;color:#999">Mapa indisponível</div>`}
         </div>
         ${footerBar("PARCEIROS DE DISTRIBUIÇÃO")}
       </div>`;
