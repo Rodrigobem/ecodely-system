@@ -4728,8 +4728,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     })();
 
     // Linhas da tabela financeira (sem nomes de parceiros)
-    const linhasParc=parceiros.length>0?`<tr style="border-bottom:1px solid #e8f0e8"><td style="padding:11px 14px;font-weight:600">Embalagem Branded Delivery</td><td style="padding:11px 14px;text-align:center;color:#666">${fmtN(totalEmb)} un</td><td style="padding:11px 14px;text-align:right;color:#666">${fmt(avgTabeUn)}/un</td><td style="padding:11px 14px;text-align:center;color:#666">${avgDescPct>0?avgDescPct+"%":"—"}</td><td style="padding:11px 14px;text-align:right;font-weight:800;color:${GV}">${fmt(totalVal)}</td></tr>`:"";
-    const linhasOutras=outras.map((m,i)=>{const t=Number(m.tabela||0),d=Number(m.desconto||0),b=t*(1-d/100);return`<tr style="border-bottom:1px solid #e8f0e8;background:${i%2===0?"#fff":"#f8faf8"}"><td style="padding:11px 14px;font-weight:600">${m.tipo||"Outra mídia"}${m.descricao?` — ${m.descricao}`:""}</td><td style="padding:11px 14px;text-align:center;color:#666">${m.qtd||1}</td><td style="padding:11px 14px;text-align:right;color:#666">${fmt(t)}/un</td><td style="padding:11px 14px;text-align:center;color:#666">${d>0?d+"%":"—"}</td><td style="padding:11px 14px;text-align:right;font-weight:800;color:${GV}">${fmt(b)}</td></tr>`;}).join("");
+    const linhasParc=parceiros.length>0?`<tr style="border-bottom:1px solid #e8f0e8"><td style="padding:11px 14px;font-weight:600">Embalagem Branded Delivery</td><td style="padding:11px 14px;text-align:center;color:#666">${fmtN(totalEmb)} un</td><td style="padding:11px 14px;text-align:right;color:#666">${fmt(totalValTabela)}</td><td style="padding:11px 14px;text-align:center;color:#666">${avgDescPct>0?avgDescPct+"%":"—"}</td><td style="padding:11px 14px;text-align:right;font-weight:800;color:${GV}">${fmt(totalVal)}</td></tr>`:"";
+    const linhasOutras=outras.map((m,i)=>{const t=Number(m.tabela||0),d=Number(m.desconto||0),b=t*(1-d/100);return`<tr style="border-bottom:1px solid #e8f0e8;background:${i%2===0?"#fff":"#f8faf8"}"><td style="padding:11px 14px;font-weight:600">${m.tipo||"Outra mídia"}${m.descricao?` — ${m.descricao}`:""}</td><td style="padding:11px 14px;text-align:center;color:#666">${m.qtd||1}</td><td style="padding:11px 14px;text-align:right;color:#666">${fmt(t)}</td><td style="padding:11px 14px;text-align:center;color:#666">${d>0?d+"%":"—"}</td><td style="padding:11px 14px;text-align:right;font-weight:800;color:${GV}">${fmt(b)}</td></tr>`;}).join("");
 
     const html=`<!DOCTYPE html><html lang="pt-BR"><head>
     <meta charset="UTF-8">
@@ -4820,7 +4820,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           <thead><tr style="background:${GD}">
             <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:left">ITEM</th>
             <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:center">QTD</th>
-            <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">VALOR TABELA (R$/un)</th>
+            <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">VALOR TABELA (R$)</th>
             <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:center">DESCONTO (%)</th>
             <th style="padding:11px 14px;color:#fff;font-size:8px;text-transform:uppercase;letter-spacing:1px;font-weight:800;text-align:right">VALOR BRUTO NEGOCIADO</th>
           </tr></thead>
