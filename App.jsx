@@ -69,13 +69,13 @@ const USERS_DB=[
   {id:1,name:"Rodrigo Bem",email:"rodrigobem@ecodely.com.br",pass:"[ver Supabase]",role:"admin",avatar:"RB",active:true}, // senha gerenciada pelo Supabase
   // Adicione os demais membros da equipe pelo painel Usuários
 ];
-const ROLE_LABELS={admin:"Administrador",comercial:"Comercial",operacional:"Operacional",marketing:"Marketing",financeiro:"Financeiro",base:"Base",representante:"Representante"};
-const ROLE_COLOR={admin:T.accent,comercial:T.info,operacional:T.purple,marketing:T.pink,financeiro:T.warn,base:T.green,representante:"#F59E0B"};
+const ROLE_LABELS={admin:"Administrador",comercial:"Comercial",operacional:"Operacional",marketing:"Marketing",financeiro:"Financeiro",base:"Base",representante:"Representante",gerente_base:"Gerente de Base"};
+const ROLE_COLOR={admin:T.accent,comercial:T.info,operacional:T.purple,marketing:T.pink,financeiro:T.warn,base:T.green,representante:"#F59E0B",gerente_base:"#0EA5E9"};
 const SEC_COLOR={comercial:T.info,financeiro:T.warn,marketing:T.pink,base:T.accent,operacional:T.purple,grafica:T.purple,logistica:T.info};
 const SEC_LABEL={comercial:"Comercial",financeiro:"Financeiro",marketing:"Marketing",base:"Base",operacional:"Operacional",grafica:"Gráfica",logistica:"Logística"};
 // Mapeamento de role → setor que pode editar (null = todos)
 // Mapeamento de role → setor que pode editar (null = todos)
-const ROLE_TO_SEC={admin:null,base:"base",comercial:"comercial",marketing:"marketing",financeiro:"financeiro",operacional:"logistica",representante:null};
+const ROLE_TO_SEC={admin:null,base:"base",comercial:"comercial",marketing:"marketing",financeiro:"financeiro",operacional:"logistica",representante:null,gerente_base:["base","logistica"]};
 
 // --- CAMPAIGNS ---------------------------------------------------------------
 const STAGES_CAMP=[
@@ -126,19 +126,19 @@ const STATUS_PARTNER={"prospectado":T.info,"negociando":T.warn,"ativo":T.accent,
 
 // --- NAV ---------------------------------------------------------------------
 const getNav=(role,queueCount,notifCount,extraRoles=[])=>[
-  {id:"dashboard",label:"Dashboard",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base","representante"]},
-  {id:"minha-fila",label:"Minha Fila",icon:"-",roles:["comercial","operacional","marketing","financeiro","base","admin"],badge:queueCount||null},
-  {id:"campanhas",label:"Campanhas",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","representante"]},
-  {id:"calendario",label:"Calendário",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro"]},
+  {id:"dashboard",label:"Dashboard",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base","representante","gerente_base"]},
+  {id:"minha-fila",label:"Minha Fila",icon:"-",roles:["comercial","operacional","marketing","financeiro","base","admin","gerente_base"],badge:queueCount||null},
+  {id:"campanhas",label:"Campanhas",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","representante","gerente_base"]},
+  {id:"calendario",label:"Calendário",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","gerente_base"]},
   {id:"financeiro-modulo",label:"Financeiro",icon:"-",roles:["admin","financeiro"]},
   {id:"comercial",label:"Comercial",icon:"-",roles:["admin","comercial","financeiro","representante"]},
-  {id:"comissoes",label:"Comissões",icon:"-",roles:["admin","base","representante"]},
-  {id:"parceiros",label:"Buscar Parceiros",icon:"-",roles:["admin","base"]},
-  {id:"base",label:"Base",icon:"-",roles:["admin","base","comercial"]},
-  {id:"planejamento-midia",label:"Planejamento de Mídia",icon:"-",roles:["admin","comercial","representante"]},
-  {id:"relatorios",label:"Relatórios",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base"]},
-  {id:"cadastros",label:"Cadastros",icon:"-",roles:["admin","comercial","operacional"]},
-  {id:"whatsapp",label:"WhatsApp IA",icon:"-",roles:["admin","comercial","base"]},
+  {id:"comissoes",label:"Comissões",icon:"-",roles:["admin","base","representante","gerente_base"]},
+  {id:"parceiros",label:"Buscar Parceiros",icon:"-",roles:["admin","base","gerente_base"]},
+  {id:"base",label:"Base",icon:"-",roles:["admin","base","comercial","gerente_base"]},
+  {id:"planejamento-midia",label:"Planejamento de Mídia",icon:"-",roles:["admin","comercial","representante","gerente_base"]},
+  {id:"relatorios",label:"Relatórios",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base","gerente_base"]},
+  {id:"cadastros",label:"Cadastros",icon:"-",roles:["admin","comercial","operacional","gerente_base"]},
+  {id:"whatsapp",label:"WhatsApp IA",icon:"-",roles:["admin","comercial","base","gerente_base"]},
   {id:"usuarios",label:"Usuários",icon:"-",roles:["admin"]},
   {id:"organograma",label:"Organograma",icon:"◈",roles:["admin"]},
 ].filter(n=>n.roles.includes(role)||extraRoles.some(r=>n.roles.includes(r)));
@@ -1469,7 +1469,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                 {Object.entries(camp.tasks).map(([sec,tasks])=>{
                   const done=tasks.filter(t=>t.done).length;
                   const allowedSec=ROLE_TO_SEC[user?.role];
-                  const canEdit=allowedSec===null||allowedSec===sec;
+                  const canEdit=allowedSec===null||(Array.isArray(allowedSec)?allowedSec.includes(sec):allowedSec===sec);
                   return(
                     <div key={sec} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,overflow:"hidden",opacity:canEdit?1:0.55}}>
                       <div style={{padding:"10px 14px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -3514,7 +3514,7 @@ export default function App(){
   PIPE_STAGES[0].color=T.muted;PIPE_STAGES[1].color=T.info;PIPE_STAGES[2].color=T.purple;PIPE_STAGES[3].color=T.warn;PIPE_STAGES[4].color=T.accent;
   CONTRATO_COLOR["sem contrato"]=T.muted;CONTRATO_COLOR["pendente"]=T.warn;CONTRATO_COLOR["assinado"]=T.accent;CONTRATO_COLOR["expirando"]=T.danger;CONTRATO_COLOR["expirado"]=T.danger;
   STATUS_PARTNER["prospectado"]=T.info;STATUS_PARTNER["negociando"]=T.warn;STATUS_PARTNER["ativo"]=T.accent;STATUS_PARTNER["inativo"]=T.muted;
-  ROLE_COLOR.admin=T.accent;ROLE_COLOR.comercial=T.info;ROLE_COLOR.operacional=T.purple;ROLE_COLOR.marketing=T.pink;ROLE_COLOR.financeiro=T.warn;ROLE_COLOR.base=T.green;
+  ROLE_COLOR.admin=T.accent;ROLE_COLOR.comercial=T.info;ROLE_COLOR.operacional=T.purple;ROLE_COLOR.marketing=T.pink;ROLE_COLOR.financeiro=T.warn;ROLE_COLOR.base=T.green;ROLE_COLOR.gerente_base="#0EA5E9";
   SEC_COLOR.comercial=T.info;SEC_COLOR.financeiro=T.warn;SEC_COLOR.marketing=T.pink;SEC_COLOR.base=T.accent;SEC_COLOR.operacional=T.purple;SEC_COLOR.grafica=T.purple;SEC_COLOR.logistica=T.info;
   useEffect(()=>{localStorage.setItem("ecodely_tema",tema);document.body.style.background=T.bg;},[tema]);
   const[editLanc,setEditLanc]=useState(null);
@@ -3812,7 +3812,7 @@ export default function App(){
     const now=()=>hoje.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})+" "+hoje.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
 
     // Prazos de gráfica e logística
-    if(["admin","operacional"].includes(user.role)){
+    if(["admin","operacional","gerente_base"].includes(user.role)){
       camps.filter(c=>c.stage<6).forEach(c=>{
         if(c.graficaPrazo){const d=diasAte(c.graficaPrazo);if(d!==null&&d<=7){geradas.push({id:Date.now()+Math.random(),type:"prazo",title:d<=0?"Prazo de gráfica VENCIDO":`Gráfica vence em ${d}d`,msg:`${c.name} · ${c.graficaFornecedor||"Gráfica não definida"}`,tab:"campanhas",at:now(),read:false,color:d<=0?T.danger:d<=3?T.warn:T.info});}}
         if(c.logisticaPrazo){const d=diasAte(c.logisticaPrazo);if(d!==null&&d<=7){geradas.push({id:Date.now()+Math.random(),type:"prazo",title:d<=0?"Prazo de logística VENCIDO":`Logística vence em ${d}d`,msg:`${c.name} · ${c.logistica||"Logística não definida"}`,tab:"campanhas",at:now(),read:false,color:d<=0?T.danger:d<=3?T.warn:T.purple});}}
@@ -3827,7 +3827,7 @@ export default function App(){
     }
 
     // Contratos expirando (admin e base)
-    if(["admin","base"].includes(user.role)){
+    if(["admin","base","gerente_base"].includes(user.role)){
       basePartners.filter(p=>p.contrato?.expiraEm).forEach(p=>{
         const d=diasAte(p.contrato.expiraEm);
         if(d!==null&&d<=30&&d>=0){geradas.push({id:Date.now()+Math.random(),type:"contrato",title:`Contrato expirando em ${d}d`,msg:`${p.name} · ${p.category}`,tab:"base",at:now(),read:false,color:d<=7?T.danger:T.warn});}
@@ -3854,6 +3854,7 @@ export default function App(){
   const sec=user?ROLE_TO_SEC[user.role]:null;
   // Build queue: all pending tasks for the logged user's sector
   const myQueue=camps.flatMap(c=>{
+    if(Array.isArray(sec)) return sec.flatMap(s=>(c.tasks[s]||[]).map(t=>({...t,campId:c.id,campName:c.name,campStage:c.stage,project:c.project,client:c.client,sector:s})));
     const secTasks=sec?c.tasks[sec]||[]:Object.values(c.tasks).flat();
     return secTasks.map(t=>({...t,campId:c.id,campName:c.name,campStage:c.stage,project:c.project,client:c.client,sector:sec||"admin"}));
   });
@@ -5710,6 +5711,81 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               );
             };
 
+            const DashGerenteBase=()=>{
+              const parseD=s=>{if(!s)return null;const d=s.includes("-")?new Date(s):new Date(s.split("/").reverse().join("-"));return isNaN(d)?null:d;};
+              const diasAteD=s=>{const d=parseD(s);return d?Math.ceil((d-new Date())/86400000):null;};
+              const campsLogistica=camps.filter(c=>c.stage===3);
+              const campsVeiculando=camps.filter(c=>c.stage===6);
+              const contratosExp30=basePartners.filter(p=>{const d=diasAteD(p.contrato?.expiraEm);return d!==null&&d>=0&&d<=30;});
+              const teamTasks=camps.flatMap(c=>{
+                const baseTasks=(c.tasks?.base||[]).map(t=>({...t,sector:"base",campName:c.name,campId:c.id}));
+                const logTasks=(c.tasks?.logistica||[]).map(t=>({...t,sector:"logistica",campName:c.name,campId:c.id}));
+                return [...baseTasks,...logTasks];
+              }).filter(t=>!t.done);
+              const contratosExp60=basePartners.filter(p=>{const d=diasAteD(p.contrato?.expiraEm);return d!==null&&d>=0&&d<=60;}).map(p=>({...p,dias:diasAteD(p.contrato?.expiraEm)})).sort((a,b)=>a.dias-b.dias);
+              return(
+                <div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
+                    <KCard label="Em Logística" value={campsLogistica.length} sub="campanhas na etapa" color={T.warn} icon="-" onClick={()=>setTab("campanhas")} hint="Ver campanhas -"/>
+                    <KCard label="Veiculando" value={campsVeiculando.length} sub="campanhas ativas" color={"#0EA5E9"} icon="-" onClick={()=>setTab("campanhas")} hint="Ver campanhas -"/>
+                    <KCard label="Contratos expirando" value={contratosExp30.length} sub="próximos 30 dias" color={contratosExp30.length>0?T.danger:T.accent} icon="-" onClick={()=>{setTab("base");setBaseTab("contratos");}} hint="Ver contratos -"/>
+                    <KCard label="Tarefas pendentes" value={teamTasks.length} sub="base + logística" color={teamTasks.length>0?T.danger:T.accent} icon="-" onClick={()=>setTab("minha-fila")} hint="Ver fila -"/>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+                    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Tarefas da equipe hoje</div>
+                      {teamTasks.length===0&&<div style={{fontSize:10,color:T.muted,textAlign:"center",padding:20}}>Nenhuma tarefa pendente</div>}
+                      <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:280,overflowY:"auto"}}>
+                        {teamTasks.slice(0,12).map((t,i)=>(
+                          <div key={i} onClick={()=>{const c=camps.find(x=>x.id===t.campId);if(c)setSelCamp(c);}} className="hr" style={{padding:"8px 10px",borderRadius:8,borderLeft:`3px solid ${SEC_COLOR[t.sector]||T.accent}`,cursor:"pointer"}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                              <span style={{fontSize:11,fontWeight:600,flex:1}}>{t.label}</span>
+                              <Badge label={SEC_LABEL[t.sector]||t.sector} color={SEC_COLOR[t.sector]||T.accent}/>
+                            </div>
+                            <div style={{fontSize:9,color:T.muted,marginTop:3}}>{t.campName}</div>
+                          </div>
+                        ))}
+                        {teamTasks.length>12&&<div style={{fontSize:9,color:T.muted,textAlign:"center",padding:"6px 0"}}>+{teamTasks.length-12} tarefas</div>}
+                      </div>
+                    </div>
+                    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:14}}>Campanhas em Logística</div>
+                      {campsLogistica.length===0&&<div style={{fontSize:10,color:T.muted,textAlign:"center",padding:20}}>Nenhuma campanha em logística</div>}
+                      <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:280,overflowY:"auto"}}>
+                        {campsLogistica.map(c=>(
+                          <div key={c.id} onClick={()=>setSelCamp(c)} className="hr" style={{padding:"8px 10px",borderRadius:8,cursor:"pointer"}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                              <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12}}>{c.name}</div>
+                              {c.logisticaPrazo&&<Badge label={`Prazo: ${c.logisticaPrazo}`} color={T.warn}/>}
+                            </div>
+                            <div style={{fontSize:9,color:T.muted,marginTop:3}}>{c.region||c.client}</div>
+                            {c.partners?.length>0&&<div style={{fontSize:9,color:T.info,marginTop:2}}>{c.partners.length} parceiro{c.partners.length>1?"s":""}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  {contratosExp60.length>0&&(
+                    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Contratos expirando</div>
+                        <button onClick={()=>{setTab("base");setBaseTab("contratos");}} className="btn" style={{padding:"5px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10}}>Ver todos -</button>
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+                        {contratosExp60.slice(0,6).map((p,i)=>(
+                          <div key={i} onClick={()=>setTab("base")} className="hr" style={{padding:"10px 12px",borderRadius:8,borderLeft:`3px solid ${p.dias<=7?T.danger:p.dias<=30?T.warn:T.info}`,cursor:"pointer"}}>
+                            <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div>
+                            <div style={{fontSize:9,color:p.dias<=7?T.danger:p.dias<=30?T.warn:T.info,marginTop:3}}>Expira em {p.dias} dia{p.dias!==1?"s":""}</div>
+                            <div style={{fontSize:9,color:T.muted}}>{p.contrato?.expiraEm}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            };
+
             // Dados reais para o Dashboard
             const hoje2=new Date();
             const mm2=String(hoje2.getMonth()+1).padStart(2,"0");
@@ -5979,6 +6055,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             if(user.role==="financeiro") return <DashFinanceiro/>;
             if(user.role==="operacional") return <DashOperacional/>;
             if(user.role==="base") return <DashBase/>;
+            if(user.role==="gerente_base") return <DashGerenteBase/>;
             if(user.role==="representante") return <DashRepresentante/>;
             return <DashGeral/>;
           })()}
