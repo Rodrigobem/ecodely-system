@@ -2113,6 +2113,77 @@ const MapaLogistico=({graficas=[],logCamps=[],selCampId=null})=>{
   return <div ref={mapRef} style={{height:400,width:"100%",borderRadius:12,border:"1px solid #1A1E30",zIndex:1}}/>;
 };
 
+// FORN FORM — módulo-level para evitar perda de foco nos inputs
+const FornForm=({data,setData,onSave,onCancel,saveLbl,T,inpS,selS})=>{
+  const fi=inpS;
+  const fs=selS;
+  const lbl=t=><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1,fontFamily:"Arial,sans-serif"}}>{t}</div>;
+  const secH=(label,color)=><div style={{fontSize:8,color:color||T.purple,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"Arial,sans-serif",fontWeight:700,marginBottom:8,marginTop:4,paddingBottom:4,borderBottom:`1px solid ${T.border}`}}>{label}</div>;
+  return(
+    <div>
+      {secH("Dados da Empresa")}
+      <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:8,marginBottom:8}}>
+        <div>{lbl("Nome Fantasia *")}<input value={data.name} onChange={e=>setData(p=>({...p,name:e.target.value}))} placeholder="Ex: Gráfica Rápida" style={fi}/></div>
+        <div>{lbl("Tipo")}<select value={data.type} onChange={e=>setData(p=>({...p,type:e.target.value}))} style={fs}><option value="grafica">Gráfica</option><option value="logistica">Logística</option><option value="outro">Outro</option></select></div>
+        <div>{lbl("Razão Social")}<input value={data.razaoSocial||""} onChange={e=>setData(p=>({...p,razaoSocial:e.target.value}))} placeholder="Razão Social Ltda" style={fi}/></div>
+        <div>{lbl(`CNPJ${data.cnpj&&!validCNPJ(data.cnpj)?" — inválido":""}`)}<input value={data.cnpj||""} onChange={e=>setData(p=>({...p,cnpj:maskCNPJ(e.target.value)}))} placeholder="00.000.000/0000-00" maxLength={18} style={{...fi,borderColor:data.cnpj&&!validCNPJ(data.cnpj)?T.danger:undefined}}/></div>
+        <div>{lbl("Telefone")}<input value={data.phone||""} onChange={e=>setData(p=>({...p,phone:maskPhone(e.target.value)}))} placeholder="(11) 99999-9999" maxLength={15} style={fi}/></div>
+        <div>{lbl("E-mail Comercial")}<input value={data.email||""} onChange={e=>setData(p=>({...p,email:e.target.value}))} placeholder="comercial@fornecedor.com.br" style={fi}/></div>
+        <div>{lbl("Contato (pessoa)")}<input value={data.contact||""} onChange={e=>setData(p=>({...p,contact:e.target.value}))} placeholder="Nome do responsável" style={fi}/></div>
+        <div style={{gridColumn:"span 2"}}>{lbl("Site")}<input value={data.site||""} onChange={e=>setData(p=>({...p,site:e.target.value}))} placeholder="https://..." style={fi}/></div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"2fr 0.4fr 1fr 0.5fr",gap:8,marginBottom:12}}>
+        <div>{lbl("Rua / Logradouro")}<input value={data.endRua||""} onChange={e=>setData(p=>({...p,endRua:e.target.value}))} placeholder="Rua das Flores" style={fi}/></div>
+        <div>{lbl("Nº")}<input value={data.endNum||""} onChange={e=>setData(p=>({...p,endNum:e.target.value}))} placeholder="123" style={fi}/></div>
+        <div>{lbl("Cidade")}<input value={data.endCidade||""} onChange={e=>setData(p=>({...p,endCidade:e.target.value}))} placeholder="São Paulo" style={fi}/></div>
+        <div>{lbl("UF")}<input value={data.endEstado||""} onChange={e=>setData(p=>({...p,endEstado:e.target.value.toUpperCase().slice(0,2)}))} placeholder="SP" maxLength={2} style={fi}/></div>
+      </div>
+      {data.type==="grafica"&&(
+        <div style={{marginBottom:12}}>
+          {lbl("Estados que atende")}
+          <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:6}}>
+            {BR_STATES.map(st=>{const sel=(data.estadosAtende||[]).includes(st);return(<div key={st} onClick={()=>setData(p=>({...p,estadosAtende:sel?(p.estadosAtende||[]).filter(x=>x!==st):[...(p.estadosAtende||[]),st]}))} style={{padding:"3px 8px",fontSize:10,borderRadius:5,cursor:"pointer",background:sel?T.purple+"33":T.surface,border:`1px solid ${sel?T.purple+"66":T.border}`,color:sel?T.purple:T.muted,fontWeight:sel?700:400,transition:"all 0.15s"}}>{st}</div>);})}
+          </div>
+          {data.lat&&data.lng&&<div style={{fontSize:9,color:T.accent,marginTop:4}}>📍 Geocodificado: {Number(data.lat).toFixed(4)}, {Number(data.lng).toFixed(4)}</div>}
+          {data.endCidade&&!data.lat&&<div style={{fontSize:9,color:T.muted,marginTop:4}}>Lat/lng será obtido automaticamente ao salvar</div>}
+        </div>
+      )}
+      {secH("Dados Comerciais",T.warn)}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:8}}>
+        <div>{lbl("Prazo produção (d.u.)")}<input type="number" value={data.leadTime||""} onChange={e=>setData(p=>({...p,leadTime:e.target.value}))} placeholder="7" style={fi}/></div>
+        <div>{lbl("Prazo entrega (d.u.)")}<input type="number" value={data.prazoEntrega||""} onChange={e=>setData(p=>({...p,prazoEntrega:e.target.value}))} placeholder="3" style={fi}/></div>
+        <div>{lbl("Forma de pagamento")}<select value={data.formaPagamento||"boleto"} onChange={e=>setData(p=>({...p,formaPagamento:e.target.value}))} style={fs}><option value="boleto">Boleto</option><option value="pix">PIX</option><option value="transferencia">Transferência</option><option value="cartao">Cartão de Crédito</option></select></div>
+        <div>{lbl("Condição de pagamento")}<select value={data.condicaoPagamento||"30dd"} onChange={e=>setData(p=>({...p,condicaoPagamento:e.target.value}))} style={fs}><option value="avista">À vista</option><option value="15dd">15 dias</option><option value="30dd">30 dias</option><option value="45dd">45 dias</option><option value="60dd">60 dias</option><option value="28/35">28/35 dias</option></select></div>
+      </div>
+      <div style={{marginBottom:12}}>{lbl("Observações")}<textarea value={data.obs||""} onChange={e=>setData(p=>({...p,obs:e.target.value}))} rows={2} placeholder="Informações adicionais, acordos especiais..." style={{...fi,resize:"vertical",lineHeight:1.4}}/></div>
+      {secH("Tabela de Custos Unitários",T.info)}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+        {[["Ecobox Tradicional (R$/un)","ecoboxTradicional"],["Mega Box (R$/un)","megaBox"],["Chapa para Parceiros (R$/un)","chapaParcerios"]].map(([l,k])=>(
+          <div key={k}>{lbl(l)}<input type="number" step="0.01" value={(data.custos||{})[k]||""} onChange={e=>setData(p=>({...p,custos:{...(p.custos||{}),[k]:e.target.value}}))} placeholder="0,00" style={fi}/></div>
+        ))}
+      </div>
+      {(data.outrosProdutos||[]).map((op,i)=>(
+        <div key={i} style={{display:"grid",gridTemplateColumns:"2fr 1fr 0.3fr",gap:8,marginBottom:6}}>
+          <div>{i===0&&lbl("Nome do produto")}<input value={op.nome} onChange={e=>setData(p=>({...p,outrosProdutos:p.outrosProdutos.map((x,j)=>j===i?{...x,nome:e.target.value}:x)}))} placeholder="Nome do produto" style={fi}/></div>
+          <div>{i===0&&lbl("Custo unitário (R$)")}<input type="number" step="0.01" value={op.custo} onChange={e=>setData(p=>({...p,outrosProdutos:p.outrosProdutos.map((x,j)=>j===i?{...x,custo:e.target.value}:x)}))} placeholder="0,00" style={fi}/></div>
+          <div style={{display:"flex",alignItems:"flex-end"}}><div onClick={()=>setData(p=>({...p,outrosProdutos:p.outrosProdutos.filter((_,j)=>j!==i)}))} style={{padding:"7px 10px",background:T.dangerDim,border:`1px solid ${T.danger}33`,color:T.danger,borderRadius:6,cursor:"pointer",fontSize:11,lineHeight:1}}>✕</div></div>
+        </div>
+      ))}
+      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12}}>
+        <button onClick={()=>setData(p=>({...p,outrosProdutos:[...(p.outrosProdutos||[]),{nome:"",custo:""}]}))} style={{fontSize:9,padding:"4px 10px",background:T.surface,border:`1px solid ${T.border}`,color:T.muted,borderRadius:5,cursor:"pointer"}}>+ Produto extra</button>
+        <label style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:T.soft,cursor:"pointer",userSelect:"none"}}>
+          <input type="checkbox" checked={!!data.principal} onChange={e=>setData(p=>({...p,principal:e.target.checked}))}/>
+          <span>Fornecedor principal (usado no Planejamento de Mídia)</span>
+        </label>
+      </div>
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={onSave} style={{padding:"8px 18px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,cursor:"pointer"}}>{saveLbl||"Salvar"}</button>
+        <button onClick={onCancel} style={{padding:"8px 14px",background:T.card,border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:11,cursor:"pointer"}}>Cancelar</button>
+      </div>
+    </div>
+  );
+};
+
 // IMPACTOS TAB
 const ImpactosTab=({camp,allPartners,onUpdate})=>{
   const[uploadingKey,setUploadingKey]=useState(null);
@@ -10970,69 +11041,6 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 const fs=selS;
                 const secH=(label,color)=><div style={{fontSize:8,color:color||T.purple,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"Arial,sans-serif",fontWeight:700,marginBottom:8,marginTop:4,paddingBottom:4,borderBottom:`1px solid ${T.border}`}}>{label}</div>;
                 const lbl=(t)=><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1,fontFamily:"Arial,sans-serif"}}>{t}</div>;
-                const FornForm=({data,setData,onSave,onCancel,saveLbl})=>(
-                  <div>
-                    {secH("Dados da Empresa")}
-                    <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:8,marginBottom:8}}>
-                      <div>{lbl("Nome Fantasia *")}<input value={data.name} onChange={e=>setData(p=>({...p,name:e.target.value}))} placeholder="Ex: Gráfica Rápida" style={fi}/></div>
-                      <div>{lbl("Tipo")}<select value={data.type} onChange={e=>setData(p=>({...p,type:e.target.value}))} style={fs}><option value="grafica">Gráfica</option><option value="logistica">Logística</option><option value="outro">Outro</option></select></div>
-                      <div>{lbl("Razão Social")}<input value={data.razaoSocial||""} onChange={e=>setData(p=>({...p,razaoSocial:e.target.value}))} placeholder="Razão Social Ltda" style={fi}/></div>
-                      <div>{lbl(`CNPJ${data.cnpj&&!validCNPJ(data.cnpj)?" — inválido":""}`)}<input value={data.cnpj||""} onChange={e=>setData(p=>({...p,cnpj:maskCNPJ(e.target.value)}))} placeholder="00.000.000/0000-00" maxLength={18} style={{...fi,borderColor:data.cnpj&&!validCNPJ(data.cnpj)?T.danger:undefined}}/></div>
-                      <div>{lbl("Telefone")}<input value={data.phone||""} onChange={e=>setData(p=>({...p,phone:maskPhone(e.target.value)}))} placeholder="(11) 99999-9999" maxLength={15} style={fi}/></div>
-                      <div>{lbl("E-mail Comercial")}<input value={data.email||""} onChange={e=>setData(p=>({...p,email:e.target.value}))} placeholder="comercial@fornecedor.com.br" style={fi}/></div>
-                      <div>{lbl("Contato (pessoa)")}<input value={data.contact||""} onChange={e=>setData(p=>({...p,contact:e.target.value}))} placeholder="Nome do responsável" style={fi}/></div>
-                      <div style={{gridColumn:"span 2"}}>{lbl("Site")}<input value={data.site||""} onChange={e=>setData(p=>({...p,site:e.target.value}))} placeholder="https://..." style={fi}/></div>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"2fr 0.4fr 1fr 0.5fr",gap:8,marginBottom:12}}>
-                      <div>{lbl("Rua / Logradouro")}<input value={data.endRua||""} onChange={e=>setData(p=>({...p,endRua:e.target.value}))} placeholder="Rua das Flores" style={fi}/></div>
-                      <div>{lbl("Nº")}<input value={data.endNum||""} onChange={e=>setData(p=>({...p,endNum:e.target.value}))} placeholder="123" style={fi}/></div>
-                      <div>{lbl("Cidade")}<input value={data.endCidade||""} onChange={e=>setData(p=>({...p,endCidade:e.target.value}))} placeholder="São Paulo" style={fi}/></div>
-                      <div>{lbl("UF")}<input value={data.endEstado||""} onChange={e=>setData(p=>({...p,endEstado:e.target.value.toUpperCase().slice(0,2)}))} placeholder="SP" maxLength={2} style={fi}/></div>
-                    </div>
-                    {data.type==="grafica"&&(
-                      <div style={{marginBottom:12}}>
-                        {lbl("Estados que atende")}
-                        <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:6}}>
-                          {BR_STATES.map(st=>{const sel=(data.estadosAtende||[]).includes(st);return(<div key={st} onClick={()=>setData(p=>({...p,estadosAtende:sel?(p.estadosAtende||[]).filter(x=>x!==st):[...(p.estadosAtende||[]),st]}))} style={{padding:"3px 8px",fontSize:10,borderRadius:5,cursor:"pointer",background:sel?T.purple+"33":T.surface,border:`1px solid ${sel?T.purple+"66":T.border}`,color:sel?T.purple:T.muted,fontWeight:sel?700:400,transition:"all 0.15s"}}>{st}</div>);})}
-                        </div>
-                        {data.lat&&data.lng&&<div style={{fontSize:9,color:T.accent,marginTop:4}}>📍 Geocodificado: {Number(data.lat).toFixed(4)}, {Number(data.lng).toFixed(4)}</div>}
-                        {data.endCidade&&!data.lat&&<div style={{fontSize:9,color:T.muted,marginTop:4}}>Lat/lng será obtido automaticamente ao salvar</div>}
-                      </div>
-                    )}
-                    {secH("Dados Comerciais",T.warn)}
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:8}}>
-                      <div>{lbl("Prazo produção (d.u.)")}<input type="number" value={data.leadTime||""} onChange={e=>setData(p=>({...p,leadTime:e.target.value}))} placeholder="7" style={fi}/></div>
-                      <div>{lbl("Prazo entrega (d.u.)")}<input type="number" value={data.prazoEntrega||""} onChange={e=>setData(p=>({...p,prazoEntrega:e.target.value}))} placeholder="3" style={fi}/></div>
-                      <div>{lbl("Forma de pagamento")}<select value={data.formaPagamento||"boleto"} onChange={e=>setData(p=>({...p,formaPagamento:e.target.value}))} style={fs}><option value="boleto">Boleto</option><option value="pix">PIX</option><option value="transferencia">Transferência</option><option value="cartao">Cartão de Crédito</option></select></div>
-                      <div>{lbl("Condição de pagamento")}<select value={data.condicaoPagamento||"30dd"} onChange={e=>setData(p=>({...p,condicaoPagamento:e.target.value}))} style={fs}><option value="avista">À vista</option><option value="15dd">15 dias</option><option value="30dd">30 dias</option><option value="45dd">45 dias</option><option value="60dd">60 dias</option><option value="28/35">28/35 dias</option></select></div>
-                    </div>
-                    <div style={{marginBottom:12}}>{lbl("Observações")}<textarea value={data.obs||""} onChange={e=>setData(p=>({...p,obs:e.target.value}))} rows={2} placeholder="Informações adicionais, acordos especiais..." style={{...fi,resize:"vertical",lineHeight:1.4}}/></div>
-                    {secH("Tabela de Custos Unitários",T.info)}
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
-                      {[["Ecobox Tradicional (R$/un)","ecoboxTradicional"],["Mega Box (R$/un)","megaBox"],["Chapa para Parceiros (R$/un)","chapaParcerios"]].map(([l,k])=>(
-                        <div key={k}>{lbl(l)}<input type="number" step="0.01" value={(data.custos||{})[k]||""} onChange={e=>setData(p=>({...p,custos:{...(p.custos||{}),[k]:e.target.value}}))} placeholder="0,00" style={fi}/></div>
-                      ))}
-                    </div>
-                    {(data.outrosProdutos||[]).map((op,i)=>(
-                      <div key={i} style={{display:"grid",gridTemplateColumns:"2fr 1fr 0.3fr",gap:8,marginBottom:6}}>
-                        <div>{i===0&&lbl("Nome do produto")}<input value={op.nome} onChange={e=>setData(p=>({...p,outrosProdutos:p.outrosProdutos.map((x,j)=>j===i?{...x,nome:e.target.value}:x)}))} placeholder="Nome do produto" style={fi}/></div>
-                        <div>{i===0&&lbl("Custo unitário (R$)")}<input type="number" step="0.01" value={op.custo} onChange={e=>setData(p=>({...p,outrosProdutos:p.outrosProdutos.map((x,j)=>j===i?{...x,custo:e.target.value}:x)}))} placeholder="0,00" style={fi}/></div>
-                        <div style={{display:"flex",alignItems:"flex-end"}}><div onClick={()=>setData(p=>({...p,outrosProdutos:p.outrosProdutos.filter((_,j)=>j!==i)}))} style={{padding:"7px 10px",background:T.dangerDim,border:`1px solid ${T.danger}33`,color:T.danger,borderRadius:6,cursor:"pointer",fontSize:11,lineHeight:1}}>✕</div></div>
-                      </div>
-                    ))}
-                    <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12}}>
-                      <button onClick={()=>setData(p=>({...p,outrosProdutos:[...(p.outrosProdutos||[]),{nome:"",custo:""}]}))} style={{fontSize:9,padding:"4px 10px",background:T.surface,border:`1px solid ${T.border}`,color:T.muted,borderRadius:5,cursor:"pointer"}}>+ Produto extra</button>
-                      <label style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:T.soft,cursor:"pointer",userSelect:"none"}}>
-                        <input type="checkbox" checked={!!data.principal} onChange={e=>setData(p=>({...p,principal:e.target.checked}))}/>
-                        <span>Fornecedor principal (usado no Planejamento de Mídia)</span>
-                      </label>
-                    </div>
-                    <div style={{display:"flex",gap:8}}>
-                      <button onClick={onSave} style={{padding:"8px 18px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,cursor:"pointer"}}>{saveLbl||"Salvar"}</button>
-                      <button onClick={onCancel} style={{padding:"8px 14px",background:T.card,border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:11,cursor:"pointer"}}>Cancelar</button>
-                    </div>
-                  </div>
-                );
                 const gastoPorForn=s=>lancamentos.filter(l=>l.fornecedorId===s.id&&(l.saida||0)>0).reduce((a,l)=>a+(l.saida||0),0);
                 return(
                   <div>
@@ -11042,7 +11050,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     {showNewForn&&(
                       <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:16,marginBottom:14}} className="fade">
                         <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,marginBottom:12,fontSize:12}}>Novo Fornecedor</div>
-                        <FornForm data={nf} setData={setNf} onSave={addFornecedor} onCancel={()=>setShowNewForn(false)} saveLbl="Cadastrar Fornecedor"/>
+                        <FornForm data={nf} setData={setNf} onSave={addFornecedor} onCancel={()=>setShowNewForn(false)} saveLbl="Cadastrar Fornecedor" T={T} inpS={inpS} selS={selS}/>
                       </div>
                     )}
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
@@ -11090,7 +11098,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                                     <div style={{fontSize:16,fontWeight:800,color:T.purple,fontFamily:"Arial,sans-serif"}}>{(Number(s.leadTime)||0)+(Number(s.prazoEntrega)||0)} d.u.</div>
                                   </div>
                                 </div>
-                                <FornForm data={selForn} setData={setSelForn} onSave={()=>updateFornecedor(selForn)} onCancel={()=>setSelForn(null)} saveLbl="Salvar alterações"/>
+                                <FornForm data={selForn} setData={setSelForn} onSave={()=>updateFornecedor(selForn)} onCancel={()=>setSelForn(null)} saveLbl="Salvar alterações" T={T} inpS={inpS} selS={selS}/>
                               </div>
                             )}
                           </div>
