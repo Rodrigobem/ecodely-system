@@ -75,7 +75,7 @@ const SEC_COLOR={comercial:T.info,financeiro:T.warn,marketing:T.pink,base:T.acce
 const SEC_LABEL={comercial:"Comercial",financeiro:"Financeiro",marketing:"Marketing",base:"Base",operacional:"Operacional",grafica:"Gráfica",logistica:"Logística"};
 // Mapeamento de role → setor que pode editar (null = todos)
 // Mapeamento de role → setor que pode editar (null = todos)
-const ROLE_TO_SEC={admin:null,base:"base",comercial:"comercial",marketing:"marketing",financeiro:"financeiro",operacional:"logistica",representante:null,gerente_base:["base","logistica"]};
+const ROLE_TO_SEC={admin:null,base:"base",comercial:"comercial",marketing:"marketing",financeiro:"financeiro",operacional:"logistica",representante:null,gerente_base:["base","grafica","logistica"]};
 
 // --- CAMPAIGNS ---------------------------------------------------------------
 const STAGES_CAMP=[
