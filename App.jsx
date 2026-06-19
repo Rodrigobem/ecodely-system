@@ -4027,6 +4027,8 @@ export default function App(){
     let taskLabel="";
     let wasDone=false;
     let updatedCamp=null;
+    let autoAdvancedTo=null;
+    const AUTO_ADVANCE={grafica:{fromStage:2,toStage:3},logistica:{fromStage:3,toStage:4},checking:{fromStage:4,toStage:6}};
     setCamps(prev=>prev.map(c=>{
       if(c.id!==campId)return c;
       const newTasks={...c.tasks,[sec]:c.tasks[sec].map(t=>{
@@ -4036,20 +4038,33 @@ export default function App(){
         const done=!t.done;
         return{...t,done,doneAt:done?now():undefined,doneBy:done?byUser?.name:undefined};
       })};
-      const newTl=[...c.timeline,{id:Date.now(),type:"task",text:(newTasks[sec].find(t=>t.id===taskId)?.done?"Concluido":"Reaberto")+": "+taskLabel,user:byUser?.name||"Sistema",avatar:byUser?.avatar||"?",at:now(),color:SEC_COLOR[sec]||T.accent}];
-      updatedCamp={...c,tasks:newTasks,timeline:newTl};
+      const taskEntry={id:Date.now(),type:"task",text:(newTasks[sec].find(t=>t.id===taskId)?.done?"Concluido":"Reaberto")+": "+taskLabel,user:byUser?.name||"Sistema",avatar:byUser?.avatar||"?",at:now(),color:SEC_COLOR[sec]||T.accent};
+      let newTl=[...c.timeline,taskEntry];
+      let newStage=c.stage;
+      const rule=AUTO_ADVANCE[sec];
+      const allDone=newTasks[sec]?.length>0&&newTasks[sec].every(t=>t.done);
+      if(!wasDone&&allDone&&rule&&c.stage===rule.fromStage){
+        const toStageObj=STAGES_CAMP.find(s=>s.id===rule.toStage);
+        newStage=rule.toStage;
+        autoAdvancedTo=toStageObj;
+        newTl=[...newTl,{id:Date.now()+1,type:"stage",text:`Etapa avançada automaticamente: ${STAGES_CAMP.find(s=>s.id===rule.fromStage)?.label} → ${toStageObj?.label}`,user:"Sistema",avatar:"⚙",at:now(),color:toStageObj?.color||T.accent}];
+      }
+      updatedCamp={...c,tasks:newTasks,stage:newStage,timeline:newTl};
       return updatedCamp;
     }));
     if(updatedCamp)supabase.from("campanhas").upsert({id:updatedCamp.id,data:updatedCamp}).then(({error})=>{if(error)console.error("SUPABASE toggleTask:",error);});
     if(selCamp?.id===campId){
       setSelCamp(prev=>{
         const newTasks={...prev.tasks,[sec]:prev.tasks[sec].map(t=>t.id===taskId?{...t,done:!t.done,doneAt:!t.done?now():undefined,doneBy:!t.done?byUser?.name:undefined}:t)};
-        const newTl=[...prev.timeline,{id:Date.now(),type:"task",text:(newTasks[sec].find(t=>t.id===taskId)?.done?"Concluido":"Reaberto")+": "+taskLabel,user:byUser?.name||"Sistema",avatar:byUser?.avatar||"?",at:now(),color:SEC_COLOR[sec]||T.accent}];
-        return{...prev,tasks:newTasks,timeline:newTl};
+        const taskEntry={id:Date.now(),type:"task",text:(newTasks[sec].find(t=>t.id===taskId)?.done?"Concluido":"Reaberto")+": "+taskLabel,user:byUser?.name||"Sistema",avatar:byUser?.avatar||"?",at:now(),color:SEC_COLOR[sec]||T.accent};
+        let newTl=[...prev.timeline,taskEntry];
+        if(autoAdvancedTo)newTl=[...newTl,{id:Date.now()+1,type:"stage",text:`Etapa avançada automaticamente → ${autoAdvancedTo.label}`,user:"Sistema",avatar:"⚙",at:now(),color:autoAdvancedTo.color||T.accent}];
+        return{...prev,tasks:newTasks,stage:updatedCamp?.stage??prev.stage,timeline:newTl};
       });
     }
     if(!wasDone) addNotif("tarefa","Tarefa concluída",`${byUser?.name||user?.name} concluiu: ${taskLabel}`,camps.find(c=>c.id===campId)?.name,SEC_COLOR[sec]||T.accent,["sistema"],"campanhas");
     else pushNotif("Tarefa reaberta",taskLabel,T.muted);
+    if(autoAdvancedTo) pushNotif("Campanha avançou de etapa",`Todas as tarefas de ${sec} concluídas → ${autoAdvancedTo.label}`,autoAdvancedTo.color||T.accent);
   };
 
   const addComment=(campId,text,byUser)=>{
