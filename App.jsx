@@ -1348,7 +1348,7 @@ const FILE_COLOR={arte:T.pink,pi:T.info,contrato:T.purple,base:T.green,nf:T.warn
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 // CAMPAIGN MODAL - with Tarefas, Etapas, Histórico, Arquivos
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
-const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddFile,onUpdateSacolas,onUpdateImpactos,onOpenClientPanel,onEditCamp,onGerarCheckin,onGerarPosVenda,projects,suppliers,users:allUsers,clients=[],planejamentos=[]})=>{
+const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddFile,onUpdateSacolas,onUpdateImpactos,onOpenClientPanel,onEditCamp,onGerarCheckin,onGerarPosVenda,projects,suppliers,users:allUsers,clients=[],planejamentos=[],onDeleteCamp})=>{
   const[iTab,setITab]=useState("tarefas");
   const[comment,setComment]=useState("");
   const[uploading,setUploading]=useState(false);
@@ -1360,16 +1360,23 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
   const[parcBusca,setParcBusca]=useState("");
   const[editingParcId,setEditingParcId]=useState(null);
   const[editingParcEmb,setEditingParcEmb]=useState("");
+  const[trocandoParcId,setTrocandoParcId]=useState(null);
+  const[trocaBusca,setTrocaBusca]=useState("");
+  const[showDelConf,setShowDelConf]=useState(false);
+  const[delConfText,setDelConfText]=useState("");
+  const normP=p=>({...p,name:p.name||p.nome||"",city:p.city||(typeof p.endereco==="string"?p.endereco.split(",")[1]?.trim()||"":""),category:p.category||p.segmento||""});
   const vinculados=camp.parceirosVinculados||[];
   const linkedPlan=(planejamentos||[]).find(p=>camp.projectId&&p.projectId&&String(p.projectId)===String(camp.projectId));
   const planParceiros=linkedPlan?.parceiros||[];
   const totalVinEmb=vinculados.reduce((a,p)=>a+Number(p.embalagens||0),0);
   const addHistorico=(texto)=>{const entry={id:Date.now(),type:"parceiro",text:texto,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.purple};onEditCamp(camp.id,{timeline:[...camp.timeline,entry]});};
-  const confirmarSelecionados=()=>{const novos=planParceiros.filter(p=>parcAprovados.has(p.id));const existIds=new Set(vinculados.map(p=>p.id));const merged=[...vinculados,...novos.filter(p=>!existIds.has(p.id))];const entry={id:Date.now(),type:"parceiro",text:`${novos.length} parceiro(s) adicionado(s) do planejamento: ${novos.map(p=>p.name).join(", ")}`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.purple};onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(p=>p.id),timeline:[...camp.timeline,entry]});setParcAprovados(new Set());};
-  const adicionarDaBase=p=>{if(vinculados.find(v=>v.id===p.id))return;const merged=[...vinculados,p];const entry={id:Date.now(),type:"parceiro",text:`Parceiro '${p.name}' adicionado à campanha`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.purple};onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(x=>x.id),timeline:[...camp.timeline,entry]});};
+  const confirmarSelecionados=()=>{const novos=planParceiros.filter(p=>parcAprovados.has(p.id)).map(normP);const existIds=new Set(vinculados.map(p=>p.id));const merged=[...vinculados,...novos.filter(p=>!existIds.has(p.id))];const entry={id:Date.now(),type:"parceiro",text:`${novos.length} parceiro(s) adicionado(s) do planejamento: ${novos.map(p=>p.name).join(", ")}`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.purple};onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(p=>p.id),timeline:[...camp.timeline,entry]});setParcAprovados(new Set());};
+  const adicionarDaBase=p=>{const n=normP(p);if(vinculados.find(v=>v.id===n.id))return;const merged=[...vinculados,n];const entry={id:Date.now(),type:"parceiro",text:`Parceiro '${n.name}' adicionado à campanha`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.purple};onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(x=>x.id),timeline:[...camp.timeline,entry]});};
   const removerParceiro=(pid,nome)=>{if(!window.confirm(`Remover '${nome}' da campanha?`))return;const merged=vinculados.filter(p=>p.id!==pid);const entry={id:Date.now(),type:"parceiro",text:`Parceiro '${nome}' removido da campanha`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.danger};onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(p=>p.id),timeline:[...camp.timeline,entry]});};
   const salvarEmbParceiro=(pid,nome,novaEmb)=>{const anterior=vinculados.find(p=>p.id===pid)?.embalagens||0;const merged=vinculados.map(p=>p.id===pid?{...p,embalagens:Number(novaEmb)||0}:p);const entry={id:Date.now(),type:"parceiro",text:`Quantidade de '${nome}' alterada de ${anterior} para ${novaEmb} embalagens`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.purple};onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(p=>p.id),timeline:[...camp.timeline,entry]});setEditingParcId(null);};
+  const trocarParceiro=(pid,nomeAntigo,novoParceiro)=>{const n=normP(novoParceiro);const emb=vinculados.find(p=>p.id===pid)?.embalagens||0;const merged=vinculados.map(p=>p.id===pid?{...n,embalagens:emb}:p);const entry={id:Date.now(),type:"parceiro",text:`Parceiro '${nomeAntigo}' substituído por '${n.name}'`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.purple};onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(p=>p.id),timeline:[...camp.timeline,entry]});setTrocandoParcId(null);setTrocaBusca("");};
   const buscaResults=(allPartners||[]).filter(p=>{if(!parcBusca)return false;const q=parcBusca.toLowerCase();return p.name?.toLowerCase().includes(q)||p.city?.toLowerCase().includes(q);}).slice(0,8);
+  const trocaResults=(allPartners||[]).filter(p=>{if(!trocaBusca)return false;const q=trocaBusca.toLowerCase();return p.name?.toLowerCase().includes(q)||p.city?.toLowerCase().includes(q);}).slice(0,8);
 
   const handleComment=()=>{
     if(!comment.trim())return;
@@ -1635,14 +1642,15 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                     <Badge label={linkedPlan.clienteNome||"Plano vinculado"} color={T.purple}/>
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:10}}>
-                    {planParceiros.map(p=>{
+                    {planParceiros.map(rawP=>{
+                      const p=normP(rawP);
                       const isConf=!!vinculados.find(v=>v.id===p.id);
                       const isCheck=parcAprovados.has(p.id);
                       return(
                         <div key={p.id} style={{display:"flex",gap:10,alignItems:"center",padding:"10px 12px",background:T.surface,borderRadius:8,border:`1px solid ${isConf?T.accent+"44":isCheck?T.purple+"44":T.border}`}}>
                           <input type="checkbox" checked={isCheck||isConf} disabled={isConf} onChange={e=>{setParcAprovados(prev=>{const n=new Set(prev);e.target.checked?n.add(p.id):n.delete(p.id);return n;});}} style={{cursor:isConf?"default":"pointer",accentColor:T.purple}}/>
                           <div style={{flex:1}}>
-                            <div style={{fontSize:11,fontWeight:600,color:T.text}}>{p.name}</div>
+                            <div style={{fontSize:11,fontWeight:600,color:T.text}}>{p.name||"(sem nome)"}</div>
                             <div style={{fontSize:9,color:T.muted}}>{p.city}{p.category?` · ${p.category}`:""}</div>
                           </div>
                           {p.embalagens>0&&<span style={{fontSize:9,color:T.accent,fontWeight:700}}>{(p.embalagens||0).toLocaleString("pt-BR")} emb.</span>}
@@ -1677,14 +1685,17 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                   <div style={{padding:"24px",textAlign:"center",color:T.muted,fontSize:11}}>Nenhum parceiro confirmado ainda.</div>
                 ):(
                   <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                    {vinculados.map(p=>{
+                    {vinculados.map(rawP=>{
+                      const p=normP(rawP);
+                      const pName=p.name||"(sem nome)";
                       const isEditing=editingParcId===p.id;
+                      const isTrocando=trocandoParcId===p.id;
                       return(
-                        <div key={p.id} style={{padding:"10px 12px",background:T.surface,borderRadius:8,border:`1px solid ${isEditing?T.purple+"55":T.border}`}}>
+                        <div key={p.id} style={{padding:"10px 12px",background:T.surface,borderRadius:8,border:`1px solid ${isTrocando?T.warn+"55":isEditing?T.purple+"55":T.border}`}}>
                           <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
                             <div style={{flex:1}}>
-                              <div style={{fontSize:11,fontWeight:700,marginBottom:2,color:T.text}}>{p.name}</div>
-                              <div style={{fontSize:9,color:T.soft,marginBottom:2}}>{p.city}{p.state?` - ${p.state}`:""}</div>
+                              <div style={{fontSize:11,fontWeight:700,marginBottom:2,color:T.text}}>{pName}</div>
+                              <div style={{fontSize:9,color:T.soft,marginBottom:2}}>{p.city}{p.state?` - ${p.state}`:""}{p.category?` · ${p.category}`:""}</div>
                               {p.endereco?.rua&&<div style={{fontSize:9,color:T.muted,marginBottom:2}}>{p.endereco.rua}</div>}
                               <div style={{display:"flex",gap:12,flexWrap:"wrap",marginTop:2}}>
                                 {p.phone&&<span style={{fontSize:9,color:T.info}}>📞 {p.phone}</span>}
@@ -1692,22 +1703,47 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                               </div>
                             </div>
                             <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
-                              {!isEditing?(
+                              {!isEditing&&!isTrocando&&(
                                 <>
                                   <span style={{fontSize:9,color:T.accent,fontWeight:700,background:T.accent+"18",border:`1px solid ${T.accent}33`,borderRadius:5,padding:"2px 8px"}}>{(p.embalagens||0).toLocaleString("pt-BR")} emb.</span>
                                   <button onClick={()=>{setEditingParcId(p.id);setEditingParcEmb(String(p.embalagens||0));}} style={{fontSize:9,padding:"3px 9px",background:T.surface,border:`1px solid ${T.border}`,color:T.soft,borderRadius:6,cursor:"pointer"}}>✎ Editar</button>
-                                  <button onClick={()=>removerParceiro(p.id,p.name)} style={{fontSize:9,padding:"3px 9px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,cursor:"pointer"}}>✕</button>
+                                  <button onClick={()=>{setTrocandoParcId(p.id);setTrocaBusca("");}} style={{fontSize:9,padding:"3px 9px",background:T.warnDim,border:`1px solid ${T.warn}44`,color:T.warn,borderRadius:6,cursor:"pointer"}}>⇄ Trocar</button>
+                                  <button onClick={()=>removerParceiro(p.id,pName)} style={{fontSize:9,padding:"3px 9px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,cursor:"pointer"}}>✕</button>
                                 </>
-                              ):(
+                              )}
+                              {isEditing&&(
                                 <>
                                   <input type="number" value={editingParcEmb} onChange={e=>setEditingParcEmb(e.target.value)} autoFocus style={{width:80,background:T.bg,border:`1px solid ${T.purple}66`,borderRadius:6,padding:"4px 8px",fontSize:10,color:T.text,outline:"none",textAlign:"right"}}/>
                                   <span style={{fontSize:9,color:T.muted}}>emb.</span>
-                                  <button onClick={()=>salvarEmbParceiro(p.id,p.name,editingParcEmb)} style={{fontSize:9,padding:"3px 10px",background:T.accent,color:"#000",borderRadius:6,cursor:"pointer",fontWeight:700,border:"none"}}>✓</button>
+                                  <button onClick={()=>salvarEmbParceiro(p.id,pName,editingParcEmb)} style={{fontSize:9,padding:"3px 10px",background:T.accent,color:"#000",borderRadius:6,cursor:"pointer",fontWeight:700,border:"none"}}>✓</button>
                                   <button onClick={()=>setEditingParcId(null)} style={{fontSize:9,padding:"3px 8px",background:T.surface,border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,cursor:"pointer"}}>×</button>
                                 </>
                               )}
+                              {isTrocando&&(
+                                <button onClick={()=>{setTrocandoParcId(null);setTrocaBusca("");}} style={{fontSize:9,padding:"3px 9px",background:T.surface,border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,cursor:"pointer"}}>× Cancelar</button>
+                              )}
                             </div>
                           </div>
+                          {isTrocando&&(
+                            <div style={{marginTop:10,borderTop:`1px solid ${T.border}`,paddingTop:10}}>
+                              <div style={{fontSize:9,color:T.warn,marginBottom:6,fontWeight:700}}>Substituir por:</div>
+                              <input autoFocus value={trocaBusca} onChange={e=>setTrocaBusca(e.target.value)} placeholder="Buscar parceiro na base..." style={{width:"100%",background:T.bg,border:`1px solid ${T.warn}66`,borderRadius:7,padding:"7px 10px",fontSize:10,color:T.text,outline:"none",marginBottom:trocaResults.length>0?8:0}}/>
+                              {trocaResults.length>0&&(
+                                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                                  {trocaResults.filter(r=>r.id!==p.id).map(r=>(
+                                    <div key={r.id} style={{display:"flex",gap:8,alignItems:"center",padding:"6px 8px",background:T.card,borderRadius:6,border:`1px solid ${T.border}`}}>
+                                      <div style={{flex:1}}>
+                                        <div style={{fontSize:10,fontWeight:600,color:T.text}}>{r.name}</div>
+                                        <div style={{fontSize:8,color:T.muted}}>{r.city}{r.category?` · ${r.category}`:""}</div>
+                                      </div>
+                                      <button onClick={()=>trocarParceiro(p.id,pName,r)} style={{fontSize:9,padding:"3px 10px",background:T.warn,color:"#000",borderRadius:5,cursor:"pointer",fontWeight:700,border:"none"}}>Trocar</button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {trocaBusca&&trocaResults.length===0&&<div style={{fontSize:9,color:T.muted}}>Nenhum parceiro encontrado.</div>}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -1827,9 +1863,35 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                 <div style={{fontSize:9,color:T.muted,marginBottom:6,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Briefing</div>
                 <textarea value={editData.briefing||""} onChange={e=>setEditData(p=>({...p,briefing:e.target.value}))} rows={4} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none",resize:"vertical",lineHeight:1.6,fontFamily:"Arial,sans-serif"}}/>
               </div>
-              <button onClick={()=>{onEditCamp(camp.id,editData);setITab("tarefas");}} style={{padding:"10px 20px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,alignSelf:"flex-start"}}>
-                Salvar alterações ✓
-              </button>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+                <button onClick={()=>{onEditCamp(camp.id,editData);setITab("tarefas");}} style={{padding:"10px 20px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12}}>
+                  Salvar alterações ✓
+                </button>
+                {["admin","gerente_base"].includes(user?.role)&&(
+                  <button onClick={()=>setShowDelConf(true)} style={{padding:"9px 18px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:8,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>
+                    🗑 Excluir campanha
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* -- MODAL CONFIRMAÇÃO DE EXCLUSÃO -- */}
+          {showDelConf&&(
+            <div style={{position:"fixed",inset:0,background:"#000000E0",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>{setShowDelConf(false);setDelConfText("");}}>
+              <div style={{background:T.surface,border:`2px solid ${T.danger}66`,borderRadius:14,width:"100%",maxWidth:440,padding:24}} onClick={e=>e.stopPropagation()}>
+                <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:T.danger,marginBottom:8}}>Excluir campanha</div>
+                <div style={{fontSize:11,color:T.soft,marginBottom:4,lineHeight:1.6}}>Esta ação <strong>não pode ser desfeita</strong>. A campanha e todas as suas informações serão removidas permanentemente.</div>
+                <div style={{fontSize:11,color:T.muted,marginBottom:12}}>Digite o nome da campanha para confirmar:</div>
+                <div style={{background:T.bg,borderRadius:7,padding:"6px 10px",fontSize:10,color:T.muted,fontFamily:"monospace",marginBottom:10}}>{camp.name}</div>
+                <input autoFocus value={delConfText} onChange={e=>setDelConfText(e.target.value)} placeholder="Digite o nome exato..." style={{width:"100%",background:T.bg,border:`1px solid ${delConfText===camp.name?T.danger:T.border}`,borderRadius:7,padding:"9px 12px",fontSize:11,color:T.text,outline:"none",marginBottom:14}}/>
+                <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+                  <button onClick={()=>{setShowDelConf(false);setDelConfText("");}} style={{padding:"8px 16px",background:T.card,border:`1px solid ${T.border}`,color:T.muted,borderRadius:8,cursor:"pointer",fontSize:11}}>Cancelar</button>
+                  <button disabled={delConfText!==camp.name} onClick={()=>{if(delConfText!==camp.name)return;onDeleteCamp&&onDeleteCamp(camp.id);setShowDelConf(false);}} style={{padding:"8px 18px",background:delConfText===camp.name?T.danger:T.border,color:delConfText===camp.name?"#fff":T.muted,borderRadius:8,cursor:delConfText===camp.name?"pointer":"not-allowed",fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,border:"none",transition:"all 0.2s"}}>
+                    Excluir definitivamente
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -5152,7 +5214,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
   };
 
   const createCampFromPlan=async()=>{
-    const inclParc=convCampEdit.parceirosConv.filter(p=>p.incluir);
+    const normPC=p=>({...p,name:p.name||p.nome||"",city:p.city||(typeof p.endereco==="string"?p.endereco.split(",")[1]?.trim()||"":""),category:p.category||p.segmento||""});
+    const inclParc=convCampEdit.parceirosConv.filter(p=>p.incluir).map(normPC);
     const totalEmb=inclParc.reduce((a,p)=>a+Number(p.embalagens||0),0);
     const nome=convCampEdit.name||(convPlanDados?.clienteNome||"Campanha");
     const id=Date.now();
@@ -5299,7 +5362,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
       )}
 
       {/* MODAL */}
-      {selCamp&&<CampModal camp={selCamp} user={user} allPartners={basePartners} onClose={()=>setSelCamp(null)} onToggleTask={toggleTask} onAddComment={addComment} onAddFile={addFile} onUpdateSacolas={updateSacolas} onUpdateImpactos={updateImpactos} onOpenClientPanel={(c)=>{setClientPanelCamp(c);setSelCamp(null);}} onGerarCheckin={(c)=>gerarCheckinPDF(c,basePartners)} onGerarPosVenda={(c)=>gerarPosVendaPDF(c,basePartners)} onEditCamp={async(id,fields)=>{let upd=null;setCamps(p=>p.map(c=>{if(c.id!==id)return c;upd={...c,...fields};return upd;}));setSelCamp(p=>({...p,...fields}));if(upd)await supabase.from("campanhas").upsert({id:upd.id,data:upd});}} projects={projects} suppliers={suppliers} users={users} clients={clientesDB} planejamentos={planejamentos}/>}
+      {selCamp&&<CampModal camp={selCamp} user={user} allPartners={basePartners} onClose={()=>setSelCamp(null)} onToggleTask={toggleTask} onAddComment={addComment} onAddFile={addFile} onUpdateSacolas={updateSacolas} onUpdateImpactos={updateImpactos} onOpenClientPanel={(c)=>{setClientPanelCamp(c);setSelCamp(null);}} onGerarCheckin={(c)=>gerarCheckinPDF(c,basePartners)} onGerarPosVenda={(c)=>gerarPosVendaPDF(c,basePartners)} onEditCamp={async(id,fields)=>{let upd=null;setCamps(p=>p.map(c=>{if(c.id!==id)return c;upd={...c,...fields};return upd;}));setSelCamp(p=>({...p,...fields}));if(upd)await supabase.from("campanhas").upsert({id:upd.id,data:upd});}} onDeleteCamp={async(id)=>{await supabase.from("campanhas").delete().eq("id",id);setCamps(p=>p.filter(c=>c.id!==id));setSelCamp(null);pushNotif("Campanha excluída","A campanha foi removida permanentemente.",T.danger);}} projects={projects} suppliers={suppliers} users={users} clients={clientesDB} planejamentos={planejamentos}/>}
 
       {/* CLIENT PANEL */}
       {clientPanelCamp&&<ClientPanel camp={clientPanelCamp} allPartners={basePartners} onClose={()=>setClientPanelCamp(null)} onPDF={()=>setPdfCamp(clientPanelCamp)} clients={clientesDB}/>}
@@ -8967,8 +9030,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           <div key={p.id||idx} style={{display:"flex",gap:10,alignItems:"center",padding:"9px 12px",background:T.surface,borderRadius:8,border:`1px solid ${p.incluir?T.purple+"44":T.border}`,opacity:p.incluir?1:0.5}}>
                             <input type="checkbox" checked={!!p.incluir} onChange={e=>setConvCampEdit(prev=>({...prev,parceirosConv:prev.parceirosConv.map((x,i)=>i===idx?{...x,incluir:e.target.checked}:x)}))} style={{cursor:"pointer",accentColor:T.purple}}/>
                             <div style={{flex:1}}>
-                              <div style={{fontSize:11,fontWeight:600,color:T.text}}>{p.name}</div>
-                              <div style={{fontSize:9,color:T.muted}}>{p.city}{p.category?` · ${p.category}`:""}</div>
+                              <div style={{fontSize:11,fontWeight:600,color:T.text}}>{p.name||p.nome||"(sem nome)"}</div>
+                              <div style={{fontSize:9,color:T.muted}}>{p.city}{(p.category||p.segmento)?` · ${p.category||p.segmento}`:""}</div>
                             </div>
                             <div style={{display:"flex",gap:6,alignItems:"center"}}>
                               <input type="number" value={p.embalagens||""} onChange={e=>setConvCampEdit(prev=>({...prev,parceirosConv:prev.parceirosConv.map((x,i)=>i===idx?{...x,embalagens:Number(e.target.value)||0}:x)}))} style={{width:80,background:T.bg,border:`1px solid ${T.border}`,borderRadius:6,padding:"4px 8px",fontSize:10,color:T.text,outline:"none",textAlign:"right"}} placeholder="Emb."/>
