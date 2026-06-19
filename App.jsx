@@ -2021,6 +2021,98 @@ const CoverageMap=({partners,height=300})=>{
   return <div id={mapId} style={{height,width:'100%',borderRadius:10,overflow:'hidden',zIndex:1}}/>;
 };
 
+const BR_STATES=["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
+
+const scoreGrafica=(forn,camps)=>{
+  const cs=(camps||[]).filter(c=>c.graficaFornecedor===forn.name);
+  const delivered=cs.filter(c=>c.tasks?.logistica?.find(t=>t.id==="l3")?.done);
+  if(!delivered.length)return null;
+  const onTime=delivered.filter(c=>{if(!c.logisticaPrazo)return true;const[y,m,d]=c.logisticaPrazo.split("-").map(Number);return new Date(y,m-1,d)>=new Date(new Date().toDateString());});
+  return Math.round((onTime.length/delivered.length)*100);
+};
+
+const geocodeFornEndereco=async(data)=>{
+  if(!data.endCidade||!import.meta.env.VITE_GOOGLE_MAPS_KEY)return data;
+  const addr=`${data.endRua||""} ${data.endNum||""}, ${data.endCidade}, ${data.endEstado||""}, Brasil`.trim();
+  try{const res=await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(addr)}&key=${import.meta.env.VITE_GOOGLE_MAPS_KEY}`);const j=await res.json();if(j.results?.[0]?.geometry?.location){const{lat,lng}=j.results[0].geometry.location;return{...data,lat,lng};}}catch(e){}
+  return data;
+};
+
+const _lf_init=()=>{if(!document.getElementById("lf-css")){const l=document.createElement("link");l.id="lf-css";l.rel="stylesheet";l.href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";document.head.appendChild(l);}};
+const _lf_load=(cb)=>{_lf_init();if(window.L)cb();else{const s=document.createElement("script");s.src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";s.onload=cb;document.head.appendChild(s);}};
+
+const MapaGraficas=({graficas=[],camps=[]})=>{
+  const mapRef=useRef(null);
+  const instRef=useRef(null);
+  const key=graficas.map(g=>String(g.id)+String(g.lat||"")+String(g.lng||"")).join("|");
+  useEffect(()=>{
+    const init=()=>{
+      if(!mapRef.current)return;
+      if(instRef.current){try{instRef.current.remove();}catch(e){}instRef.current=null;}
+      if(mapRef.current._leaflet_id)delete mapRef.current._leaflet_id;
+      const L=window.L;
+      const map=L.map(mapRef.current,{zoomControl:true}).setView([-15.78,-47.93],4);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(map);
+      instRef.current=map;
+      graficas.forEach(g=>{
+        if(!g.lat||!g.lng)return;
+        const sc=scoreGrafica(g,camps);
+        const cor=g.principal?"#00E5A0":"#9B7FFF";
+        const icon=L.divIcon({html:`<div style="width:26px;height:26px;border-radius:50%;background:${cor};border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:13px">🏭</div>`,className:"",iconSize:[26,26],iconAnchor:[13,13]});
+        const cuEco=g.custos?.ecoboxTradicional?`R$ ${Number(g.custos.ecoboxTradicional).toLocaleString("pt-BR",{minimumFractionDigits:2})}/un`:"—";
+        const cuMega=g.custos?.megaBox?`R$ ${Number(g.custos.megaBox).toLocaleString("pt-BR",{minimumFractionDigits:2})}/un`:"—";
+        const scStr=sc!==null?`<br/><b style="color:${sc>=80?"#00C48C":sc>=50?"#F5A623":"#FF4D6A"}">Score: ${sc}%</b>`:"";
+        const popup=`<div style="font-family:Arial,sans-serif;min-width:200px;font-size:12px"><b>🏭 ${g.name}</b><br/><span style="color:#888;font-size:11px">${g.contact||"—"} · ${g.phone||"—"}</span><hr style="border:none;border-top:1px solid #eee;margin:4px 0"/><b>Estados:</b> ${(g.estadosAtende||[]).join(", ")||"Não informado"}<br/><b>Lead time:</b> ${g.leadTime||"—"} d.u.<br/><b>Ecobox:</b> ${cuEco}<br/><b>Mega Box:</b> ${cuMega}${scStr}</div>`;
+        L.marker([g.lat,g.lng],{icon}).addTo(map).bindPopup(popup);
+      });
+    };
+    _lf_load(init);
+    return()=>{if(instRef.current){try{instRef.current.remove();}catch(e){}instRef.current=null;}};
+  },[key]);
+  return <div ref={mapRef} style={{height:400,width:"100%",borderRadius:12,border:"1px solid #1A1E30",zIndex:1}}/>;
+};
+
+const MapaLogistico=({graficas=[],logCamps=[],selCampId=null})=>{
+  const mapRef=useRef(null);
+  const instRef=useRef(null);
+  const key=logCamps.map(c=>c.id).join("|")+"|"+String(selCampId);
+  useEffect(()=>{
+    const init=()=>{
+      if(!mapRef.current)return;
+      if(instRef.current){try{instRef.current.remove();}catch(e){}instRef.current=null;}
+      if(mapRef.current._leaflet_id)delete mapRef.current._leaflet_id;
+      const L=window.L;
+      const map=L.map(mapRef.current,{zoomControl:true}).setView([-15.78,-47.93],4);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(map);
+      instRef.current=map;
+      graficas.forEach(g=>{
+        if(!g.lat||!g.lng)return;
+        const icon=L.divIcon({html:`<div style="width:26px;height:26px;border-radius:6px;background:#9B7FFF;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:13px">🏭</div>`,className:"",iconSize:[26,26],iconAnchor:[13,13]});
+        L.marker([g.lat,g.lng],{icon}).addTo(map).bindPopup(`<div style="font-family:Arial,sans-serif"><b>🏭 ${g.name}</b><br/><span style="font-size:11px;color:#888">Gráfica</span></div>`);
+      });
+      const toShow=selCampId?logCamps.filter(c=>c.id===selCampId):logCamps;
+      toShow.forEach(c=>{
+        const gForn=graficas.find(g=>g.name===c.graficaFornecedor);
+        const lTasks=c.tasks?.logistica||[];
+        const l3done=lTasks.find(t=>t.id==="l3")?.done;
+        const dias=c.logisticaPrazo?(()=>{const[y,m,d]=c.logisticaPrazo.split("-").map(Number);return Math.ceil((new Date(y,m-1,d)-new Date())/86400000);})():null;
+        const atrasado=dias!==null&&dias<0&&!l3done;
+        const lineColor=l3done?"#00E5A0":atrasado?"#FF4D6A":"#F5A623";
+        (c.parceirosVinculados||[]).forEach(p=>{
+          const plat=p.endereco?.lat||p.lat;const plng=p.endereco?.lng||p.lng;
+          if(!plat||!plng)return;
+          const icon=L.divIcon({html:`<div style="width:18px;height:18px;border-radius:50%;background:${lineColor};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:9px">🏪</div>`,className:"",iconSize:[18,18],iconAnchor:[9,9]});
+          L.marker([plat,plng],{icon}).addTo(map).bindPopup(`<div style="font-family:Arial,sans-serif"><b>🏪 ${p.name||p.nome||""}</b><br/><span style="font-size:11px;color:#888">${c.name}</span></div>`);
+          if(gForn?.lat&&gForn?.lng){L.polyline([[gForn.lat,gForn.lng],[plat,plng]],{color:lineColor,weight:2,opacity:0.7}).addTo(map);}
+        });
+      });
+    };
+    _lf_load(init);
+    return()=>{if(instRef.current){try{instRef.current.remove();}catch(e){}instRef.current=null;}};
+  },[key]);
+  return <div ref={mapRef} style={{height:400,width:"100%",borderRadius:12,border:"1px solid #1A1E30",zIndex:1}}/>;
+};
+
 // IMPACTOS TAB
 const ImpactosTab=({camp,allPartners,onUpdate})=>{
   const[uploadingKey,setUploadingKey]=useState(null);
@@ -3708,6 +3800,7 @@ export default function App(){
   const[opLogStatus,setOpLogStatus]=useState("todos");
   const[opLogTransp,setOpLogTransp]=useState("todos");
   const[opLogTrack,setOpLogTrack]=useState({});
+  const[opLogSelCamp,setOpLogSelCamp]=useState(null);
   const[finTab,setFinTab]=useState(()=>localStorage.getItem("ecodely_finTab")||"visao");
   useEffect(()=>{localStorage.setItem("ecodely_finTab",finTab);},[finTab]);
   const[tema,setTema]=useState(()=>localStorage.getItem("ecodely_tema")||"escuro");
@@ -3891,7 +3984,7 @@ export default function App(){
   const[cadTab,setCadTab]=useState("clientes");
   const[filterSeg,setFilterSeg]=useState("todos");
   const[filterFrom,setFilterFrom]=useState("2024-11");
-  const NF_EMPTY={name:"",type:"grafica",contact:"",phone:"",email:"",cnpj:"",razaoSocial:"",site:"",endRua:"",endNum:"",endCidade:"",endEstado:"",leadTime:"7",prazoEntrega:"3",formaPagamento:"boleto",condicaoPagamento:"30dd",obs:"",custos:{ecoboxTradicional:"",megaBox:"",chapaParcerios:""},outrosProdutos:[],principal:false,rating:4};
+  const NF_EMPTY={name:"",type:"grafica",contact:"",phone:"",email:"",cnpj:"",razaoSocial:"",site:"",endRua:"",endNum:"",endCidade:"",endEstado:"",leadTime:"7",prazoEntrega:"3",formaPagamento:"boleto",condicaoPagamento:"30dd",obs:"",custos:{ecoboxTradicional:"",megaBox:"",chapaParcerios:""},outrosProdutos:[],principal:false,rating:4,estadosAtende:[],lat:null,lng:null};
   const[nf,setNf]=useState(NF_EMPTY);
   const[selForn,setSelForn]=useState(null);
   const[showNewForn,setShowNewForn]=useState(false);
@@ -4330,7 +4423,8 @@ export default function App(){
     if(!nf.name)return;
     if(nf.cnpj&&!validCNPJ(nf.cnpj)){pushNotif("CNPJ inválido","Verifique o número digitado",T.danger);return;}
     if(nf.principal){setSuppliers(prev=>prev.map(s=>s.type===nf.type?{...s,principal:false}:s));await supabase.from("fornecedores").update({data:null}).match({});}
-    const rec={...nf,id:Date.now()};
+    const nfGeo=nf.type==="grafica"&&!nf.lat?await geocodeFornEndereco(nf):nf;
+    const rec={...nfGeo,id:Date.now()};
     setSuppliers(p=>[...p,rec]);
     setNf(NF_EMPTY);setShowNewForn(false);
     await supabase.from("fornecedores").insert({id:rec.id,name:rec.name,type:rec.type,data:rec});
@@ -4339,10 +4433,11 @@ export default function App(){
   const updateFornecedor=async(s)=>{
     if(s.cnpj&&!validCNPJ(s.cnpj)){pushNotif("CNPJ inválido","Verifique o número digitado",T.danger);return;}
     if(s.principal){setSuppliers(prev=>prev.map(x=>x.id!==s.id&&x.type===s.type?{...x,principal:false}:x));await supabase.from("fornecedores").update({data:null}).neq("id",s.id);}
-    setSuppliers(prev=>prev.map(x=>x.id===s.id?s:x));
-    setSelForn(s);
-    await supabase.from("fornecedores").update({name:s.name,type:s.type,data:s}).eq("id",s.id);
-    pushNotif("Fornecedor atualizado",s.name,T.accent);
+    const sGeo=s.type==="grafica"&&!s.lat?await geocodeFornEndereco(s):s;
+    setSuppliers(prev=>prev.map(x=>x.id===sGeo.id?sGeo:x));
+    setSelForn(sGeo);
+    await supabase.from("fornecedores").update({name:sGeo.name,type:sGeo.type,data:sGeo}).eq("id",sGeo.id);
+    pushNotif("Fornecedor atualizado",sGeo.name,T.accent);
   };
 
   const submitClosing=async()=>{
@@ -10894,6 +10989,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       <div>{lbl("Cidade")}<input value={data.endCidade||""} onChange={e=>setData(p=>({...p,endCidade:e.target.value}))} placeholder="São Paulo" style={fi}/></div>
                       <div>{lbl("UF")}<input value={data.endEstado||""} onChange={e=>setData(p=>({...p,endEstado:e.target.value.toUpperCase().slice(0,2)}))} placeholder="SP" maxLength={2} style={fi}/></div>
                     </div>
+                    {data.type==="grafica"&&(
+                      <div style={{marginBottom:12}}>
+                        {lbl("Estados que atende")}
+                        <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:6}}>
+                          {BR_STATES.map(st=>{const sel=(data.estadosAtende||[]).includes(st);return(<div key={st} onClick={()=>setData(p=>({...p,estadosAtende:sel?(p.estadosAtende||[]).filter(x=>x!==st):[...(p.estadosAtende||[]),st]}))} style={{padding:"3px 8px",fontSize:10,borderRadius:5,cursor:"pointer",background:sel?T.purple+"33":T.surface,border:`1px solid ${sel?T.purple+"66":T.border}`,color:sel?T.purple:T.muted,fontWeight:sel?700:400,transition:"all 0.15s"}}>{st}</div>);})}
+                        </div>
+                        {data.lat&&data.lng&&<div style={{fontSize:9,color:T.accent,marginTop:4}}>📍 Geocodificado: {Number(data.lat).toFixed(4)}, {Number(data.lng).toFixed(4)}</div>}
+                        {data.endCidade&&!data.lat&&<div style={{fontSize:9,color:T.muted,marginTop:4}}>Lat/lng será obtido automaticamente ao salvar</div>}
+                      </div>
+                    )}
                     {secH("Dados Comerciais",T.warn)}
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:8}}>
                       <div>{lbl("Prazo produção (d.u.)")}<input type="number" value={data.leadTime||""} onChange={e=>setData(p=>({...p,leadTime:e.target.value}))} placeholder="7" style={fi}/></div>
@@ -11112,7 +11217,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   </div>
                 )}
                 <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid ${T.border}`}}>
-                  {[["grafica","Painel Gráfica"],["logistica","Painel Logística"],["timeline","Linha do Tempo"]].map(([id,l])=>(
+                  {[["grafica","Painel Gráfica"],["logistica","Painel Logística"],["timeline","Linha do Tempo"],["graficas-mapa","Gráficas"],["mapa-logistico","Mapa Logístico"]].map(([id,l])=>(
                     <div key={id} onClick={()=>setOpTab(id)} style={{padding:"9px 18px",fontSize:11,cursor:"pointer",color:opTab===id?T.accent:T.muted,borderBottom:`2px solid ${opTab===id?T.accent:"transparent"}`,transition:"all 0.15s"}}>{l}</div>
                   ))}
                 </div>
@@ -11316,6 +11421,110 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     })}
                   </div>
                 )}
+
+                {opTab==="graficas-mapa"&&(()=>{
+                  const graficas=(suppliers||[]).filter(s=>s.type==="grafica");
+                  const coveredStates=new Set(graficas.flatMap(g=>g.estadosAtende||[]));
+                  const scores=graficas.map(g=>scoreGrafica(g,camps)).filter(s=>s!==null);
+                  const avgScore=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
+                  const semMapa=graficas.filter(g=>!g.lat||!g.lng);
+                  return(
+                    <div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:16}}>
+                        {[["Total de Gráficas",graficas.length,T.purple],["Estados com cobertura",coveredStates.size,T.accent],["Estados sem cobertura",27-coveredStates.size,T.danger],["Score médio",avgScore!==null?avgScore+"%":"—",avgScore>=80?T.accent:avgScore>=50?T.warn:T.danger]].map(([l,v,c])=>(
+                          <div key={l} style={{background:T.card,border:`1px solid ${c}33`,borderRadius:10,padding:"14px 16px"}}>
+                            <div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif",fontWeight:700,textTransform:"uppercase",letterSpacing:0.8,marginBottom:6}}>{l}</div>
+                            <div style={{fontSize:22,fontWeight:800,color:c,fontFamily:"Arial,sans-serif"}}>{v}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {semMapa.length>0&&<div style={{background:T.warnDim,border:`1px solid ${T.warn}44`,borderRadius:8,padding:"8px 14px",fontSize:10,color:T.warn,marginBottom:12}}>⚠ {semMapa.map(g=>g.name).join(", ")} sem endereço geocodificado — edite o fornecedor e salve para obter lat/lng.</div>}
+                      <div style={{display:"flex",gap:14}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <MapaGraficas graficas={graficas} camps={camps}/>
+                        </div>
+                        <div style={{width:200,background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 10px",overflowY:"auto",maxHeight:420}}>
+                          <div style={{fontSize:10,fontWeight:700,color:T.text,fontFamily:"Arial,sans-serif",marginBottom:10}}>Cobertura por Estado</div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+                            {BR_STATES.map(s=>{
+                              const tem=coveredStates.has(s);
+                              const gCobrindo=graficas.filter(g=>(g.estadosAtende||[]).includes(s)).map(g=>g.name).join(", ");
+                              return(
+                                <div key={s} title={tem?`Coberto por: ${gCobrindo}`:"Sem cobertura"} style={{padding:"3px 6px",borderRadius:5,background:tem?T.accent+"22":T.dangerDim,border:`1px solid ${tem?T.accent+"55":T.danger+"44"}`,fontSize:9,fontWeight:700,color:tem?T.accent:T.danger,display:"flex",gap:4,alignItems:"center"}}>
+                                  <span>{tem?"✓":"✗"}</span><span>{s}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {graficas.length>0&&(
+                            <div style={{marginTop:14,borderTop:`1px solid ${T.border}`,paddingTop:10}}>
+                              <div style={{fontSize:9,color:T.muted,fontWeight:700,marginBottom:6}}>Score por Gráfica</div>
+                              {graficas.map(g=>{const sc=scoreGrafica(g,camps);return(
+                                <div key={g.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5,fontSize:10}}>
+                                  <span style={{color:T.text,fontSize:9}}>{g.name}</span>
+                                  <span style={{color:sc===null?T.muted:sc>=80?T.accent:sc>=50?T.warn:T.danger,fontWeight:700,fontSize:9}}>{sc!==null?sc+"%":"s/d"}</span>
+                                </div>
+                              );})}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {opTab==="mapa-logistico"&&(()=>{
+                  const graficas=(suppliers||[]).filter(s=>s.type==="grafica");
+                  const logCamps=camps.filter(c=>c.stage===3);
+                  const getLogStatusFull2=c=>{const l=c.tasks?.logistica||[];const l3=l.find(t=>t.id==="l3")?.done;const l1=l.find(t=>t.id==="l1")?.done;const dias=c.logisticaPrazo?(()=>{const[y,m,d]=c.logisticaPrazo.split("-").map(Number);return Math.ceil((new Date(y,m-1,d)-new Date())/86400000);})():null;if(l3)return"Entregue";if(dias!==null&&dias<0)return"Atrasado";if(l1)return"Em trânsito";return"Aguardando";};
+                  const statusColor2={"Entregue":T.accent,"Em trânsito":T.warn,"Atrasado":T.danger,"Aguardando":T.muted};
+                  const emLogistica=logCamps.length;
+                  const noPrazo=logCamps.filter(c=>getLogStatusFull2(c)==="Entregue").length;
+                  const atrasadas=logCamps.filter(c=>getLogStatusFull2(c)==="Atrasado").length;
+                  return(
+                    <div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
+                        {[["Em Logística",emLogistica,T.warn],["Entregues",noPrazo,T.accent],["Atrasadas",atrasadas,T.danger]].map(([l,v,c])=>(
+                          <div key={l} style={{background:T.card,border:`1px solid ${c}33`,borderRadius:10,padding:"14px 16px"}}>
+                            <div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif",fontWeight:700,textTransform:"uppercase",letterSpacing:0.8,marginBottom:6}}>{l}</div>
+                            <div style={{fontSize:22,fontWeight:800,color:c,fontFamily:"Arial,sans-serif"}}>{v}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{display:"flex",gap:14}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <MapaLogistico graficas={graficas} logCamps={logCamps} selCampId={opLogSelCamp}/>
+                        </div>
+                        <div style={{width:240,background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px",overflowY:"auto",maxHeight:420}}>
+                          <div style={{fontSize:10,fontWeight:700,color:T.text,fontFamily:"Arial,sans-serif",marginBottom:10}}>Campanhas em Logística</div>
+                          {logCamps.length===0&&<div style={{fontSize:10,color:T.muted,padding:"20px 0",textAlign:"center"}}>Nenhuma campanha em logística</div>}
+                          {logCamps.map(c=>{const st=getLogStatusFull2(c);const cor=statusColor2[st];const isSel=opLogSelCamp===c.id;return(
+                            <div key={c.id} onClick={()=>setOpLogSelCamp(isSel?null:c.id)} style={{padding:"9px 11px",background:isSel?T.accent+"22":T.surface,border:`1px solid ${isSel?T.accent+"66":T.border}`,borderRadius:8,marginBottom:6,cursor:"pointer",transition:"all 0.15s"}}>
+                              <div style={{fontSize:10,fontWeight:700,color:T.text,marginBottom:2}}>{c.name}</div>
+                              <div style={{fontSize:9,color:T.muted,marginBottom:4}}>{c.client}{c.graficaFornecedor?` · ${c.graficaFornecedor}`:""}</div>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                                <span style={{fontSize:9,fontWeight:700,color:cor,background:cor+"22",border:`1px solid ${cor}44`,borderRadius:4,padding:"1px 6px"}}>{st}</span>
+                                {c.logisticaPrazo&&<span style={{fontSize:9,color:T.muted}}>Prazo: {c.logisticaPrazo}</span>}
+                              </div>
+                              {(c.parceirosVinculados||[]).length>0&&<div style={{fontSize:8,color:T.muted,marginTop:3}}>{(c.parceirosVinculados||[]).length} parceiro(s)</div>}
+                            </div>
+                          );})}
+                          <div style={{marginTop:10,padding:"8px",background:T.surface,borderRadius:6,fontSize:9,color:T.muted}}>
+                            <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                              {[["—","Linha verde","Entregue"],["—","Linha amarela","Em trânsito"],["—","Linha vermelha","Atrasado"]].map(([ic,cor,l])=>(
+                                <div key={l} style={{display:"flex",gap:4,alignItems:"center"}}>
+                                  <div style={{width:16,height:2,background:l==="Entregue"?"#00E5A0":l==="Em trânsito"?"#F5A623":"#FF4D6A",borderRadius:1}}/>
+                                  <span>{l}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
               </div>
             );
           })()}
