@@ -130,6 +130,7 @@ const getNav=(role,queueCount,notifCount,extraRoles=[])=>[
   {id:"minha-fila",label:"Minha Fila",icon:"-",roles:["comercial","operacional","marketing","financeiro","base","admin","gerente_base"],badge:queueCount||null},
   {id:"campanhas",label:"Campanhas",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","representante","gerente_base"]},
   {id:"calendario",label:"Calendário",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","gerente_base"]},
+  {id:"operacoes",label:"Operações",icon:"-",roles:["admin","gerente_base","base","operacional"]},
   {id:"financeiro-modulo",label:"Financeiro",icon:"-",roles:["admin","financeiro"]},
   {id:"comercial",label:"Comercial",icon:"-",roles:["admin","comercial","financeiro","representante"]},
   {id:"comissoes",label:"Comissões",icon:"-",roles:["admin","base","representante","gerente_base"]},
@@ -3504,6 +3505,7 @@ export default function App(){
   const[dashTab,setDashTab]=useState("geral");
   const[dashPeriod,setDashPeriod]=useState("mes");
   // Financial module state
+  const[opTab,setOpTab]=useState("grafica");
   const[finTab,setFinTab]=useState(()=>localStorage.getItem("ecodely_finTab")||"visao");
   useEffect(()=>{localStorage.setItem("ecodely_finTab",finTab);},[finTab]);
   const[tema,setTema]=useState(()=>localStorage.getItem("ecodely_tema")||"escuro");
@@ -9692,7 +9694,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               // BASE — NOVOS BLOCOS
               // ═══════════════════════════════════════════════
 
-              {id:"parceiros_cidade",cat:"Base",label:"Parceiros por Cidade",icon:"-",color:"#10B981",roles:["admin","base","operacional"],
+              {id:"parceiros_cidade",cat:"Base",label:"Parceiros por Cidade",icon:"-",color:"#10B981",roles:["admin","base","operacional","gerente_base"],
                render:()=>{
                  const por=Object.entries(basePartners.reduce((acc,p)=>{const c=(p.city||"Sem cidade").trim();acc[c]=(acc[c]||0)+1;return acc;},{})).sort((a,b)=>b[1]-a[1]).slice(0,12);
                  const max=por[0]?.[1]||1;
@@ -9714,7 +9716,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                  </div>);
                }},
 
-              {id:"base_ociosa",cat:"Base",label:"Base Ociosa (sem campanha)",icon:"-",color:T.muted,roles:["admin","base"],
+              {id:"base_ociosa",cat:"Base",label:"Base Ociosa (sem campanha)",icon:"-",color:T.muted,roles:["admin","base","gerente_base"],
                render:()=>{
                  const ociosos=basePartners.filter(p=>(p.campanhas||0)===0);
                  const baixo=basePartners.filter(p=>(p.campanhas||0)===1||(p.campanhas||0)===2);
@@ -9756,7 +9758,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                  </div>);
                }},
 
-              {id:"parceiros_risco",cat:"Base",label:"Parceiros em Risco de Contrato",icon:"-",color:T.warn,roles:["admin","base"],
+              {id:"parceiros_risco",cat:"Base",label:"Parceiros em Risco de Contrato",icon:"-",color:T.warn,roles:["admin","base","gerente_base"],
                render:()=>{
                  const hoje=new Date();
                  const parseVal=v=>{if(!v)return null;try{return new Date(v.includes("/")?v.split("/").reverse().join("-"):v);}catch(e){return null;}};
@@ -9806,7 +9808,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                  </div>);
                }},
 
-              {id:"perf_segmento",cat:"Campanhas",label:"Performance por Segmento",icon:"-",color:T.purple,roles:["admin","marketing","comercial"],
+              {id:"perf_segmento",cat:"Campanhas",label:"Performance por Segmento",icon:"-",color:T.purple,roles:["admin","marketing","comercial","gerente_base"],
                render:()=>{
                  const CORES=[T.purple,T.info,T.accent,T.warn,T.pink,T.danger];
                  const porSeg=Object.entries(camps.reduce((acc,c)=>{const t=c.type||c.segmento||"Campanha";if(!acc[t])acc[t]={camps:0,impactos:0};const imp=c.impactos||{};acc[t].camps++;acc[t].impactos+=Math.round((c.sacolasDistribuidas||c.sacolas||0)*3.3)+(imp.stories||[]).reduce((a,s)=>a+Number(s.impressoes||0),0)+(imp.influencer||[]).reduce((a,s)=>a+Number(s.alcance||0),0);return acc;},{})).sort((a,b)=>b[1].impactos-a[1].impactos);
@@ -9881,7 +9883,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               // OPERACIONAL — NOVOS BLOCOS
               // ═══════════════════════════════════════════════
 
-              {id:"prazos_risco",cat:"Operacional",label:"Prazos em Risco — próximos 7 dias",icon:"-",color:T.danger,roles:["admin","operacional"],
+              {id:"prazos_risco",cat:"Operacional",label:"Prazos em Risco — próximos 7 dias",icon:"-",color:T.danger,roles:["admin","operacional","gerente_base"],
                render:()=>{
                  const parseP=s=>{try{return new Date(s.includes("-")?s:s.split("/").reverse().join("-"));}catch(e){return null;}};
                  const hoje=new Date();
@@ -9904,7 +9906,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                  </div>);
                }},
 
-              {id:"sla_etapa",cat:"Operacional",label:"SLA por Etapa",icon:"-",color:T.info,roles:["admin","operacional"],
+              {id:"sla_etapa",cat:"Operacional",label:"SLA por Etapa",icon:"-",color:T.info,roles:["admin","operacional","gerente_base"],
                render:()=>{
                  const hoje=new Date();
                  const etapas=STAGES_CAMP.map(s=>{
@@ -9955,7 +9957,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                  </div>);
                }},
 
-              {id:"top_parceiros_impacto",cat:"Rankings",label:"Top Parceiros por Impacto",icon:"-",color:T.pink,roles:["admin","marketing","base"],
+              {id:"top_parceiros_impacto",cat:"Rankings",label:"Top Parceiros por Impacto",icon:"-",color:T.pink,roles:["admin","marketing","base","gerente_base"],
                render:()=>{
                  const imp={};
                  camps.forEach(c=>{(c.impactos?.stories||[]).forEach(s=>{if(s.parceiro){imp[s.parceiro]=(imp[s.parceiro]||0)+Number(s.impressoes||0);}});(c.impactos?.influencer||[]).forEach(s=>{const n=s.nome||s.parceiro||"";if(n)imp[n]=(imp[n]||0)+Number(s.alcance||0);});});
@@ -10714,6 +10716,144 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               </div>
             </div>
           )}
+
+          {tab==="operacoes"&&["admin","gerente_base","base","operacional"].includes(user.role)&&(()=>{
+            const parseD=s=>{if(!s)return null;const d=s.includes("-")?new Date(s):new Date(s.split("/").reverse().join("-"));return isNaN(d)?null:d;};
+            const diasAteOp=s=>{const d=parseD(s);return d?Math.ceil((d-new Date())/86400000):null;};
+            const campsAtv=camps.filter(c=>c.stage>=1&&c.stage<=4);
+            const getGrafStatus=c=>{const g=c.tasks?.grafica||[];const dn=id=>g.find(t=>t.id===id)?.done;if(dn("g4"))return"Entregue";if(dn("g3"))return"Impresso";if(dn("g2"))return"Em Produção";if(dn("g1"))return"Arte Aprovada";return"Aguardando Arte";};
+            const getLogStatus=c=>{const l=c.tasks?.logistica||[];const dn=id=>l.find(t=>t.id===id)?.done;if(dn("l3"))return"Entregue";if(dn("l1"))return"Em trânsito";return"Aguardando";};
+            const alertGrafica=campsAtv.filter(c=>{const d=diasAteOp(c.graficaPrazo);return d!==null&&d<=3&&d>=0;});
+            const alertLogAtrasada=campsAtv.filter(c=>{const d=diasAteOp(c.logisticaPrazo);return d!==null&&d<0;});
+            const alertSemForn=campsAtv.filter(c=>!c.graficaFornecedor);
+            const GRAF_STATUS=["Aguardando Arte","Arte Aprovada","Em Produção","Impresso","Entregue"];
+            const GRAF_COR={"Aguardando Arte":T.muted,"Arte Aprovada":T.info,"Em Produção":T.purple,"Impresso":T.warn,"Entregue":T.accent};
+            const LOG_COR={"Aguardando":T.muted,"Em trânsito":T.warn,"Entregue":T.accent};
+            return(
+              <div>
+                {(alertSemForn.length>0||alertGrafica.length>0||alertLogAtrasada.length>0)&&(
+                  <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+                    {alertSemForn.length>0&&(
+                      <div style={{background:T.warnDim,border:`1px solid ${T.warn}44`,borderRadius:10,padding:"11px 16px",display:"flex",gap:10,alignItems:"center"}}>
+                        <span style={{color:T.warn,fontSize:15}}>⚠</span>
+                        <span style={{fontSize:11,color:T.warn}}><strong>{alertSemForn.length} campanha{alertSemForn.length>1?"s":""}</strong> sem fornecedor gráfico: {alertSemForn.map(c=>c.name).slice(0,3).join(", ")}{alertSemForn.length>3?` +${alertSemForn.length-3}`:""}</span>
+                      </div>
+                    )}
+                    {alertGrafica.length>0&&(
+                      <div style={{background:T.warnDim,border:`1px solid ${T.warn}44`,borderRadius:10,padding:"11px 16px",display:"flex",gap:10,alignItems:"center"}}>
+                        <span style={{color:T.warn,fontSize:15}}>⏰</span>
+                        <span style={{fontSize:11,color:T.warn}}><strong>{alertGrafica.length} prazo{alertGrafica.length>1?"s":""} de gráfica</strong> vencendo em ≤ 3 dias: {alertGrafica.map(c=>`${c.name} (${diasAteOp(c.graficaPrazo)}d)`).join(", ")}</span>
+                      </div>
+                    )}
+                    {alertLogAtrasada.length>0&&(
+                      <div style={{background:T.dangerDim,border:`1px solid ${T.danger}44`,borderRadius:10,padding:"11px 16px",display:"flex",gap:10,alignItems:"center"}}>
+                        <span style={{color:T.danger,fontSize:15}}>🚨</span>
+                        <span style={{fontSize:11,color:T.danger}}><strong>{alertLogAtrasada.length} entrega{alertLogAtrasada.length>1?"s":""} atrasada{alertLogAtrasada.length>1?"s":""}</strong>: {alertLogAtrasada.map(c=>c.name).slice(0,3).join(", ")}{alertLogAtrasada.length>3?` +${alertLogAtrasada.length-3}`:""}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid ${T.border}`}}>
+                  {[["grafica","Painel Gráfica"],["logistica","Painel Logística"],["timeline","Linha do Tempo"]].map(([id,l])=>(
+                    <div key={id} onClick={()=>setOpTab(id)} style={{padding:"9px 18px",fontSize:11,cursor:"pointer",color:opTab===id?T.accent:T.muted,borderBottom:`2px solid ${opTab===id?T.accent:"transparent"}`,transition:"all 0.15s"}}>{l}</div>
+                  ))}
+                </div>
+                {opTab==="grafica"&&(
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
+                    {GRAF_STATUS.map(status=>{
+                      const list=campsAtv.filter(c=>getGrafStatus(c)===status);
+                      const cor=GRAF_COR[status];
+                      return(
+                        <div key={status} style={{background:T.card,border:`1px solid ${cor}33`,borderTop:`3px solid ${cor}`,borderRadius:10,padding:12,minHeight:200}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                            <div style={{fontSize:10,fontWeight:700,color:cor,textTransform:"uppercase",letterSpacing:0.8,fontFamily:"Arial,sans-serif"}}>{status}</div>
+                            <div style={{background:cor+"22",color:cor,border:`1px solid ${cor}44`,borderRadius:10,fontSize:9,fontWeight:700,padding:"2px 7px"}}>{list.length}</div>
+                          </div>
+                          <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                            {list.map(c=>{const dias=diasAteOp(c.graficaPrazo);const atrasado=dias!==null&&dias<0;const urgente=dias!==null&&dias<=3&&dias>=0;return(
+                              <div key={c.id} onClick={()=>setSelCamp(c)} className="hr" style={{background:T.surface,border:`1px solid ${atrasado?T.danger+"55":urgente?T.warn+"44":T.border}`,borderRadius:8,padding:"10px 11px",cursor:"pointer"}}>
+                                <div style={{fontSize:11,fontWeight:700,fontFamily:"Arial,sans-serif",marginBottom:2}}>{c.name}</div>
+                                <div style={{fontSize:9,color:T.muted,marginBottom:3}}>{c.client}</div>
+                                {c.graficaFornecedor&&<div style={{fontSize:9,color:T.purple,marginBottom:2}}>{c.graficaFornecedor}</div>}
+                                {c.graficaPrazo&&<div style={{fontSize:9,color:atrasado?T.danger:urgente?T.warn:T.muted,fontWeight:atrasado||urgente?700:400}}>{atrasado?`Atrasado ${Math.abs(dias)}d`:urgente?`${dias}d restantes`:`Prazo: ${c.graficaPrazo}`}</div>}
+                                {!c.graficaFornecedor&&<div style={{fontSize:8,color:T.warn,background:T.warnDim,borderRadius:4,padding:"1px 6px",display:"inline-block",marginTop:2}}>Sem gráfica</div>}
+                              </div>
+                            );})}
+                            {list.length===0&&<div style={{fontSize:10,color:T.muted,textAlign:"center",padding:"24px 0"}}>Nenhuma</div>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {opTab==="logistica"&&(
+                  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
+                    <div style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 1fr 1fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,background:T.surface}}>
+                      {["Campanha","Cliente","Transportadora","Parceiros","Data prevista","Status"].map(h=>(
+                        <div key={h} style={{fontSize:9,color:T.muted,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>{h}</div>
+                      ))}
+                    </div>
+                    {campsAtv.length===0&&<div style={{padding:40,textAlign:"center",color:T.muted,fontSize:11}}>Nenhuma campanha em andamento</div>}
+                    {campsAtv.map(c=>{
+                      const logStatus=getLogStatus(c);const cor=LOG_COR[logStatus];
+                      const dias=diasAteOp(c.logisticaPrazo);const atrasado=dias!==null&&dias<0;
+                      return(
+                        <div key={c.id} onClick={()=>setSelCamp(c)} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,background:atrasado?T.dangerDim:"transparent",cursor:"pointer",alignItems:"center"}}>
+                          <div><div style={{fontSize:11,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.region}</div></div>
+                          <div style={{fontSize:11,color:T.soft}}>{c.client}</div>
+                          <div style={{fontSize:11,color:T.info}}>{c.logistica||c.logisticaFornecedor||"—"}</div>
+                          <div style={{fontSize:11,color:T.soft}}>{c.parceiros||"—"}</div>
+                          <div style={{fontSize:11,color:atrasado?T.danger:T.soft}}>{c.logisticaPrazo?(atrasado?`Atrasado ${Math.abs(dias)}d`:c.logisticaPrazo):"—"}</div>
+                          <div><span style={{fontSize:9,fontWeight:700,color:cor,background:cor+"22",border:`1px solid ${cor}44`,borderRadius:8,padding:"3px 8px"}}>{logStatus}</span></div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {opTab==="timeline"&&(
+                  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
+                    <div style={{display:"grid",gridTemplateColumns:"2fr repeat(4,1fr)",padding:"12px 20px",borderBottom:`1px solid ${T.border}`,background:T.surface,gap:10}}>
+                      <div style={{fontSize:9,color:T.muted,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Campanha</div>
+                      {[["Arte",T.pink],["Produção",T.purple],["Entrega",T.warn],["Veiculando","#0EA5E9"]].map(([l,c])=>(
+                        <div key={l} style={{fontSize:9,color:c,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+                      ))}
+                    </div>
+                    {camps.filter(c=>c.stage>=1&&c.stage<=6).length===0&&<div style={{padding:40,textAlign:"center",color:T.muted,fontSize:11}}>Nenhuma campanha ativa</div>}
+                    {camps.filter(c=>c.stage>=1&&c.stage<=6).map(c=>{
+                      const g=c.tasks?.grafica||[];const l=c.tasks?.logistica||[];
+                      const gdn=id=>g.find(t=>t.id===id)?.done;const ldn=id=>l.find(t=>t.id===id)?.done;
+                      const artePct=([gdn("g1"),gdn("g2")].filter(Boolean).length/2)*100;
+                      const prodPct=gdn("g3")?100:0;
+                      const entregaPct=([ldn("l1"),ldn("l2"),ldn("l3")].filter(Boolean).length/3)*100;
+                      const veiPct=c.stage===6?100:0;
+                      const s=STAGES_CAMP.find(x=>x.id===c.stage);
+                      return(
+                        <div key={c.id} onClick={()=>setSelCamp(c)} className="hr" style={{display:"grid",gridTemplateColumns:"2fr repeat(4,1fr)",padding:"12px 20px",borderBottom:`1px solid ${T.border}`,cursor:"pointer",alignItems:"center",gap:10}}>
+                          <div>
+                            <div style={{fontSize:11,fontWeight:700,fontFamily:"Arial,sans-serif",marginBottom:4}}>{c.name}</div>
+                            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                              <span style={{fontSize:9,fontWeight:700,color:s?.color||T.muted,background:(s?.color||T.muted)+"22",border:`1px solid ${(s?.color||T.muted)}44`,borderRadius:6,padding:"2px 7px"}}>{s?.label||"—"}</span>
+                              <span style={{fontSize:9,color:T.muted}}>{c.client}</span>
+                            </div>
+                          </div>
+                          {[[artePct,T.pink],[prodPct,T.purple],[entregaPct,T.warn],[veiPct,"#0EA5E9"]].map(([pct,cor],i)=>(
+                            <div key={i}>
+                              <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                                <span style={{fontSize:9,color:cor,fontWeight:700}}>{Math.round(pct)}%</span>
+                              </div>
+                              <div style={{height:6,background:T.border,borderRadius:3,overflow:"hidden"}}>
+                                <div style={{width:`${pct}%`,height:"100%",background:cor,borderRadius:3,transition:"width 0.3s"}}/>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {tab==="organograma"&&user.role==="admin"&&(
             <OrgChart orgNodes={orgNodes} setOrgNodes={setOrgNodes} supabase={supabase} pushNotif={pushNotif}/>
