@@ -1347,7 +1347,7 @@ const FILE_COLOR={arte:T.pink,pi:T.info,contrato:T.purple,base:T.green,nf:T.warn
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 // CAMPAIGN MODAL - with Tarefas, Etapas, Histórico, Arquivos
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
-const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddFile,onUpdateSacolas,onUpdateImpactos,onOpenClientPanel,onEditCamp,onGerarCheckin,onGerarPosVenda,projects,suppliers,users:allUsers,clients=[]})=>{
+const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddFile,onUpdateSacolas,onUpdateImpactos,onOpenClientPanel,onEditCamp,onGerarCheckin,onGerarPosVenda,projects,suppliers,users:allUsers,clients=[],planejamentos=[]})=>{
   const[iTab,setITab]=useState("tarefas");
   const[comment,setComment]=useState("");
   const[uploading,setUploading]=useState(false);
@@ -1355,6 +1355,15 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
   const[editMode,setEditMode]=useState(false);
   const[editData,setEditData]=useState({...camp});
   const td=tasksDone(camp.tasks);
+  const[parcAprovados,setParcAprovados]=useState(new Set());
+  const[parcBusca,setParcBusca]=useState("");
+  const vinculados=camp.parceirosVinculados||[];
+  const linkedPlan=(planejamentos||[]).find(p=>camp.projectId&&p.projectId&&String(p.projectId)===String(camp.projectId));
+  const planParceiros=linkedPlan?.parceiros||[];
+  const confirmarSelecionados=()=>{const novos=planParceiros.filter(p=>parcAprovados.has(p.id));const existIds=new Set(vinculados.map(p=>p.id));const merged=[...vinculados,...novos.filter(p=>!existIds.has(p.id))];onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(p=>p.id)});setParcAprovados(new Set());};
+  const adicionarDaBase=p=>{if(vinculados.find(v=>v.id===p.id))return;const merged=[...vinculados,p];onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(x=>x.id)});};
+  const removerParceiro=pid=>{const merged=vinculados.filter(p=>p.id!==pid);onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(p=>p.id)});};
+  const buscaResults=(allPartners||[]).filter(p=>{if(!parcBusca)return false;const q=parcBusca.toLowerCase();return p.name?.toLowerCase().includes(q)||p.city?.toLowerCase().includes(q);}).slice(0,8);
 
   const handleComment=()=>{
     if(!comment.trim())return;
@@ -1399,7 +1408,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
 
         {/* Tabs */}
         <div style={{display:"flex",borderBottom:`1px solid ${T.border}`,flexShrink:0,overflowX:"auto"}}>
-          {[["tarefas","Tarefas"],["etapas","Etapas"],["historico",`Histórico (${camp.timeline.length})`],["arquivos",`Arquivos (${camp.files.length})`],["impactos","- Impactos"],["editar","✎ Editar"],["cliente","- Painel Cliente"]].map(([id,l])=>(
+          {[["tarefas","Tarefas"],["etapas","Etapas"],["historico",`Histórico (${camp.timeline.length})`],["arquivos",`Arquivos (${camp.files.length})`],["parceiros",`Parceiros${vinculados.length>0?` (${vinculados.length})`:""}`],["impactos","- Impactos"],["editar","✎ Editar"],["cliente","- Painel Cliente"]].map(([id,l])=>(
             <div key={id} onClick={()=>setITab(id)} style={{padding:"10px 18px",fontSize:11,cursor:"pointer",color:iTab===id?(id==="cliente"?T.purple:T.accent):T.muted,borderBottom:`2px solid ${iTab===id?(id==="cliente"?T.purple:T.accent):"transparent"}`,transition:"all 0.15s",whiteSpace:"nowrap"}}>{l}</div>
           ))}
         </div>
@@ -1605,6 +1614,101 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* -- PARCEIROS -- */}
+          {iTab==="parceiros"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+
+              {/* Seção 1 — Do planejamento */}
+              {planParceiros.length>0?(
+                <div style={{background:T.card,border:`1px solid ${T.purple}33`,borderRadius:12,padding:14}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.purple}}>Parceiros do Planejamento</div>
+                    <Badge label={linkedPlan.clienteNome||"Plano vinculado"} color={T.purple}/>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:10}}>
+                    {planParceiros.map(p=>{
+                      const isConf=!!vinculados.find(v=>v.id===p.id);
+                      const isCheck=parcAprovados.has(p.id);
+                      return(
+                        <div key={p.id} style={{display:"flex",gap:10,alignItems:"center",padding:"10px 12px",background:T.surface,borderRadius:8,border:`1px solid ${isConf?T.accent+"44":isCheck?T.purple+"44":T.border}`}}>
+                          <input type="checkbox" checked={isCheck||isConf} disabled={isConf} onChange={e=>{setParcAprovados(prev=>{const n=new Set(prev);e.target.checked?n.add(p.id):n.delete(p.id);return n;});}} style={{cursor:isConf?"default":"pointer",accentColor:T.purple}}/>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:11,fontWeight:600,color:T.text}}>{p.name}</div>
+                            <div style={{fontSize:9,color:T.muted}}>{p.city}{p.category?` · ${p.category}`:""}</div>
+                          </div>
+                          {p.embalagens>0&&<span style={{fontSize:9,color:T.accent,fontWeight:700}}>{(p.embalagens||0).toLocaleString("pt-BR")} emb.</span>}
+                          {isConf&&<span style={{fontSize:9,color:T.accent,background:T.accent+"22",border:`1px solid ${T.accent}44`,borderRadius:6,padding:"2px 8px"}}>✓ Confirmado</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {parcAprovados.size>0&&(
+                    <button onClick={confirmarSelecionados} style={{padding:"8px 18px",background:`linear-gradient(135deg,${T.purple},${T.purple}BB)`,color:"#fff",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>
+                      Confirmar {parcAprovados.size} selecionado{parcAprovados.size>1?"s":""} →
+                    </button>
+                  )}
+                </div>
+              ):(
+                <div style={{background:T.warnDim,border:`1px solid ${T.warn}44`,borderRadius:8,padding:"10px 14px",fontSize:10,color:T.warn}}>
+                  Nenhum planejamento vinculado ao projeto desta campanha. Adicione parceiros diretamente abaixo.
+                </div>
+              )}
+
+              {/* Seção 2 — Confirmados */}
+              <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:14}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.accent}}>Parceiros Confirmados para a Campanha</div>
+                  {vinculados.length>0&&<span style={{fontSize:10,background:T.accent+"22",color:T.accent,border:`1px solid ${T.accent}44`,borderRadius:6,padding:"2px 8px",fontWeight:700}}>{vinculados.length}</span>}
+                </div>
+                {vinculados.length===0?(
+                  <div style={{padding:"24px",textAlign:"center",color:T.muted,fontSize:11}}>Nenhum parceiro confirmado ainda.</div>
+                ):(
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {vinculados.map(p=>(
+                      <div key={p.id} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"10px 12px",background:T.surface,borderRadius:8,border:`1px solid ${T.border}`}}>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:11,fontWeight:700,marginBottom:2,color:T.text}}>{p.name}</div>
+                          <div style={{fontSize:9,color:T.soft,marginBottom:2}}>{p.city}{p.state?` - ${p.state}`:""}</div>
+                          {p.endereco?.rua&&<div style={{fontSize:9,color:T.muted,marginBottom:2}}>{p.endereco.rua}</div>}
+                          <div style={{display:"flex",gap:12,flexWrap:"wrap",marginTop:2}}>
+                            {p.phone&&<span style={{fontSize:9,color:T.info}}>📞 {p.phone}</span>}
+                            {p.responsavel&&<span style={{fontSize:9,color:T.muted}}>Resp: {p.responsavel}</span>}
+                            {p.embalagens>0&&<span style={{fontSize:9,color:T.accent,fontWeight:700}}>{(p.embalagens||0).toLocaleString("pt-BR")} emb.</span>}
+                          </div>
+                        </div>
+                        <button onClick={()=>removerParceiro(p.id)} style={{fontSize:9,padding:"3px 9px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,cursor:"pointer",flexShrink:0}}>✕ Remover</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Seção 3 — Adicionar da base */}
+              <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:14}}>
+                <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.text,marginBottom:10}}>Adicionar Parceiro da Base</div>
+                <input value={parcBusca} onChange={e=>setParcBusca(e.target.value)} placeholder="Buscar por nome ou cidade..." style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 12px",fontSize:11,color:T.text,outline:"none",marginBottom:parcBusca&&buscaResults.length>0?10:0}}/>
+                {buscaResults.length>0&&(
+                  <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                    {buscaResults.map(p=>{
+                      const already=!!vinculados.find(v=>v.id===p.id);
+                      return(
+                        <div key={p.id} style={{display:"flex",gap:10,alignItems:"center",padding:"8px 10px",background:T.surface,borderRadius:7,border:`1px solid ${already?T.accent+"33":T.border}`}}>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:11,fontWeight:600,color:T.text}}>{p.name}</div>
+                            <div style={{fontSize:9,color:T.muted}}>{p.city}{p.category?` · ${p.category}`:""}</div>
+                          </div>
+                          {already?<span style={{fontSize:9,color:T.accent}}>✓ Já adicionado</span>:<button onClick={()=>{adicionarDaBase(p);setParcBusca("");}} style={{fontSize:9,padding:"4px 11px",background:T.accent+"22",border:`1px solid ${T.accent}44`,color:T.accent,borderRadius:6,cursor:"pointer",fontWeight:700}}>+ Adicionar</button>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {parcBusca&&buscaResults.length===0&&<div style={{fontSize:10,color:T.muted,padding:"10px 0"}}>Nenhum parceiro encontrado.</div>}
+              </div>
+
             </div>
           )}
 
@@ -5145,7 +5249,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
       )}
 
       {/* MODAL */}
-      {selCamp&&<CampModal camp={selCamp} user={user} allPartners={basePartners} onClose={()=>setSelCamp(null)} onToggleTask={toggleTask} onAddComment={addComment} onAddFile={addFile} onUpdateSacolas={updateSacolas} onUpdateImpactos={updateImpactos} onOpenClientPanel={(c)=>{setClientPanelCamp(c);setSelCamp(null);}} onGerarCheckin={(c)=>gerarCheckinPDF(c,basePartners)} onGerarPosVenda={(c)=>gerarPosVendaPDF(c,basePartners)} onEditCamp={async(id,fields)=>{let upd=null;setCamps(p=>p.map(c=>{if(c.id!==id)return c;upd={...c,...fields};return upd;}));setSelCamp(p=>({...p,...fields}));if(upd)await supabase.from("campanhas").upsert({id:upd.id,data:upd});}} projects={projects} suppliers={suppliers} users={users} clients={clientesDB}/>}
+      {selCamp&&<CampModal camp={selCamp} user={user} allPartners={basePartners} onClose={()=>setSelCamp(null)} onToggleTask={toggleTask} onAddComment={addComment} onAddFile={addFile} onUpdateSacolas={updateSacolas} onUpdateImpactos={updateImpactos} onOpenClientPanel={(c)=>{setClientPanelCamp(c);setSelCamp(null);}} onGerarCheckin={(c)=>gerarCheckinPDF(c,basePartners)} onGerarPosVenda={(c)=>gerarPosVendaPDF(c,basePartners)} onEditCamp={async(id,fields)=>{let upd=null;setCamps(p=>p.map(c=>{if(c.id!==id)return c;upd={...c,...fields};return upd;}));setSelCamp(p=>({...p,...fields}));if(upd)await supabase.from("campanhas").upsert({id:upd.id,data:upd});}} projects={projects} suppliers={suppliers} users={users} clients={clientesDB} planejamentos={planejamentos}/>}
 
       {/* CLIENT PANEL */}
       {clientPanelCamp&&<ClientPanel camp={clientPanelCamp} allPartners={basePartners} onClose={()=>setClientPanelCamp(null)} onPDF={()=>setPdfCamp(clientPanelCamp)} clients={clientesDB}/>}
@@ -6391,6 +6495,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             )}
 
                             <PBar pct={c.progress} color={stage.color} h={4}/>
+                            {(()=>{const vn=c.parceirosVinculados||[];const semAlert=(c.stage===2||c.stage===3)&&vn.length===0;if(vn.length>0)return<div style={{fontSize:8,color:T.accent,marginTop:3,fontFamily:"Arial,sans-serif"}}>✓ {vn.length} parceiro{vn.length>1?"s":""} confirmado{vn.length>1?"s":""}</div>;if(semAlert)return<div style={{fontSize:8,color:"#F97316",background:"#F9731622",border:"1px solid #F9731633",borderRadius:4,padding:"2px 6px",display:"inline-block",marginTop:3,fontFamily:"Arial,sans-serif"}}>Sem parceiros</div>;return null;})()}
                             <div style={{display:"flex",justifyContent:"space-between",marginTop:5,gap:6}}>
                               <span style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif"}}>{td.done}/{td.total} tarefas</span>
                               <div style={{display:"flex",gap:4}}>
