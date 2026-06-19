@@ -3506,6 +3506,10 @@ export default function App(){
   const[dashPeriod,setDashPeriod]=useState("mes");
   // Financial module state
   const[opTab,setOpTab]=useState("grafica");
+  const[opLogSearch,setOpLogSearch]=useState("");
+  const[opLogStatus,setOpLogStatus]=useState("todos");
+  const[opLogTransp,setOpLogTransp]=useState("todos");
+  const[opLogTrack,setOpLogTrack]=useState({});
   const[finTab,setFinTab]=useState(()=>localStorage.getItem("ecodely_finTab")||"visao");
   useEffect(()=>{localStorage.setItem("ecodely_finTab",finTab);},[finTab]);
   const[tema,setTema]=useState(()=>localStorage.getItem("ecodely_tema")||"escuro");
@@ -10801,30 +10805,137 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     })}
                   </div>
                 )}
-                {opTab==="logistica"&&(
-                  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
-                    <div style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 1fr 1fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,background:T.surface}}>
-                      {["Campanha","Cliente","Transportadora","Parceiros","Data prevista","Status"].map(h=>(
-                        <div key={h} style={{fontSize:9,color:T.muted,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>{h}</div>
-                      ))}
-                    </div>
-                    {campsAtv.length===0&&<div style={{padding:40,textAlign:"center",color:T.muted,fontSize:11}}>Nenhuma campanha em andamento</div>}
-                    {campsAtv.map(c=>{
-                      const logStatus=getLogStatus(c);const cor=LOG_COR[logStatus];
-                      const dias=diasAteOp(c.logisticaPrazo);const atrasado=dias!==null&&dias<0;
-                      return(
-                        <div key={c.id} onClick={()=>setSelCamp(c)} className="hr" style={{display:"grid",gridTemplateColumns:"2fr 1.5fr 1fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,background:atrasado?T.dangerDim:"transparent",cursor:"pointer",alignItems:"center"}}>
-                          <div><div style={{fontSize:11,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{c.name}</div><div style={{fontSize:9,color:T.muted}}>{c.region}</div></div>
-                          <div style={{fontSize:11,color:T.soft}}>{c.client}</div>
-                          <div style={{fontSize:11,color:T.info}}>{c.logistica||c.logisticaFornecedor||"—"}</div>
-                          <div style={{fontSize:11,color:T.soft}}>{c.parceiros||"—"}</div>
-                          <div style={{fontSize:11,color:atrasado?T.danger:T.soft}}>{c.logisticaPrazo?(atrasado?`Atrasado ${Math.abs(dias)}d`:c.logisticaPrazo):"—"}</div>
-                          <div><span style={{fontSize:9,fontWeight:700,color:cor,background:cor+"22",border:`1px solid ${cor}44`,borderRadius:8,padding:"3px 8px"}}>{logStatus}</span></div>
+                {opTab==="logistica"&&(()=>{
+                  const logCamps=campsAtv.filter(c=>c.stage===3);
+                  const getLogStatusFull=c=>{const l=c.tasks?.logistica||[];const dn=id=>l.find(t=>t.id===id)?.done;const dias=diasAteOp(c.logisticaPrazo);if(dias!==null&&dias<0&&!dn("l3"))return"Atrasado";if(dn("l3"))return"Entregue";if(dn("l1"))return"Em trânsito";return"Aguardando";};
+                  const LOG_STATUS_COR={"Atrasado":T.danger,"Em trânsito":T.warn,"Entregue":T.accent,"Aguardando":T.muted};
+                  const hojeStr=new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
+                  const hojeISO=new Date().toISOString().slice(0,10);
+                  const emLogAgora=logCamps.length;
+                  const entreguesHoje=camps.filter(c=>{const l3=c.tasks?.logistica?.find(t=>t.id==="l3");return l3?.done&&(l3?.doneAt||"").startsWith(hojeStr);}).length;
+                  const atrasadasN=logCamps.filter(c=>getLogStatusFull(c)==="Atrasado").length;
+                  const campsComPrazo=camps.filter(c=>c.logisticaPrazo&&c.tasks?.logistica?.find(t=>t.id==="l3")?.done);
+                  const noPrazoN=campsComPrazo.filter(c=>diasAteOp(c.logisticaPrazo)!==null&&diasAteOp(c.logisticaPrazo)>=0).length;
+                  const taxaNoPrazo=campsComPrazo.length>0?Math.round((noPrazoN/campsComPrazo.length)*100):100;
+                  const alertAtrasadas=logCamps.filter(c=>getLogStatusFull(c)==="Atrasado");
+                  const alertHoje=logCamps.filter(c=>c.logisticaPrazo===hojeISO);
+                  const alertSem3d=camps.filter(c=>{if(c.stage<2||c.stage>4)return false;const l3=c.tasks?.logistica?.find(t=>t.id==="l3");if(l3?.done)return false;if(!c.startDate)return false;const d=diasAteOp(c.startDate);return d!==null&&d>=0&&d<3;});
+                  const logSuppliers=(suppliers||[]).filter(s=>s.type==="logistica");
+                  const logFiltered=logCamps.filter(c=>{const q=opLogSearch.toLowerCase();if(q&&!c.name.toLowerCase().includes(q)&&!(c.client||"").toLowerCase().includes(q))return false;if(opLogStatus!=="todos"&&getLogStatusFull(c)!==opLogStatus)return false;if(opLogTransp!=="todos"&&(c.logisticaFornecedor||"")!==opLogTransp)return false;return true;});
+                  const saveTrackingCode=(c,code)=>{const logDet={...(c.logisticaDetalhe||{}),codigoRastreio:code};const updated={...c,logisticaDetalhe:logDet};setCamps(prev=>prev.map(x=>x.id===c.id?updated:x));supabase.from("campanhas").upsert({id:c.id,data:updated}).then(({error})=>{if(error)console.error("SUPABASE track:",error);});};
+                  const confirmParceiro=(c,parceiroId)=>{const prev=(c.logisticaDetalhe?.parceirosConfirmados||[]);if(prev.includes(parceiroId))return;const confirmados=[...prev,parceiroId];const logDet={...(c.logisticaDetalhe||{}),parceirosConfirmados:confirmados};const campParceiros=(c.parceirosIds||[]).map(id=>basePartners.find(p=>p.id===id)).filter(Boolean);const allConf=campParceiros.length>0&&campParceiros.every(p=>confirmados.includes(p.id));let newTasks=c.tasks;let newTl=c.timeline||[];let newStage=c.stage;if(allConf){const l3Done=c.tasks?.logistica?.find(t=>t.id==="l3")?.done;if(!l3Done){newTasks={...c.tasks,logistica:(c.tasks?.logistica||[]).map(t=>t.id==="l3"?{...t,done:true,doneAt:now(),doneBy:user?.name||"Sistema"}:t)};newTl=[...newTl,{id:Date.now(),type:"task",text:"Concluido: Entrega realizada",user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.warn}];}if(c.stage===3){newStage=4;newTl=[...newTl,{id:Date.now()+1,type:"stage",text:"Logística → Checking: todos os parceiros confirmaram recebimento",user:"Sistema",avatar:"⚙",at:now(),color:T.pink}];}}const updated={...c,tasks:newTasks,stage:newStage,timeline:newTl,logisticaDetalhe:logDet};setCamps(prev=>prev.map(x=>x.id===c.id?updated:x));if(selCamp?.id===c.id)setSelCamp(updated);supabase.from("campanhas").upsert({id:c.id,data:updated}).then(({error})=>{if(error)console.error("SUPABASE parcConf:",error);});pushNotif("Recebimento confirmado",`Parceiro confirmou em ${c.name}`,T.accent);if(allConf)pushNotif("Entrega completa!",`Todos os parceiros de ${c.name} confirmaram`,T.accent);};
+                  const transpScore=logSuppliers.map(s=>{const sc=camps.filter(c=>c.logisticaFornecedor===s.name&&c.tasks?.logistica?.find(t=>t.id==="l3")?.done);const np=sc.filter(c=>!c.logisticaPrazo||diasAteOp(c.logisticaPrazo)>=0).length;return{name:s.name,total:sc.length,pct:sc.length>0?Math.round((np/sc.length)*100):null};}).filter(s=>s.total>0);
+                  return(
+                    <div style={{display:"flex",flexDirection:"column",gap:16}}>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+                        {[{l:"Em logística agora",v:emLogAgora,c:T.warn},{l:"Entregues hoje",v:entreguesHoje,c:T.accent},{l:"Atrasadas",v:atrasadasN,c:T.danger},{l:"Taxa no prazo",v:`${taxaNoPrazo}%`,c:T.info}].map(k=>(
+                          <div key={k.l} style={{background:T.card,border:`1px solid ${k.c}33`,borderRadius:12,padding:"16px 20px"}}>
+                            <div style={{fontSize:28,fontWeight:700,color:k.c,fontFamily:"Arial,sans-serif"}}>{k.v}</div>
+                            <div style={{fontSize:10,color:T.muted,marginTop:4}}>{k.l}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {(alertAtrasadas.length>0||alertHoje.length>0||alertSem3d.length>0)&&(
+                        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                          {alertAtrasadas.length>0&&<div style={{background:T.dangerDim,border:`1px solid ${T.danger}44`,borderRadius:10,padding:"11px 16px",display:"flex",gap:10,alignItems:"center"}}><span style={{fontSize:14}}>🚨</span><span style={{fontSize:11,color:T.danger}}><strong>{alertAtrasadas.length} campanha{alertAtrasadas.length>1?"s":""} atrasada{alertAtrasadas.length>1?"s":""}</strong>: {alertAtrasadas.map(c=>c.name).slice(0,3).join(", ")}{alertAtrasadas.length>3?` +${alertAtrasadas.length-3}`:""}</span></div>}
+                          {alertHoje.length>0&&<div style={{background:T.warnDim,border:`1px solid ${T.warn}44`,borderRadius:10,padding:"11px 16px",display:"flex",gap:10,alignItems:"center"}}><span style={{fontSize:14}}>📦</span><span style={{fontSize:11,color:T.warn}}><strong>{alertHoje.length} entrega{alertHoje.length>1?"s":""} prevista{alertHoje.length>1?"s":""} para hoje</strong>: {alertHoje.map(c=>c.name).slice(0,3).join(", ")}{alertHoje.length>3?` +${alertHoje.length-3}`:""}</span></div>}
+                          {alertSem3d.length>0&&<div style={{background:T.warnDim,border:`1px solid ${T.warn}44`,borderRadius:10,padding:"11px 16px",display:"flex",gap:10,alignItems:"center"}}><span style={{fontSize:14}}>⏰</span><span style={{fontSize:11,color:T.warn}}><strong>{alertSem3d.length} campanha{alertSem3d.length>1?"s":""}</strong> começa{alertSem3d.length>1?"m":""} em menos de 3 dias sem entrega confirmada</span></div>}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      )}
+                      <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+                        <input value={opLogSearch} onChange={e=>setOpLogSearch(e.target.value)} placeholder="Buscar campanha ou cliente..." style={{flex:1,minWidth:160,background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+                        <select value={opLogStatus} onChange={e=>setOpLogStatus(e.target.value)} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 12px",fontSize:11,color:T.text,outline:"none",cursor:"pointer"}}>
+                          {["todos","Aguardando","Em trânsito","Entregue","Atrasado"].map(s=><option key={s} value={s}>{s==="todos"?"Todos os status":s}</option>)}
+                        </select>
+                        <select value={opLogTransp} onChange={e=>setOpLogTransp(e.target.value)} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 12px",fontSize:11,color:T.text,outline:"none",cursor:"pointer"}}>
+                          <option value="todos">Todas as transportadoras</option>
+                          {logSuppliers.map(s=><option key={s.id} value={s.name}>{s.name}</option>)}
+                        </select>
+                      </div>
+                      {logFiltered.length===0&&<div style={{padding:40,textAlign:"center",color:T.muted,fontSize:12,background:T.card,borderRadius:12,border:`1px solid ${T.border}`}}>Nenhuma campanha em logística no momento.</div>}
+                      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                        {logFiltered.map(c=>{
+                          const status=getLogStatusFull(c);const cor=LOG_STATUS_COR[status]||T.muted;
+                          const campParceiros=(c.parceirosIds||[]).map(id=>basePartners.find(p=>p.id===id)).filter(Boolean);
+                          const confirmados=c.logisticaDetalhe?.parceirosConfirmados||[];
+                          const confCount=campParceiros.filter(p=>confirmados.includes(p.id)).length;
+                          const totalP=campParceiros.length;
+                          const confPct=totalP>0?(confCount/totalP)*100:0;
+                          const trackVal=opLogTrack[c.id]!==undefined?opLogTrack[c.id]:(c.logisticaDetalhe?.codigoRastreio||"");
+                          return(
+                            <div key={c.id} style={{background:T.card,border:`1px solid ${cor}33`,borderRadius:12,overflow:"hidden"}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:`1px solid ${T.border}`,background:T.surface}}>
+                                <div>
+                                  <div style={{fontSize:13,fontWeight:700,fontFamily:"Arial,sans-serif",color:T.text}}>{c.name}</div>
+                                  <div style={{fontSize:10,color:T.muted,marginTop:2}}>{c.client}</div>
+                                </div>
+                                <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                                  <span style={{fontSize:9,fontWeight:700,color:cor,background:cor+"22",border:`1px solid ${cor}44`,borderRadius:8,padding:"4px 10px"}}>{status}</span>
+                                  <button onClick={()=>setSelCamp(c)} style={{fontSize:9,padding:"5px 12px",background:T.accent+"22",border:`1px solid ${T.accent}44`,color:T.accent,borderRadius:7,cursor:"pointer",fontWeight:700}}>Ver campanha</button>
+                                </div>
+                              </div>
+                              <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:12}}>
+                                <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
+                                  <span style={{fontSize:13}}>🚚</span>
+                                  <span style={{fontSize:11,color:T.info,fontWeight:600}}>{c.logisticaFornecedor||"Sem transportadora"}</span>
+                                  {c.logisticaPrazo&&<span style={{fontSize:9,color:T.muted}}>· Prazo: {c.logisticaPrazo}</span>}
+                                  <div style={{flex:1}}/>
+                                  <input
+                                    value={trackVal}
+                                    onChange={e=>setOpLogTrack(p=>({...p,[c.id]:e.target.value}))}
+                                    onBlur={e=>{saveTrackingCode(c,e.target.value);setOpLogTrack(p=>{const n={...p};delete n[c.id];return n;});}}
+                                    placeholder="Código de rastreio..."
+                                    style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"6px 10px",fontSize:10,color:T.text,outline:"none",width:160}}
+                                  />
+                                  {trackVal&&<a href={`https://www.linketrack.com/v/${encodeURIComponent(trackVal)}`} target="_blank" rel="noreferrer" style={{fontSize:9,padding:"5px 12px",background:T.info+"22",border:`1px solid ${T.info}44`,color:T.info,borderRadius:7,cursor:"pointer",fontWeight:700,textDecoration:"none"}}>Rastrear</a>}
+                                </div>
+                                {totalP>0?(
+                                  <div>
+                                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+                                      <span style={{fontSize:10,color:T.muted}}>Parceiros confirmaram recebimento</span>
+                                      <span style={{fontSize:10,fontWeight:700,color:confCount===totalP?T.accent:T.soft}}>{confCount}/{totalP}</span>
+                                    </div>
+                                    <div style={{height:6,background:T.border,borderRadius:3,overflow:"hidden",marginBottom:10}}>
+                                      <div style={{width:`${confPct}%`,height:"100%",background:confCount===totalP?T.accent:T.warn,borderRadius:3,transition:"width 0.3s"}}/>
+                                    </div>
+                                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                                      {campParceiros.map(p=>{
+                                        const conf=confirmados.includes(p.id);
+                                        return(
+                                          <div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:T.surface,borderRadius:8,border:`1px solid ${conf?T.accent+"33":T.border}`}}>
+                                            <div>
+                                              <span style={{fontSize:11,fontWeight:600}}>{p.name}</span>
+                                              {p.city&&<span style={{fontSize:9,color:T.muted,marginLeft:6}}>{p.city}</span>}
+                                            </div>
+                                            {conf?<span style={{fontSize:9,fontWeight:700,color:T.accent,background:T.accent+"22",border:`1px solid ${T.accent}44`,borderRadius:6,padding:"3px 8px"}}>✓ Recebido</span>:<button onClick={()=>confirmParceiro(c,p.id)} style={{fontSize:9,padding:"4px 10px",background:T.info+"22",border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,cursor:"pointer",fontWeight:700}}>Confirmar recebimento</button>}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ):<div style={{fontSize:10,color:T.muted}}>Nenhum parceiro vinculado a esta campanha.</div>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {transpScore.length>0&&(
+                        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
+                          <div style={{fontSize:11,fontWeight:700,color:T.text,marginBottom:12,fontFamily:"Arial,sans-serif"}}>Score de Transportadoras</div>
+                          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
+                            {transpScore.map(s=>(
+                              <div key={s.name} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:9,padding:"12px 14px"}}>
+                                <div style={{fontSize:11,fontWeight:700,marginBottom:6}}>{s.name}</div>
+                                <div style={{fontSize:9,color:T.muted,marginBottom:4}}>Total de campanhas: <strong style={{color:T.text}}>{s.total}</strong></div>
+                                {s.pct!==null&&<div style={{fontSize:9,color:T.muted}}>No prazo: <strong style={{color:s.pct>=80?T.accent:s.pct>=60?T.warn:T.danger}}>{s.pct}%</strong></div>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 {opTab==="timeline"&&(
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                     <div style={{display:"grid",gridTemplateColumns:"2fr repeat(4,1fr)",padding:"12px 20px",borderBottom:`1px solid ${T.border}`,background:T.surface,gap:10}}>
