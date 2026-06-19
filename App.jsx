@@ -2032,9 +2032,13 @@ const scoreGrafica=(forn,camps)=>{
 };
 
 const geocodeFornEndereco=async(data)=>{
-  if(!data.endCidade||!import.meta.env.VITE_GOOGLE_MAPS_KEY)return data;
-  const addr=`${data.endRua||""} ${data.endNum||""}, ${data.endCidade}, ${data.endEstado||""}, Brasil`.trim();
-  try{const res=await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(addr)}&key=${import.meta.env.VITE_GOOGLE_MAPS_KEY}`);const j=await res.json();if(j.results?.[0]?.geometry?.location){const{lat,lng}=j.results[0].geometry.location;return{...data,lat,lng};}}catch(e){}
+  if(!data.endCidade)return data;
+  const parts=[data.endRua,data.endNum,data.endCidade,data.endEstado,"Brasil"].filter(Boolean).join(", ");
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(parts)}&format=json&limit=1`,{headers:{"User-Agent":"Ecodely-Sistema/1.0 comercial@ecodely.com.br"}});
+    const d=await r.json();
+    if(d.length>0)return{...data,lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};
+  }catch(e){}
   return data;
 };
 
@@ -2138,14 +2142,13 @@ const FornForm=({data,setData,onSave,onCancel,saveLbl,T,inpS,selS})=>{
         <div>{lbl("Cidade")}<input value={data.endCidade||""} onChange={e=>setData(p=>({...p,endCidade:e.target.value}))} placeholder="São Paulo" style={fi}/></div>
         <div>{lbl("UF")}<input value={data.endEstado||""} onChange={e=>setData(p=>({...p,endEstado:e.target.value.toUpperCase().slice(0,2)}))} placeholder="SP" maxLength={2} style={fi}/></div>
       </div>
+      {data.endCidade&&<div style={{fontSize:9,marginBottom:10,color:data.lat&&data.lng?T.accent:T.muted}}>{data.lat&&data.lng?`📍 Geocodificado: ${Number(data.lat).toFixed(4)}, ${Number(data.lng).toFixed(4)}`:"📍 Lat/lng será obtido automaticamente ao salvar"}</div>}
       {data.type==="grafica"&&(
         <div style={{marginBottom:12}}>
           {lbl("Estados que atende")}
           <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:6}}>
             {BR_STATES.map(st=>{const sel=(data.estadosAtende||[]).includes(st);return(<div key={st} onClick={()=>setData(p=>({...p,estadosAtende:sel?(p.estadosAtende||[]).filter(x=>x!==st):[...(p.estadosAtende||[]),st]}))} style={{padding:"3px 8px",fontSize:10,borderRadius:5,cursor:"pointer",background:sel?T.purple+"33":T.surface,border:`1px solid ${sel?T.purple+"66":T.border}`,color:sel?T.purple:T.muted,fontWeight:sel?700:400,transition:"all 0.15s"}}>{st}</div>);})}
           </div>
-          {data.lat&&data.lng&&<div style={{fontSize:9,color:T.accent,marginTop:4}}>📍 Geocodificado: {Number(data.lat).toFixed(4)}, {Number(data.lng).toFixed(4)}</div>}
-          {data.endCidade&&!data.lat&&<div style={{fontSize:9,color:T.muted,marginTop:4}}>Lat/lng será obtido automaticamente ao salvar</div>}
         </div>
       )}
       {secH("Dados Comerciais",T.warn)}
@@ -4494,7 +4497,7 @@ export default function App(){
     if(!nf.name)return;
     if(nf.cnpj&&!validCNPJ(nf.cnpj)){pushNotif("CNPJ inválido","Verifique o número digitado",T.danger);return;}
     if(nf.principal){setSuppliers(prev=>prev.map(s=>s.type===nf.type?{...s,principal:false}:s));await supabase.from("fornecedores").update({data:null}).match({});}
-    const nfGeo=nf.type==="grafica"&&!nf.lat?await geocodeFornEndereco(nf):nf;
+    const nfGeo=nf.endCidade?await geocodeFornEndereco(nf):nf;
     const rec={...nfGeo,id:Date.now()};
     setSuppliers(p=>[...p,rec]);
     setNf(NF_EMPTY);setShowNewForn(false);
@@ -4504,7 +4507,7 @@ export default function App(){
   const updateFornecedor=async(s)=>{
     if(s.cnpj&&!validCNPJ(s.cnpj)){pushNotif("CNPJ inválido","Verifique o número digitado",T.danger);return;}
     if(s.principal){setSuppliers(prev=>prev.map(x=>x.id!==s.id&&x.type===s.type?{...x,principal:false}:x));await supabase.from("fornecedores").update({data:null}).neq("id",s.id);}
-    const sGeo=s.type==="grafica"&&!s.lat?await geocodeFornEndereco(s):s;
+    const sGeo=s.endCidade?await geocodeFornEndereco(s):s;
     setSuppliers(prev=>prev.map(x=>x.id===sGeo.id?sGeo:x));
     setSelForn(sGeo);
     await supabase.from("fornecedores").update({name:sGeo.name,type:sGeo.type,data:sGeo}).eq("id",sGeo.id);
