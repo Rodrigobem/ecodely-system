@@ -1142,7 +1142,7 @@ const OrgChart=({orgNodes,setOrgNodes,supabase,pushNotif})=>{
   );
 };
 
-const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,showPlanWizard,setShowPlanWizard,planejamentos,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,sugerirParceiros,user,basePartners,projects,suppliers=[]})=>{
+const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,showPlanWizard,setShowPlanWizard,planejamentos,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,sugerirParceiros,user,basePartners,projects,suppliers=[],onConvertToCamp})=>{
   const parc=(planAtivo&&Array.isArray(planAtivo.parceiros)?planAtivo.parceiros:[]);
   const outras=(planAtivo&&Array.isArray(planAtivo.outrasMidias)?planAtivo.outrasMidias:[]);
   const pl=Array.isArray(planejamentos)?planejamentos:[];
@@ -1186,9 +1186,10 @@ const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanA
             <div style={{fontSize:10,color:T.muted}}>{p.regiao||"—"} · {(p.parceiros||[]).length} parceiros</div>
             <div style={{fontSize:9,color:T.muted,marginTop:2}}>{p.createdBy}</div>
           </div>
-          <div style={{display:"flex",gap:8}}>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             <button onClick={()=>{setPlanAtivo(p);setPlanAnalise(p.analise||null);setPlanStep(1);setShowPlanWizard(true);}} style={{padding:"7px 14px",background:T.accentDim,border:"1px solid "+T.accentBorder,color:T.accent,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>Editar</button>
             <button onClick={()=>gerarPropostaPDF(p,p.analise)} style={{padding:"7px 14px",background:"#00E5A0",border:"none",color:"#000",borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>Proposta PDF</button>
+            {onConvertToCamp&&<button onClick={()=>onConvertToCamp(p)} style={{padding:"7px 14px",background:T.purple,border:"none",color:"#fff",borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>→ Criar Campanha</button>}
           </div>
         </div>
       ))}
@@ -1357,12 +1358,17 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
   const td=tasksDone(camp.tasks);
   const[parcAprovados,setParcAprovados]=useState(new Set());
   const[parcBusca,setParcBusca]=useState("");
+  const[editingParcId,setEditingParcId]=useState(null);
+  const[editingParcEmb,setEditingParcEmb]=useState("");
   const vinculados=camp.parceirosVinculados||[];
   const linkedPlan=(planejamentos||[]).find(p=>camp.projectId&&p.projectId&&String(p.projectId)===String(camp.projectId));
   const planParceiros=linkedPlan?.parceiros||[];
-  const confirmarSelecionados=()=>{const novos=planParceiros.filter(p=>parcAprovados.has(p.id));const existIds=new Set(vinculados.map(p=>p.id));const merged=[...vinculados,...novos.filter(p=>!existIds.has(p.id))];onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(p=>p.id)});setParcAprovados(new Set());};
-  const adicionarDaBase=p=>{if(vinculados.find(v=>v.id===p.id))return;const merged=[...vinculados,p];onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(x=>x.id)});};
-  const removerParceiro=pid=>{const merged=vinculados.filter(p=>p.id!==pid);onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(p=>p.id)});};
+  const totalVinEmb=vinculados.reduce((a,p)=>a+Number(p.embalagens||0),0);
+  const addHistorico=(texto)=>{const entry={id:Date.now(),type:"parceiro",text:texto,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.purple};onEditCamp(camp.id,{timeline:[...camp.timeline,entry]});};
+  const confirmarSelecionados=()=>{const novos=planParceiros.filter(p=>parcAprovados.has(p.id));const existIds=new Set(vinculados.map(p=>p.id));const merged=[...vinculados,...novos.filter(p=>!existIds.has(p.id))];const entry={id:Date.now(),type:"parceiro",text:`${novos.length} parceiro(s) adicionado(s) do planejamento: ${novos.map(p=>p.name).join(", ")}`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.purple};onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(p=>p.id),timeline:[...camp.timeline,entry]});setParcAprovados(new Set());};
+  const adicionarDaBase=p=>{if(vinculados.find(v=>v.id===p.id))return;const merged=[...vinculados,p];const entry={id:Date.now(),type:"parceiro",text:`Parceiro '${p.name}' adicionado à campanha`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.purple};onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(x=>x.id),timeline:[...camp.timeline,entry]});};
+  const removerParceiro=(pid,nome)=>{if(!window.confirm(`Remover '${nome}' da campanha?`))return;const merged=vinculados.filter(p=>p.id!==pid);const entry={id:Date.now(),type:"parceiro",text:`Parceiro '${nome}' removido da campanha`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.danger};onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(p=>p.id),timeline:[...camp.timeline,entry]});};
+  const salvarEmbParceiro=(pid,nome,novaEmb)=>{const anterior=vinculados.find(p=>p.id===pid)?.embalagens||0;const merged=vinculados.map(p=>p.id===pid?{...p,embalagens:Number(novaEmb)||0}:p);const entry={id:Date.now(),type:"parceiro",text:`Quantidade de '${nome}' alterada de ${anterior} para ${novaEmb} embalagens`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.purple};onEditCamp(camp.id,{parceirosVinculados:merged,parceirosIds:merged.map(p=>p.id),timeline:[...camp.timeline,entry]});setEditingParcId(null);};
   const buscaResults=(allPartners||[]).filter(p=>{if(!parcBusca)return false;const q=parcBusca.toLowerCase();return p.name?.toLowerCase().includes(q)||p.city?.toLowerCase().includes(q);}).slice(0,8);
 
   const handleComment=()=>{
@@ -1659,29 +1665,52 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
 
               {/* Seção 2 — Confirmados */}
               <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:14}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
                   <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.accent}}>Parceiros Confirmados para a Campanha</div>
-                  {vinculados.length>0&&<span style={{fontSize:10,background:T.accent+"22",color:T.accent,border:`1px solid ${T.accent}44`,borderRadius:6,padding:"2px 8px",fontWeight:700}}>{vinculados.length}</span>}
+                  {vinculados.length>0&&(
+                    <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                      <span style={{fontSize:10,color:T.muted}}>{vinculados.length} parceiros · <strong style={{color:T.accent}}>{totalVinEmb.toLocaleString("pt-BR")} emb. no total</strong></span>
+                    </div>
+                  )}
                 </div>
                 {vinculados.length===0?(
                   <div style={{padding:"24px",textAlign:"center",color:T.muted,fontSize:11}}>Nenhum parceiro confirmado ainda.</div>
                 ):(
                   <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                    {vinculados.map(p=>(
-                      <div key={p.id} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"10px 12px",background:T.surface,borderRadius:8,border:`1px solid ${T.border}`}}>
-                        <div style={{flex:1}}>
-                          <div style={{fontSize:11,fontWeight:700,marginBottom:2,color:T.text}}>{p.name}</div>
-                          <div style={{fontSize:9,color:T.soft,marginBottom:2}}>{p.city}{p.state?` - ${p.state}`:""}</div>
-                          {p.endereco?.rua&&<div style={{fontSize:9,color:T.muted,marginBottom:2}}>{p.endereco.rua}</div>}
-                          <div style={{display:"flex",gap:12,flexWrap:"wrap",marginTop:2}}>
-                            {p.phone&&<span style={{fontSize:9,color:T.info}}>📞 {p.phone}</span>}
-                            {p.responsavel&&<span style={{fontSize:9,color:T.muted}}>Resp: {p.responsavel}</span>}
-                            {p.embalagens>0&&<span style={{fontSize:9,color:T.accent,fontWeight:700}}>{(p.embalagens||0).toLocaleString("pt-BR")} emb.</span>}
+                    {vinculados.map(p=>{
+                      const isEditing=editingParcId===p.id;
+                      return(
+                        <div key={p.id} style={{padding:"10px 12px",background:T.surface,borderRadius:8,border:`1px solid ${isEditing?T.purple+"55":T.border}`}}>
+                          <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                            <div style={{flex:1}}>
+                              <div style={{fontSize:11,fontWeight:700,marginBottom:2,color:T.text}}>{p.name}</div>
+                              <div style={{fontSize:9,color:T.soft,marginBottom:2}}>{p.city}{p.state?` - ${p.state}`:""}</div>
+                              {p.endereco?.rua&&<div style={{fontSize:9,color:T.muted,marginBottom:2}}>{p.endereco.rua}</div>}
+                              <div style={{display:"flex",gap:12,flexWrap:"wrap",marginTop:2}}>
+                                {p.phone&&<span style={{fontSize:9,color:T.info}}>📞 {p.phone}</span>}
+                                {p.responsavel&&<span style={{fontSize:9,color:T.muted}}>Resp: {p.responsavel}</span>}
+                              </div>
+                            </div>
+                            <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                              {!isEditing?(
+                                <>
+                                  <span style={{fontSize:9,color:T.accent,fontWeight:700,background:T.accent+"18",border:`1px solid ${T.accent}33`,borderRadius:5,padding:"2px 8px"}}>{(p.embalagens||0).toLocaleString("pt-BR")} emb.</span>
+                                  <button onClick={()=>{setEditingParcId(p.id);setEditingParcEmb(String(p.embalagens||0));}} style={{fontSize:9,padding:"3px 9px",background:T.surface,border:`1px solid ${T.border}`,color:T.soft,borderRadius:6,cursor:"pointer"}}>✎ Editar</button>
+                                  <button onClick={()=>removerParceiro(p.id,p.name)} style={{fontSize:9,padding:"3px 9px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,cursor:"pointer"}}>✕</button>
+                                </>
+                              ):(
+                                <>
+                                  <input type="number" value={editingParcEmb} onChange={e=>setEditingParcEmb(e.target.value)} autoFocus style={{width:80,background:T.bg,border:`1px solid ${T.purple}66`,borderRadius:6,padding:"4px 8px",fontSize:10,color:T.text,outline:"none",textAlign:"right"}}/>
+                                  <span style={{fontSize:9,color:T.muted}}>emb.</span>
+                                  <button onClick={()=>salvarEmbParceiro(p.id,p.name,editingParcEmb)} style={{fontSize:9,padding:"3px 10px",background:T.accent,color:"#000",borderRadius:6,cursor:"pointer",fontWeight:700,border:"none"}}>✓</button>
+                                  <button onClick={()=>setEditingParcId(null)} style={{fontSize:9,padding:"3px 8px",background:T.surface,border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,cursor:"pointer"}}>×</button>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
-                        <button onClick={()=>removerParceiro(p.id)} style={{fontSize:9,padding:"3px 9px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,cursor:"pointer",flexShrink:0}}>✕ Remover</button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1700,7 +1729,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                             <div style={{fontSize:11,fontWeight:600,color:T.text}}>{p.name}</div>
                             <div style={{fontSize:9,color:T.muted}}>{p.city}{p.category?` · ${p.category}`:""}</div>
                           </div>
-                          {already?<span style={{fontSize:9,color:T.accent}}>✓ Já adicionado</span>:<button onClick={()=>{adicionarDaBase(p);setParcBusca("");}} style={{fontSize:9,padding:"4px 11px",background:T.accent+"22",border:`1px solid ${T.accent}44`,color:T.accent,borderRadius:6,cursor:"pointer",fontWeight:700}}>+ Adicionar</button>}
+                          {already?<span style={{fontSize:9,color:T.accent}}>✓ Já adicionado</span>:<button onClick={()=>{adicionarDaBase(p);setParcBusca("");}} style={{fontSize:9,padding:"4px 11px",background:T.accent+"22",border:`1px solid ${T.accent}44`,color:T.accent,borderRadius:6,cursor:"pointer",fontWeight:700,border:"none",background:T.accent,color:"#000"}}>+ Adicionar</button>}
                         </div>
                       );
                     })}
@@ -3593,6 +3622,9 @@ export default function App(){
   const[campView,setCampView]=useState("kanban");
   const[showNewCamp,setShowNewCamp]=useState(false);
   const[newCampStep,setNewCampStep]=useState(1);
+  const[showConvPlan,setShowConvPlan]=useState(false);
+  const[convPlanDados,setConvPlanDados]=useState(null);
+  const[convCampEdit,setConvCampEdit]=useState({name:"",client:"",startDate:"",endDate:"",valorLiquido:"",numPI:"",briefing:"",parceirosConv:[],searchBase:""});
   const[newCamp,setNewCamp]=useState({
     name:"",client:"",agencia:"",numPI:"",project:"",projectId:"",responsavel:"",
     startDate:"",endDate:"",region:"",
@@ -5117,6 +5149,24 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     const{error}=await supabase.from("campanhas").insert({id:rec.id,data:rec});
     if(error)console.error("SUPABASE createCamp:",error);
     else pushNotif("Campanha criada!",rec.name,T.accent);
+  };
+
+  const createCampFromPlan=async()=>{
+    const inclParc=convCampEdit.parceirosConv.filter(p=>p.incluir);
+    const totalEmb=inclParc.reduce((a,p)=>a+Number(p.embalagens||0),0);
+    const nome=convCampEdit.name||(convPlanDados?.clienteNome||"Campanha");
+    const id=Date.now();
+    let projId=convPlanDados?.projectId?Number(convPlanDados.projectId):null;
+    let projName=nome;
+    if(!projId){projId=id;const np={id:projId,name:projName,active:true};setProjects(p=>[...p,np]);supabase.from("projects").insert(np);}
+    const rec={id,name:nome,client:convCampEdit.client||(convPlanDados?.clienteNome||""),agencia:"",numPI:convCampEdit.numPI||"",project:projName,projectId:projId,responsavel:user?.name||"",startDate:convCampEdit.startDate||"",endDate:convCampEdit.endDate||"",region:(convPlanDados?.regioes||[]).map(r=>r.cidade).filter(Boolean).join(", ")||(convPlanDados?.regiao||""),graficaFornecedor:"",material:"",graficaPrazo:"",logistica:"",logisticaFornecedor:"",logisticaPrazo:"",parceiros:inclParc.length,sacolas:totalEmb,valorLiquido:Number(convCampEdit.valorLiquido)||0,briefing:convCampEdit.briefing||"",segments:(convPlanDados?.clienteSegmento?[convPlanDados.clienteSegmento]:[]),sacolasDistribuidas:null,progress:0,stage:1,parceirosIds:inclParc.map(p=>p.id),parceirosVinculados:inclParc,tasks:{comercial:[{id:"c1",label:"Emitir PI",done:false},{id:"c2",label:"Enviar contrato ao cliente",done:false}],financeiro:[{id:"f1",label:"Receber PI",done:false},{id:"f2",label:"Faturar NF",done:false},{id:"f3",label:"Lançar planilha financeira",done:false}],marketing:[{id:"m1",label:"Post Instagram",done:false},{id:"m2",label:"Post LinkedIn",done:false},{id:"m3",label:"Contratar influencer",done:false}],base:[{id:"b1",label:"Confirmar base participante",done:false},{id:"b2",label:"Enviar contrato de exclusividade",done:false}],grafica:[{id:"g1",label:"Arte aprovada pelo cliente",done:false},{id:"g2",label:"Material enviado para gráfica",done:false},{id:"g3",label:"Impressão confirmada",done:false},{id:"g4",label:"Material entregue",done:false}],logistica:[{id:"l1",label:"Logística confirmada",done:false},{id:"l2",label:"Rota de entrega definida",done:false},{id:"l3",label:"Entrega realizada",done:false}]},timeline:[{id:Date.now(),type:"stage",text:`Campanha criada a partir do planejamento "${convPlanDados?.clienteNome||""}" com ${inclParc.length} parceiro(s)`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.accent}],files:[],impactos:{stories:[],influencer:[],impulsionado:[],galeria:[]}};
+    setCamps(p=>[...p,rec]);
+    setShowConvPlan(false);
+    setConvPlanDados(null);
+    setConvCampEdit({name:"",client:"",startDate:"",endDate:"",valorLiquido:"",numPI:"",briefing:"",parceirosConv:[],searchBase:""});
+    const{error}=await supabase.from("campanhas").insert({id:rec.id,data:rec});
+    if(error)console.error("SUPABASE createCampFromPlan:",error);
+    else pushNotif("Campanha criada!",rec.name+" · "+inclParc.length+" parceiros",T.accent);
   };
 
   const addCommEntry=async()=>{
@@ -8840,8 +8890,129 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               salvarPlano={salvarPlano} gerarPropostaPDF={gerarPropostaPDF}
               geocodeEndereco={geocodeEndereco} gerarAnaliseIA={gerarAnaliseIA}
               sugerirParceiros={sugerirParceiros}
-              user={user} basePartners={basePartners} projects={projects}
+              user={user} basePartners={basePartners} projects={projects} suppliers={suppliers}
+              onConvertToCamp={plan=>{
+                setConvPlanDados(plan);
+                setConvCampEdit({
+                  name:plan.clienteNome||"",
+                  client:plan.clienteNome||"",
+                  startDate:"",endDate:"",
+                  valorLiquido:plan.calc?.valorProposta||"",
+                  numPI:"",briefing:plan.objetivo||"",
+                  parceirosConv:(plan.parceiros||[]).map(p=>({...p,incluir:true,embalagens:p.embalagens||0})),
+                  searchBase:""
+                });
+                setShowConvPlan(true);
+              }}
             />
+          )}
+
+          {/* ── MODAL: CONVERTER PLANEJAMENTO EM CAMPANHA ──────────────────── */}
+          {showConvPlan&&convPlanDados&&(
+            <div style={{position:"fixed",inset:0,background:"#000000D0",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>setShowConvPlan(false)}>
+              <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:16,width:"100%",maxWidth:740,maxHeight:"94vh",overflow:"hidden",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+                <div style={{padding:"18px 24px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+                  <div>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16}}>Criar Campanha a partir do Planejamento</div>
+                    <div style={{fontSize:10,color:T.muted,marginTop:2}}>Plano: {convPlanDados.clienteNome} · {(convCampEdit.parceirosConv||[]).filter(p=>p.incluir).length} parceiro(s) selecionado(s)</div>
+                  </div>
+                  <div onClick={()=>setShowConvPlan(false)} style={{cursor:"pointer",color:T.muted,fontSize:20}}>×</div>
+                </div>
+                <div style={{flex:1,overflow:"auto",padding:"20px 24px",display:"flex",flexDirection:"column",gap:20}}>
+
+                  {/* Campos básicos */}
+                  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.accent,marginBottom:12}}>Informações da Campanha</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                      {[["Nome da campanha","name",false],["Cliente","client",false],["Nº PI","numPI",false]].map(([l,k])=>(
+                        <div key={k} style={k==="name"?{gridColumn:"1/-1"}:{}}>
+                          <div style={{fontSize:9,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+                          <input value={convCampEdit[k]||""} onChange={e=>setConvCampEdit(p=>({...p,[k]:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
+                      <div>
+                        <div style={{fontSize:9,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Data início</div>
+                        <input type="date" value={convCampEdit.startDate||""} onChange={e=>setConvCampEdit(p=>({...p,startDate:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+                      </div>
+                      <div>
+                        <div style={{fontSize:9,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Data fim</div>
+                        <input type="date" value={convCampEdit.endDate||""} onChange={e=>setConvCampEdit(p=>({...p,endDate:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+                      </div>
+                      <div>
+                        <div style={{fontSize:9,color:T.accent,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Valor líquido (R$)</div>
+                        <input type="number" value={convCampEdit.valorLiquido||""} onChange={e=>setConvCampEdit(p=>({...p,valorLiquido:e.target.value}))} style={{width:"100%",background:T.bg,border:`1px solid ${T.accent}44`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none"}}/>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{fontSize:9,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Briefing</div>
+                      <textarea value={convCampEdit.briefing||""} onChange={e=>setConvCampEdit(p=>({...p,briefing:e.target.value}))} rows={3} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none",resize:"vertical",lineHeight:1.5}}/>
+                    </div>
+                  </div>
+
+                  {/* Parceiros do plano */}
+                  <div style={{background:T.card,border:`1px solid ${T.purple}33`,borderRadius:12,padding:16}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.purple}}>Parceiros do Planejamento</div>
+                      <div style={{fontSize:10,color:T.muted}}>
+                        Total: <strong style={{color:T.accent}}>{(convCampEdit.parceirosConv||[]).filter(p=>p.incluir).reduce((a,p)=>a+Number(p.embalagens||0),0).toLocaleString("pt-BR")} emb.</strong>
+                        {" · "}Valor: <strong style={{color:T.accent}}>R$ {(convCampEdit.parceirosConv||[]).filter(p=>p.incluir).reduce((a,p)=>a+Number(p.embalagens||0)*Number(p.tabela||0)*(1-Number(p.desconto||0)/100),0).toLocaleString("pt-BR",{minimumFractionDigits:0})}</strong>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12}}>
+                      {(convCampEdit.parceirosConv||[]).map((p,idx)=>{
+                        const val=Number(p.embalagens||0)*Number(p.tabela||0)*(1-Number(p.desconto||0)/100);
+                        return(
+                          <div key={p.id||idx} style={{display:"flex",gap:10,alignItems:"center",padding:"9px 12px",background:T.surface,borderRadius:8,border:`1px solid ${p.incluir?T.purple+"44":T.border}`,opacity:p.incluir?1:0.5}}>
+                            <input type="checkbox" checked={!!p.incluir} onChange={e=>setConvCampEdit(prev=>({...prev,parceirosConv:prev.parceirosConv.map((x,i)=>i===idx?{...x,incluir:e.target.checked}:x)}))} style={{cursor:"pointer",accentColor:T.purple}}/>
+                            <div style={{flex:1}}>
+                              <div style={{fontSize:11,fontWeight:600,color:T.text}}>{p.name}</div>
+                              <div style={{fontSize:9,color:T.muted}}>{p.city}{p.category?` · ${p.category}`:""}</div>
+                            </div>
+                            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                              <input type="number" value={p.embalagens||""} onChange={e=>setConvCampEdit(prev=>({...prev,parceirosConv:prev.parceirosConv.map((x,i)=>i===idx?{...x,embalagens:Number(e.target.value)||0}:x)}))} style={{width:80,background:T.bg,border:`1px solid ${T.border}`,borderRadius:6,padding:"4px 8px",fontSize:10,color:T.text,outline:"none",textAlign:"right"}} placeholder="Emb."/>
+                              <span style={{fontSize:9,color:T.muted}}>emb.</span>
+                              {val>0&&<span style={{fontSize:9,color:T.accent,fontWeight:700,minWidth:60,textAlign:"right"}}>R$ {val.toLocaleString("pt-BR",{minimumFractionDigits:0})}</span>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {(convCampEdit.parceirosConv||[]).length===0&&<div style={{fontSize:10,color:T.muted,padding:"12px 0"}}>Este planejamento não tem parceiros selecionados.</div>}
+                    </div>
+
+                    {/* Adicionar da base */}
+                    <div style={{borderTop:`1px solid ${T.border}`,paddingTop:12}}>
+                      <div style={{fontSize:10,color:T.muted,marginBottom:6,fontWeight:600}}>Adicionar parceiro da base</div>
+                      <input value={convCampEdit.searchBase||""} onChange={e=>setConvCampEdit(p=>({...p,searchBase:e.target.value}))} placeholder="Buscar por nome ou cidade..." style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"7px 11px",fontSize:10,color:T.text,outline:"none",marginBottom:6}}/>
+                      {convCampEdit.searchBase&&(()=>{
+                        const q=(convCampEdit.searchBase||"").toLowerCase();
+                        const res=(basePartners||[]).filter(p=>p.name?.toLowerCase().includes(q)||p.city?.toLowerCase().includes(q)).slice(0,6);
+                        return res.length>0?(
+                          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                            {res.map(p=>{
+                              const already=(convCampEdit.parceirosConv||[]).find(x=>x.id===p.id);
+                              return(
+                                <div key={p.id} style={{display:"flex",gap:8,alignItems:"center",padding:"6px 10px",background:T.bg,borderRadius:7,border:`1px solid ${T.border}`}}>
+                                  <div style={{flex:1,fontSize:10,color:T.text}}>{p.name} <span style={{color:T.muted,fontSize:9}}>{p.city}</span></div>
+                                  {already?<span style={{fontSize:9,color:T.accent}}>✓ No plano</span>:<button onClick={()=>setConvCampEdit(prev=>({...prev,parceirosConv:[...prev.parceirosConv,{...p,incluir:true,embalagens:0}],searchBase:""}))} style={{fontSize:9,padding:"3px 10px",background:T.accent+"22",border:`1px solid ${T.accent}44`,color:T.accent,borderRadius:5,cursor:"pointer",fontWeight:700}}>+ Adicionar</button>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ):(<div style={{fontSize:10,color:T.muted}}>Nenhum parceiro encontrado.</div>);
+                      })()}
+                    </div>
+                  </div>
+
+                </div>
+                <div style={{padding:"14px 24px",borderTop:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+                  <button onClick={()=>setShowConvPlan(false)} style={{padding:"9px 18px",background:T.card,border:`1px solid ${T.border}`,color:T.muted,borderRadius:8,cursor:"pointer",fontSize:11}}>Cancelar</button>
+                  <div style={{fontSize:10,color:T.muted}}>{(convCampEdit.parceirosConv||[]).filter(p=>p.incluir).length} parceiros · {(convCampEdit.parceirosConv||[]).filter(p=>p.incluir).reduce((a,p)=>a+Number(p.embalagens||0),0).toLocaleString("pt-BR")} embalagens</div>
+                  <button onClick={createCampFromPlan} disabled={!convCampEdit.name&&!convPlanDados?.clienteNome} style={{padding:"9px 22px",background:`linear-gradient(135deg,${T.purple},#7B5FE0)`,color:"#fff",borderRadius:8,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,border:"none"}}>Criar Campanha ✓</button>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* --------------------------------------
