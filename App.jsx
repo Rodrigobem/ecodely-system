@@ -10005,7 +10005,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             const cats=[...new Set(BLOCOS.filter(b=>isAdmin||b.roles.includes(user.role)).map(b=>b.cat))];
             // relSelecionados, relTitulo, relPeriodo declarados no nível do componente
             const toggle=id=>setRelSelecionados(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
-            const blocosSel=relSelecionados.map(id=>BLOCOS.find(b=>b.id===id)).filter(Boolean);
+            const blocosSel=relSelecionados.map(id=>BLOCOS.find(b=>b.id===id)).filter(Boolean).filter(b=>isAdmin||b.roles.includes(user.role));
             const disponiveis=BLOCOS.filter(b=>isAdmin||b.roles.includes(user.role));
 
             return(
@@ -10165,7 +10165,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         tags:["Campanhas","ROI","SLA"],
                         itens:["ROI por campanha","Performance por segmento","Sazonalidade","SLA por etapa","Prazos em risco"],
                       },
-                    ].map(t=>(
+                    ].filter(t=>t.blocos.some(bid=>disponiveis.some(b=>b.id===bid))).map(t=>(
                       <div key={t.id} style={{background:t.grad,border:`1px solid ${t.borda}`,borderRadius:14,padding:20,display:"flex",flexDirection:"column",gap:10,transition:"transform 0.15s,box-shadow 0.15s",cursor:"default"}}
                         onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow=`0 8px 24px ${t.cor}22`;}}
                         onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="none";}}>
