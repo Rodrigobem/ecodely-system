@@ -1142,7 +1142,11 @@ const OrgChart=({orgNodes,setOrgNodes,supabase,pushNotif})=>{
   );
 };
 
-const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,showPlanWizard,setShowPlanWizard,planejamentos,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,sugerirParceiros,user,basePartners,projects,suppliers=[],onConvertToCamp})=>{
+const PLAN_STATUS_OPTS=[{v:"elaboracao",l:"Em elaboração",c:"#F59E0B"},{v:"proposta",l:"Proposta enviada",c:"#3D9EFF"},{v:"aprovado",l:"Aprovado",c:"#00E5A0"},{v:"convertido",l:"Convertido em campanha",c:"#A78BFA"}];
+const planStatusColor=v=>(PLAN_STATUS_OPTS.find(o=>o.v===v)||PLAN_STATUS_OPTS[0]).c;
+const planStatusLabel=v=>(PLAN_STATUS_OPTS.find(o=>o.v===v)||PLAN_STATUS_OPTS[0]).l;
+
+const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,showPlanWizard,setShowPlanWizard,planejamentos,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,sugerirParceiros,user,basePartners,projects,suppliers=[],onConvertToCamp,allUsers=[]})=>{
   const parc=(planAtivo&&Array.isArray(planAtivo.parceiros)?planAtivo.parceiros:[]);
   const outras=(planAtivo&&Array.isArray(planAtivo.outrasMidias)?planAtivo.outrasMidias:[]);
   const pl=Array.isArray(planejamentos)?planejamentos:[];
@@ -1153,12 +1157,57 @@ const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanA
   const total=totalVal+totalMidia;
   const custoImp=totalImpactos>0?(total/totalImpactos).toFixed(2):0;
   const fmtCur=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:0});
+
+  const [busca,setBusca]=useState("");
+  const [filtroStatus,setFiltroStatus]=useState("todos");
+  const [filtroPeriodo,setFiltroPeriodo]=useState("todos");
+  const [filtroResp,setFiltroResp]=useState("todos");
+  const [ordem,setOrdem]=useState("recente");
+
+  const respList=[...new Set(pl.map(p=>p.createdBy).filter(Boolean))];
+
+  const filtrarPeriodo=(p)=>{
+    if(filtroPeriodo==="todos")return true;
+    const dt=new Date(p.createdAt||0);
+    const agora=new Date();
+    if(filtroPeriodo==="mes")return dt.getMonth()===agora.getMonth()&&dt.getFullYear()===agora.getFullYear();
+    if(filtroPeriodo==="mes_ant"){const m=agora.getMonth()===0?11:agora.getMonth()-1;const y=agora.getMonth()===0?agora.getFullYear()-1:agora.getFullYear();return dt.getMonth()===m&&dt.getFullYear()===y;}
+    if(filtroPeriodo==="3meses"){const lim=new Date(agora);lim.setMonth(lim.getMonth()-3);return dt>=lim;}
+    if(filtroPeriodo==="ano")return dt.getFullYear()===new Date().getFullYear();
+    return true;
+  };
+
+  const buscaL=busca.toLowerCase();
+  const plFilt=pl.filter(p=>{
+    if(busca){
+      const haystack=[(p.clienteNome||""),(p.clienteSegmento||""),(p.regiao||""),...(p.regioes||[]).map(r=>r.cidade||"")].join(" ").toLowerCase();
+      if(!haystack.includes(buscaL))return false;
+    }
+    if(filtroStatus!=="todos"&&(p.status||"elaboracao")!==filtroStatus)return false;
+    if(!filtrarPeriodo(p))return false;
+    if(filtroResp!=="todos"&&(p.createdBy||"")!==filtroResp)return false;
+    return true;
+  }).sort((a,b)=>{
+    if(ordem==="recente")return(b.id||0)-(a.id||0);
+    if(ordem==="antigo")return(a.id||0)-(b.id||0);
+    if(ordem==="nome")return(a.clienteNome||"").localeCompare(b.clienteNome||"","pt-BR");
+    if(ordem==="verba")return Number(b.verba||0)-Number(a.verba||0);
+    return 0;
+  });
+
+  const atualizarStatus=async(p,novoStatus)=>{
+    await salvarPlano({...p,status:novoStatus});
+  };
+
   const doNewPlan=()=>{
-    setPlanAtivo({...EMPTY_PLAN,id:Date.now(),createdBy:(user&&user.name)||"",createdAt:new Date().toISOString()});
+    setPlanAtivo({...EMPTY_PLAN,id:Date.now(),status:"elaboracao",createdBy:(user&&user.name)||"",createdAt:new Date().toISOString()});
     setPlanStep(1);
     setPlanAnalise(null);
     setShowPlanWizard(true);
   };
+
+  const selectSt={background:T.bg,border:"1px solid "+T.border,borderRadius:7,padding:"7px 10px",fontSize:10,color:T.text,outline:"none",cursor:"pointer"};
+
   return(
     <div style={{padding:2}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
@@ -1179,17 +1228,65 @@ const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanA
         </div>
       )}
 
-      {!showPlanWizard&&pl.map((p,idx)=>(
-        <div key={p.id||idx} style={{background:T.card,border:"1px solid "+T.border,borderRadius:12,padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div>
-            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,marginBottom:3,color:T.text}}>{p.clienteNome||"Sem nome"}</div>
-            <div style={{fontSize:10,color:T.muted}}>{p.regiao||"—"} · {(p.parceiros||[]).length} parceiros</div>
-            <div style={{fontSize:9,color:T.muted,marginTop:2}}>{p.createdBy}</div>
+      {!showPlanWizard&&pl.length>0&&(
+        <div style={{marginBottom:14}}>
+          {/* Busca */}
+          <div style={{position:"relative",marginBottom:10}}>
+            <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:13,color:T.muted,pointerEvents:"none"}}>🔍</span>
+            <input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar por cliente, segmento ou cidade…" style={{width:"100%",background:T.bg,border:"1px solid "+T.border,borderRadius:9,padding:"9px 12px 9px 34px",fontSize:11,color:T.text,outline:"none",boxSizing:"border-box"}}/>
           </div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {/* Filtros */}
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
+            <select value={filtroStatus} onChange={e=>setFiltroStatus(e.target.value)} style={selectSt}>
+              <option value="todos">Status: Todos</option>
+              {PLAN_STATUS_OPTS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
+            </select>
+            <select value={filtroPeriodo} onChange={e=>setFiltroPeriodo(e.target.value)} style={selectSt}>
+              <option value="todos">Período: Todos</option>
+              <option value="mes">Este mês</option>
+              <option value="mes_ant">Último mês</option>
+              <option value="3meses">Últimos 3 meses</option>
+              <option value="ano">Este ano</option>
+            </select>
+            <select value={filtroResp} onChange={e=>setFiltroResp(e.target.value)} style={selectSt}>
+              <option value="todos">Responsável: Todos</option>
+              {respList.map(r=><option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+          {/* Ordenação */}
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+            {[["recente","Mais recente"],["antigo","Mais antigo"],["nome","Nome A-Z"],["verba","Maior verba"]].map(([v,l])=>(
+              <button key={v} onClick={()=>setOrdem(v)} style={{padding:"5px 12px",background:ordem===v?T.accentDim:T.card,border:"1px solid "+(ordem===v?T.accentBorder:T.border),color:ordem===v?T.accent:T.muted,borderRadius:6,cursor:"pointer",fontSize:10,fontWeight:700}}>{l}</button>
+            ))}
+          </div>
+          {/* Contagem */}
+          <div style={{fontSize:10,color:T.muted,marginBottom:6}}>{plFilt.length} planejamento{plFilt.length!==1?"s":""} encontrado{plFilt.length!==1?"s":""}</div>
+        </div>
+      )}
+
+      {!showPlanWizard&&pl.length>0&&plFilt.length===0&&(
+        <div style={{textAlign:"center",padding:"40px 20px",background:T.card,border:"1px solid "+T.border,borderRadius:12}}>
+          <div style={{fontSize:28,marginBottom:8}}>🔎</div>
+          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:T.soft}}>Nenhum planejamento encontrado para esses filtros</div>
+        </div>
+      )}
+
+      {!showPlanWizard&&plFilt.map((p,idx)=>(
+        <div key={p.id||idx} style={{background:T.card,border:"1px solid "+T.border,borderRadius:12,padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,marginBottom:4,color:T.text}}>{p.clienteNome||"Sem nome"}</div>
+            <div style={{marginBottom:4}}>
+              <select value={p.status||"elaboracao"} onChange={async e=>{e.stopPropagation();await atualizarStatus(p,e.target.value);}} style={{background:"transparent",border:"1px solid "+(planStatusColor(p.status||"elaboracao"))+"55",borderRadius:5,padding:"2px 6px",fontSize:9,fontWeight:700,color:planStatusColor(p.status||"elaboracao"),cursor:"pointer",outline:"none"}}>
+                {PLAN_STATUS_OPTS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
+              </select>
+            </div>
+            <div style={{fontSize:10,color:T.muted}}>{p.regiao||"—"} · {(p.parceiros||[]).length} parceiros{p.clienteSegmento?" · "+p.clienteSegmento:""}</div>
+            <div style={{fontSize:9,color:T.muted,marginTop:2}}>{p.createdBy}{p.createdAt?" · "+new Date(p.createdAt).toLocaleDateString("pt-BR"):""}</div>
+          </div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",flexShrink:0}}>
             <button onClick={()=>{setPlanAtivo(p);setPlanAnalise(p.analise||null);setPlanStep(1);setShowPlanWizard(true);}} style={{padding:"7px 14px",background:T.accentDim,border:"1px solid "+T.accentBorder,color:T.accent,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>Editar</button>
-            <button onClick={()=>gerarPropostaPDF(p,p.analise)} style={{padding:"7px 14px",background:"#00E5A0",border:"none",color:"#000",borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>Proposta PDF</button>
-            {onConvertToCamp&&<button onClick={()=>onConvertToCamp(p)} style={{padding:"7px 14px",background:T.purple,border:"none",color:"#fff",borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>→ Criar Campanha</button>}
+            <button onClick={async()=>{if((p.status||"elaboracao")==="elaboracao")await atualizarStatus(p,"proposta");gerarPropostaPDF(p,p.analise);}} style={{padding:"7px 14px",background:"#00E5A0",border:"none",color:"#000",borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>Proposta PDF</button>
+            {onConvertToCamp&&<button onClick={async()=>{await atualizarStatus(p,"convertido");onConvertToCamp(p);}} style={{padding:"7px 14px",background:T.purple,border:"none",color:"#fff",borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>→ Criar Campanha</button>}
           </div>
         </div>
       ))}
@@ -1213,7 +1310,7 @@ const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanA
   );
 };
 
-const EMPTY_PLAN={id:null,projectId:"",clienteNome:"",clienteSegmento:"",clienteEndereco:"",clienteLat:null,clienteLng:null,publicoAlvo:"",faixaEtaria:"",rendaEstimada:"",objetivo:"",verba:"",prazo:"",regiao:"",regioes:[],preferenciaParceiro:"",analise:null,parceiros:[],outrasMidias:[],calc:{},createdBy:"",createdAt:""};
+const EMPTY_PLAN={id:null,projectId:"",clienteNome:"",clienteSegmento:"",clienteEndereco:"",clienteLat:null,clienteLng:null,publicoAlvo:"",faixaEtaria:"",rendaEstimada:"",objetivo:"",verba:"",prazo:"",regiao:"",regioes:[],preferenciaParceiro:"",analise:null,parceiros:[],outrasMidias:[],calc:{},status:"elaboracao",createdBy:"",createdAt:""};
 
 // ── MAPA DE PLANEJAMENTO (Leaflet) ──────────────────────────────────────────
 const _renderParcLayers=(L,grp,parceiros)=>{
@@ -2115,6 +2212,213 @@ const MapaLogistico=({graficas=[],logCamps=[],selCampId=null})=>{
     return()=>{if(instRef.current){try{instRef.current.remove();}catch(e){}instRef.current=null;}};
   },[key]);
   return <div ref={mapRef} style={{height:400,width:"100%",borderRadius:12,border:"1px solid #1A1E30",zIndex:1}}/>;
+};
+
+// PROSP GRAFICAS — componentes para CRM de prospecção de gráficas
+const ProspMapinha=({lat,lng,raio=50})=>{
+  const mapRef=useRef(null);
+  const instRef=useRef(null);
+  useEffect(()=>{
+    if(!lat||!lng)return;
+    const init=()=>{
+      if(!mapRef.current)return;
+      if(instRef.current){try{instRef.current.remove();}catch(e){}instRef.current=null;}
+      if(mapRef.current._leaflet_id)delete mapRef.current._leaflet_id;
+      const L=window.L;
+      const map=L.map(mapRef.current,{zoomControl:true,scrollWheelZoom:false}).setView([lat,lng],10);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(map);
+      const icon=L.divIcon({html:`<div style="width:20px;height:20px;border-radius:50%;background:#3D9EFF;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4)"></div>`,className:"",iconSize:[20,20],iconAnchor:[10,10]});
+      L.marker([lat,lng],{icon}).addTo(map);
+      if(raio>0)L.circle([lat,lng],{radius:raio*1000,color:"#3D9EFF",fillColor:"#3D9EFF",fillOpacity:0.08,weight:1.5}).addTo(map);
+      instRef.current=map;
+    };
+    _lf_load(init);
+    return()=>{if(instRef.current){try{instRef.current.remove();}catch(e){}instRef.current=null;}};
+  },[lat,lng,raio]);
+  if(!lat||!lng)return <div style={{height:200,display:"flex",alignItems:"center",justifyContent:"center",background:"#0C0E18",borderRadius:10,fontSize:10,color:"#4A5070"}}>Sem coordenadas — salve com endereço preenchido para ver no mapa</div>;
+  return <div ref={mapRef} style={{height:200,width:"100%",borderRadius:10,border:"1px solid #1A1E30",zIndex:1}}/>;
+};
+
+const ProspGraficaModal=({pg,user,onClose,onSave,onDelete,onPromote})=>{
+  const[tab,setTab]=useState("dados");
+  const[editing,setEditing]=useState({...pg});
+  const[showInteracao,setShowInteracao]=useState(false);
+  const[inter,setInter]=useState({tipo:"ligação",resultado:"",proximoPasso:"",data:""});
+  const STATUS_OPTS=["identificada","contatada","em negociacao","aprovada","descartada"];
+  const STATUS_COR={"identificada":T.muted,"contatada":T.info,"em negociacao":T.warn,"aprovada":T.accent,"descartada":T.danger};
+  const fi={width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"7px 11px",fontSize:11,color:T.text,outline:"none"};
+  const lbl=t=><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1,fontFamily:"Arial,sans-serif"}}>{t}</div>;
+  const saveEditing=()=>onSave({...editing,atualizadoEm:now()});
+  const addInteracao=()=>{
+    if(!inter.resultado)return;
+    const entry={data:inter.data||now(),usuario:user?.name||"Sistema",tipo:inter.tipo,texto:inter.resultado,proximoPasso:inter.proximoPasso};
+    const upd={...editing,historico:[...(editing.historico||[]),entry],atualizadoEm:now()};
+    setEditing(upd);onSave(upd);
+    setInter({tipo:"ligação",resultado:"",proximoPasso:"",data:""});setShowInteracao(false);
+  };
+  const proximoFollowUp=(editing.historico||[]).slice().reverse().find(h=>h.proximoPasso)?.proximoPasso;
+  return(
+    <div style={{position:"fixed",inset:0,background:"#000000D0",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={onClose}>
+      <div style={{background:T.surface,borderRadius:16,width:"100%",maxWidth:720,maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+        {/* Header */}
+        <div style={{padding:"16px 20px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",background:T.card}}>
+          <div>
+            <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:15,color:T.text}}>{editing.nome||"Nova Gráfica"}</div>
+            <div style={{fontSize:10,color:T.muted,marginTop:2}}>{editing.cidade}{editing.estado?` — ${editing.estado}`:""}</div>
+          </div>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <select value={editing.status||"identificada"} onChange={e=>setEditing(p=>({...p,status:e.target.value}))} style={{padding:"5px 10px",background:T.bg,border:`1px solid ${STATUS_COR[editing.status||"identificada"]}66`,borderRadius:7,color:STATUS_COR[editing.status||"identificada"],fontSize:10,outline:"none",fontWeight:700,cursor:"pointer"}}>
+              {STATUS_OPTS.map(s=><option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
+            </select>
+            {editing.status==="aprovada"&&<button onClick={onPromote} style={{padding:"6px 14px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer"}}>→ Promover a Fornecedor</button>}
+            <button onClick={onClose} style={{background:"none",border:"none",color:T.muted,fontSize:18,cursor:"pointer",lineHeight:1}}>×</button>
+          </div>
+        </div>
+        {/* Tabs */}
+        <div style={{display:"flex",borderBottom:`1px solid ${T.border}`,background:T.card}}>
+          {[["dados","Dados"],["qualificacao","Qualificação"],["historico",`Histórico (${(editing.historico||[]).length})`]].map(([id,l])=>(
+            <div key={id} onClick={()=>setTab(id)} style={{padding:"9px 18px",fontSize:11,cursor:"pointer",color:tab===id?T.accent:T.muted,borderBottom:`2px solid ${tab===id?T.accent:"transparent"}`,transition:"all 0.15s"}}>{l}</div>
+          ))}
+        </div>
+        {/* Body */}
+        <div style={{overflowY:"auto",flex:1,padding:20}}>
+          {tab==="dados"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:14}}>
+              <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:10}}>
+                <div>{lbl("Nome da Gráfica *")}<input value={editing.nome||""} onChange={e=>setEditing(p=>({...p,nome:e.target.value}))} style={fi} placeholder="Ex: Gráfica SP Centro"/></div>
+                <div>{lbl("Cidade")}<input value={editing.cidade||""} onChange={e=>setEditing(p=>({...p,cidade:e.target.value}))} style={fi} placeholder="São Paulo"/></div>
+                <div>{lbl("Estado")}<input value={editing.estado||""} onChange={e=>setEditing(p=>({...p,estado:e.target.value.toUpperCase().slice(0,2)}))} style={fi} placeholder="SP" maxLength={2}/></div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:10}}>
+                <div>{lbl("Endereço")}<input value={editing.endereco||""} onChange={e=>setEditing(p=>({...p,endereco:e.target.value}))} style={fi} placeholder="Rua, Nº, Bairro"/></div>
+                <div>{lbl("Raio de Entrega (km)")}<input type="number" value={editing.raioEntregaKm||""} onChange={e=>setEditing(p=>({...p,raioEntregaKm:Number(e.target.value)||0}))} style={fi} placeholder="50"/></div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+                <div>{lbl("Telefone")}<input value={editing.telefone||""} onChange={e=>setEditing(p=>({...p,telefone:e.target.value}))} style={fi} placeholder="(11) 99999-9999"/></div>
+                <div>{lbl("E-mail")}<input value={editing.email||""} onChange={e=>setEditing(p=>({...p,email:e.target.value}))} style={fi} placeholder="contato@grafica.com"/></div>
+                <div>{lbl("Responsável")}<input value={editing.contato||""} onChange={e=>setEditing(p=>({...p,contato:e.target.value}))} style={fi} placeholder="Nome do contato"/></div>
+              </div>
+              <div>
+                {lbl("Formatos que produz")}
+                <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:4}}>
+                  {["Ecobox Tradicional","Mega Box","Chapa","Sacola Kraft"].map(f=>{
+                    const sel=(editing.formatos||[]).includes(f);
+                    return <div key={f} onClick={()=>setEditing(p=>({...p,formatos:sel?(p.formatos||[]).filter(x=>x!==f):[...(p.formatos||[]),f]}))} style={{padding:"4px 10px",fontSize:10,borderRadius:6,cursor:"pointer",background:sel?T.purple+"33":T.surface,border:`1px solid ${sel?T.purple+"66":T.border}`,color:sel?T.purple:T.muted,fontWeight:sel?700:400}}>{f}</div>;
+                  })}
+                </div>
+              </div>
+              <div>
+                {lbl("Observações")}
+                <textarea value={editing.obs||""} onChange={e=>setEditing(p=>({...p,obs:e.target.value}))} rows={2} style={{...fi,resize:"vertical",lineHeight:1.5}} placeholder="Notas gerais, potencial, referência..."/>
+              </div>
+              <div>
+                {lbl("Localização no mapa")}
+                <ProspMapinha lat={editing.lat} lng={editing.lng} raio={editing.raioEntregaKm||50}/>
+                {editing.lat&&editing.lng&&<div style={{fontSize:9,color:T.accent,marginTop:4}}>📍 {Number(editing.lat).toFixed(4)}, {Number(editing.lng).toFixed(4)}</div>}
+              </div>
+            </div>
+          )}
+          {tab==="qualificacao"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              {[
+                ["Produz Ecobox Tradicional?","produzEcobox","custoEcobox","Custo/un (R$)"],
+                ["Produz Mega Box?","produzMegaBox","custoMegaBox","Custo/un (R$)"],
+                ["Produz Chapa?","produzChapa","custoChapa","Custo/un (R$)"],
+              ].map(([label,boolKey,custoKey,custoLabel])=>(
+                <div key={boolKey} style={{background:T.card,borderRadius:8,padding:"12px 14px",display:"flex",gap:14,alignItems:"center"}}>
+                  <label style={{display:"flex",gap:6,alignItems:"center",flex:1,cursor:"pointer",fontSize:11,color:T.text}}>
+                    <input type="checkbox" checked={!!editing[boolKey]} onChange={e=>setEditing(p=>({...p,[boolKey]:e.target.checked}))} style={{accentColor:T.purple,width:14,height:14}}/>
+                    {label}
+                  </label>
+                  {editing[boolKey]&&(
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                      {lbl(custoLabel)}
+                      <input type="number" step="0.01" value={editing[custoKey]||""} onChange={e=>setEditing(p=>({...p,[custoKey]:e.target.value}))} style={{...fi,width:100}} placeholder="0,00"/>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {[
+                ["Entrega nos parceiros?","entregaEmDomicilio"],
+                ["Já trabalhou com embalagens customizadas?","trabalhaCustom"],
+                ["Tem capacidade para pedidos urgentes?","pedidoUrgente"],
+              ].map(([label,key])=>(
+                <div key={key} style={{background:T.card,borderRadius:8,padding:"12px 14px"}}>
+                  <label style={{display:"flex",gap:6,alignItems:"center",cursor:"pointer",fontSize:11,color:T.text}}>
+                    <input type="checkbox" checked={!!editing[key]} onChange={e=>setEditing(p=>({...p,[key]:e.target.checked}))} style={{accentColor:T.purple,width:14,height:14}}/>
+                    {label}
+                  </label>
+                </div>
+              ))}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+                <div style={{background:T.card,borderRadius:8,padding:"12px 14px"}}>
+                  {lbl("Prazo de produção (dias)")}
+                  <input type="number" value={editing.prazoProducaoDias||""} onChange={e=>setEditing(p=>({...p,prazoProducaoDias:Number(e.target.value)||null}))} style={fi} placeholder="7"/>
+                </div>
+                <div style={{background:T.card,borderRadius:8,padding:"12px 14px"}}>
+                  {lbl("Prazo de entrega (dias)")}
+                  <input type="number" value={editing.prazoEntregaDias||""} onChange={e=>setEditing(p=>({...p,prazoEntregaDias:Number(e.target.value)||null}))} style={fi} placeholder="3"/>
+                </div>
+                <div style={{background:T.card,borderRadius:8,padding:"12px 14px"}}>
+                  {lbl("Qtd mínima de produção")}
+                  <input type="number" value={editing.minimoProducao||""} onChange={e=>setEditing(p=>({...p,minimoProducao:Number(e.target.value)||null}))} style={fi} placeholder="500"/>
+                </div>
+              </div>
+            </div>
+          )}
+          {tab==="historico"&&(
+            <div>
+              {proximoFollowUp&&(
+                <div style={{background:T.warn+"22",border:`1px solid ${T.warn}44`,borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:11,color:T.warn}}>
+                  📅 <strong>Próximo follow-up:</strong> {proximoFollowUp}
+                </div>
+              )}
+              <button onClick={()=>setShowInteracao(v=>!v)} style={{marginBottom:14,padding:"8px 18px",background:`linear-gradient(135deg,${T.info},${T.info}BB)`,color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>+ Registrar interação</button>
+              {showInteracao&&(
+                <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:14,marginBottom:14}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                    <div>{lbl("Tipo")}
+                      <select value={inter.tipo} onChange={e=>setInter(p=>({...p,tipo:e.target.value}))} style={{...fi,cursor:"pointer"}}>
+                        {["ligação","email","visita","WhatsApp","outro"].map(t=><option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div>{lbl("Data")}<input type="date" value={inter.data} onChange={e=>setInter(p=>({...p,data:e.target.value}))} style={fi}/></div>
+                  </div>
+                  <div style={{marginBottom:10}}>{lbl("Resultado / Resumo da interação *")}<textarea value={inter.resultado} onChange={e=>setInter(p=>({...p,resultado:e.target.value}))} rows={2} style={{...fi,resize:"vertical",lineHeight:1.5}} placeholder="O que foi discutido, o que a gráfica disse..."/></div>
+                  <div style={{marginBottom:10}}>{lbl("Próximo passo / Follow-up")}<input value={inter.proximoPasso} onChange={e=>setInter(p=>({...p,proximoPasso:e.target.value}))} style={fi} placeholder="Ex: Ligar novamente em 3 dias para confirmar proposta"/></div>
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={addInteracao} style={{padding:"7px 16px",background:T.accent,color:"#000",border:"none",borderRadius:7,fontSize:11,fontWeight:700,cursor:"pointer"}}>Salvar ✓</button>
+                    <button onClick={()=>setShowInteracao(false)} style={{padding:"7px 12px",background:T.surface,border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:11,cursor:"pointer"}}>Cancelar</button>
+                  </div>
+                </div>
+              )}
+              {(editing.historico||[]).length===0&&!showInteracao&&<div style={{padding:"32px",textAlign:"center",color:T.muted,fontSize:11}}>Nenhuma interação registrada ainda.</div>}
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {[...(editing.historico||[])].reverse().map((h,i)=>(
+                  <div key={i} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"11px 14px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                        <span style={{fontSize:9,fontWeight:700,color:T.info,background:T.info+"22",border:`1px solid ${T.info}44`,borderRadius:4,padding:"2px 7px"}}>{h.tipo||"interação"}</span>
+                        <span style={{fontSize:10,color:T.soft,fontWeight:600}}>{h.usuario}</span>
+                      </div>
+                      <span style={{fontSize:9,color:T.muted}}>{h.data}</span>
+                    </div>
+                    <div style={{fontSize:11,color:T.text,lineHeight:1.5,marginBottom:h.proximoPasso?6:0}}>{h.texto}</div>
+                    {h.proximoPasso&&<div style={{fontSize:9,color:T.warn,marginTop:4}}>→ Próximo passo: {h.proximoPasso}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        {/* Footer */}
+        <div style={{padding:"12px 20px",borderTop:`1px solid ${T.border}`,background:T.card,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <button onClick={()=>onDelete(pg.id)} style={{padding:"7px 14px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:7,fontSize:10,cursor:"pointer"}}>Excluir</button>
+          <button onClick={saveEditing} style={{padding:"8px 20px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontSize:11,fontWeight:700,cursor:"pointer"}}>Salvar alterações ✓</button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // FORN FORM — módulo-level para evitar perda de foco nos inputs
@@ -9122,7 +9426,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               salvarPlano={salvarPlano} gerarPropostaPDF={gerarPropostaPDF}
               geocodeEndereco={geocodeEndereco} gerarAnaliseIA={gerarAnaliseIA}
               sugerirParceiros={sugerirParceiros}
-              user={user} basePartners={basePartners} projects={projects} suppliers={suppliers}
+              user={user} basePartners={basePartners} projects={projects} suppliers={suppliers} allUsers={users}
               onConvertToCamp={plan=>{
                 setConvPlanDados(plan);
                 setConvCampEdit({
