@@ -4706,9 +4706,9 @@ export default function App(){
   const sendWhatsAppNotif=async(numero,mensagem)=>{
     if(!numero)return;
     try{
-      await fetch("http://2.24.111.162:8080/message/sendText/victoria",{
+      await fetch("/api/whatsapp/send",{
         method:"POST",
-        headers:{"apikey":"ecodely2026","Content-Type":"application/json"},
+        headers:{"Content-Type":"application/json"},
         body:JSON.stringify({number:numero,text:mensagem})
       });
     }catch(e){console.warn("WhatsApp notif failed:",e);}
