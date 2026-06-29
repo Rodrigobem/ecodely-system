@@ -3575,7 +3575,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
 
   const sendWA=async(numero,mensagem)=>{
     if(!numero)return;
-    try{await fetch("http://2.24.111.162:8080/message/sendText/victoria",{method:"POST",headers:{"apikey":"ecodely2026","Content-Type":"application/json"},body:JSON.stringify({number:numero,text:mensagem})});}
+    try{await fetch("/api/whatsapp/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({number:numero,text:mensagem})});}
     catch(e){console.warn("WA notif failed:",e);}
   };
 
