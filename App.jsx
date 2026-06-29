@@ -3278,7 +3278,7 @@ const enviarManual=async()=>{
   // Otimista: adicionar na tela
   const temp={id:Date.now(),conversa_id:waSelConv.id,role:"assistant",conteudo:msg,criado_em:new Date().toISOString()};
   setWaMensagens(p=>[...p,temp]);
-  await fetch("/api/whatsapp/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({numero:waSelConv.numero,mensagem:msg,conversa_id:waSelConv.id})});
+  await fetch("/api/whatsapp/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({number:waSelConv.numero,text:msg})});
 };
 const iniciarConversa=async()=>{
   if(!waNovoNumero.trim())return;
