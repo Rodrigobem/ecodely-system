@@ -3550,7 +3550,7 @@ return(
 // ---------------------------------------------------------------------------
 // PIPELINE DE CONVERSÃO
 // ---------------------------------------------------------------------------
-function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoading,pipeMembro,setPipeMembro,pipeCampanha,setPipeCampanha,pipeDragging,setPipeDragging,pipeModalLead,setPipeModalLead,pipeNovoLead,setPipeNovoLead,pipeShowNovo,setPipeShowNovo,T}){
+function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoading,pipeMembro,setPipeMembro,pipeCampanha,setPipeCampanha,pipeDragging,setPipeDragging,pipeModalLead,setPipeModalLead,pipeNovoLead,setPipeNovoLead,pipeShowNovo,setPipeShowNovo,T,basePartners,setBasePartners,allUsers,pushNotif}){
   const ETAPAS=[
     {id:"abordado",label:"Abordado",color:T.muted,emoji:"📤"},
     {id:"respondeu",label:"Respondeu",color:T.info,emoji:"💬"},
@@ -3560,6 +3560,9 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
   ];
   const MEMBROS=["Victória","Daniel","Rodrigo"];
   const inpS={width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none",boxSizing:"border-box"};
+  const [pipeMotModal,setPipeMotModal]=useState(null);
+  const [pipeMotivo,setPipeMotivo]=useState("");
+  const [pipeMotObs,setPipeMotObs]=useState("");
 
   useEffect(()=>{loadLeads();},[]);
 
@@ -3570,9 +3573,57 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
     setPipeLoading(false);
   };
 
+  const sendWA=async(numero,mensagem)=>{
+    if(!numero)return;
+    try{await fetch("http://2.24.111.162:8080/message/sendText/victoria",{method:"POST",headers:{"apikey":"ecodely2026","Content-Type":"application/json"},body:JSON.stringify({number:numero,text:mensagem})});}
+    catch(e){console.warn("WA notif failed:",e);}
+  };
+
+  const getWN=(nome)=>{const u=(allUsers||[]).find(u=>u.name===nome);return u?.whatsapp||null;};
+
   const atualizarEtapa=async(id,etapa)=>{
+    const lead=pipeLeads.find(l=>l.id===id);
+    if(!lead)return;
+
+    if(etapa==="interessado"){
+      const fup=new Date();fup.setDate(fup.getDate()+7);
+      const follow_up_date=fup.toISOString();
+      setPipeLeads(p=>p.map(l=>l.id===id?{...l,etapa,follow_up_date}:l));
+      await supabase.from("pipeline_leads").update({etapa,follow_up_date,atualizado_em:new Date().toISOString()}).eq("id",id);
+      const dtBr=fup.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});
+      await sendWA(getWN(lead.responsavel),`🔔 *Follow-up agendado!*\n*${lead.nome}* está interessado.\n📅 Entre em contato até: ${dtBr}`);
+      return;
+    }
+
+    if(etapa==="convertido"){
+      const exists=(basePartners||[]).find(p=>p.name.trim().toLowerCase()===lead.nome.trim().toLowerCase());
+      if(exists){
+        pushNotif&&pushNotif("Já na base",`${lead.nome} já está na Base de Parceiros`,T.warn);
+        await sendWA(getWN(lead.responsavel),`⚠️ *${lead.nome}* já existe na Base de Parceiros.`);
+        return;
+      }
+      const newP={id:Date.now(),name:lead.nome,city:lead.cidade||"-",state:"-",category:lead.tipo||"Outros",whatsapp:lead.telefone||"",handle:lead.instagram||"",deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:1,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},foto_fachada:"",instagram_seguidores:0};
+      const withScore={...newP,score:calcScore(newP)};
+      await supabase.from("parceiros").upsert({id:withScore.id,data:withScore});
+      await supabase.from("pipeline_leads").update({etapa,convertido_parceiro_id:withScore.id,atualizado_em:new Date().toISOString()}).eq("id",id);
+      setPipeLeads(p=>p.map(l=>l.id===id?{...l,etapa,convertido_parceiro_id:withScore.id}:l));
+      setBasePartners&&setBasePartners(prev=>[...prev,withScore]);
+      pushNotif&&pushNotif("Lead convertido!",`${lead.nome} adicionado à Base de Parceiros`,T.accent);
+      await sendWA(getWN(lead.responsavel),`🎉 *Lead convertido!*\n*${lead.nome}* foi convertido e já está na Base de Parceiros.\n📍 Cidade: ${lead.cidade||"-"}\n📱 Telefone: ${lead.telefone||"-"}\n👤 Responsável: ${lead.responsavel}`);
+      return;
+    }
+
     setPipeLeads(p=>p.map(l=>l.id===id?{...l,etapa}:l));
     await supabase.from("pipeline_leads").update({etapa,atualizado_em:new Date().toISOString()}).eq("id",id);
+  };
+
+  const confirmarPerda=async()=>{
+    if(!pipeMotModal||!pipeMotivo)return;
+    const{id,nome,responsavel}=pipeMotModal;
+    setPipeLeads(p=>p.map(l=>l.id===id?{...l,etapa:"encerrado",motivo_perda:pipeMotivo}:l));
+    await supabase.from("pipeline_leads").update({etapa:"encerrado",motivo_perda:pipeMotivo,follow_up_obs:pipeMotObs,atualizado_em:new Date().toISOString()}).eq("id",id);
+    await sendWA(getWN(responsavel),`❌ *${nome}* marcado como sem interesse.\nMotivo: ${pipeMotivo}. Responsável: ${responsavel}`);
+    setPipeMotModal(null);setPipeMotivo("");setPipeMotObs("");
   };
 
   const salvarLead=async()=>{
@@ -3611,8 +3662,38 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
   const onDragOver=(e)=>{ e.preventDefault(); e.dataTransfer.dropEffect="move"; };
   const onDrop=(e,etapa)=>{ e.preventDefault(); if(pipeDragging&&pipeDragging.etapa!==etapa) atualizarEtapa(pipeDragging.id,etapa); setPipeDragging(null); };
 
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+
   return(
   <div>
+    {/* Modal motivo da perda */}
+    {pipeMotModal&&(
+      <div style={{position:"fixed",inset:0,background:"#00000088",zIndex:1010,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget){setPipeMotModal(null);setPipeMotivo("");setPipeMotObs("");}}}>
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:24,width:"min(420px,95vw)"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:T.danger}}>❌ Sem interesse</div>
+            <button onClick={()=>{setPipeMotModal(null);setPipeMotivo("");setPipeMotObs("");}} style={{background:"none",border:"none",color:T.muted,fontSize:18,cursor:"pointer"}}>✕</button>
+          </div>
+          <div style={{marginBottom:12,fontSize:11,fontWeight:600,color:T.text}}>{pipeMotModal.nome}</div>
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Motivo *</div>
+            <select value={pipeMotivo} onChange={e=>setPipeMotivo(e.target.value)} style={{...inpS,color:pipeMotivo?T.text:T.muted}}>
+              <option value="">Selecione um motivo</option>
+              {["Sem interesse","Exclusividade","Sem capacidade operacional","Não respondeu","Já possui parceiro","Outro"].map(m=><option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Observações</div>
+            <textarea value={pipeMotObs} onChange={e=>setPipeMotObs(e.target.value)} rows={3} placeholder="Opcional..." style={{...inpS,resize:"vertical"}}/>
+          </div>
+          <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
+            <button onClick={()=>{setPipeMotModal(null);setPipeMotivo("");setPipeMotObs("");}} style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={confirmarPerda} disabled={!pipeMotivo} style={{padding:"7px 16px",background:pipeMotivo?T.dangerDim:"transparent",border:`1px solid ${pipeMotivo?T.danger+"44":T.border}`,color:pipeMotivo?T.danger:T.muted,borderRadius:7,fontSize:10,fontWeight:700,cursor:pipeMotivo?"pointer":"default",opacity:pipeMotivo?1:0.5}}>Confirmar</button>
+          </div>
+        </div>
+      </div>
+    )}
+
     {/* Modal edição */}
     {pipeModalLead&&(
       <div style={{position:"fixed",inset:0,background:"#00000088",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget)setPipeModalLead(null);}}>
@@ -3737,7 +3818,12 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
               </div>
               {/* Cards */}
               <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {cols.map(lead=>(
+                {cols.map(lead=>{
+                  const fupDate=lead.follow_up_date?new Date(lead.follow_up_date):null;
+                  if(fupDate)fupDate.setHours(0,0,0,0);
+                  const fupDiff=fupDate?(fupDate-hoje):null;
+                  const fupBadge=fupDate?(fupDiff<0?{label:"🔴 Follow-up atrasado",color:T.danger}:fupDiff===0?{label:"🟡 Follow-up hoje",color:T.warn}:null):null;
+                  return(
                   <div key={lead.id}
                     draggable
                     onDragStart={e=>onDragStart(e,lead)}
@@ -3750,13 +3836,34 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
                     {lead.cidade&&<div style={{fontSize:9,color:T.muted,marginBottom:3}}>📍 {lead.cidade}</div>}
                     {lead.tipo&&<div style={{fontSize:9,color:T.muted,marginBottom:3}}>🍽 {lead.tipo}</div>}
                     {lead.campanha&&<div style={{fontSize:8,padding:"2px 6px",borderRadius:3,background:T.accentDim,color:T.accent,display:"inline-block",marginBottom:4}}>{lead.campanha}</div>}
+                    {fupBadge&&<div style={{fontSize:8,padding:"2px 6px",borderRadius:3,background:fupBadge.color+"22",color:fupBadge.color,display:"inline-block",marginBottom:4,fontWeight:700,marginLeft:2}}>{fupBadge.label}</div>}
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
                       <div style={{fontSize:8,color:T.muted}}>{lead.responsavel}</div>
-                      {lead.telefone&&<div style={{fontSize:8,color:T.info}}>📞</div>}
-                      {lead.instagram&&<div style={{fontSize:8,color:T.purple}}>📸</div>}
+                      <div style={{display:"flex",gap:4}}>
+                        {lead.telefone&&<div style={{fontSize:8,color:T.info}}>📞</div>}
+                        {lead.instagram&&<div style={{fontSize:8,color:T.purple}}>📸</div>}
+                      </div>
                     </div>
+                    {etapa.id==="abordado"&&(
+                      <div style={{marginTop:8,display:"flex",gap:4}} onClick={e=>e.stopPropagation()}>
+                        <button onClick={()=>{atualizarEtapa(lead.id,"respondeu");sendWA(getWN(lead.responsavel),`💬 *${lead.nome}* respondeu! Acesse o pipeline para dar continuidade.`);}} style={{flex:1,padding:"4px 0",fontSize:9,fontWeight:700,borderRadius:5,border:`1px solid ${T.info}44`,background:T.info+"22",color:T.info,cursor:"pointer"}}>💬 Respondeu</button>
+                      </div>
+                    )}
+                    {etapa.id==="respondeu"&&(
+                      <div style={{marginTop:8,display:"flex",gap:4}} onClick={e=>e.stopPropagation()}>
+                        <button onClick={()=>atualizarEtapa(lead.id,"interessado")} style={{flex:1,padding:"4px 0",fontSize:9,fontWeight:700,borderRadius:5,border:`1px solid ${T.warn}44`,background:T.warn+"22",color:T.warn,cursor:"pointer"}}>🔥 Interessado</button>
+                        <button onClick={()=>setPipeMotModal({id:lead.id,nome:lead.nome,responsavel:lead.responsavel})} style={{flex:1,padding:"4px 0",fontSize:9,fontWeight:700,borderRadius:5,border:`1px solid ${T.danger}44`,background:T.danger+"22",color:T.danger,cursor:"pointer"}}>❌ Sem interesse</button>
+                      </div>
+                    )}
+                    {etapa.id==="interessado"&&(
+                      <div style={{marginTop:8,display:"flex",gap:4}} onClick={e=>e.stopPropagation()}>
+                        <button onClick={()=>atualizarEtapa(lead.id,"convertido")} style={{flex:1,padding:"4px 0",fontSize:9,fontWeight:700,borderRadius:5,border:`1px solid ${T.accent}44`,background:T.accent+"22",color:T.accent,cursor:"pointer"}}>✅ Converter</button>
+                        <button onClick={()=>setPipeMotModal({id:lead.id,nome:lead.nome,responsavel:lead.responsavel})} style={{flex:1,padding:"4px 0",fontSize:9,fontWeight:700,borderRadius:5,border:`1px solid ${T.danger}44`,background:T.danger+"22",color:T.danger,cursor:"pointer"}}>❌ Sem interesse</button>
+                      </div>
+                    )}
                   </div>
-                ))}
+                );})}
+
                 {cols.length===0&&<div style={{textAlign:"center",padding:"20px 0",color:T.border,fontSize:10}}>Arraste um card aqui</div>}
               </div>
             </div>
@@ -4244,7 +4351,7 @@ export default function App(){
   const[newComm,setNewComm]=useState({typeId:"",projectId:"",value:""});
   const[users,setUsers]=useState(USERS_DB);
   const[showNewUser,setShowNewUser]=useState(false);
-  const[newUser,setNewUser]=useState({name:"",email:"",pass:"",role:"base",regiao:[],comissao_pct:5});
+  const[newUser,setNewUser]=useState({name:"",email:"",pass:"",role:"base",regiao:[],comissao_pct:5,whatsapp:""});
   const[baseSearch,setBaseSearch]=useState("");
   const[baseFilter,setBaseFilter]=useState("todos");
   const[baseScoreMin,setBaseScoreMin]=useState(0);
@@ -4594,6 +4701,22 @@ export default function App(){
     const n={id:Date.now(),title,msg,color,at:now()};
     setNotifs(p=>[n,...p.slice(0,2)]);
     setTimeout(()=>setNotifs(p=>p.filter(x=>x.id!==n.id)),5000);
+  };
+
+  const sendWhatsAppNotif=async(numero,mensagem)=>{
+    if(!numero)return;
+    try{
+      await fetch("http://2.24.111.162:8080/message/sendText/victoria",{
+        method:"POST",
+        headers:{"apikey":"ecodely2026","Content-Type":"application/json"},
+        body:JSON.stringify({number:numero,text:mensagem})
+      });
+    }catch(e){console.warn("WhatsApp notif failed:",e);}
+  };
+
+  const getWhatsappByName=(nome,usrs)=>{
+    const u=(usrs||users).find(u=>u.name===nome);
+    return u?.whatsapp||null;
   };
 
   const addNotif=async(type,title,msg,campanha,color,via,tab)=>{
@@ -5726,7 +5849,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     const passHash=await hashPass(newUser.pass);
     const rec={id:Date.now(),...newUser,pass:passHash,avatar:newUser.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2),active:true,lastAccess:"nunca"};
     setUsers(p=>[...p,rec]);
-    setNewUser({name:"",email:"",pass:"",role:"base",regiao:[],comissao_pct:5});setShowNewUser(false);
+    setNewUser({name:"",email:"",pass:"",role:"base",regiao:[],comissao_pct:5,whatsapp:""});setShowNewUser(false);
     const{error}=await supabase.from("usuarios").insert(rec);
     if(error)console.error("SUPABASE addUser erro:",error.message,error.details);
   };
@@ -9279,7 +9402,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   pipeModalLead={pipeModalLead} setPipeModalLead={setPipeModalLead}
                   pipeNovoLead={pipeNovoLead} setPipeNovoLead={setPipeNovoLead}
                   pipeShowNovo={pipeShowNovo} setPipeShowNovo={setPipeShowNovo}
-                  T={T}/>
+                  T={T} basePartners={basePartners} setBasePartners={setBasePartners}
+                  allUsers={users} pushNotif={pushNotif}/>
               )}
 
               {baseTab==="score"&&(
@@ -11439,6 +11563,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
                     {[["Nome","name","text"],["E-mail","email","email"],["Senha","pass","password"]].map(([l,k,t])=>(<div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}</div><input type={t} value={newUser[k]} onChange={e=>setNewUser(p=>({...p,[k]:e.target.value}))} style={inpS}/></div>))}
                     <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Perfil</div><select value={newUser.role} onChange={e=>setNewUser(p=>({...p,role:e.target.value}))} style={selS}>{Object.entries(ROLE_LABELS).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
+                    <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>WhatsApp</div><input type="tel" value={newUser.whatsapp||""} onChange={e=>setNewUser(p=>({...p,whatsapp:e.target.value.replace(/\D/g,"")}))} placeholder="5511999999999" style={inpS}/></div>
                     {newUser.role==="representante"&&<div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Comissão (%)</div><input type="number" min="0" max="100" step="0.5" value={newUser.comissao_pct} onChange={e=>setNewUser(p=>({...p,comissao_pct:Number(e.target.value)}))} style={inpS}/></div>}
                   </div>
                   {newUser.role==="representante"&&(
@@ -11464,6 +11589,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     <div style={{display:"flex",gap:8,alignItems:"center"}}><div style={{width:26,height:26,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",border:`1px solid ${ROLE_COLOR[u.role]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:ROLE_COLOR[u.role],fontWeight:700,flexShrink:0}}>{u.avatar}</div><span style={{fontSize:12,fontWeight:600,fontFamily:"Arial,sans-serif"}}>{u.name}</span></div>
                     <div>
                       <div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>{u.email}</div>
+                      {u.whatsapp&&<div style={{fontSize:8,color:T.accent,marginTop:2,fontFamily:"Arial,sans-serif",display:"flex",alignItems:"center",gap:3,cursor:"pointer"}} onClick={async()=>{const v=prompt("WhatsApp:",u.whatsapp||"");if(v===null)return;const wn=v.replace(/\D/g,"");setUsers(p=>p.map(x=>x.id===u.id?{...x,whatsapp:wn}:x));await supabase.from("usuarios").update({whatsapp:wn}).eq("id",u.id);}}>📱 {u.whatsapp}</div>}
+                      {!u.whatsapp&&<div style={{fontSize:8,color:T.muted,marginTop:2,fontFamily:"Arial,sans-serif",cursor:"pointer",textDecoration:"underline dotted"}} onClick={async()=>{const v=prompt("WhatsApp (somente números):");if(!v)return;const wn=v.replace(/\D/g,"");setUsers(p=>p.map(x=>x.id===u.id?{...x,whatsapp:wn}:x));await supabase.from("usuarios").update({whatsapp:wn}).eq("id",u.id);}}>+ add WhatsApp</div>}
                       {u.role==="representante"&&u.regiao?.length>0&&<div style={{fontSize:8,color:"#F59E0B",marginTop:2,fontFamily:"Arial,sans-serif"}}>{u.regiao.join(", ")} · {u.comissao_pct||5}% comissão</div>}
                     </div>
                     <Badge label={ROLE_LABELS[u.role]||u.role} color={ROLE_COLOR[u.role]||T.muted}/>
