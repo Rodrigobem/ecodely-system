@@ -3616,6 +3616,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
       setBasePartners&&setBasePartners(prev=>[...prev,withScore]);
       pushNotif&&pushNotif("Lead convertido!",`${lead.nome} adicionado à Base de Parceiros`,T.accent);
       const msgConv=`🎉 *Lead convertido!*\n*${lead.nome}* foi convertido e já está na Base de Parceiros.\n📍 Cidade: ${lead.cidade||"-"}\n📱 Telefone: ${lead.telefone||"-"}\n👤 Responsável: ${lead.responsavel}`;
+      console.log('[DEBUG CONVERSÃO] responsavel_comercial:', lead.responsavel_comercial, '| whatsapp encontrado:', wComercial);
       if(wAlessandra) await sendWA(wAlessandra,msgConv);
       if(wComercial) await sendWA(wComercial,msgConv);
       return;
