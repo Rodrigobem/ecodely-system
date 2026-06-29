@@ -3559,6 +3559,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
     {id:"encerrado",label:"Sem interesse",color:T.danger,emoji:"❌"},
   ];
   const MEMBROS=(allUsers||[]).filter(u=>["base","gerente_base"].includes(u.role)&&u.active!==false).map(u=>u.name);
+  const MEMBROS_COMERCIAL=(allUsers||[]).filter(u=>["comercial","representante"].includes(u.role)&&u.active!==false).map(u=>u.name);
   const inpS={width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none",boxSizing:"border-box"};
   const [pipeMotModal,setPipeMotModal]=useState(null);
   const [pipeMotivo,setPipeMotivo]=useState("");
@@ -3585,8 +3586,8 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
     const lead=pipeLeads.find(l=>l.id===id);
     if(!lead)return;
 
-    console.log('[DEBUG] atualizarEtapa chamada:', etapa, 'lead:', lead?.nome, 'whatsapp:', getWN(lead?.responsavel));
-    console.log('[DEBUG] allUsers:', allUsers?.length, allUsers?.map(u=>u.name+':'+u.whatsapp));
+    const wAlessandra=getWN("Alessandra");
+    const wComercial=lead.responsavel_comercial?getWN(lead.responsavel_comercial):null;
 
     if(etapa==="interessado"){
       const fup=new Date();fup.setDate(fup.getDate()+7);
@@ -3594,7 +3595,8 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
       setPipeLeads(p=>p.map(l=>l.id===id?{...l,etapa,follow_up_date}:l));
       await supabase.from("pipeline_leads").update({etapa,follow_up_date,atualizado_em:new Date().toISOString()}).eq("id",id);
       const dtBr=fup.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});
-      await sendWA(getWN(lead.responsavel),`🔔 *Follow-up agendado!*\n*${lead.nome}* está interessado.\n📅 Entre em contato até: ${dtBr}`);
+      const msgInt=`🔔 *Follow-up agendado!*\n*${lead.nome}* está interessado.\n📅 Entre em contato até: ${dtBr}`;
+      if(wAlessandra) await sendWA(wAlessandra,msgInt);
       return;
     }
 
@@ -3602,7 +3604,8 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
       const exists=(basePartners||[]).find(p=>p.name.trim().toLowerCase()===lead.nome.trim().toLowerCase());
       if(exists){
         pushNotif&&pushNotif("Já na base",`${lead.nome} já está na Base de Parceiros`,T.warn);
-        await sendWA(getWN(lead.responsavel),`⚠️ *${lead.nome}* já existe na Base de Parceiros.`);
+        const msgExiste=`⚠️ *${lead.nome}* já existe na Base de Parceiros.`;
+        if(wAlessandra) await sendWA(wAlessandra,msgExiste);
         return;
       }
       const newP={id:Date.now(),name:lead.nome,city:lead.cidade||"-",state:"-",category:lead.tipo||"Outros",whatsapp:lead.telefone||"",handle:lead.instagram||"",deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:1,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},foto_fachada:"",instagram_seguidores:0};
@@ -3612,7 +3615,9 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
       setPipeLeads(p=>p.map(l=>l.id===id?{...l,etapa,convertido_parceiro_id:withScore.id}:l));
       setBasePartners&&setBasePartners(prev=>[...prev,withScore]);
       pushNotif&&pushNotif("Lead convertido!",`${lead.nome} adicionado à Base de Parceiros`,T.accent);
-      await sendWA(getWN(lead.responsavel),`🎉 *Lead convertido!*\n*${lead.nome}* foi convertido e já está na Base de Parceiros.\n📍 Cidade: ${lead.cidade||"-"}\n📱 Telefone: ${lead.telefone||"-"}\n👤 Responsável: ${lead.responsavel}`);
+      const msgConv=`🎉 *Lead convertido!*\n*${lead.nome}* foi convertido e já está na Base de Parceiros.\n📍 Cidade: ${lead.cidade||"-"}\n📱 Telefone: ${lead.telefone||"-"}\n👤 Responsável: ${lead.responsavel}`;
+      if(wAlessandra) await sendWA(wAlessandra,msgConv);
+      if(wComercial) await sendWA(wComercial,msgConv);
       return;
     }
 
@@ -3625,7 +3630,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
     const{id,nome,responsavel}=pipeMotModal;
     setPipeLeads(p=>p.map(l=>l.id===id?{...l,etapa:"encerrado",motivo_perda:pipeMotivo}:l));
     await supabase.from("pipeline_leads").update({etapa:"encerrado",motivo_perda:pipeMotivo,follow_up_obs:pipeMotObs,atualizado_em:new Date().toISOString()}).eq("id",id);
-    await sendWA(getWN(responsavel),`❌ *${nome}* marcado como sem interesse.\nMotivo: ${pipeMotivo}. Responsável: ${responsavel}`);
+    const wA=getWN("Alessandra");if(wA)await sendWA(wA,`❌ *${nome}* marcado como sem interesse.\nMotivo: ${pipeMotivo}. Responsável: ${responsavel}`);
     setPipeMotModal(null);setPipeMotivo("");setPipeMotObs("");
   };
 
@@ -3634,7 +3639,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
     const{data}=await supabase.from("pipeline_leads").insert([{...pipeNovoLead,criado_em:new Date().toISOString(),atualizado_em:new Date().toISOString()}]).select().single();
     if(data) setPipeLeads(p=>[data,...p]);
     setPipeShowNovo(false);
-    setPipeNovoLead({nome:"",responsavel:"Victória",etapa:"abordado",campanha:"",cidade:"",tipo:"",telefone:"",instagram:"",obs:""});
+    setPipeNovoLead({nome:"",responsavel:"Victória",etapa:"abordado",campanha:"",cidade:"",tipo:"",telefone:"",instagram:"",obs:"",responsavel_comercial:""});
   };
 
   const salvarEdicao=async()=>{
@@ -3714,6 +3719,11 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
             <select value={pipeModalLead.responsavel||"Victória"} onChange={e=>setPipeModalLead(p=>({...p,responsavel:e.target.value}))} style={inpS}>{MEMBROS.map(m=><option key={m}>{m}</option>)}</select></div>
             <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Etapa</div>
             <select value={pipeModalLead.etapa||"abordado"} onChange={e=>setPipeModalLead(p=>({...p,etapa:e.target.value}))} style={inpS}>{ETAPAS.map(e=><option key={e.id} value={e.id}>{e.label}</option>)}</select></div>
+            <div style={{gridColumn:"span 2"}}><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Responsável Comercial</div>
+            <select value={pipeModalLead.responsavel_comercial||""} onChange={e=>setPipeModalLead(p=>({...p,responsavel_comercial:e.target.value}))} style={inpS}>
+              <option value="">Nenhum</option>
+              {MEMBROS_COMERCIAL.map(m=><option key={m}>{m}</option>)}
+            </select></div>
           </div>
           <div style={{marginBottom:12}}><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Observações</div>
           <textarea value={pipeModalLead.obs||""} onChange={e=>setPipeModalLead(p=>({...p,obs:e.target.value}))} rows={3} style={{...inpS,resize:"vertical"}}/></div>
@@ -3766,6 +3776,11 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
           <select value={pipeNovoLead.responsavel} onChange={e=>setPipeNovoLead(p=>({...p,responsavel:e.target.value}))} style={inpS}>{MEMBROS.map(m=><option key={m}>{m}</option>)}</select></div>
           <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Etapa inicial</div>
           <select value={pipeNovoLead.etapa} onChange={e=>setPipeNovoLead(p=>({...p,etapa:e.target.value}))} style={inpS}>{ETAPAS.map(e=><option key={e.id} value={e.id}>{e.label}</option>)}</select></div>
+          <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Resp. Comercial</div>
+          <select value={pipeNovoLead.responsavel_comercial||""} onChange={e=>setPipeNovoLead(p=>({...p,responsavel_comercial:e.target.value}))} style={inpS}>
+            <option value="">Nenhum</option>
+            {MEMBROS_COMERCIAL.map(m=><option key={m}>{m}</option>)}
+          </select></div>
         </div>
         <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
           <button onClick={()=>setPipeShowNovo(false)} style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10,cursor:"pointer"}}>Cancelar</button>
@@ -3849,7 +3864,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
                     </div>
                     {etapa.id==="abordado"&&(
                       <div style={{marginTop:8,display:"flex",gap:4}} onClick={e=>e.stopPropagation()}>
-                        <button onClick={()=>{atualizarEtapa(lead.id,"respondeu");sendWA(getWN(lead.responsavel),`💬 *${lead.nome}* respondeu! Acesse o pipeline para dar continuidade.`);}} style={{flex:1,padding:"4px 0",fontSize:9,fontWeight:700,borderRadius:5,border:`1px solid ${T.info}44`,background:T.info+"22",color:T.info,cursor:"pointer"}}>💬 Respondeu</button>
+                        <button onClick={()=>{atualizarEtapa(lead.id,"respondeu");const wA=getWN("Alessandra");if(wA)sendWA(wA,`💬 *${lead.nome}* respondeu! Acesse o pipeline para dar continuidade.`);}} style={{flex:1,padding:"4px 0",fontSize:9,fontWeight:700,borderRadius:5,border:`1px solid ${T.info}44`,background:T.info+"22",color:T.info,cursor:"pointer"}}>💬 Respondeu</button>
                       </div>
                     )}
                     {etapa.id==="respondeu"&&(
@@ -4362,6 +4377,7 @@ export default function App(){
   const[baseEstado,setBaseEstado]=useState("todos");
   const[baseCidade,setBaseCidade]=useState("todos");
   const[baseSegmento,setBaseSegmento]=useState("todos");
+  const[baseNovaCidadeMode,setBaseNovaCidadeMode]=useState(false);
   const[basePartners,setBasePartners]=useState(BASE_PARTNERS_INIT);
   // Pipeline states
   const[pipeLeads,setPipeLeads]=useState([]);
@@ -4370,7 +4386,7 @@ export default function App(){
   const[pipeCampanha,setPipeCampanha]=useState("todas");
   const[pipeDragging,setPipeDragging]=useState(null);
   const[pipeModalLead,setPipeModalLead]=useState(null); // lead sendo editado/criado
-  const[pipeNovoLead,setPipeNovoLead]=useState({nome:"",responsavel:"Victória",etapa:"abordado",campanha:"",cidade:"",tipo:"",telefone:"",instagram:"",obs:""});
+  const[pipeNovoLead,setPipeNovoLead]=useState({nome:"",responsavel:"Victória",etapa:"abordado",campanha:"",cidade:"",tipo:"",telefone:"",instagram:"",obs:"",responsavel_comercial:""});
   const[pipeShowNovo,setPipeShowNovo]=useState(false);
   // WhatsApp agent states
   // Simulador
@@ -8897,7 +8913,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           </div>
                           <div>
                             <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Segmento / Culinária *</div>
-                            <input value={selPartner.category||""} onChange={e=>setSelPartner(p=>({...p,category:e.target.value}))} placeholder="Ex: Hamburguer, Japonesa" style={inpS}/>
+                            <select value={selPartner.category||""} onChange={e=>setSelPartner(p=>({...p,category:e.target.value}))} style={inpS}>
+                              <option value="">Selecione...</option>
+                              {["Japonesa","Italiana","Brasileira","Árabe","Mexicana","Chinesa","Fast Food","Pizza","Hamburguer","Sushi","Frutos do Mar","Vegetariana/Vegana","Churrasco","Lanches","Doces/Sobremesas","Cafeteria","Padaria","Fitness/Saudável","Variado","Outro"].map(s=><option key={s} value={s}>{s}</option>)}
+                            </select>
                           </div>
                           <div>
                             <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Handle Instagram</div>
@@ -8911,7 +8930,22 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           </div>
                           <div>
                             <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Cidade</div>
-                            <input value={selPartner.city||""} onChange={e=>setSelPartner(p=>({...p,city:e.target.value}))} placeholder="São Paulo" style={inpS}/>
+                            {(()=>{
+                              const CIDADE_UF={"São Paulo":"SP","Rio de Janeiro":"RJ","Belo Horizonte":"MG","Salvador":"BA","Fortaleza":"CE","Curitiba":"PR","Manaus":"AM","Recife":"PE","Porto Alegre":"RS","Goiânia":"GO","Belém":"PA","Guarulhos":"SP","Campinas":"SP","São Luís":"MA","São Gonçalo":"RJ","Maceió":"AL","Natal":"RN","Teresina":"PI","Campo Grande":"MS","João Pessoa":"PB","Osasco":"SP","Santo André":"SP","São Bernardo do Campo":"SP","Jaboatão dos Guararapes":"PE","Sorocaba":"SP","Uberlândia":"MG","Ribeirão Preto":"SP","Contagem":"MG","Aracaju":"SE","Feira de Santana":"BA","Cuiabá":"MT","Joinville":"SC","Juiz de Fora":"MG","Londrina":"PR","Aparecida de Goiânia":"GO","Ananindeua":"PA","Porto Velho":"RO","Serra":"ES","Mogi das Cruzes":"SP","Niterói":"RJ","São José dos Campos":"SP","Florianópolis":"SC","Santos":"SP","Caxias do Sul":"RS","Macapá":"AP","Vitória":"ES","Duque de Caxias":"RJ","Carapicuíba":"SP"};
+                              const cidadesBase=[...new Set((basePartners||[]).map(p=>p.city).filter(Boolean).sort())];
+                              const todasCidades=[...new Set([...Object.keys(CIDADE_UF),...cidadesBase])].sort();
+                              if(baseNovaCidadeMode){
+                                return <div style={{display:"flex",gap:4}}>
+                                  <input value={selPartner.city||""} onChange={e=>setSelPartner(p=>({...p,city:e.target.value}))} placeholder="Digite a cidade" style={{...inpS,flex:1}} autoFocus/>
+                                  <button onClick={()=>{setBaseNovaCidadeMode(false);}} style={{padding:"0 8px",background:T.surface,border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,cursor:"pointer",fontSize:10}}>✕</button>
+                                </div>;
+                              }
+                              return <select value={selPartner.city||""} onChange={e=>{const v=e.target.value;if(v==="__nova__"){setBaseNovaCidadeMode(true);return;}setSelPartner(p=>({...p,city:v,state:CIDADE_UF[v]||p.state}));}} style={inpS}>
+                                <option value="">Selecione...</option>
+                                {todasCidades.map(c=><option key={c} value={c}>{c}</option>)}
+                                <option value="__nova__">+ Nova cidade...</option>
+                              </select>;
+                            })()}
                           </div>
                           <div>
                             <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Estado (UF)</div>
@@ -9056,8 +9090,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <input value={selPartner.endereco?.bairro||""} onChange={e=>setSelPartner(p=>({...p,endereco:{...p.endereco,bairro:e.target.value}}))} placeholder="Centro" style={inpS}/>
                           </div>
                         <div>
-                          <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>CEP</div>
-                          <input value={selPartner.endereco?.cep||""} onChange={e=>setSelPartner(p=>({...p,endereco:{...p.endereco,cep:e.target.value}}))} placeholder="00000-000" style={inpS}/>
+                          <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>CEP{selPartner._cepLoading&&" ⏳"}</div>
+                          <input value={selPartner.endereco?.cep||""} onChange={async e=>{const cep=e.target.value.replace(/\D/g,"").slice(0,8);const fmt=cep.length>5?cep.slice(0,5)+"-"+cep.slice(5):cep;setSelPartner(p=>({...p,endereco:{...p.endereco,cep:fmt}}));if(cep.length===8){setSelPartner(p=>({...p,_cepLoading:true}));try{const r=await fetch(`https://viacep.com.br/ws/${cep}/json/`);const j=await r.json();if(!j.erro)setSelPartner(p=>({...p,_cepLoading:false,city:j.localidade||p.city,state:j.uf||p.state,endereco:{...p.endereco,cep:fmt,rua:j.logradouro||p.endereco?.rua,bairro:j.bairro||p.endereco?.bairro}}));else setSelPartner(p=>({...p,_cepLoading:false}));}catch(e){setSelPartner(p=>({...p,_cepLoading:false}));}}}} placeholder="00000-000" maxLength={9} style={inpS}/>
                         </div>
                         <div>
                           <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Cidade</div>
@@ -9122,6 +9156,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           })()}
                         </div>
                       )}
+
+                      {/* Classe Social */}
+                      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:16,marginBottom:14}}>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,marginBottom:12}}>Classe Social</div>
+                        <select value={selPartner.classe_social||""} onChange={e=>setSelPartner(p=>({...p,classe_social:e.target.value}))} style={inpS}>
+                          <option value="">Não informada</option>
+                          {["A","B1","B2","C1","C2","D","E"].map(c=><option key={c} value={c}>Classe {c}</option>)}
+                        </select>
+                        <button onClick={async()=>{const upd={...selPartner};await supabase.from("parceiros").upsert({id:upd.id,data:upd});pushNotif("Salvo","Classe social atualizada",T.accent);}} style={{marginTop:8,width:"100%",padding:"7px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:11,fontWeight:700,cursor:"pointer"}}>Salvar Classe Social</button>
+                      </div>
 
                       {/* Fotos do Parceiro */}
                       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:16,marginBottom:14}}>
@@ -9377,6 +9421,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         <div>
                           <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div>
                           <div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{p.handle}</div>
+                          {p.classe_social&&<span style={{fontSize:7,fontWeight:700,padding:"1px 5px",borderRadius:3,background:["A"].includes(p.classe_social)?"#14532d22":["B1","B2"].includes(p.classe_social)?"#1d4ed822":["C1","C2"].includes(p.classe_social)?"#92400e22":"#37415122",color:["A"].includes(p.classe_social)?"#15803d":["B1","B2"].includes(p.classe_social)?"#1d4ed8":["C1","C2"].includes(p.classe_social)?"#b45309":"#6b7280"}}>Classe {p.classe_social}</span>}
                         </div>
                         <div style={{fontSize:10,color:T.soft}}>{p.category}</div>
                         <div style={{fontSize:10,color:T.soft}}>{p.city} · {p.state}</div>
