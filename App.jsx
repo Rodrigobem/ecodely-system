@@ -3585,6 +3585,9 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
     const lead=pipeLeads.find(l=>l.id===id);
     if(!lead)return;
 
+    console.log('[DEBUG] atualizarEtapa chamada:', etapa, 'lead:', lead?.nome, 'whatsapp:', getWN(lead?.responsavel));
+    console.log('[DEBUG] allUsers:', allUsers?.length, allUsers?.map(u=>u.name+':'+u.whatsapp));
+
     if(etapa==="interessado"){
       const fup=new Date();fup.setDate(fup.getDate()+7);
       const follow_up_date=fup.toISOString();
