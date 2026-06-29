@@ -3559,7 +3559,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
     {id:"encerrado",label:"Sem interesse",color:T.danger,emoji:"❌"},
   ];
   const MEMBROS=(allUsers||[]).filter(u=>["base","gerente_base"].includes(u.role)&&u.active!==false).map(u=>u.name);
-  const MEMBROS_COMERCIAL=(allUsers||[]).filter(u=>["comercial","representante"].includes(u.role)&&u.active!==false).map(u=>u.name);
+  const MEMBROS_COMERCIAL=(allUsers||[]).filter(u=>["comercial","representante","admin"].includes(u.role)&&u.active!==false).map(u=>u.name);
   const inpS={width:"100%",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:T.text,outline:"none",boxSizing:"border-box"};
   const [pipeMotModal,setPipeMotModal]=useState(null);
   const [pipeMotivo,setPipeMotivo]=useState("");
