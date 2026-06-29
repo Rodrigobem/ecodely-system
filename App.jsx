@@ -3382,7 +3382,7 @@ return(
                 <span style={{fontSize:9,color:T.muted}}>{new Date(fb.criado_em).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</span>
               </div>
               <div style={{marginBottom:8}}>
-                <div style={{fontSize:9,color:T.muted,marginBottom:4}}>❌ O que a Victória disse:</div>
+                <div style={{fontSize:9,color:T.muted,marginBottom:4}}>❌ O que a Maya disse:</div>
                 <div style={{fontSize:11,color:T.soft,background:T.surface,borderRadius:6,padding:"8px 10px",borderLeft:`3px solid ${T.danger}`}}>{fb.resposta_agente}</div>
               </div>
               <div>
@@ -3425,7 +3425,7 @@ return(
       const iniciarSim=async()=>{
         setSimMsgs([]);setSimStarted(true);setSimLoading(true);
         try{
-          // A Victória aborda primeiro — pede para gerar a mensagem inicial de prospecção
+          // A Maya aborda primeiro — pede para gerar a mensagem inicial de prospecção
           const promptInicio=simModo==="prospecto"
             ?"Gere APENAS a sua primeira mensagem de abordagem para este restaurante, como se você estivesse enviando o primeiro contato pelo direct do Instagram. Não espere o restaurante falar — você está abordando eles. Use o modelo de primeira mensagem do seu prompt."
             :simModo==="cobranca"
@@ -3438,7 +3438,7 @@ return(
           });
           const data=await res.json();
           const resposta=data.text||"Olá! 👋";
-          // Só mostra a mensagem da Victória — sem o "oi" do usuário
+          // Só mostra a mensagem da Maya — sem o "oi" do usuário
           setSimMsgs([{role:"assistant",text:resposta}]);
         }catch(e){setSimMsgs([{role:"assistant",text:"(erro ao conectar — verifique ANTHROPIC_API_KEY no Vercel)"}]);}
         setSimLoading(false);
@@ -3451,7 +3451,7 @@ return(
             <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.accent}}>🧪 Simulador do Agente</div>
             <a href="/treino" target="_blank" style={{padding:"5px 12px",background:T.surface,border:`1px solid ${T.border}`,color:T.soft,borderRadius:6,fontSize:10,fontWeight:600,textDecoration:"none"}}>🔗 Abrir link da equipe</a>
           </div>
-          <div style={{fontSize:10,color:T.muted,marginBottom:10}}>A Victória aborda o restaurante primeiro. Você responde como se fosse o dono/responsável.</div>
+          <div style={{fontSize:10,color:T.muted,marginBottom:10}}>A Maya aborda o restaurante primeiro. Você responde como se fosse o dono/responsável.</div>
           <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
             <span style={{fontSize:10,color:T.muted}}>Modo:</span>
             {[["prospecto","🎯 Prospecção"],["parceiro","🤝 Parceiro"],["cobranca","📸 Cobrança"]].map(([v,l])=>(
@@ -3466,9 +3466,9 @@ return(
           {!simStarted&&simMsgs.length===0&&(
             <div style={{textAlign:"center",marginTop:40}}>
               <div style={{fontSize:32,marginBottom:12}}>🤖</div>
-              <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,marginBottom:6}}>Agente Victória — Ecodely</div>
-              <div style={{fontSize:11,color:T.muted,marginBottom:20,maxWidth:320,margin:"0 auto 20px"}}>Modo: <strong>{simModo==="prospecto"?"Prospecção fria":simModo==="parceiro"?"Suporte ao parceiro":"Cobrança de postagem"}</strong><br/>Clique para a Victória mandar a primeira mensagem de prospecção</div>
-              <button onClick={iniciarSim} style={{padding:"10px 24px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>▶ Victória aborda agora</button>
+              <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,marginBottom:6}}>Agente Maya — Ecodely</div>
+              <div style={{fontSize:11,color:T.muted,marginBottom:20,maxWidth:320,margin:"0 auto 20px"}}>Modo: <strong>{simModo==="prospecto"?"Prospecção fria":simModo==="parceiro"?"Suporte ao parceiro":"Cobrança de postagem"}</strong><br/>Clique para a Maya mandar a primeira mensagem de prospecção</div>
+              <button onClick={iniciarSim} style={{padding:"10px 24px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>▶ Maya aborda agora</button>
             </div>
           )}
           {simMsgs.map((msg,i)=>(
