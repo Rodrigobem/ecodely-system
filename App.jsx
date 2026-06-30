@@ -3617,6 +3617,8 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
       pushNotif&&pushNotif("Lead convertido!",`${lead.nome} adicionado à Base de Parceiros`,T.accent);
       const msgConv=`🎉 *Lead convertido!*\n*${lead.nome}* foi convertido e já está na Base de Parceiros.\n📍 Cidade: ${lead.cidade||"-"}\n📱 Telefone: ${lead.telefone||"-"}\n👤 Responsável: ${lead.responsavel}`;
       console.log('[DEBUG CONVERSÃO] responsavel_comercial:', lead.responsavel_comercial, '| whatsapp encontrado:', wComercial);
+      console.log('[DEBUG] responsavel_comercial:', lead.responsavel_comercial);
+      console.log('[DEBUG] wComercial:', wComercial);
       if(wAlessandra) await sendWA(wAlessandra,msgConv);
       if(wComercial) await sendWA(wComercial,msgConv);
       return;
@@ -4371,6 +4373,8 @@ export default function App(){
   const[users,setUsers]=useState(USERS_DB);
   const[showNewUser,setShowNewUser]=useState(false);
   const[newUser,setNewUser]=useState({name:"",email:"",pass:"",role:"base",regiao:[],comissao_pct:5,whatsapp:""});
+  const[editingUserId,setEditingUserId]=useState(null);
+  const[editingUserData,setEditingUserData]=useState({});
   const[baseSearch,setBaseSearch]=useState("");
   const[baseFilter,setBaseFilter]=useState("todos");
   const[baseScoreMin,setBaseScoreMin]=useState(0);
@@ -11601,11 +11605,21 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           {/* --------------------------------------
               USUÁRIOS
           -------------------------------------- */}
-          {tab==="usuarios"&&user.role==="admin"&&(
-            <div>
-              <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
+          {tab==="usuarios"&&["admin","gerente_base"].includes(user.role)&&(()=>{
+            const podeEditarUsuario=(editorRole,targetRole)=>{
+              if(editorRole==="admin") return true;
+              if(editorRole==="gerente_base"&&targetRole==="base") return true;
+              return false;
+            };
+            const salvarEdicaoUsuario=async()=>{
+              setUsers(p=>p.map(x=>x.id===editingUserId?{...x,...editingUserData}:x));
+              await supabase.from("usuarios").update(editingUserData).eq("id",editingUserId);
+              setEditingUserId(null);setEditingUserData({});
+            };
+            return(<div>
+              {user.role==="admin"&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
                 <button className="btn" onClick={()=>setShowNewUser(true)} style={{padding:"8px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>+ Novo Usuário</button>
-              </div>
+              </div>}
               {showNewUser&&(
                 <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18,marginBottom:12}} className="fade">
                   <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,marginBottom:12}}>Novo Usuário</div>
@@ -11661,15 +11675,29 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       })}
                       {u.role==="admin"&&<span style={{fontSize:9,color:T.muted}}>Acesso total</span>}
                     </div>
-                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
                       <div style={{width:7,height:7,borderRadius:"50%",background:u.active?T.accent:T.danger}}/>
-                      {u.id!==user.id&&<div onClick={async()=>{const na=!u.active;setUsers(p=>p.map(x=>x.id===u.id?{...x,active:na}:x));await supabase.from("usuarios").update({active:na}).eq("id",u.id);}} style={{fontSize:9,color:u.active?T.danger:T.accent,cursor:"pointer",fontFamily:"Arial,sans-serif"}}>{u.active?"Aposentar":"Reativar"}</div>}
+                      {u.id!==user.id&&user.role==="admin"&&<div onClick={async()=>{const na=!u.active;setUsers(p=>p.map(x=>x.id===u.id?{...x,active:na}:x));await supabase.from("usuarios").update({active:na}).eq("id",u.id);}} style={{fontSize:9,color:u.active?T.danger:T.accent,cursor:"pointer",fontFamily:"Arial,sans-serif"}}>{u.active?"Aposentar":"Reativar"}</div>}
+                      {podeEditarUsuario(user.role,u.role)&&editingUserId!==u.id&&(
+                        <button onClick={()=>{setEditingUserId(u.id);setEditingUserData({name:u.name,whatsapp:u.whatsapp||"",email:u.email||""});}} style={{fontSize:9,padding:"2px 8px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:5,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700}}>✏️ Editar</button>
+                      )}
                     </div>
+                    {editingUserId===u.id&&(
+                      <div style={{gridColumn:"1/-1",background:T.surface,border:`1px solid ${T.accentBorder}`,borderRadius:8,padding:"10px 14px",marginTop:4,display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:8,alignItems:"end"}}>
+                        <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Nome</div><input value={editingUserData.name||""} onChange={e=>setEditingUserData(p=>({...p,name:e.target.value}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                        <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>E-mail</div><input value={editingUserData.email||""} onChange={e=>setEditingUserData(p=>({...p,email:e.target.value}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                        <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>WhatsApp</div><input value={editingUserData.whatsapp||""} onChange={e=>setEditingUserData(p=>({...p,whatsapp:e.target.value.replace(/\D/g,"")}))} placeholder="5511999999999" style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
+                        <div style={{display:"flex",gap:6}}>
+                          <button onClick={salvarEdicaoUsuario} style={{padding:"5px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer"}}>Salvar</button>
+                          <button onClick={()=>{setEditingUserId(null);setEditingUserData({});}} style={{padding:"5px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:10,cursor:"pointer"}}>Cancelar</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            </div>);
+          })()}
 
           {tab==="operacoes"&&["admin","gerente_base","base","operacional"].includes(user.role)&&(()=>{
             const parseD=s=>{if(!s)return null;const d=s.includes("-")?new Date(s):new Date(s.split("/").reverse().join("-"));return isNaN(d)?null:d;};
