@@ -4372,9 +4372,13 @@ export default function App(){
   const[newComm,setNewComm]=useState({typeId:"",projectId:"",value:""});
   const[users,setUsers]=useState(USERS_DB);
   const[showNewUser,setShowNewUser]=useState(false);
-  const[newUser,setNewUser]=useState({name:"",email:"",pass:"",role:"base",regiao:[],comissao_pct:5,whatsapp:""});
+  const[newUser,setNewUser]=useState({name:"",email:"",pass:"",role:"base",regiao:[],comissao_pct:5,whatsapp:"",cargo:"",tipo_contrato:""});
   const[editingUserId,setEditingUserId]=useState(null);
   const[editingUserData,setEditingUserData]=useState({});
+  const[userFichaModal,setUserFichaModal]=useState(null);
+  const[userFichaAba,setUserFichaAba]=useState("pessoal");
+  const[userFichaData,setUserFichaData]=useState({});
+  const[userFichaEditMode,setUserFichaEditMode]=useState(false);
   const[baseSearch,setBaseSearch]=useState("");
   const[baseFilter,setBaseFilter]=useState("todos");
   const[baseScoreMin,setBaseScoreMin]=useState(0);
@@ -5873,7 +5877,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     const passHash=await hashPass(newUser.pass);
     const rec={id:Date.now(),...newUser,pass:passHash,avatar:newUser.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2),active:true,lastAccess:"nunca"};
     setUsers(p=>[...p,rec]);
-    setNewUser({name:"",email:"",pass:"",role:"base",regiao:[],comissao_pct:5,whatsapp:""});setShowNewUser(false);
+    setNewUser({name:"",email:"",pass:"",role:"base",regiao:[],comissao_pct:5,whatsapp:"",cargo:"",tipo_contrato:""});setShowNewUser(false);
     const{error}=await supabase.from("usuarios").insert(rec);
     if(error)console.error("SUPABASE addUser erro:",error.message,error.details);
   };
@@ -11603,99 +11607,130 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           {tab==="whatsapp"&&<WhatsAppPanel supabase={supabase} waConversas={waConversas} setWaConversas={setWaConversas} waMensagens={waMensagens} setWaMensagens={setWaMensagens} waSelConv={waSelConv} setWaSelConv={setWaSelConv} waInput={waInput} setWaInput={setWaInput} waLoading={waLoading} setWaLoading={setWaLoading} waFiltro={waFiltro} setWaFiltro={setWaFiltro} waNovoNumero={waNovoNumero} setWaNovoNumero={setWaNovoNumero} waNovoModo={waNovoModo} setWaNovoModo={setWaNovoModo} simMsgs={simMsgs} setSimMsgs={setSimMsgs} simInput={simInput} setSimInput={setSimInput} simLoading={simLoading} setSimLoading={setSimLoading} simModo={simModo} setSimModo={setSimModo} simStarted={simStarted} setSimStarted={setSimStarted} T={T}/>}
 
           {/* --------------------------------------
-              USUÁRIOS
+              USUÁRIOS — mini RH
           -------------------------------------- */}
           {tab==="usuarios"&&["admin","gerente_base"].includes(user.role)&&(()=>{
-            const podeEditarUsuario=(editorRole,targetRole)=>{
-              if(editorRole==="admin") return true;
-              if(editorRole==="gerente_base"&&targetRole==="base") return true;
-              return false;
-            };
-            const salvarEdicaoUsuario=async()=>{
-              setUsers(p=>p.map(x=>x.id===editingUserId?{...x,...editingUserData}:x));
-              await supabase.from("usuarios").update(editingUserData).eq("id",editingUserId);
-              setEditingUserId(null);setEditingUserData({});
-            };
+            const maskCPF=v=>{v=v.replace(/\D/g,"").slice(0,11);if(v.length>=9)return v.slice(0,3)+"."+v.slice(3,6)+"."+v.slice(6,9)+"-"+v.slice(9);if(v.length>=6)return v.slice(0,3)+"."+v.slice(3,6)+"."+v.slice(6);if(v.length>=3)return v.slice(0,3)+"."+v.slice(3);return v;};
+            const maskCNPJ=v=>{v=v.replace(/\D/g,"").slice(0,14);if(v.length>=12)return v.slice(0,2)+"."+v.slice(2,5)+"."+v.slice(5,8)+"/"+v.slice(8,12)+"-"+v.slice(12);if(v.length>=8)return v.slice(0,2)+"."+v.slice(2,5)+"."+v.slice(5,8)+"/"+v.slice(8);if(v.length>=5)return v.slice(0,2)+"."+v.slice(2,5)+"."+v.slice(5);if(v.length>=2)return v.slice(0,2)+"."+v.slice(2);return v;};
+            const buscarCEPUser=async(cep)=>{const c=cep.replace(/\D/g,"");if(c.length!==8)return;try{const r=await fetch(`https://viacep.com.br/ws/${c}/json/`);const d=await r.json();if(!d.erro){setUserFichaData(p=>({...p,rua:d.logradouro,bairro:d.bairro,cidade:d.localidade,estado:d.uf}));}}catch(e){}};
+            const podeVerFicha=(tu)=>user.role==="admin"||tu.id===user.id||(user.role==="gerente_base"&&tu.role==="base");
+            const podeSalvarFicha=(tu)=>user.role==="admin"||tu.id===user.id||(user.role==="gerente_base"&&tu.role==="base");
+            const podeDadosBancarios=(tu)=>user.role==="admin"||tu.id===user.id;
+            const visibleUsers=users.filter(u=>user.role==="admin"||(user.role==="gerente_base"&&(u.role==="base"||u.id===user.id))||u.id===user.id);
+            const salvarFicha=async()=>{const updated={...userFichaModal,...userFichaData};setUsers(p=>p.map(x=>x.id===userFichaModal.id?updated:x));if(userFichaModal.id===user.id)setUser(p=>({...p,...userFichaData}));await supabase.from("usuarios").update(userFichaData).eq("id",userFichaModal.id);setUserFichaModal(updated);setUserFichaEditMode(false);pushNotif("Ficha salva","Dados atualizados",T.accent);};
+            const abrirFicha=(u)=>{setUserFichaModal(u);setUserFichaData({});setUserFichaAba("pessoal");setUserFichaEditMode(false);};
+            const FD=(k)=>userFichaEditMode?(userFichaData[k]!==undefined?userFichaData[k]:userFichaModal?.[k]??""):(userFichaModal?.[k]??"");
+            const setFD=(k,v)=>setUserFichaData(p=>({...p,[k]:v}));
+            const rhI={...inpS,fontSize:12,padding:"7px 10px",width:"100%",boxSizing:"border-box"};
+            const rhS={...selS,fontSize:12,padding:"7px 10px",width:"100%",boxSizing:"border-box"};
+            const FL=l=><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}</div>;
+            const ABAS=[["pessoal","Pessoal"],["contato","Contato"],["endereco","Endereço"],["profissional","Profissional"],["docs","Documentos"]];
+            const tcAtual=userFichaModal?FD("tipo_contrato"):"";
             return(<div>
-              {user.role==="admin"&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
-                <button className="btn" onClick={()=>setShowNewUser(true)} style={{padding:"8px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>+ Novo Usuário</button>
-              </div>}
-              {showNewUser&&(
-                <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18,marginBottom:12}} className="fade">
-                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,marginBottom:12}}>Novo Usuário</div>
+              {user.role==="admin"&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}><button className="btn" onClick={()=>setShowNewUser(true)} style={{padding:"8px 18px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>+ Novo Usuário</button></div>}
+              {showNewUser&&user.role==="admin"&&(
+                <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18,marginBottom:16}} className="fade">
+                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,marginBottom:12,fontSize:13}}>Novo Usuário</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
-                    {[["Nome","name","text"],["E-mail","email","email"],["Senha","pass","password"]].map(([l,k,t])=>(<div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}</div><input type={t} value={newUser[k]} onChange={e=>setNewUser(p=>({...p,[k]:e.target.value}))} style={inpS}/></div>))}
+                    {[["Nome *","name","text"],["E-mail *","email","email"],["Senha *","pass","password"],["Cargo","cargo","text"],["WhatsApp","whatsapp","tel"]].map(([l,k,t])=>(
+                      <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}</div><input type={t} value={newUser[k]||""} onChange={e=>setNewUser(p=>({...p,[k]:k==="whatsapp"?e.target.value.replace(/\D/g,""):e.target.value}))} style={inpS}/></div>
+                    ))}
                     <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Perfil</div><select value={newUser.role} onChange={e=>setNewUser(p=>({...p,role:e.target.value}))} style={selS}>{Object.entries(ROLE_LABELS).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
-                    <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>WhatsApp</div><input type="tel" value={newUser.whatsapp||""} onChange={e=>setNewUser(p=>({...p,whatsapp:e.target.value.replace(/\D/g,"")}))} placeholder="5511999999999" style={inpS}/></div>
+                    <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Tipo Contrato</div><select value={newUser.tipo_contrato||""} onChange={e=>setNewUser(p=>({...p,tipo_contrato:e.target.value}))} style={selS}><option value="">—</option>{["CLT","PJ","Freelancer","Estágio","Sócio"].map(t=><option key={t} value={t}>{t}</option>)}</select></div>
                     {newUser.role==="representante"&&<div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Comissão (%)</div><input type="number" min="0" max="100" step="0.5" value={newUser.comissao_pct} onChange={e=>setNewUser(p=>({...p,comissao_pct:Number(e.target.value)}))} style={inpS}/></div>}
                   </div>
-                  {newUser.role==="representante"&&(
-                    <div style={{marginBottom:10}}>
-                      <div style={{fontSize:9,color:T.muted,marginBottom:6,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Regiões de atuação</div>
-                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                        {["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"].map(uf=>{
-                          const sel=(newUser.regiao||[]).includes(uf);
-                          return(<div key={uf} onClick={()=>setNewUser(p=>({...p,regiao:sel?p.regiao.filter(r=>r!==uf):[...(p.regiao||[]),uf]}))} style={{fontSize:10,padding:"3px 9px",borderRadius:5,cursor:"pointer",border:`1px solid ${sel?"#F59E0B66":T.border}`,background:sel?"#F59E0B22":T.surface,color:sel?"#F59E0B":T.muted,fontFamily:"Arial,sans-serif",fontWeight:sel?700:400,transition:"all 0.1s"}}>{uf}</div>);
-                        })}
-                      </div>
-                    </div>
-                  )}
+                  {newUser.role==="representante"&&<div style={{marginBottom:10}}><div style={{fontSize:9,color:T.muted,marginBottom:6,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Regiões de atuação</div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"].map(uf=>{const s=(newUser.regiao||[]).includes(uf);return(<div key={uf} onClick={()=>setNewUser(p=>({...p,regiao:s?p.regiao.filter(r=>r!==uf):[...(p.regiao||[]),uf]}))} style={{fontSize:10,padding:"3px 9px",borderRadius:5,cursor:"pointer",border:`1px solid ${s?"#F59E0B66":T.border}`,background:s?"#F59E0B22":T.surface,color:s?"#F59E0B":T.muted,fontFamily:"Arial,sans-serif",fontWeight:s?700:400}}>{uf}</div>);})}</div></div>}
                   <div style={{display:"flex",gap:8}}><button className="btn" onClick={addUser} style={{padding:"8px 16px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>Criar</button><button className="btn" onClick={()=>setShowNewUser(false)} style={{padding:"8px 12px",background:T.card,border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:11}}>Cancelar</button></div>
                 </div>
               )}
-              <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
-                <div style={{display:"grid",gridTemplateColumns:"2fr 2fr 1fr 1fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:10}}>
-                  {["Usuário","E-mail","Perfil","Acessos extras","Status"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5}}>{h}</div>)}
-                </div>
-                {users.map((u,i)=>(
-                  <div key={i} style={{display:"grid",gridTemplateColumns:"2fr 2fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:10,alignItems:"start",opacity:u.active?1:0.5}}>
-                    <div style={{display:"flex",gap:8,alignItems:"center"}}><div style={{width:26,height:26,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",border:`1px solid ${ROLE_COLOR[u.role]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:ROLE_COLOR[u.role],fontWeight:700,flexShrink:0}}>{u.avatar}</div><span style={{fontSize:12,fontWeight:600,fontFamily:"Arial,sans-serif"}}>{u.name}</span></div>
-                    <div>
-                      <div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>{u.email}</div>
-                      {u.whatsapp&&<div style={{fontSize:8,color:T.accent,marginTop:2,fontFamily:"Arial,sans-serif",display:"flex",alignItems:"center",gap:3,cursor:"pointer"}} onClick={async()=>{const v=prompt("WhatsApp:",u.whatsapp||"");if(v===null)return;const wn=v.replace(/\D/g,"");setUsers(p=>p.map(x=>x.id===u.id?{...x,whatsapp:wn}:x));await supabase.from("usuarios").update({whatsapp:wn}).eq("id",u.id);}}>📱 {u.whatsapp}</div>}
-                      {!u.whatsapp&&<div style={{fontSize:8,color:T.muted,marginTop:2,fontFamily:"Arial,sans-serif",cursor:"pointer",textDecoration:"underline dotted"}} onClick={async()=>{const v=prompt("WhatsApp (somente números):");if(!v)return;const wn=v.replace(/\D/g,"");setUsers(p=>p.map(x=>x.id===u.id?{...x,whatsapp:wn}:x));await supabase.from("usuarios").update({whatsapp:wn}).eq("id",u.id);}}>+ add WhatsApp</div>}
-                      {u.role==="representante"&&u.regiao?.length>0&&<div style={{fontSize:8,color:"#F59E0B",marginTop:2,fontFamily:"Arial,sans-serif"}}>{u.regiao.join(", ")} · {u.comissao_pct||5}% comissão</div>}
+              {/* Cards de usuários */}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
+                {visibleUsers.map((u,i)=>(
+                  <div key={u.id||i} style={{background:T.card,border:`1px solid ${u.active?T.border:T.danger+"44"}`,borderRadius:12,padding:16,display:"flex",flexDirection:"column",gap:10,opacity:u.active?1:0.65}}>
+                    <div style={{display:"flex",gap:12,alignItems:"center"}}>
+                      <div style={{width:44,height:44,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",border:`2px solid ${ROLE_COLOR[u.role]}66`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:ROLE_COLOR[u.role],flexShrink:0}}>{u.avatar}</div>
+                      <div style={{flex:1,minWidth:0}}><div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.nome_completo||u.name}</div><div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif",marginTop:2}}>{u.cargo||"—"}</div></div>
+                      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}><Badge label={ROLE_LABELS[u.role]||u.role} color={ROLE_COLOR[u.role]||T.muted}/><div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:6,height:6,borderRadius:"50%",background:u.active?T.accent:T.danger}}/><span style={{fontSize:8,color:u.active?T.accent:T.danger,fontFamily:"Arial,sans-serif"}}>{u.active?"Ativo":"Inativo"}</span></div></div>
                     </div>
-                    <Badge label={ROLE_LABELS[u.role]||u.role} color={ROLE_COLOR[u.role]||T.muted}/>
-                    {/* Acessos extras — só aparece para não-admin */}
-                    <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                      {u.role!=="admin"&&Object.entries(ROLE_LABELS).filter(([r])=>r!=="admin"&&r!==u.role).map(([r,l])=>{
-                        const extras=u.extraRoles||[];
-                        const tem=extras.includes(r);
-                        return(
-                          <div key={r} onClick={async()=>{
-                            const novas=tem?extras.filter(x=>x!==r):[...extras,r];
-                            setUsers(p=>p.map(x=>x.id===u.id?{...x,extraRoles:novas}:x));
-                            if(u.id===user.id)setUser(p=>({...p,extraRoles:novas}));
-                            await supabase.from("usuarios").update({extraRoles:novas}).eq("id",u.id);
-                          }} style={{fontSize:8,padding:"2px 7px",borderRadius:4,cursor:"pointer",border:`1px solid ${tem?ROLE_COLOR[r]+"66":T.border}`,background:tem?ROLE_COLOR[r]+"22":T.surface,color:tem?ROLE_COLOR[r]:T.muted,fontFamily:"Arial,sans-serif",transition:"all 0.15s"}}>
-                            {l}
-                          </div>
-                        );
-                      })}
-                      {u.role==="admin"&&<span style={{fontSize:9,color:T.muted}}>Acesso total</span>}
+                    {u.whatsapp&&<div style={{fontSize:10,color:T.accent,fontFamily:"Arial,sans-serif",display:"flex",alignItems:"center",gap:4}}><span>📱</span><span>{u.whatsapp}</span></div>}
+                    {u.role==="representante"&&u.regiao?.length>0&&<div style={{fontSize:9,color:"#F59E0B",fontFamily:"Arial,sans-serif"}}>{u.regiao.join(", ")} · {u.comissao_pct||5}% comissão</div>}
+                    <div style={{display:"flex",gap:6,marginTop:"auto",paddingTop:4}}>
+                      {podeVerFicha(u)&&<button onClick={()=>abrirFicha(u)} style={{flex:1,padding:"7px 0",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700}}>Ver Ficha Completa</button>}
+                      {user.role==="admin"&&u.id!==user.id&&<button onClick={async()=>{const na=!u.active;setUsers(p=>p.map(x=>x.id===u.id?{...x,active:na}:x));await supabase.from("usuarios").update({active:na}).eq("id",u.id);}} style={{padding:"7px 10px",background:"transparent",border:`1px solid ${u.active?T.danger+"66":T.accent+"66"}`,color:u.active?T.danger:T.accent,borderRadius:7,fontSize:10,cursor:"pointer",fontFamily:"Arial,sans-serif"}}>{u.active?"Desativar":"Reativar"}</button>}
                     </div>
-                    <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                      <div style={{width:7,height:7,borderRadius:"50%",background:u.active?T.accent:T.danger}}/>
-                      {u.id!==user.id&&user.role==="admin"&&<div onClick={async()=>{const na=!u.active;setUsers(p=>p.map(x=>x.id===u.id?{...x,active:na}:x));await supabase.from("usuarios").update({active:na}).eq("id",u.id);}} style={{fontSize:9,color:u.active?T.danger:T.accent,cursor:"pointer",fontFamily:"Arial,sans-serif"}}>{u.active?"Aposentar":"Reativar"}</div>}
-                      {podeEditarUsuario(user.role,u.role)&&editingUserId!==u.id&&(
-                        <button onClick={()=>{setEditingUserId(u.id);setEditingUserData({name:u.name,whatsapp:u.whatsapp||"",email:u.email||""});}} style={{fontSize:9,padding:"2px 8px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:5,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700}}>✏️ Editar</button>
-                      )}
-                    </div>
-                    {editingUserId===u.id&&(
-                      <div style={{gridColumn:"1/-1",background:T.surface,border:`1px solid ${T.accentBorder}`,borderRadius:8,padding:"10px 14px",marginTop:4,display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:8,alignItems:"end"}}>
-                        <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Nome</div><input value={editingUserData.name||""} onChange={e=>setEditingUserData(p=>({...p,name:e.target.value}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
-                        <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>E-mail</div><input value={editingUserData.email||""} onChange={e=>setEditingUserData(p=>({...p,email:e.target.value}))} style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
-                        <div><div style={{fontSize:8,color:T.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>WhatsApp</div><input value={editingUserData.whatsapp||""} onChange={e=>setEditingUserData(p=>({...p,whatsapp:e.target.value.replace(/\D/g,"")}))} placeholder="5511999999999" style={{width:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 8px",fontSize:11,color:T.text,outline:"none"}}/></div>
-                        <div style={{display:"flex",gap:6}}>
-                          <button onClick={salvarEdicaoUsuario} style={{padding:"5px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer"}}>Salvar</button>
-                          <button onClick={()=>{setEditingUserId(null);setEditingUserData({});}} style={{padding:"5px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:10,cursor:"pointer"}}>Cancelar</button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
+              {/* Modal Ficha */}
+              {userFichaModal&&(
+                <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:900,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={e=>{if(e.target===e.currentTarget){setUserFichaModal(null);setUserFichaEditMode(false);}}}>
+                  <div style={{background:T.card,borderRadius:16,width:"100%",maxWidth:640,maxHeight:"90vh",display:"flex",flexDirection:"column",overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}} onClick={e=>e.stopPropagation()}>
+                    {/* Header */}
+                    <div style={{padding:"16px 20px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:12,background:T.surface}}>
+                      <div style={{width:48,height:48,borderRadius:"50%",background:ROLE_COLOR[userFichaModal.role]+"22",border:`2px solid ${ROLE_COLOR[userFichaModal.role]}66`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:ROLE_COLOR[userFichaModal.role],flexShrink:0}}>{userFichaModal.avatar}</div>
+                      <div style={{flex:1}}><div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:15,color:T.text}}>{userFichaModal.nome_completo||userFichaModal.name}</div><div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif",marginTop:2}}>{userFichaModal.cargo||ROLE_LABELS[userFichaModal.role]||userFichaModal.role}</div></div>
+                      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                        {podeSalvarFicha(userFichaModal)&&!userFichaEditMode&&<button onClick={()=>setUserFichaEditMode(true)} style={{padding:"6px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700}}>Editar</button>}
+                        {userFichaEditMode&&<><button onClick={salvarFicha} style={{padding:"6px 14px",background:T.accent,border:"none",color:"#000",borderRadius:7,fontSize:10,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700}}>Salvar</button><button onClick={()=>{setUserFichaEditMode(false);setUserFichaData({});}} style={{padding:"6px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10,cursor:"pointer"}}>Cancelar</button></>}
+                        <button onClick={()=>{setUserFichaModal(null);setUserFichaEditMode(false);}} style={{width:30,height:30,borderRadius:"50%",background:T.surface,border:`1px solid ${T.border}`,color:T.muted,cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+                      </div>
+                    </div>
+                    {/* Abas */}
+                    <div style={{display:"flex",borderBottom:`1px solid ${T.border}`,background:T.surface,padding:"0 8px",overflowX:"auto"}}>
+                      {ABAS.map(([id,label])=><div key={id} onClick={()=>setUserFichaAba(id)} style={{padding:"10px 14px",fontSize:10,fontFamily:"Arial,sans-serif",cursor:"pointer",borderBottom:userFichaAba===id?`2px solid ${T.accent}`:"2px solid transparent",color:userFichaAba===id?T.accent:T.muted,fontWeight:userFichaAba===id?700:400,whiteSpace:"nowrap"}}>{label}</div>)}
+                    </div>
+                    {/* Conteúdo das abas */}
+                    <div style={{overflowY:"auto",flex:1,padding:"20px"}}>
+                      {userFichaAba==="pessoal"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                        <div style={{gridColumn:"1/-1"}}>{FL("Nome Completo")}<input value={FD("nome_completo")} onChange={e=>setFD("nome_completo",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        <div>{FL("CPF")}<input value={FD("cpf")} onChange={e=>setFD("cpf",maskCPF(e.target.value))} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        <div>{FL("RG")}<input value={FD("rg")} onChange={e=>setFD("rg",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        <div>{FL("Data de Nascimento")}<input type="date" value={FD("data_nascimento")} onChange={e=>setFD("data_nascimento",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        <div>{FL("Estado Civil")}<select value={FD("estado_civil")} onChange={e=>setFD("estado_civil",e.target.value)} disabled={!userFichaEditMode} style={{...rhS,opacity:userFichaEditMode?1:0.75}}><option value="">—</option>{["Solteiro(a)","Casado(a)","Divorciado(a)","Viúvo(a)","União Estável"].map(o=><option key={o} value={o}>{o}</option>)}</select></div>
+                        <div>{FL("Nacionalidade")}<input value={FD("nacionalidade")} onChange={e=>setFD("nacionalidade",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                      </div>}
+                      {userFichaAba==="contato"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                        <div>{FL("WhatsApp")}<input type="tel" value={FD("whatsapp")} onChange={e=>setFD("whatsapp",e.target.value.replace(/\D/g,""))} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        <div>{FL("E-mail Pessoal")}<input type="email" value={FD("email_pessoal")} onChange={e=>setFD("email_pessoal",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        <div>{FL("Telefone Fixo")}<input type="tel" value={FD("telefone_fixo")} onChange={e=>setFD("telefone_fixo",e.target.value.replace(/\D/g,""))} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        <div>{FL("E-mail Corporativo")}<input value={userFichaModal.email||""} disabled style={{...rhI,opacity:0.5}}/></div>
+                      </div>}
+                      {userFichaAba==="endereco"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                        <div>{FL("CEP")}<input value={FD("cep")} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,8);setFD("cep",v);if(v.length===8)buscarCEPUser(v);}} disabled={!userFichaEditMode} placeholder="00000000" style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        <div/>
+                        <div style={{gridColumn:"1/-1"}}>{FL("Logradouro")}<input value={FD("rua")} onChange={e=>setFD("rua",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        <div>{FL("Número")}<input value={FD("numero")} onChange={e=>setFD("numero",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        <div>{FL("Complemento")}<input value={FD("complemento")} onChange={e=>setFD("complemento",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        <div>{FL("Bairro")}<input value={FD("bairro")} onChange={e=>setFD("bairro",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        <div>{FL("Cidade")}<input value={FD("cidade")} onChange={e=>setFD("cidade",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        <div>{FL("UF")}<input value={FD("estado")} onChange={e=>setFD("estado",e.target.value.toUpperCase().slice(0,2))} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                      </div>}
+                      {userFichaAba==="profissional"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                        <div style={{gridColumn:"1/-1"}}>{FL("Cargo")}<input value={FD("cargo")} onChange={e=>setFD("cargo",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        <div>{FL("Data de Admissão")}<input type="date" value={FD("data_admissao")} onChange={e=>setFD("data_admissao",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        <div>{FL("Tipo de Contrato")}<select value={FD("tipo_contrato")} onChange={e=>setFD("tipo_contrato",e.target.value)} disabled={!userFichaEditMode} style={{...rhS,opacity:userFichaEditMode?1:0.75}}><option value="">—</option>{["CLT","PJ","Freelancer","Estágio","Sócio"].map(t=><option key={t} value={t}>{t}</option>)}</select></div>
+                        {tcAtual==="PJ"&&<div style={{gridColumn:"1/-1"}}>{FL("CNPJ")}<input value={FD("cnpj")} onChange={e=>setFD("cnpj",maskCNPJ(e.target.value))} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>}
+                        {podeDadosBancarios(userFichaModal)
+                          ?<><div style={{gridColumn:"1/-1",borderTop:`1px solid ${T.border}`,paddingTop:14,marginTop:4}}><div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Dados Bancários</div></div><div>{FL("Banco")}<input value={FD("banco")} onChange={e=>setFD("banco",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div><div>{FL("Agência")}<input value={FD("agencia")} onChange={e=>setFD("agencia",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div><div>{FL("Conta")}<input value={FD("conta")} onChange={e=>setFD("conta",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div></>
+                          :<div style={{gridColumn:"1/-1",padding:"12px 14px",background:T.surface,borderRadius:8,fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>Dados bancários visíveis apenas para admin e o próprio colaborador.</div>
+                        }
+                      </div>}
+                      {userFichaAba==="docs"&&<div style={{display:"flex",flexDirection:"column",gap:16}}>
+                        {[["link_documentos","Link de Documentos (Drive, Dropbox, etc.)"],["link_contrato","Link do Contrato"]].map(([k,l])=>(
+                          <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:6,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}</div><div style={{display:"flex",gap:8}}><input value={FD(k)} onChange={e=>setFD(k,e.target.value)} disabled={!userFichaEditMode} placeholder="https://..." style={{...rhI,flex:1,width:"auto",opacity:userFichaEditMode?1:0.75}}/>{(userFichaData[k]||userFichaModal[k])&&<a href={userFichaData[k]||userFichaModal[k]} target="_blank" rel="noopener noreferrer" style={{padding:"7px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,textDecoration:"none",display:"flex",alignItems:"center",whiteSpace:"nowrap"}}>Abrir</a>}</div></div>
+                        ))}
+                        {user.role==="admin"&&<div style={{borderTop:`1px solid ${T.border}`,paddingTop:16}}>
+                          <div style={{fontSize:9,color:T.muted,marginBottom:12,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Configurações Admin</div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                            <div>{FL("Perfil / Role")}<select value={userFichaData.role!==undefined?userFichaData.role:userFichaModal.role} onChange={e=>setFD("role",e.target.value)} disabled={!userFichaEditMode||userFichaModal.id===user.id} style={{...rhS,opacity:userFichaEditMode&&userFichaModal.id!==user.id?1:0.6}}>{Object.entries(ROLE_LABELS).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
+                            <div>{FL("Status")}<div style={{display:"flex",gap:8,alignItems:"center",marginTop:6}}><div style={{width:8,height:8,borderRadius:"50%",background:((userFichaData.active!==undefined?userFichaData.active:userFichaModal.active)?T.accent:T.danger)}}/><span style={{fontSize:11,color:T.text,fontFamily:"Arial,sans-serif"}}>{(userFichaData.active!==undefined?userFichaData.active:userFichaModal.active)?"Ativo":"Inativo"}</span>{userFichaEditMode&&userFichaModal.id!==user.id&&<button onClick={()=>setFD("active",!(userFichaData.active!==undefined?userFichaData.active:userFichaModal.active))} style={{padding:"3px 10px",fontSize:9,border:`1px solid ${T.border}`,borderRadius:5,background:"transparent",color:T.muted,cursor:"pointer"}}>Alternar</button>}</div></div>
+                          </div>
+                        </div>}
+                      </div>}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>);
           })()}
 
