@@ -3584,12 +3584,13 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
   };
 
   const getWN=(nome)=>{const u=(allUsers||[]).find(u=>u.name===nome);return u?.whatsapp||null;};
+  const getWNsByRole=(role)=>(allUsers||[]).filter(u=>u.role===role&&u.active!==false&&u.whatsapp).map(u=>u.whatsapp);
+  const sendWAToRole=async(role,msg)=>{for(const num of getWNsByRole(role))await sendWA(num,msg);};
 
   const atualizarEtapa=async(id,etapa)=>{
     const lead=pipeLeads.find(l=>l.id===id);
     if(!lead)return;
 
-    const wAlessandra=getWN("Alessandra");
     const wComercial=lead.responsavel_comercial?getWN(lead.responsavel_comercial):null;
 
     if(etapa==="interessado"){
@@ -3599,7 +3600,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
       await supabase.from("pipeline_leads").update({etapa,follow_up_date,atualizado_em:new Date().toISOString()}).eq("id",id);
       const dtBr=fup.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});
       const msgInt=`🔔 *Follow-up agendado!*\n*${lead.nome}* está interessado.\n📅 Entre em contato até: ${dtBr}`;
-      if(wAlessandra) await sendWA(wAlessandra,msgInt);
+      await sendWAToRole("gerente_base",msgInt);
       return;
     }
 
@@ -3608,7 +3609,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
       if(exists){
         pushNotif&&pushNotif("Já na base",`${lead.nome} já está na Base de Parceiros`,T.warn);
         const msgExiste=`⚠️ *${lead.nome}* já existe na Base de Parceiros.`;
-        if(wAlessandra) await sendWA(wAlessandra,msgExiste);
+        await sendWAToRole("gerente_base",msgExiste);
         return;
       }
       const newP={id:Date.now(),name:lead.nome,city:lead.cidade||"-",state:"-",category:lead.tipo||"Outros",whatsapp:lead.telefone||"",handle:lead.instagram||"",deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:1,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},foto_fachada:"",instagram_seguidores:0};
@@ -3619,10 +3620,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
       setBasePartners&&setBasePartners(prev=>[...prev,withScore]);
       pushNotif&&pushNotif("Lead convertido!",`${lead.nome} adicionado à Base de Parceiros`,T.accent);
       const msgConv=`🎉 *Lead convertido!*\n*${lead.nome}* foi convertido e já está na Base de Parceiros.\n📍 Cidade: ${lead.cidade||"-"}\n📱 Telefone: ${lead.telefone||"-"}\n👤 Responsável: ${lead.responsavel}`;
-      console.log('[DEBUG CONVERSÃO] responsavel_comercial:', lead.responsavel_comercial, '| whatsapp encontrado:', wComercial);
-      console.log('[DEBUG] responsavel_comercial:', lead.responsavel_comercial);
-      console.log('[DEBUG] wComercial:', wComercial);
-      if(wAlessandra) await sendWA(wAlessandra,msgConv);
+      await sendWAToRole("gerente_base",msgConv);
       if(wComercial) await sendWA(wComercial,msgConv);
       return;
     }
@@ -3636,7 +3634,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
     const{id,nome,responsavel}=pipeMotModal;
     setPipeLeads(p=>p.map(l=>l.id===id?{...l,etapa:"encerrado",motivo_perda:pipeMotivo}:l));
     await supabase.from("pipeline_leads").update({etapa:"encerrado",motivo_perda:pipeMotivo,follow_up_obs:pipeMotObs,atualizado_em:new Date().toISOString()}).eq("id",id);
-    const wA=getWN("Alessandra");if(wA)await sendWA(wA,`❌ *${nome}* marcado como sem interesse.\nMotivo: ${pipeMotivo}. Responsável: ${responsavel}`);
+    await sendWAToRole("gerente_base",`❌ *${nome}* marcado como sem interesse.\nMotivo: ${pipeMotivo}. Responsável: ${responsavel}`);
     setPipeMotModal(null);setPipeMotivo("");setPipeMotObs("");
   };
 
@@ -3870,7 +3868,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
                     </div>
                     {etapa.id==="abordado"&&(
                       <div style={{marginTop:8,display:"flex",gap:4}} onClick={e=>e.stopPropagation()}>
-                        <button onClick={()=>{atualizarEtapa(lead.id,"respondeu");const wA=getWN("Alessandra");if(wA)sendWA(wA,`💬 *${lead.nome}* respondeu! Acesse o pipeline para dar continuidade.`);}} style={{flex:1,padding:"4px 0",fontSize:9,fontWeight:700,borderRadius:5,border:`1px solid ${T.info}44`,background:T.info+"22",color:T.info,cursor:"pointer"}}>💬 Respondeu</button>
+                        <button onClick={()=>{atualizarEtapa(lead.id,"respondeu");sendWAToRole("gerente_base",`💬 *${lead.nome}* respondeu! Acesse o pipeline para dar continuidade.`);}} style={{flex:1,padding:"4px 0",fontSize:9,fontWeight:700,borderRadius:5,border:`1px solid ${T.info}44`,background:T.info+"22",color:T.info,cursor:"pointer"}}>💬 Respondeu</button>
                       </div>
                     )}
                     {etapa.id==="respondeu"&&(
@@ -4751,6 +4749,8 @@ export default function App(){
     const u=(usrs||users).find(u=>u.name===nome);
     return u?.whatsapp||null;
   };
+  const getWhatsappByRole=(role)=>(users||[]).filter(u=>u.role===role&&u.active!==false&&u.whatsapp).map(u=>u.whatsapp);
+  const sendWhatsAppNotifToRole=async(role,mensagem)=>{for(const num of getWhatsappByRole(role))await sendWhatsAppNotif(num,mensagem);};
 
   const notificarTransicaoCamp=async(camp,stageId)=>{
     const hoje=new Date().toISOString().slice(0,10);
@@ -4761,25 +4761,28 @@ export default function App(){
       localStorage.setItem(k,"1");
       await sendWhatsAppNotif(w,msg);
     };
-    const wA=getWhatsappByName("Alessandra");
-    const wL=getWhatsappByName("Larissa");
-    const wM=getWhatsappByName("Pedro Henrique");
+    const dedupToRole=async(role,tipo,msg)=>{
+      const k=`notif_${camp.id}_${tipo}_${role}_${hoje}`;
+      if(localStorage.getItem(k))return;
+      localStorage.setItem(k,"1");
+      for(const num of getWhatsappByRole(role))await sendWhatsAppNotif(num,msg);
+    };
     const wC=camp.responsavel?getWhatsappByName(camp.responsavel):null;
     const val=camp.valorLiquido>0?`R$ ${Number(camp.valorLiquido).toLocaleString("pt-BR",{minimumFractionDigits:2})}`:null;
     if(stageId===1){
-      await dedup(wA,"fechamento",`🎯 *Nova campanha fechada!*\n*${camp.name}* - Cliente: ${camp.client}${val?`\nValor: ${val}`:""}\nResponsável: ${camp.responsavel||"—"}`);
-      await dedup(wM,"fechamento",`🎯 *Nova campanha fechada!*\n*${camp.name}*\nPreparar publicações e buscar influenciadores!`);
-      await dedup(wL,"fechamento",`🎯 *Nova campanha fechada!*\n*${camp.name}*\nAguardar PI do cliente ${camp.client}.`);
+      await dedupToRole("gerente_base","fechamento",`🎯 *Nova campanha fechada!*\n*${camp.name}* - Cliente: ${camp.client}${val?`\nValor: ${val}`:""}\nResponsável: ${camp.responsavel||"—"}`);
+      await dedupToRole("marketing","fechamento",`🎯 *Nova campanha fechada!*\n*${camp.name}*\nPreparar publicações e buscar influenciadores!`);
+      await dedupToRole("financeiro","fechamento",`🎯 *Nova campanha fechada!*\n*${camp.name}*\nAguardar PI do cliente ${camp.client}.`);
     }
     if(stageId===3){
-      await dedup(wA,"grafica_ok",`🖨️ *Gráfica finalizada!*\n*${camp.name}*\nMaterial pronto para logística.`);
+      await dedupToRole("gerente_base","grafica_ok",`🖨️ *Gráfica finalizada!*\n*${camp.name}*\nMaterial pronto para logística.`);
       await dedup(wC,"grafica_ok_c",`🖨️ *Gráfica finalizada!*\n*${camp.name}*\nMaterial em produção concluído.`);
-      await dedup(wL,"grafica_ok_l",`🖨️ *Gráfica finalizada!*\n*${camp.name}*\nVerificar pagamento da gráfica.`);
+      await dedupToRole("financeiro","grafica_ok",`🖨️ *Gráfica finalizada!*\n*${camp.name}*\nVerificar pagamento da gráfica.`);
     }
     if(stageId===4){
-      await dedup(wA,"entrega",`🚚 *Entrega confirmada!*\n*${camp.name}*\nMaterial entregue aos parceiros.`);
+      await dedupToRole("gerente_base","entrega",`🚚 *Entrega confirmada!*\n*${camp.name}*\nMaterial entregue aos parceiros.`);
       await dedup(wC,"entrega_c",`🚚 *Entrega confirmada!*\n*${camp.name}*\nCampanha iniciada!`);
-      await dedup(wL,"entrega_l",`🚚 *Entrega confirmada!*\n*${camp.name}*\nVerificar pagamento da transportadora.`);
+      await dedupToRole("financeiro","entrega",`🚚 *Entrega confirmada!*\n*${camp.name}*\nVerificar pagamento da transportadora.`);
     }
   };
 
@@ -4800,8 +4803,8 @@ export default function App(){
             if(!localStorage.getItem(k)){
               localStorage.setItem(k,"1");
               const msg=`🔴 *Campanha atrasada!*\n*${camp.name}* está na etapa ${stageLabel} há mais dias que o esperado.`;
-              await sendWhatsAppNotif(getWhatsappByName("Alessandra"),msg);
-              await sendWhatsAppNotif(getWhatsappByName("Rodrigo"),msg);
+              await sendWhatsAppNotifToRole("gerente_base",msg);
+              await sendWhatsAppNotifToRole("admin",msg);
             }
           }
         }
@@ -4816,7 +4819,7 @@ export default function App(){
               localStorage.setItem(k,"1");
               const fmtFim=dlFim.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});
               const wC=camp.responsavel?getWhatsappByName(camp.responsavel):null;
-              await sendWhatsAppNotif(getWhatsappByName("Alessandra"),`🟡 *Campanha vencendo!*\n*${camp.name}* termina em ${diffFim===0?"hoje":diffFim+"d"} (${fmtFim}).`);
+              await sendWhatsAppNotifToRole("gerente_base",`🟡 *Campanha vencendo!*\n*${camp.name}* termina em ${diffFim===0?"hoje":diffFim+"d"} (${fmtFim}).`);
               await sendWhatsAppNotif(wC,`🟡 *Campanha vencendo!*\n*${camp.name}* termina em ${diffFim===0?"hoje":diffFim+"d"}. Preparar relatório final.`);
             }
           }
@@ -4830,9 +4833,6 @@ export default function App(){
     const hoje=new Date().toISOString().slice(0,10);
     const parseC=s=>{if(!s)return null;const d=s.includes("-")?new Date(s):new Date(s.split("/").reverse().join("-"));return isNaN(d)?null:d;};
     (async()=>{
-      const wA=getWhatsappByName("Alessandra");
-      const wR=getWhatsappByName("Rodrigo");
-      const wComs=users.filter(u=>u.role==="comercial"&&u.whatsapp&&u.active!==false).map(u=>u.whatsapp);
       for(const p of basePartners){
         if(!p.contrato?.expiraEm)continue;
         const d=parseC(p.contrato.expiraEm);
@@ -4846,9 +4846,9 @@ export default function App(){
         localStorage.setItem(k,"1");
         const fmtData=d.toLocaleDateString("pt-BR");
         const msg=`⚠️ *Contrato vencendo em ${dias} dias!*\n*${p.name}*\nVence em ${fmtData}.`;
-        await sendWhatsAppNotif(wA,msg);
-        if(threshold<=60)for(const w of wComs)await sendWhatsAppNotif(w,msg);
-        if(threshold<=30)await sendWhatsAppNotif(wR,msg);
+        await sendWhatsAppNotifToRole("gerente_base",msg);
+        if(threshold<=60)await sendWhatsAppNotifToRole("comercial",msg);
+        if(threshold<=30)await sendWhatsAppNotifToRole("admin",msg);
       }
     })();
   },[baseTab,basePartners.length,users.length]);
@@ -5043,10 +5043,9 @@ export default function App(){
       if(!localStorage.getItem(k)){
         localStorage.setItem(k,"1");
         const wC=prevCampImp.responsavel?getWhatsappByName(prevCampImp.responsavel):null;
-        const wA=getWhatsappByName("Alessandra");
         const msgCheckin=`📸 *Check-in recebido!*\n*${prevCampImp.name}*\nEvidências dos parceiros disponíveis no sistema.`;
         if(wC)sendWhatsAppNotif(wC,msgCheckin);
-        if(wA)sendWhatsAppNotif(wA,msgCheckin);
+        sendWhatsAppNotifToRole("gerente_base",msgCheckin);
       }
     }
   };
@@ -5976,10 +5975,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     if(error)console.error("SUPABASE createCamp:",error);
     else{
       pushNotif("Campanha criada!",rec.name,T.accent);
-      const wA=getWhatsappByName("Alessandra");const wM=getWhatsappByName("Pedro Henrique");const wL=getWhatsappByName("Larissa");
       const val=rec.valorLiquido>0?`\nValor: R$ ${Number(rec.valorLiquido).toLocaleString("pt-BR",{minimumFractionDigits:2})}`:"";
       const msgCriada=`🆕 *Nova campanha criada!*\n*${rec.name}* - Cliente: ${rec.client}${val}\nResponsável: ${rec.responsavel||"—"}`;
-      if(wA)await sendWhatsAppNotif(wA,msgCriada);if(wM)await sendWhatsAppNotif(wM,msgCriada);if(wL)await sendWhatsAppNotif(wL,msgCriada);
+      await sendWhatsAppNotifToRole("gerente_base",msgCriada);
+      await sendWhatsAppNotifToRole("marketing",msgCriada);
+      await sendWhatsAppNotifToRole("financeiro",msgCriada);
     }
   };
 
@@ -6001,10 +6001,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     if(error)console.error("SUPABASE createCampFromPlan:",error);
     else{
       pushNotif("Campanha criada!",rec.name+" · "+inclParc.length+" parceiros",T.accent);
-      const wA=getWhatsappByName("Alessandra");const wM=getWhatsappByName("Pedro Henrique");const wL=getWhatsappByName("Larissa");
       const val=rec.valorLiquido>0?`\nValor: R$ ${Number(rec.valorLiquido).toLocaleString("pt-BR",{minimumFractionDigits:2})}`:"";
       const msgCriada=`🆕 *Nova campanha criada!*\n*${rec.name}* - Cliente: ${rec.client}${val}\nResponsável: ${rec.responsavel||"—"}`;
-      if(wA)await sendWhatsAppNotif(wA,msgCriada);if(wM)await sendWhatsAppNotif(wM,msgCriada);if(wL)await sendWhatsAppNotif(wL,msgCriada);
+      await sendWhatsAppNotifToRole("gerente_base",msgCriada);
+      await sendWhatsAppNotifToRole("marketing",msgCriada);
+      await sendWhatsAppNotifToRole("financeiro",msgCriada);
     }
   };
 

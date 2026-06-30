@@ -21,7 +21,6 @@ export default async function handler(req, res) {
     realtime: { transport: ws },
   });
 
-  const wRodrigo = process.env.RODRIGO_WHATSAPP || '5511968134927';
   const evolutionUrl = process.env.EVOLUTION_URL;
   const evolutionKey = process.env.EVOLUTION_KEY;
   const evolutionInstance = process.env.EVOLUTION_INSTANCE;
@@ -128,18 +127,29 @@ ${listPagarHoje}
 ⚠️ *Vencendo nos próximos 3 dias:*
 ${listProximos}`;
 
-  try {
-    const response = await fetch(`${evolutionUrl}/message/sendText/${evolutionInstance}`, {
-      method: 'POST',
-      headers: {
-        'apikey': evolutionKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ number: wRodrigo, text: mensagem }),
-    });
+  const { data: admins } = await supabase
+    .from('usuarios')
+    .select('name,whatsapp')
+    .eq('role', 'admin')
+    .not('whatsapp', 'is', null);
 
-    const data = await response.json();
-    console.log('[cron/financeiro-diario] enviado para Rodrigo:', data);
+  if (!admins || admins.length === 0) {
+    return res.status(200).json({ ok: true, saldo, receberHoje: receberHoje.length, pagarHoje: pagarHoje.length, warn: 'no admin whatsapp found' });
+  }
+
+  try {
+    for (const admin of admins) {
+      const response = await fetch(`${evolutionUrl}/message/sendText/${evolutionInstance}`, {
+        method: 'POST',
+        headers: {
+          'apikey': evolutionKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ number: admin.whatsapp, text: mensagem }),
+      });
+      const data = await response.json();
+      console.log(`[cron/financeiro-diario] enviado para ${admin.name}:`, data);
+    }
     return res.status(200).json({ ok: true, saldo, receberHoje: receberHoje.length, pagarHoje: pagarHoje.length });
   } catch (err) {
     console.error('[cron/financeiro-diario] whatsapp error:', err);
