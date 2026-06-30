@@ -3873,22 +3873,44 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
             const prazoDate=d.prazo_fechamento?new Date(d.prazo_fechamento+"T00:00:00"):null;
             if(prazoDate)prazoDate.setHours(0,0,0,0);
             const diasPrazo=prazoDate?Math.ceil((prazoDate-hoje)/86400000):null;
+            const fmtD=v=>v?new Date(v+"T00:00:00").toLocaleDateString("pt-BR"):"—";
+            const perfArr=Array.isArray(d.perfil_parceiro)?d.perfil_parceiro:(d.perfil_parceiro?[d.perfil_parceiro]:[]);
+            const obsText=d.observacoes?.trim()||d.briefing_detalhado?.trim()||"";
             return(
               <div key={d.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"14px 16px"}}>
+                {/* Cabeçalho */}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                   <div>
                     <div style={{fontWeight:700,fontSize:12,marginBottom:2}}>{d.codigo} — {d.nome_campanha}</div>
-                    <div style={{fontSize:10,color:T.muted,display:"flex",flexWrap:"wrap",gap:4,alignItems:"center"}}>
-                      {[d.cliente,d.regiao].filter(Boolean).map((v,i)=><span key={i}>{v}</span>).reduce((a,b,i)=>[...a,<span key={"s"+i} style={{opacity:.4}}>·</span>,b],[])}
-                      {(()=>{const arr=Array.isArray(d.perfil_parceiro)?d.perfil_parceiro:(d.perfil_parceiro?[d.perfil_parceiro]:[]);return arr.map(s=><span key={s} style={{background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:4,padding:"1px 6px",fontSize:9,fontWeight:700}}>{s}</span>);})()}
-                      {d.classe_social&&d.classe_social!=="Qualquer"&&<span style={{opacity:.7}}>Classe {d.classe_social}</span>}
-                    </div>
+                    <div style={{fontSize:10,color:T.muted}}>{[d.cliente,d.quantidade_embalagens?`${Number(d.quantidade_embalagens).toLocaleString("pt-BR")} emb.`:null].filter(Boolean).join(" · ")}</div>
                   </div>
                   <div style={{textAlign:"right",flexShrink:0,marginLeft:12}}>
                     {diasPrazo!==null&&<div style={{fontSize:9,fontWeight:700,color:diasPrazo<0?T.danger:diasPrazo<=7?T.warn:T.muted}}>{diasPrazo<0?"⚠️ "+Math.abs(diasPrazo)+"d atrasado":diasPrazo===0?"Vence hoje!":diasPrazo+"d para prazo"}</div>}
                     <div style={{fontSize:9,color:T.muted}}>por {d.comercial_responsavel||"—"}</div>
                   </div>
                 </div>
+                {/* Datas */}
+                {(d.data_inicio||d.data_termino||d.prazo_fechamento)&&(
+                  <div style={{display:"flex",flexWrap:"wrap",gap:12,marginBottom:7,fontSize:10,color:T.muted}}>
+                    {(d.data_inicio||d.data_termino)&&<span>📅 <span style={{color:T.text}}>{fmtD(d.data_inicio)} → {fmtD(d.data_termino)}</span></span>}
+                    {d.prazo_fechamento&&<span>🔒 Prazo: <span style={{color:T.text}}>{fmtD(d.prazo_fechamento)}</span></span>}
+                  </div>
+                )}
+                {/* Endereço / Região */}
+                {(d.endereco_referencia||d.regiao)&&(
+                  <div style={{fontSize:10,color:T.muted,marginBottom:7}}>
+                    {d.endereco_referencia&&<div>📍 {d.endereco_referencia}</div>}
+                    {d.regiao&&<div>🗺 {d.regiao}</div>}
+                  </div>
+                )}
+                {/* Perfil + Classe */}
+                {(perfArr.length>0||d.classe_social&&d.classe_social!=="Qualquer")&&(
+                  <div style={{display:"flex",flexWrap:"wrap",gap:4,alignItems:"center",marginBottom:8}}>
+                    {perfArr.map(s=><span key={s} style={{background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:4,padding:"1px 7px",fontSize:9,fontWeight:700}}>{s}</span>)}
+                    {d.classe_social&&d.classe_social!=="Qualquer"&&<span style={{fontSize:9,color:T.muted,padding:"1px 7px",border:`1px solid ${T.border}`,borderRadius:4}}>Classe {d.classe_social}</span>}
+                  </div>
+                )}
+                {/* Progresso */}
                 <div style={{marginBottom:8}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                     <div style={{fontSize:10,color:T.text}}>{d.quantidade_convertida}/{d.quantidade_solicitada} parceiros</div>
@@ -3898,13 +3920,14 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
                     <div style={{width:`${pct}%`,height:"100%",background:barColor,borderRadius:3,transition:"width 0.3s"}}/>
                   </div>
                 </div>
+                {/* Rodapé */}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6}}>
                   <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
                     {(d.funcionarios_base||[]).length===0&&<span style={{fontSize:9,color:T.muted}}>Nenhum membro direcionado</span>}
                     {(d.funcionarios_base||[]).map(f=><span key={f} style={{fontSize:9,padding:"2px 7px",borderRadius:4,background:T.surface,border:`1px solid ${T.border}`,color:T.text}}>{f}</span>)}
                   </div>
                   <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                    {d.briefing_detalhado?.trim()&&<button onClick={()=>setDemBriefing(d)} style={{padding:"4px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:9,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>📄 Ver briefing</button>}
+                    {obsText&&<button onClick={()=>setDemBriefing(d)} style={{padding:"4px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:9,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>📄 Ver observações</button>}
                     {canEditDemanda&&<button onClick={()=>setDemDirecionar(d)} style={{padding:"4px 10px",background:"transparent",border:`1px solid ${T.info}55`,color:T.info,borderRadius:6,fontSize:9,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>👥 Direcionar equipe</button>}
                   </div>
                 </div>
@@ -3941,19 +3964,19 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
       </div>
     )}
 
-    {/* Modal briefing detalhado */}
+    {/* Modal observações da demanda */}
     {demBriefing&&(
       <div style={{position:"fixed",inset:0,background:"#000000D0",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>setDemBriefing(null)}>
         <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,padding:24,width:"100%",maxWidth:520,maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div>
-              <div style={{fontWeight:700,fontSize:14}}>📄 Briefing Detalhado</div>
+              <div style={{fontWeight:700,fontSize:14}}>📄 Observações da Demanda</div>
               <div style={{fontSize:10,color:T.muted,marginTop:2}}>{demBriefing.codigo} — {demBriefing.nome_campanha}</div>
             </div>
             <button onClick={()=>setDemBriefing(null)} style={{background:"none",border:"none",fontSize:20,color:T.muted,cursor:"pointer"}}>×</button>
           </div>
           <div style={{flex:1,overflowY:"auto",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"12px 14px",fontSize:12,color:T.text,lineHeight:1.7,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
-            {demBriefing.briefing_detalhado||"—"}
+            {demBriefing.observacoes?.trim()||demBriefing.briefing_detalhado?.trim()||"—"}
           </div>
           <div style={{textAlign:"right",marginTop:14}}>
             <button onClick={()=>setDemBriefing(null)} style={{padding:"7px 20px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Fechar</button>
@@ -4595,7 +4618,8 @@ export default function App(){
   const[demandas,setDemandas]=useState([]);
   const[showDemandaForm,setShowDemandaForm]=useState(false);
   const DEMANDA_SEGS=["Japonesa","Italiana","Brasileira","Árabe","Mexicana","Chinesa","Fast Food","Pizza","Hamburguer","Sushi","Frutos do Mar","Vegetariana/Vegana","Churrasco","Lanches","Doces/Sobremesas","Cafeteria","Padaria","Fitness/Saudável","Variado","Outro"];
-  const[novaDemanda,setNovaDemanda]=useState({nome_campanha:"",cliente:"",regiao:"",perfil_parceiro:[],classe_social:"Qualquer",prazo_fechamento:"",quantidade_solicitada:10,briefing_detalhado:""});
+  const DEMANDA_VAZIO={nome_campanha:"",cliente:"",quantidade_embalagens:"",data_inicio:"",data_termino:"",prazo_fechamento:"",cep_referencia:"",endereco_referencia:"",regiao:"",perfil_parceiro:[],classe_social:"Qualquer",quantidade_solicitada:10,observacoes:""};
+  const[novaDemanda,setNovaDemanda]=useState(DEMANDA_VAZIO);
   const[demBriefing,setDemBriefing]=useState(null);
   const[demandaConfirmacao,setDemandaConfirmacao]=useState(null);
   // WhatsApp agent states
@@ -6224,12 +6248,12 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     setDemandas(p=>[...p,rec]);
     setShowDemandaForm(false);
     setDemandaConfirmacao(codigo);
-    setNovaDemanda({nome_campanha:"",cliente:"",regiao:"",perfil_parceiro:[],classe_social:"Qualquer",prazo_fechamento:"",quantidade_solicitada:10,briefing_detalhado:""});
+    setNovaDemanda(DEMANDA_VAZIO);
     const prazoFmt=rec.prazo_fechamento?new Date(rec.prazo_fechamento+"T00:00:00").toLocaleDateString("pt-BR"):"—";
     const perfilTxt=(Array.isArray(rec.perfil_parceiro)&&rec.perfil_parceiro.length>0)?rec.perfil_parceiro.join(", "):"—";
-    const briefTxt=rec.briefing_detalhado?.trim();
-    const briefResumo=briefTxt?`\n📄 *Briefing:* ${briefTxt.length>100?briefTxt.slice(0,100)+"...":briefTxt}\n_Ver briefing completo no sistema._`:"";
-    const msg=`📋 *Nova demanda de prospecção!*\nCódigo: ${codigo}\nCampanha: ${rec.nome_campanha}\nCliente: ${rec.cliente||"—"}\nRegião: ${rec.regiao||"—"}\nPerfil: ${perfilTxt} | Classe: ${rec.classe_social||"—"}\nQuantidade: ${rec.quantidade_solicitada} parceiros\nPrazo: ${prazoFmt}${briefResumo}`;
+    const fmtDate=d=>d?new Date(d+"T00:00:00").toLocaleDateString("pt-BR"):"—";
+    const periodo=`${fmtDate(rec.data_inicio)} → ${fmtDate(rec.data_termino)}`;
+    const msg=`📋 *Nova demanda de prospecção!*\nCódigo: ${codigo}\nCampanha: ${rec.nome_campanha}\nCliente: ${rec.cliente||"—"}\nEmbalagens: ${rec.quantidade_embalagens||"—"}\nPeríodo: ${periodo}\nPrazo fechamento: ${prazoFmt}\nEndereço ref.: ${rec.endereco_referencia||"—"}\nRegião: ${rec.regiao||"—"}\nPerfil: ${perfilTxt}\nClasse: ${rec.classe_social||"—"}\nQuantidade: ${rec.quantidade_solicitada} parceiros`;
     await sendWhatsAppNotifToRole("gerente_base",msg);
   };
 
@@ -10064,43 +10088,73 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 });
                 setShowConvPlan(true);
               }}
-              onSolicitarProspeccao={p=>{const seg=p.clienteSegmento?[p.clienteSegmento]:[];setNovaDemanda({nome_campanha:p.clienteNome||"",cliente:p.clienteNome||"",regiao:p.regiao||"",perfil_parceiro:seg,classe_social:"Qualquer",prazo_fechamento:"",quantidade_solicitada:10});setShowDemandaForm(true);}}
+              onSolicitarProspeccao={p=>{const seg=p.clienteSegmento?[p.clienteSegmento]:[];setNovaDemanda({...DEMANDA_VAZIO,nome_campanha:p.clienteNome||"",cliente:p.clienteNome||"",regiao:p.regiao||"",perfil_parceiro:seg});setShowDemandaForm(true);}}
             />
           )}
 
           {/* ── MODAL: SOLICITAR PROSPECÇÃO ──────────────────────────────────── */}
           {showDemandaForm&&(
             <div style={{position:"fixed",inset:0,background:"#000000D0",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>setShowDemandaForm(false)}>
-              <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:16,width:"100%",maxWidth:500,padding:24}} onClick={e=>e.stopPropagation()}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+              <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:16,width:"100%",maxWidth:580,maxHeight:"92vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"20px 24px 16px",flexShrink:0}}>
                   <div style={{fontWeight:800,fontSize:16}}>📋 Solicitar Prospecção</div>
                   <button onClick={()=>setShowDemandaForm(false)} style={{background:"none",border:"none",fontSize:20,color:T.muted,cursor:"pointer"}}>×</button>
                 </div>
-                {(()=>{const inpD={width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none",boxSizing:"border-box"};return(<>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-                    <div style={{gridColumn:"span 2"}}><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Nome da campanha *</div><input value={novaDemanda.nome_campanha} onChange={e=>setNovaDemanda(p=>({...p,nome_campanha:e.target.value}))} style={inpD}/></div>
-                    <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Cliente</div><input value={novaDemanda.cliente} onChange={e=>setNovaDemanda(p=>({...p,cliente:e.target.value}))} style={inpD}/></div>
-                    <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Região</div><input value={novaDemanda.regiao} onChange={e=>setNovaDemanda(p=>({...p,regiao:e.target.value}))} style={inpD}/></div>
-                    <div style={{gridColumn:"span 2"}}><div style={{fontSize:10,color:T.muted,marginBottom:6}}>Perfil do parceiro <span style={{opacity:.5}}>(múltipla seleção — deixe vazio para qualquer)</span></div>
-                      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                        {DEMANDA_SEGS.map(s=>{const sel=(novaDemanda.perfil_parceiro||[]).includes(s);return(<button type="button" key={s} onClick={()=>setNovaDemanda(p=>{const cur=p.perfil_parceiro||[];return{...p,perfil_parceiro:cur.includes(s)?cur.filter(x=>x!==s):[...cur,s]};})} style={{padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:sel?700:400,cursor:"pointer",border:sel?`1px solid ${T.accentBorder}`:`1px solid ${T.border}`,background:sel?T.accentDim:T.bg,color:sel?T.accent:T.muted,transition:"all .15s"}}>{s}</button>);})}
-                      </div></div>
-                    <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Classe social</div>
-                      <select value={novaDemanda.classe_social} onChange={e=>setNovaDemanda(p=>({...p,classe_social:e.target.value}))} style={inpD}>
-                        {["Qualquer","A","B1","B2","C1","C2","D","E"].map(c=><option key={c}>{c}</option>)}
-                      </select></div>
-                    <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Prazo de fechamento</div><input type="date" value={novaDemanda.prazo_fechamento} onChange={e=>setNovaDemanda(p=>({...p,prazo_fechamento:e.target.value}))} style={inpD}/></div>
-                    <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Qtd. parceiros *</div><input type="number" min={1} value={novaDemanda.quantidade_solicitada} onChange={e=>setNovaDemanda(p=>({...p,quantidade_solicitada:e.target.value}))} style={inpD}/></div>
-                  </div>
-                  <div style={{marginBottom:12}}>
-                    <div style={{fontSize:10,color:T.muted,marginBottom:4}}>Briefing detalhado <span style={{opacity:.5}}>(opcional)</span></div>
-                    <textarea value={novaDemanda.briefing_detalhado} onChange={e=>setNovaDemanda(p=>({...p,briefing_detalhado:e.target.value}))} rows={6} placeholder={"Ex:\nQuantidade de embalagens: 5.000\nParceiros sugeridos: já temos contato com X, Y\nEndereço de referência: Setor Residencial Leste, Brasília/DF\nAções necessárias: validar com parceiros disponibilidade de fachada para grafismo"} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none",boxSizing:"border-box",resize:"vertical",lineHeight:1.5,fontFamily:"inherit"}}/>
-                  </div>
-                  <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:6}}>
-                    <button onClick={()=>setShowDemandaForm(false)} style={{padding:"8px 18px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:8,fontSize:11,cursor:"pointer"}}>Cancelar</button>
-                    <button onClick={criarDemanda} style={{padding:"8px 20px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Criar Demanda</button>
-                  </div>
-                </>);})()}
+                {(()=>{
+                  const inpD={width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none",boxSizing:"border-box"};
+                  const lbl=(txt,opt)=><div style={{fontSize:10,color:T.muted,marginBottom:4}}>{txt}{opt&&<span style={{opacity:.5}}> (opcional)</span>}</div>;
+                  const sec=(txt)=><div style={{fontSize:9,fontWeight:700,color:T.accent,textTransform:"uppercase",letterSpacing:.8,marginBottom:6,marginTop:4}}>{txt}</div>;
+                  return(
+                    <div style={{flex:1,overflowY:"auto",padding:"0 24px 20px"}}>
+                      {/* Campanha */}
+                      {sec("Campanha")}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+                        <div style={{gridColumn:"span 2"}}>{lbl("Nome da campanha *")}<input value={novaDemanda.nome_campanha} onChange={e=>setNovaDemanda(p=>({...p,nome_campanha:e.target.value}))} style={inpD}/></div>
+                        <div>{lbl("Cliente",true)}<input value={novaDemanda.cliente} onChange={e=>setNovaDemanda(p=>({...p,cliente:e.target.value}))} style={inpD}/></div>
+                        <div>{lbl("Qtd. de embalagens",true)}<input type="number" min={0} value={novaDemanda.quantidade_embalagens} onChange={e=>setNovaDemanda(p=>({...p,quantidade_embalagens:e.target.value}))} placeholder="Ex: 5000" style={inpD}/></div>
+                      </div>
+                      {/* Período */}
+                      {sec("Período")}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:12}}>
+                        <div>{lbl("Data início",true)}<input type="date" value={novaDemanda.data_inicio} onChange={e=>setNovaDemanda(p=>({...p,data_inicio:e.target.value}))} style={inpD}/></div>
+                        <div>{lbl("Data término",true)}<input type="date" value={novaDemanda.data_termino} onChange={e=>setNovaDemanda(p=>({...p,data_termino:e.target.value}))} style={inpD}/></div>
+                        <div>{lbl("Prazo fechamento",true)}<input type="date" value={novaDemanda.prazo_fechamento} onChange={e=>setNovaDemanda(p=>({...p,prazo_fechamento:e.target.value}))} style={inpD}/></div>
+                      </div>
+                      {/* Localização */}
+                      {sec("Localização")}
+                      <div style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:10,marginBottom:6}}>
+                        <div>{lbl("CEP de referência",true)}<input value={novaDemanda.cep_referencia||""} onChange={async e=>{const raw=e.target.value.replace(/\D/g,"").slice(0,8);const fmt=raw.length>5?raw.slice(0,5)+"-"+raw.slice(5):raw;setNovaDemanda(p=>({...p,cep_referencia:fmt}));if(raw.length===8){try{const r=await fetch(`https://viacep.com.br/ws/${raw}/json/`);const j=await r.json();if(!j.erro)setNovaDemanda(p=>({...p,endereco_referencia:`${j.logradouro?j.logradouro+", ":""}${j.bairro?j.bairro+", ":""}${j.localidade}/${j.uf}`}));}catch(ex){}}}} placeholder="00000-000" maxLength={9} style={inpD}/></div>
+                        <div>{lbl("Endereço de referência",true)}<input value={novaDemanda.endereco_referencia} onChange={e=>setNovaDemanda(p=>({...p,endereco_referencia:e.target.value}))} placeholder="Ex: Setor Residencial Leste, Brasília/DF" style={inpD}/></div>
+                      </div>
+                      <div style={{marginBottom:12}}>
+                        {lbl("Região",true)}<input value={novaDemanda.regiao} onChange={e=>setNovaDemanda(p=>({...p,regiao:e.target.value}))} placeholder="Ex: Zona Sul - SP, Asa Sul - DF" style={inpD}/>
+                      </div>
+                      {/* Perfil */}
+                      {sec("Perfil do parceiro")}
+                      <div style={{marginBottom:12}}>
+                        <div style={{fontSize:10,color:T.muted,marginBottom:6}}>Múltipla seleção — deixe vazio para qualquer perfil</div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                          {DEMANDA_SEGS.map(s=>{const sel=(novaDemanda.perfil_parceiro||[]).includes(s);return(<button type="button" key={s} onClick={()=>setNovaDemanda(p=>{const cur=p.perfil_parceiro||[];return{...p,perfil_parceiro:cur.includes(s)?cur.filter(x=>x!==s):[...cur,s]};})} style={{padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:sel?700:400,cursor:"pointer",border:sel?`1px solid ${T.accentBorder}`:`1px solid ${T.border}`,background:sel?T.accentDim:T.bg,color:sel?T.accent:T.muted,transition:"all .15s"}}>{s}</button>);})}
+                        </div>
+                      </div>
+                      {/* Classe / Qtd */}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+                        <div>{lbl("Classe social")}<select value={novaDemanda.classe_social} onChange={e=>setNovaDemanda(p=>({...p,classe_social:e.target.value}))} style={inpD}>{["Qualquer","A","B1","B2","C1","C2","D","E"].map(c=><option key={c}>{c}</option>)}</select></div>
+                        <div>{lbl("Qtd. parceiros *")}<input type="number" min={1} value={novaDemanda.quantidade_solicitada} onChange={e=>setNovaDemanda(p=>({...p,quantidade_solicitada:e.target.value}))} style={inpD}/></div>
+                      </div>
+                      {/* Observações */}
+                      {sec("Observações")}
+                      <div style={{marginBottom:8}}>
+                        {lbl("Informações adicionais",true)}
+                        <textarea value={novaDemanda.observacoes} onChange={e=>setNovaDemanda(p=>({...p,observacoes:e.target.value}))} rows={4} placeholder="Outras informações relevantes: parceiros sugeridos, ações necessárias, etc." style={{...inpD,resize:"vertical",lineHeight:1.5,fontFamily:"inherit"}}/>
+                      </div>
+                      <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:10}}>
+                        <button onClick={()=>setShowDemandaForm(false)} style={{padding:"8px 18px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:8,fontSize:11,cursor:"pointer"}}>Cancelar</button>
+                        <button onClick={criarDemanda} style={{padding:"8px 20px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Criar Demanda</button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
