@@ -12,14 +12,19 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const supabase = createClient(SUPABASE_URL, process.env.VITE_SUPA_KEY);
-  const wRodrigo = process.env.RODRIGO_WHATSAPP;
+  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+  if (!supabaseKey) {
+    return res.status(500).json({ error: 'Missing env var: SUPABASE_ANON_KEY' });
+  }
+  const supabase = createClient(SUPABASE_URL, supabaseKey);
+
+  const wRodrigo = process.env.RODRIGO_WHATSAPP || '5511968134927';
   const evolutionUrl = process.env.EVOLUTION_URL;
   const evolutionKey = process.env.EVOLUTION_KEY;
   const evolutionInstance = process.env.EVOLUTION_INSTANCE;
 
-  if (!wRodrigo || !evolutionUrl) {
-    return res.status(500).json({ error: 'Missing env vars: RODRIGO_WHATSAPP or EVOLUTION_URL' });
+  if (!evolutionUrl) {
+    return res.status(500).json({ error: 'Missing env var: EVOLUTION_URL' });
   }
 
   // Build date strings in dd/mm/yyyy format for today + next 3 days
