@@ -886,7 +886,7 @@ const PlanWizard=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPl
 };
 
 
-const OrgChart=({orgNodes,setOrgNodes,supabase,pushNotif})=>{
+const OrgChart=({orgNodes,setOrgNodes,supabase,pushNotif,allUsers=[]})=>{
   const CW=200,CH=118;
   const DC={"liderança":{bg:"#EEEDFE",cl:"#534AB7"},"operações":{bg:"#E1F5EE",cl:"#1D9E75"},"comercial":{bg:"#FAECE7",cl:"#D85A30"},"financeiro":{bg:"#EAF3DE",cl:"#639922"},"vaga":{bg:"#FAEEDA",cl:"#BA7517"}};
   const SICO={"ativo":"🟢","ferias":"🟡","afastado":"🔴","vaga aberta":"⚡","planejado":"📅"};
@@ -1037,6 +1037,7 @@ const OrgChart=({orgNodes,setOrgNodes,supabase,pushNotif})=>{
               const dc=DC[isV?"vaga":n.dept]||DC.liderança;
               const isSel=selId===n.id,isDrg=drag?.id===n.id;
               const ini=isV?"?":n.name.split(" ").filter(Boolean).map(w=>w[0]?.toUpperCase()||"").join("").slice(0,2);
+              const uData=isV?null:allUsers.find(u=>u.name===n.name);
               return(
                 <div key={n.id}
                   onMouseDown={e=>{
@@ -1049,7 +1050,7 @@ const OrgChart=({orgNodes,setOrgNodes,supabase,pushNotif})=>{
                   onClick={()=>{if(!movedRef.current){setSelId(n.id);setEf({...n});}}}
                   style={{position:"absolute",left:n.x,top:n.y,width:CW,background:dc.bg,border:`2px solid ${isSel?dc.cl:dc.cl+"55"}`,borderRadius:12,padding:"10px 12px",cursor:isDrg?"grabbing":"grab",userSelect:"none",boxShadow:isDrg?`0 8px 24px ${dc.cl}55`:"none",zIndex:isDrg?100:isSel?10:2,boxSizing:"border-box"}}>
                   <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:7}}>
-                    <div style={{width:34,height:34,borderRadius:"50%",background:dc.cl+"22",border:`2px solid ${dc.cl}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:dc.cl,flexShrink:0}}>{ini}</div>
+                    {uData?.foto_url?<img src={uData.foto_url} alt={n.name} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:`2px solid ${dc.cl}`,flexShrink:0}}/>:<div style={{width:34,height:34,borderRadius:"50%",background:dc.cl+"22",border:`2px solid ${dc.cl}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:dc.cl,flexShrink:0}}>{ini}</div>}
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontSize:11,fontWeight:700,fontFamily:"Arial,sans-serif",color:"#1a1a2e",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{isV?"A contratar":n.name}</div>
                       <div style={{fontSize:9,color:"#555",fontFamily:"Arial,sans-serif",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.role}</div>
@@ -12120,7 +12121,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           })()}
 
           {tab==="organograma"&&user.role==="admin"&&(
-            <OrgChart orgNodes={orgNodes} setOrgNodes={setOrgNodes} supabase={supabase} pushNotif={pushNotif}/>
+            <OrgChart orgNodes={orgNodes} setOrgNodes={setOrgNodes} supabase={supabase} pushNotif={pushNotif} allUsers={users}/>
           )}
 
         </div>
