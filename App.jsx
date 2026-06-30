@@ -3612,7 +3612,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
         await sendWAToRole("gerente_base",msgExiste);
         return;
       }
-      const newP={id:Date.now(),name:lead.nome,city:lead.cidade||"-",state:"-",category:lead.tipo||"Outros",whatsapp:lead.telefone||"",handle:lead.instagram||"",deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:1,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},foto_fachada:"",instagram_seguidores:0};
+      const newP={id:Date.now(),name:lead.nome,city:lead.cidade||"-",state:lead.estado||"-",category:lead.tipo||"Outros",whatsapp:lead.telefone||"",handle:lead.instagram||"",cep:lead.cep||"",rua:lead.rua||"",numero:lead.numero||"",bairro:lead.bairro||"",classe_social:lead.classe_social||"",deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:1,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},foto_fachada:"",instagram_seguidores:0};
       const withScore={...newP,score:calcScore(newP)};
       await supabase.from("parceiros").upsert({id:withScore.id,data:withScore});
       await supabase.from("pipeline_leads").update({etapa,convertido_parceiro_id:withScore.id,atualizado_em:new Date().toISOString()}).eq("id",id);
@@ -3643,7 +3643,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
     const{data}=await supabase.from("pipeline_leads").insert([{...pipeNovoLead,criado_em:new Date().toISOString(),atualizado_em:new Date().toISOString()}]).select().single();
     if(data) setPipeLeads(p=>[data,...p]);
     setPipeShowNovo(false);
-    setPipeNovoLead({nome:"",responsavel:"Victória",etapa:"abordado",campanha:"",cidade:"",tipo:"",telefone:"",instagram:"",obs:"",responsavel_comercial:""});
+    setPipeNovoLead({nome:"",responsavel:"Victória",etapa:"abordado",campanha:"",cidade:"",tipo:"",telefone:"",instagram:"",obs:"",responsavel_comercial:"",cep:"",rua:"",numero:"",bairro:"",estado:"",classe_social:""});
   };
 
   const salvarEdicao=async()=>{
@@ -3714,7 +3714,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
             <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14,color:T.accent}}>Editar Lead</div>
             <button onClick={()=>setPipeModalLead(null)} style={{background:"none",border:"none",color:T.muted,fontSize:18,cursor:"pointer"}}>✕</button>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
             {[["nome","Restaurante"],["cidade","Cidade"],["tipo","Tipo"],["telefone","Telefone"],["instagram","Instagram"],["campanha","Campanha"]].map(([k,l])=>(
               <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:3}}>{l}</div>
               <input value={pipeModalLead[k]||""} onChange={e=>setPipeModalLead(p=>({...p,[k]:e.target.value}))} style={inpS}/></div>
@@ -3727,6 +3727,26 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
             <select value={pipeModalLead.responsavel_comercial||""} onChange={e=>setPipeModalLead(p=>({...p,responsavel_comercial:e.target.value}))} style={inpS}>
               <option value="">Nenhum</option>
               {MEMBROS_COMERCIAL.map(m=><option key={m}>{m}</option>)}
+            </select></div>
+          </div>
+          <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:6,marginTop:4,paddingTop:8,borderTop:`1px solid ${T.border}`}}>Endereço</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>CEP</div>
+            <input value={pipeModalLead.cep||""} onChange={async e=>{const raw=e.target.value.replace(/\D/g,"").slice(0,8);const fmt=raw.length>5?raw.slice(0,5)+"-"+raw.slice(5):raw;setPipeModalLead(p=>({...p,cep:fmt}));if(raw.length===8){try{const r=await fetch(`https://viacep.com.br/ws/${raw}/json/`);const j=await r.json();if(!j.erro)setPipeModalLead(p=>({...p,rua:j.logradouro||p.rua,bairro:j.bairro||p.bairro,cidade:j.localidade||p.cidade,estado:j.uf||p.estado}));}catch(ex){}}}} placeholder="00000-000" maxLength={9} style={inpS}/></div>
+            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Número</div>
+            <input value={pipeModalLead.numero||""} onChange={e=>setPipeModalLead(p=>({...p,numero:e.target.value}))} style={inpS}/></div>
+            <div style={{gridColumn:"span 2"}}><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Rua</div>
+            <input value={pipeModalLead.rua||""} onChange={e=>setPipeModalLead(p=>({...p,rua:e.target.value}))} style={inpS}/></div>
+            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Bairro</div>
+            <input value={pipeModalLead.bairro||""} onChange={e=>setPipeModalLead(p=>({...p,bairro:e.target.value}))} style={inpS}/></div>
+            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Estado (UF)</div>
+            <input value={pipeModalLead.estado||""} onChange={e=>setPipeModalLead(p=>({...p,estado:e.target.value.toUpperCase().slice(0,2)}))} placeholder="SP" maxLength={2} style={inpS}/></div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+            <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Classe Social</div>
+            <select value={pipeModalLead.classe_social||""} onChange={e=>setPipeModalLead(p=>({...p,classe_social:e.target.value}))} style={inpS}>
+              <option value="">-</option>
+              {["A","B1","B2","C1","C2","D","E"].map(c=><option key={c}>{c}</option>)}
             </select></div>
           </div>
           <div style={{marginBottom:12}}><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Observações</div>
@@ -3784,6 +3804,24 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
           <select value={pipeNovoLead.responsavel_comercial||""} onChange={e=>setPipeNovoLead(p=>({...p,responsavel_comercial:e.target.value}))} style={inpS}>
             <option value="">Nenhum</option>
             {MEMBROS_COMERCIAL.map(m=><option key={m}>{m}</option>)}
+          </select></div>
+        </div>
+        <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:6,paddingTop:8,borderTop:`1px solid ${T.border}`}}>Endereço (opcional)</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+          <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>CEP</div>
+          <input value={pipeNovoLead.cep||""} onChange={async e=>{const raw=e.target.value.replace(/\D/g,"").slice(0,8);const fmt=raw.length>5?raw.slice(0,5)+"-"+raw.slice(5):raw;setPipeNovoLead(p=>({...p,cep:fmt}));if(raw.length===8){try{const r=await fetch(`https://viacep.com.br/ws/${raw}/json/`);const j=await r.json();if(!j.erro)setPipeNovoLead(p=>({...p,rua:j.logradouro||p.rua,bairro:j.bairro||p.bairro,cidade:j.localidade||p.cidade,estado:j.uf||p.estado}));}catch(ex){}}}} placeholder="00000-000" maxLength={9} style={inpS}/></div>
+          <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Número</div>
+          <input value={pipeNovoLead.numero||""} onChange={e=>setPipeNovoLead(p=>({...p,numero:e.target.value}))} style={inpS}/></div>
+          <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Estado (UF)</div>
+          <input value={pipeNovoLead.estado||""} onChange={e=>setPipeNovoLead(p=>({...p,estado:e.target.value.toUpperCase().slice(0,2)}))} placeholder="SP" maxLength={2} style={inpS}/></div>
+          <div style={{gridColumn:"span 2"}}><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Rua</div>
+          <input value={pipeNovoLead.rua||""} onChange={e=>setPipeNovoLead(p=>({...p,rua:e.target.value}))} style={inpS}/></div>
+          <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Bairro</div>
+          <input value={pipeNovoLead.bairro||""} onChange={e=>setPipeNovoLead(p=>({...p,bairro:e.target.value}))} style={inpS}/></div>
+          <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Classe Social</div>
+          <select value={pipeNovoLead.classe_social||""} onChange={e=>setPipeNovoLead(p=>({...p,classe_social:e.target.value}))} style={inpS}>
+            <option value="">-</option>
+            {["A","B1","B2","C1","C2","D","E"].map(c=><option key={c}>{c}</option>)}
           </select></div>
         </div>
         <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
@@ -4396,7 +4434,7 @@ export default function App(){
   const[pipeCampanha,setPipeCampanha]=useState("todas");
   const[pipeDragging,setPipeDragging]=useState(null);
   const[pipeModalLead,setPipeModalLead]=useState(null); // lead sendo editado/criado
-  const[pipeNovoLead,setPipeNovoLead]=useState({nome:"",responsavel:"Victória",etapa:"abordado",campanha:"",cidade:"",tipo:"",telefone:"",instagram:"",obs:"",responsavel_comercial:""});
+  const[pipeNovoLead,setPipeNovoLead]=useState({nome:"",responsavel:"Victória",etapa:"abordado",campanha:"",cidade:"",tipo:"",telefone:"",instagram:"",obs:"",responsavel_comercial:"",cep:"",rua:"",numero:"",bairro:"",estado:"",classe_social:""});
   const[pipeShowNovo,setPipeShowNovo]=useState(false);
   // WhatsApp agent states
   // Simulador
