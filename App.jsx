@@ -6762,7 +6762,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           <div key={u.id}>
                             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
                               <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                                <div style={{width:24,height:24,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",border:`1px solid ${ROLE_COLOR[u.role]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:ROLE_COLOR[u.role],fontWeight:700,flexShrink:0}}>{u.avatar}</div>
+                                {u.foto_url?<img src={u.foto_url} alt={u.name} style={{width:24,height:24,borderRadius:"50%",objectFit:"cover",border:`1px solid ${ROLE_COLOR[u.role]}44`,flexShrink:0}}/>:<div style={{width:24,height:24,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",border:`1px solid ${ROLE_COLOR[u.role]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:ROLE_COLOR[u.role],fontWeight:700,flexShrink:0}}>{u.avatar}</div>}
                                 <span style={{fontSize:11,fontWeight:600}}>{u.name}</span>
                               </div>
                               <div style={{display:"flex",gap:16,alignItems:"center"}}>
@@ -8633,7 +8633,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       <div key={u.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"16px 20px"}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                           <div style={{display:"flex",gap:10,alignItems:"center"}}>
-                            <div style={{width:32,height:32,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",border:`2px solid ${ROLE_COLOR[u.role]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:ROLE_COLOR[u.role],fontWeight:700}}>{u.avatar}</div>
+                            {u.foto_url?<img src={u.foto_url} alt={u.name} style={{width:32,height:32,borderRadius:"50%",objectFit:"cover",border:`2px solid ${ROLE_COLOR[u.role]}44`,flexShrink:0}}/>:<div style={{width:32,height:32,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",border:`2px solid ${ROLE_COLOR[u.role]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:ROLE_COLOR[u.role],fontWeight:700}}>{u.avatar}</div>}
                             <div>
                               <div style={{fontSize:13,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{u.name}</div>
                               <div style={{fontSize:9,color:T.muted}}>{ROLE_LABELS[u.role]}</div>
@@ -8700,7 +8700,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         const colors=[T.accent,T.purple,T.info,T.warn];
                         return(
                           <div key={u.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16,marginBottom:10,display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
-                            <div style={{width:34,height:34,borderRadius:"50%",background:colors[i%colors.length]+"22",border:`1px solid ${colors[i%colors.length]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:colors[i%colors.length],fontWeight:700,flexShrink:0}}>{u.avatar}</div>
+                            {u.foto_url?<img src={u.foto_url} alt={u.name} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:`1px solid ${colors[i%colors.length]}44`,flexShrink:0}}/>:<div style={{width:34,height:34,borderRadius:"50%",background:colors[i%colors.length]+"22",border:`1px solid ${colors[i%colors.length]}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:colors[i%colors.length],fontWeight:700,flexShrink:0}}>{u.avatar}</div>}
                             <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{u.name}</div><div style={{fontSize:9,color:T.muted}}>{uc.length} fechamentos · {uc.filter(c=>c.status==="pendente").length} aguardando</div></div>
                             {[["aprovado",uA,T.accent],["pago",uP,T.green],["a pagar",uA-uP,T.danger]].map(([l,v,c])=>(
                               <div key={l} style={{textAlign:"center"}}><div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:16,color:c}}>{fmt(v)}</div><div style={{fontSize:8,color:T.muted}}>{l}</div></div>
@@ -11648,7 +11648,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 {visibleUsers.map((u,i)=>(
                   <div key={u.id||i} style={{background:T.card,border:`1px solid ${u.active?T.border:T.danger+"44"}`,borderRadius:12,padding:16,display:"flex",flexDirection:"column",gap:10,opacity:u.active?1:0.65}}>
                     <div style={{display:"flex",gap:12,alignItems:"center"}}>
-                      <div style={{width:44,height:44,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",border:`2px solid ${ROLE_COLOR[u.role]}66`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:ROLE_COLOR[u.role],flexShrink:0}}>{u.avatar}</div>
+                      {u.foto_url?<img src={u.foto_url} alt={u.name} style={{width:44,height:44,borderRadius:"50%",objectFit:"cover",border:`2px solid ${ROLE_COLOR[u.role]}66`,flexShrink:0}}/>:<div style={{width:44,height:44,borderRadius:"50%",background:ROLE_COLOR[u.role]+"22",border:`2px solid ${ROLE_COLOR[u.role]}66`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:ROLE_COLOR[u.role],flexShrink:0}}>{u.avatar}</div>}
                       <div style={{flex:1,minWidth:0}}><div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13,color:T.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.nome_completo||u.name}</div><div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif",marginTop:2}}>{u.cargo||"—"}</div></div>
                       <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}><Badge label={ROLE_LABELS[u.role]||u.role} color={ROLE_COLOR[u.role]||T.muted}/><div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:6,height:6,borderRadius:"50%",background:u.active?T.accent:T.danger}}/><span style={{fontSize:8,color:u.active?T.accent:T.danger,fontFamily:"Arial,sans-serif"}}>{u.active?"Ativo":"Inativo"}</span></div></div>
                     </div>
@@ -11667,7 +11667,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   <div style={{background:T.card,borderRadius:16,width:"100%",maxWidth:640,maxHeight:"90vh",display:"flex",flexDirection:"column",overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}} onClick={e=>e.stopPropagation()}>
                     {/* Header */}
                     <div style={{padding:"16px 20px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:12,background:T.surface}}>
-                      <div style={{width:48,height:48,borderRadius:"50%",background:ROLE_COLOR[userFichaModal.role]+"22",border:`2px solid ${ROLE_COLOR[userFichaModal.role]}66`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:ROLE_COLOR[userFichaModal.role],flexShrink:0}}>{userFichaModal.avatar}</div>
+                      {(userFichaData.foto_url||userFichaModal.foto_url)?<img src={userFichaData.foto_url||userFichaModal.foto_url} alt={userFichaModal.name} style={{width:48,height:48,borderRadius:"50%",objectFit:"cover",border:`2px solid ${ROLE_COLOR[userFichaModal.role]}66`,flexShrink:0}}/>:<div style={{width:48,height:48,borderRadius:"50%",background:ROLE_COLOR[userFichaModal.role]+"22",border:`2px solid ${ROLE_COLOR[userFichaModal.role]}66`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:ROLE_COLOR[userFichaModal.role],flexShrink:0}}>{userFichaModal.avatar}</div>}
                       <div style={{flex:1}}><div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:15,color:T.text}}>{userFichaModal.nome_completo||userFichaModal.name}</div><div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif",marginTop:2}}>{userFichaModal.cargo||ROLE_LABELS[userFichaModal.role]||userFichaModal.role}</div></div>
                       <div style={{display:"flex",gap:8,alignItems:"center"}}>
                         {podeSalvarFicha(userFichaModal)&&!userFichaEditMode&&<button onClick={()=>setUserFichaEditMode(true)} style={{padding:"6px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700}}>Editar</button>}
@@ -11682,12 +11682,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     {/* Conteúdo das abas */}
                     <div style={{overflowY:"auto",flex:1,padding:"20px"}}>
                       {userFichaAba==="pessoal"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                        <div style={{gridColumn:"1/-1",display:"flex",gap:14,alignItems:"center"}}>
+                          {(userFichaData.foto_url||userFichaModal.foto_url)?<img src={userFichaData.foto_url||userFichaModal.foto_url} alt="" style={{width:60,height:60,borderRadius:"50%",objectFit:"cover",border:`2px solid ${ROLE_COLOR[userFichaModal.role]}66`,flexShrink:0}}/>:<div style={{width:60,height:60,borderRadius:"50%",background:ROLE_COLOR[userFichaModal.role]+"22",border:`2px solid ${ROLE_COLOR[userFichaModal.role]}66`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:ROLE_COLOR[userFichaModal.role],flexShrink:0}}>{userFichaModal.avatar}</div>}
+                          <div style={{flex:1}}>{FL("Foto de Perfil (URL)")}<input value={FD("foto_url")} onChange={e=>setFD("foto_url",e.target.value)} disabled={!userFichaEditMode} placeholder="https://..." style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        </div>
                         <div style={{gridColumn:"1/-1"}}>{FL("Nome Completo")}<input value={FD("nome_completo")} onChange={e=>setFD("nome_completo",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
                         <div>{FL("CPF")}<input value={FD("cpf")} onChange={e=>setFD("cpf",maskCPF(e.target.value))} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
                         <div>{FL("RG")}<input value={FD("rg")} onChange={e=>setFD("rg",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
                         <div>{FL("Data de Nascimento")}<input type="date" value={FD("data_nascimento")} onChange={e=>setFD("data_nascimento",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
                         <div>{FL("Estado Civil")}<select value={FD("estado_civil")} onChange={e=>setFD("estado_civil",e.target.value)} disabled={!userFichaEditMode} style={{...rhS,opacity:userFichaEditMode?1:0.75}}><option value="">—</option>{["Solteiro(a)","Casado(a)","Divorciado(a)","Viúvo(a)","União Estável"].map(o=><option key={o} value={o}>{o}</option>)}</select></div>
-                        <div>{FL("Nacionalidade")}<input value={FD("nacionalidade")} onChange={e=>setFD("nacionalidade",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
+                        <div>{FL("Nacionalidade")}<input value={FD("nacionalidade")} onChange={e=>setFD("nacionalidade",e.target.value)} disabled={!userFichaEditMode} placeholder="Brasileiro(a)" style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
                       </div>}
                       {userFichaAba==="contato"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
                         <div>{FL("WhatsApp")}<input type="tel" value={FD("whatsapp")} onChange={e=>setFD("whatsapp",e.target.value.replace(/\D/g,""))} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
