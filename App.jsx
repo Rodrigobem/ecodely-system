@@ -5043,7 +5043,10 @@ export default function App(){
       if(!localStorage.getItem(k)){
         localStorage.setItem(k,"1");
         const wC=prevCampImp.responsavel?getWhatsappByName(prevCampImp.responsavel):null;
-        sendWhatsAppNotif(wC,`📸 *Check-in recebido!*\n*${prevCampImp.name}*\nEvidências dos parceiros disponíveis no sistema.`);
+        const wA=getWhatsappByName("Alessandra");
+        const msgCheckin=`📸 *Check-in recebido!*\n*${prevCampImp.name}*\nEvidências dos parceiros disponíveis no sistema.`;
+        if(wC)sendWhatsAppNotif(wC,msgCheckin);
+        if(wA)sendWhatsAppNotif(wA,msgCheckin);
       }
     }
   };
@@ -5971,7 +5974,13 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     setNewCamp({name:"",client:"",agencia:"",numPI:"",project:"",projectId:"",responsavel:"",startDate:"",endDate:"",region:"",graficaFornecedor:"",material:"",graficaPrazo:"",logistica:"",logisticaFornecedor:"",logisticaPrazo:"",parceiros:"",sacolas:"",valorLiquido:"",briefing:"",segments:[]});
     const{error}=await supabase.from("campanhas").insert({id:rec.id,data:rec});
     if(error)console.error("SUPABASE createCamp:",error);
-    else pushNotif("Campanha criada!",rec.name,T.accent);
+    else{
+      pushNotif("Campanha criada!",rec.name,T.accent);
+      const wA=getWhatsappByName("Alessandra");const wM=getWhatsappByName("Pedro Henrique");const wL=getWhatsappByName("Larissa");
+      const val=rec.valorLiquido>0?`\nValor: R$ ${Number(rec.valorLiquido).toLocaleString("pt-BR",{minimumFractionDigits:2})}`:"";
+      const msgCriada=`🆕 *Nova campanha criada!*\n*${rec.name}* - Cliente: ${rec.client}${val}\nResponsável: ${rec.responsavel||"—"}`;
+      if(wA)await sendWhatsAppNotif(wA,msgCriada);if(wM)await sendWhatsAppNotif(wM,msgCriada);if(wL)await sendWhatsAppNotif(wL,msgCriada);
+    }
   };
 
   const createCampFromPlan=async()=>{
@@ -5990,7 +5999,13 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     setConvCampEdit({name:"",client:"",startDate:"",endDate:"",valorLiquido:"",numPI:"",briefing:"",parceirosConv:[],searchBase:""});
     const{error}=await supabase.from("campanhas").insert({id:rec.id,data:rec});
     if(error)console.error("SUPABASE createCampFromPlan:",error);
-    else pushNotif("Campanha criada!",rec.name+" · "+inclParc.length+" parceiros",T.accent);
+    else{
+      pushNotif("Campanha criada!",rec.name+" · "+inclParc.length+" parceiros",T.accent);
+      const wA=getWhatsappByName("Alessandra");const wM=getWhatsappByName("Pedro Henrique");const wL=getWhatsappByName("Larissa");
+      const val=rec.valorLiquido>0?`\nValor: R$ ${Number(rec.valorLiquido).toLocaleString("pt-BR",{minimumFractionDigits:2})}`:"";
+      const msgCriada=`🆕 *Nova campanha criada!*\n*${rec.name}* - Cliente: ${rec.client}${val}\nResponsável: ${rec.responsavel||"—"}`;
+      if(wA)await sendWhatsAppNotif(wA,msgCriada);if(wM)await sendWhatsAppNotif(wM,msgCriada);if(wL)await sendWhatsAppNotif(wL,msgCriada);
+    }
   };
 
   const addCommEntry=async()=>{
