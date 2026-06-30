@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import ws from 'ws';
 
 const SUPABASE_URL = 'https://xklvqcxhtariqqhvnseh.supabase.co';
 
@@ -16,7 +17,9 @@ export default async function handler(req, res) {
   if (!supabaseKey) {
     return res.status(500).json({ error: 'Missing env var: VITE_SUPA_KEY' });
   }
-  const supabase = createClient(SUPABASE_URL, supabaseKey);
+  const supabase = createClient(SUPABASE_URL, supabaseKey, {
+    realtime: { transport: ws },
+  });
 
   const wRodrigo = process.env.RODRIGO_WHATSAPP || '5511968134927';
   const evolutionUrl = process.env.EVOLUTION_URL;
