@@ -4761,25 +4761,23 @@ export default function App(){
     };
     const wA=getWhatsappByName("Alessandra");
     const wL=getWhatsappByName("Larissa");
+    const wM=getWhatsappByName("Pedro Henrique");
     const wC=camp.responsavel?getWhatsappByName(camp.responsavel):null;
+    const val=camp.valorLiquido>0?`R$ ${Number(camp.valorLiquido).toLocaleString("pt-BR",{minimumFractionDigits:2})}`:null;
     if(stageId===1){
-      const msg=`🎯 Campanha *${camp.name}* avançou para *Fechamento*!\nCliente: ${camp.client}\nResponsável: ${camp.responsavel||"—"}`;
-      await dedup(wA,"fechamento",msg);
-      await dedup(wL,"fechamento",msg);
-      users.filter(u=>u.role==="marketing"&&u.whatsapp&&u.active!==false).forEach(u=>dedup(u.whatsapp,"fechamento_mkt_"+u.id,msg));
+      await dedup(wA,"fechamento",`🎯 *Nova campanha fechada!*\n*${camp.name}* - Cliente: ${camp.client}${val?`\nValor: ${val}`:""}\nResponsável: ${camp.responsavel||"—"}`);
+      await dedup(wM,"fechamento",`🎯 *Nova campanha fechada!*\n*${camp.name}*\nPreparar publicações e buscar influenciadores!`);
+      await dedup(wL,"fechamento",`🎯 *Nova campanha fechada!*\n*${camp.name}*\nAguardar PI do cliente ${camp.client}.`);
     }
-    if(stageId===2||stageId===3){
-      const label=STAGES_CAMP.find(s=>s.id===stageId)?.label;
-      const msg=`📦 Campanha *${camp.name}* avançou para *${label}*!\nCliente: ${camp.client}\nResponsável: ${camp.responsavel||"—"}`;
-      await dedup(wA,`etapa${stageId}`,msg);
-      await dedup(wL,`etapa${stageId}`,msg);
-      await dedup(wC,`etapa${stageId}_c`,msg);
+    if(stageId===3){
+      await dedup(wA,"grafica_ok",`🖨️ *Gráfica finalizada!*\n*${camp.name}*\nMaterial pronto para logística.`);
+      await dedup(wC,"grafica_ok_c",`🖨️ *Gráfica finalizada!*\n*${camp.name}*\nMaterial em produção concluído.`);
+      await dedup(wL,"grafica_ok_l",`🖨️ *Gráfica finalizada!*\n*${camp.name}*\nVerificar pagamento da gráfica.`);
     }
     if(stageId===4){
-      const msg=`✅ Campanha *${camp.name}* entrou em *Checking*!\nCliente: ${camp.client}\nVerificar evidências e aprovações.`;
-      await dedup(wA,"checking",msg);
-      await dedup(wL,"checking",msg);
-      await dedup(wC,"checking_c",msg);
+      await dedup(wA,"entrega",`🚚 *Entrega confirmada!*\n*${camp.name}*\nMaterial entregue aos parceiros.`);
+      await dedup(wC,"entrega_c",`🚚 *Entrega confirmada!*\n*${camp.name}*\nCampanha iniciada!`);
+      await dedup(wL,"entrega_l",`🚚 *Entrega confirmada!*\n*${camp.name}*\nVerificar pagamento da transportadora.`);
     }
   };
 
@@ -4787,29 +4785,38 @@ export default function App(){
     if(!camps.length||!users.length)return;
     const hoje=new Date().toISOString().slice(0,10);
     (async()=>{
+      const agora=new Date();agora.setHours(0,0,0,0);
       for(const camp of camps){
-        const sla=SLA_CAMP[camp.stage];
-        if(!sla||!camp.stageEnteredAt)continue;
-        const deadline=new Date(new Date(camp.stageEnteredAt).getTime()+sla*86400000);
-        deadline.setHours(0,0,0,0);
-        const agora=new Date();agora.setHours(0,0,0,0);
-        const diff=Math.ceil((deadline-agora)/86400000);
         const stageLabel=STAGES_CAMP.find(s=>s.id===camp.stage)?.label||"";
-        if(diff<0){
-          const k=`notif_${camp.id}_atrasado_${hoje}`;
-          if(!localStorage.getItem(k)){
-            localStorage.setItem(k,"1");
-            const msg=`🔴 Campanha *${camp.name}* está *ATRASADA* em ${stageLabel}!\nCliente: ${camp.client}\nAtraso: ${Math.abs(diff)}d`;
-            await sendWhatsAppNotif(getWhatsappByName("Alessandra"),msg);
-            await sendWhatsAppNotif(getWhatsappByName("Rodrigo"),msg);
+        // Atrasado: SLA por etapa (tempo na etapa atual)
+        const sla=SLA_CAMP[camp.stage];
+        if(sla&&camp.stageEnteredAt){
+          const dl=new Date(new Date(camp.stageEnteredAt).getTime()+sla*86400000);dl.setHours(0,0,0,0);
+          const diff=Math.ceil((dl-agora)/86400000);
+          if(diff<0){
+            const k=`notif_${camp.id}_atrasado_${hoje}`;
+            if(!localStorage.getItem(k)){
+              localStorage.setItem(k,"1");
+              const msg=`🔴 *Campanha atrasada!*\n*${camp.name}* está na etapa ${stageLabel} há mais dias que o esperado.`;
+              await sendWhatsAppNotif(getWhatsappByName("Alessandra"),msg);
+              await sendWhatsAppNotif(getWhatsappByName("Rodrigo"),msg);
+            }
           }
-        } else if(diff<=2){
-          const k=`notif_${camp.id}_vencendo_${hoje}`;
-          if(!localStorage.getItem(k)){
-            localStorage.setItem(k,"1");
-            const msg=`🟡 Campanha *${camp.name}* vence ${diff===0?"hoje":diff+"d"} em ${stageLabel}!\nCliente: ${camp.client}`;
-            await sendWhatsAppNotif(getWhatsappByName("Alessandra"),msg);
-            await sendWhatsAppNotif(camp.responsavel?getWhatsappByName(camp.responsavel):null,msg);
+        }
+        // Vencendo: baseado em dataFim da campanha
+        const dataFim=camp.dataFim||camp.endDate;
+        if(dataFim&&camp.stage!==5&&camp.stage!==0){
+          const dlFim=new Date(dataFim+"T00:00:00");dlFim.setHours(0,0,0,0);
+          const diffFim=Math.ceil((dlFim-agora)/86400000);
+          if(diffFim>=0&&diffFim<=2){
+            const k=`notif_${camp.id}_vencendo_${hoje}`;
+            if(!localStorage.getItem(k)){
+              localStorage.setItem(k,"1");
+              const fmtFim=dlFim.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});
+              const wC=camp.responsavel?getWhatsappByName(camp.responsavel):null;
+              await sendWhatsAppNotif(getWhatsappByName("Alessandra"),`🟡 *Campanha vencendo!*\n*${camp.name}* termina em ${diffFim===0?"hoje":diffFim+"d"} (${fmtFim}).`);
+              await sendWhatsAppNotif(wC,`🟡 *Campanha vencendo!*\n*${camp.name}* termina em ${diffFim===0?"hoje":diffFim+"d"}. Preparar relatório final.`);
+            }
           }
         }
       }
@@ -4994,10 +5001,21 @@ export default function App(){
 
   const updateImpactos=(campId,newImpactos)=>{
     let updatedCamp=null;
+    const prevCampImp=camps.find(c=>c.id===campId);
     setCamps(prev=>prev.map(c=>{if(c.id!==campId)return c;updatedCamp={...c,impactos:newImpactos};return updatedCamp;}));
     if(updatedCamp)supabase.from("campanhas").upsert({id:updatedCamp.id,data:updatedCamp}).then(({error})=>{if(error)console.error("SUPABASE updateImpactos:",error);});
     setSelCamp(prev=>prev&&prev.id===campId?{...prev,impactos:newImpactos}:prev);
     if(clientPanelCamp?.id===campId)setClientPanelCamp(prev=>({...prev,impactos:newImpactos}));
+    // Check-in notification: story added to a Checking campaign
+    if(prevCampImp?.stage===4&&(newImpactos.stories?.length||0)>(prevCampImp.impactos?.stories?.length||0)){
+      const hoje=new Date().toISOString().slice(0,10);
+      const k=`notif_${campId}_checkin_${hoje}`;
+      if(!localStorage.getItem(k)){
+        localStorage.setItem(k,"1");
+        const wC=prevCampImp.responsavel?getWhatsappByName(prevCampImp.responsavel):null;
+        sendWhatsAppNotif(wC,`📸 *Check-in recebido!*\n*${prevCampImp.name}*\nEvidências dos parceiros disponíveis no sistema.`);
+      }
+    }
   };
 
   const addProsp=async()=>{
@@ -5875,6 +5893,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
       responsavel:newCamp.responsavel,
       startDate:newCamp.startDate,
       endDate:newCamp.endDate,
+      dataInicio:newCamp.startDate,
+      dataFim:newCamp.endDate,
       region:newCamp.region,
       graficaFornecedor:newCamp.graficaFornecedor,
       material:newCamp.material,
@@ -5922,7 +5942,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     let projId=convPlanDados?.projectId?Number(convPlanDados.projectId):null;
     let projName=nome;
     if(!projId){projId=id;const np={id:projId,name:projName,active:true};setProjects(p=>[...p,np]);supabase.from("projects").insert(np);}
-    const rec={id,name:nome,client:convCampEdit.client||(convPlanDados?.clienteNome||""),agencia:"",numPI:convCampEdit.numPI||"",project:projName,projectId:projId,responsavel:user?.name||"",startDate:convCampEdit.startDate||"",endDate:convCampEdit.endDate||"",region:(convPlanDados?.regioes||[]).map(r=>r.cidade).filter(Boolean).join(", ")||(convPlanDados?.regiao||""),graficaFornecedor:"",material:"",graficaPrazo:"",logistica:"",logisticaFornecedor:"",logisticaPrazo:"",parceiros:inclParc.length,sacolas:totalEmb,valorLiquido:Number(convCampEdit.valorLiquido)||0,briefing:convCampEdit.briefing||"",segments:(convPlanDados?.clienteSegmento?[convPlanDados.clienteSegmento]:[]),sacolasDistribuidas:null,progress:0,stage:0,stageEnteredAt:new Date().toISOString(),parceirosIds:inclParc.map(p=>p.id),parceirosVinculados:inclParc,tasks:{comercial:[{id:"c1",label:"Emitir PI",done:false},{id:"c2",label:"Enviar contrato ao cliente",done:false}],financeiro:[{id:"f1",label:"Receber PI",done:false},{id:"f2",label:"Faturar NF",done:false},{id:"f3",label:"Lançar planilha financeira",done:false}],marketing:[{id:"m1",label:"Post Instagram",done:false},{id:"m2",label:"Post LinkedIn",done:false},{id:"m3",label:"Contratar influencer",done:false}],base:[{id:"b1",label:"Confirmar base participante",done:false},{id:"b2",label:"Enviar contrato de exclusividade",done:false}],grafica:[{id:"g1",label:"Arte aprovada pelo cliente",done:false},{id:"g2",label:"Material enviado para gráfica",done:false},{id:"g3",label:"Impressão confirmada",done:false},{id:"g4",label:"Material entregue",done:false}],logistica:[{id:"l1",label:"Logística confirmada",done:false},{id:"l2",label:"Rota de entrega definida",done:false},{id:"l3",label:"Entrega realizada",done:false}]},timeline:[{id:Date.now(),type:"stage",text:`Campanha criada a partir do planejamento "${convPlanDados?.clienteNome||""}" com ${inclParc.length} parceiro(s)`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.accent}],files:[],impactos:{stories:[],influencer:[],impulsionado:[],galeria:[]}};
+    const rec={id,name:nome,client:convCampEdit.client||(convPlanDados?.clienteNome||""),agencia:"",numPI:convCampEdit.numPI||"",project:projName,projectId:projId,responsavel:user?.name||"",startDate:convCampEdit.startDate||"",endDate:convCampEdit.endDate||"",dataInicio:convCampEdit.startDate||"",dataFim:convCampEdit.endDate||"",region:(convPlanDados?.regioes||[]).map(r=>r.cidade).filter(Boolean).join(", ")||(convPlanDados?.regiao||""),graficaFornecedor:"",material:"",graficaPrazo:"",logistica:"",logisticaFornecedor:"",logisticaPrazo:"",parceiros:inclParc.length,sacolas:totalEmb,valorLiquido:Number(convCampEdit.valorLiquido)||0,briefing:convCampEdit.briefing||"",segments:(convPlanDados?.clienteSegmento?[convPlanDados.clienteSegmento]:[]),sacolasDistribuidas:null,progress:0,stage:0,stageEnteredAt:new Date().toISOString(),parceirosIds:inclParc.map(p=>p.id),parceirosVinculados:inclParc,tasks:{comercial:[{id:"c1",label:"Emitir PI",done:false},{id:"c2",label:"Enviar contrato ao cliente",done:false}],financeiro:[{id:"f1",label:"Receber PI",done:false},{id:"f2",label:"Faturar NF",done:false},{id:"f3",label:"Lançar planilha financeira",done:false}],marketing:[{id:"m1",label:"Post Instagram",done:false},{id:"m2",label:"Post LinkedIn",done:false},{id:"m3",label:"Contratar influencer",done:false}],base:[{id:"b1",label:"Confirmar base participante",done:false},{id:"b2",label:"Enviar contrato de exclusividade",done:false}],grafica:[{id:"g1",label:"Arte aprovada pelo cliente",done:false},{id:"g2",label:"Material enviado para gráfica",done:false},{id:"g3",label:"Impressão confirmada",done:false},{id:"g4",label:"Material entregue",done:false}],logistica:[{id:"l1",label:"Logística confirmada",done:false},{id:"l2",label:"Rota de entrega definida",done:false},{id:"l3",label:"Entrega realizada",done:false}]},timeline:[{id:Date.now(),type:"stage",text:`Campanha criada a partir do planejamento "${convPlanDados?.clienteNome||""}" com ${inclParc.length} parceiro(s)`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.accent}],files:[],impactos:{stories:[],influencer:[],impulsionado:[],galeria:[]}};
     setCamps(p=>[...p,rec]);
     setShowConvPlan(false);
     setConvPlanDados(null);
@@ -7289,10 +7309,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             </div>
                             <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}>
                               <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif",lineHeight:1.3,flex:1}}>{c.name}</div>
-                              {(()=>{const sla=SLA_CAMP[c.stage];if(!sla||!c.stageEnteredAt)return null;const dl=new Date(new Date(c.stageEnteredAt).getTime()+sla*86400000);dl.setHours(0,0,0,0);const ag=new Date();ag.setHours(0,0,0,0);const df=Math.ceil((dl-ag)/86400000);return<span title={df>0?`${df}d restantes (SLA ${sla}d)`:df===0?"Vence hoje":"Atrasado "+Math.abs(df)+"d"} style={{fontSize:12,lineHeight:1,flexShrink:0}}>{df>2?"🟢":df>=0?"🟡":"🔴"}</span>;})()}
+                              {(()=>{const df=c.dataFim||c.endDate;if(!df)return null;const dl=new Date(df+"T00:00:00");dl.setHours(0,0,0,0);const ag=new Date();ag.setHours(0,0,0,0);const diff=Math.ceil((dl-ag)/86400000);const emoji=diff>2?"🟢":diff>=0?"🟡":"🔴";return<span title={diff>0?`Vence em ${diff}d`:diff===0?"Vence hoje!":"Atrasado "+Math.abs(diff)+"d"} style={{fontSize:11,lineHeight:1,flexShrink:0}}>{emoji}</span>;})()}
                             </div>
                             <div style={{fontSize:9,color:T.soft,marginBottom:1}}>{c.client}</div>
-                            {(c.startDate||c.endDate)&&(()=>{const fmt=d=>d?new Date(d+"T00:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}):"?";return<div style={{fontSize:8,color:T.info,marginBottom:3,fontFamily:"Arial,sans-serif"}}>{fmt(c.startDate)} → {fmt(c.endDate)}</div>;})()}
+                            {(()=>{const di=c.dataInicio||c.startDate;const df2=c.dataFim||c.endDate;if(!di&&!df2)return null;const fmt=d=>d?new Date(d+"T00:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}):"?";return<div style={{fontSize:8,color:T.info,marginBottom:3,fontFamily:"Arial,sans-serif"}}>{fmt(di)} → {fmt(df2)}</div>;})()}
                             {c.agencia&&<div style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif",marginBottom:4}}>{c.agencia}</div>}
                             {!c.agencia&&<div style={{marginBottom:2}}/>}
 
