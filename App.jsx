@@ -11619,6 +11619,31 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             const visibleUsers=users.filter(u=>user.role==="admin"||(user.role==="gerente_base"&&(u.role==="base"||u.id===user.id))||u.id===user.id);
             const salvarFicha=async()=>{const updated={...userFichaModal,...userFichaData};setUsers(p=>p.map(x=>x.id===userFichaModal.id?updated:x));if(userFichaModal.id===user.id)setUser(p=>({...p,...userFichaData}));await supabase.from("usuarios").update(userFichaData).eq("id",userFichaModal.id);setUserFichaModal(updated);setUserFichaEditMode(false);pushNotif("Ficha salva","Dados atualizados",T.accent);};
             const abrirFicha=(u)=>{setUserFichaModal(u);setUserFichaData({});setUserFichaAba("pessoal");setUserFichaEditMode(false);};
+            const uploadFotoUsuario=async(file)=>{
+              if(!file||!userFichaModal)return;
+              const uid=userFichaModal.id;
+              const preview=URL.createObjectURL(file);
+              setUserFichaData(p=>({...p,foto_url:preview}));
+              const ext=(file.name.split(".").pop()||"jpg").toLowerCase();
+              const path=`usuarios/${uid}/foto-perfil.${ext}`;
+              const{error}=await supabase.storage.from("ecodely-files").upload(path,file,{upsert:true});
+              if(error){setUserFichaData(p=>({...p,foto_url:userFichaModal.foto_url||""}));alert("Erro ao enviar foto: "+error.message);return;}
+              const{data:{publicUrl}}=supabase.storage.from("ecodely-files").getPublicUrl(path);
+              setUserFichaData(p=>({...p,foto_url:publicUrl}));
+              await supabase.from("usuarios").update({foto_url:publicUrl}).eq("id",uid);
+              setUsers(p=>p.map(x=>x.id===uid?{...x,foto_url:publicUrl}:x));
+              if(uid===user.id)setUser(p=>({...p,foto_url:publicUrl}));
+              setUserFichaModal(prev=>({...prev,foto_url:publicUrl}));
+            };
+            const removerFotoUsuario=async()=>{
+              if(!userFichaModal)return;
+              const uid=userFichaModal.id;
+              setUserFichaData(p=>({...p,foto_url:""}));
+              await supabase.from("usuarios").update({foto_url:null}).eq("id",uid);
+              setUsers(p=>p.map(x=>x.id===uid?{...x,foto_url:null}:x));
+              if(uid===user.id)setUser(p=>({...p,foto_url:null}));
+              setUserFichaModal(prev=>({...prev,foto_url:null}));
+            };
             const FD=(k)=>userFichaEditMode?(userFichaData[k]!==undefined?userFichaData[k]:userFichaModal?.[k]??""):(userFichaModal?.[k]??"");
             const setFD=(k,v)=>setUserFichaData(p=>({...p,[k]:v}));
             const rhI={...inpS,fontSize:12,padding:"7px 10px",width:"100%",boxSizing:"border-box"};
@@ -11682,10 +11707,17 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     {/* Conteúdo das abas */}
                     <div style={{overflowY:"auto",flex:1,padding:"20px"}}>
                       {userFichaAba==="pessoal"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-                        <div style={{gridColumn:"1/-1",display:"flex",gap:14,alignItems:"center"}}>
-                          {(userFichaData.foto_url||userFichaModal.foto_url)?<img src={userFichaData.foto_url||userFichaModal.foto_url} alt="" style={{width:60,height:60,borderRadius:"50%",objectFit:"cover",border:`2px solid ${ROLE_COLOR[userFichaModal.role]}66`,flexShrink:0}}/>:<div style={{width:60,height:60,borderRadius:"50%",background:ROLE_COLOR[userFichaModal.role]+"22",border:`2px solid ${ROLE_COLOR[userFichaModal.role]}66`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:ROLE_COLOR[userFichaModal.role],flexShrink:0}}>{userFichaModal.avatar}</div>}
-                          <div style={{flex:1}}>{FL("Foto de Perfil (URL)")}<input value={FD("foto_url")} onChange={e=>setFD("foto_url",e.target.value)} disabled={!userFichaEditMode} placeholder="https://..." style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
-                        </div>
+                        {(()=>{const fotoAtual=userFichaData.foto_url!==undefined?userFichaData.foto_url:(userFichaModal.foto_url||"");return(<div style={{gridColumn:"1/-1",display:"flex",gap:14,alignItems:"center"}}>
+                          {fotoAtual?<img src={fotoAtual} alt="" style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:`2px solid ${ROLE_COLOR[userFichaModal.role]}66`,flexShrink:0}}/>:<div style={{width:64,height:64,borderRadius:"50%",background:ROLE_COLOR[userFichaModal.role]+"22",border:`2px solid ${ROLE_COLOR[userFichaModal.role]}66`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:700,color:ROLE_COLOR[userFichaModal.role],flexShrink:0}}>{userFichaModal.avatar}</div>}
+                          <div style={{flex:1}}>
+                            {FL("Foto de Perfil")}
+                            <input id={`fu-${userFichaModal.id}`} type="file" accept="image/*" capture="user" style={{display:"none"}} onChange={async e=>{const f=e.target.files?.[0];if(f)await uploadFotoUsuario(f);e.target.value="";}}/>
+                            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:4}}>
+                              {podeSalvarFicha(userFichaModal)&&<label htmlFor={`fu-${userFichaModal.id}`} style={{padding:"6px 14px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700,display:"inline-block"}}>{fotoAtual?"Trocar foto":"Adicionar foto"}</label>}
+                              {fotoAtual&&podeSalvarFicha(userFichaModal)&&<button onClick={removerFotoUsuario} style={{padding:"6px 12px",background:"transparent",border:`1px solid ${T.danger}66`,color:T.danger,borderRadius:7,fontSize:10,cursor:"pointer",fontFamily:"Arial,sans-serif"}}>Remover</button>}
+                            </div>
+                          </div>
+                        </div>);})()}
                         <div style={{gridColumn:"1/-1"}}>{FL("Nome Completo")}<input value={FD("nome_completo")} onChange={e=>setFD("nome_completo",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
                         <div>{FL("CPF")}<input value={FD("cpf")} onChange={e=>setFD("cpf",maskCPF(e.target.value))} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
                         <div>{FL("RG")}<input value={FD("rg")} onChange={e=>setFD("rg",e.target.value)} disabled={!userFichaEditMode} style={{...rhI,opacity:userFichaEditMode?1:0.75}}/></div>
