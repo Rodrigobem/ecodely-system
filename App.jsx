@@ -3878,7 +3878,11 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                   <div>
                     <div style={{fontWeight:700,fontSize:12,marginBottom:2}}>{d.codigo} — {d.nome_campanha}</div>
-                    <div style={{fontSize:10,color:T.muted}}>{[d.cliente,d.regiao,d.perfil_parceiro,d.classe_social&&d.classe_social!=="Qualquer"?"Classe "+d.classe_social:null].filter(Boolean).join(" · ")}</div>
+                    <div style={{fontSize:10,color:T.muted,display:"flex",flexWrap:"wrap",gap:4,alignItems:"center"}}>
+                      {[d.cliente,d.regiao].filter(Boolean).map((v,i)=><span key={i}>{v}</span>).reduce((a,b,i)=>[...a,<span key={"s"+i} style={{opacity:.4}}>·</span>,b],[])}
+                      {(()=>{const arr=Array.isArray(d.perfil_parceiro)?d.perfil_parceiro:(d.perfil_parceiro?[d.perfil_parceiro]:[]);return arr.map(s=><span key={s} style={{background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:4,padding:"1px 6px",fontSize:9,fontWeight:700}}>{s}</span>);})()}
+                      {d.classe_social&&d.classe_social!=="Qualquer"&&<span style={{opacity:.7}}>Classe {d.classe_social}</span>}
+                    </div>
                   </div>
                   <div style={{textAlign:"right",flexShrink:0,marginLeft:12}}>
                     {diasPrazo!==null&&<div style={{fontSize:9,fontWeight:700,color:diasPrazo<0?T.danger:diasPrazo<=7?T.warn:T.muted}}>{diasPrazo<0?"⚠️ "+Math.abs(diasPrazo)+"d atrasado":diasPrazo===0?"Vence hoje!":diasPrazo+"d para prazo"}</div>}
@@ -4567,7 +4571,7 @@ export default function App(){
   const[demandas,setDemandas]=useState([]);
   const[showDemandaForm,setShowDemandaForm]=useState(false);
   const DEMANDA_SEGS=["Japonesa","Italiana","Brasileira","Árabe","Mexicana","Chinesa","Fast Food","Pizza","Hamburguer","Sushi","Frutos do Mar","Vegetariana/Vegana","Churrasco","Lanches","Doces/Sobremesas","Cafeteria","Padaria","Fitness/Saudável","Variado","Outro"];
-  const[novaDemanda,setNovaDemanda]=useState({nome_campanha:"",cliente:"",regiao:"",perfil_parceiro:"",classe_social:"Qualquer",prazo_fechamento:"",quantidade_solicitada:10});
+  const[novaDemanda,setNovaDemanda]=useState({nome_campanha:"",cliente:"",regiao:"",perfil_parceiro:[],classe_social:"Qualquer",prazo_fechamento:"",quantidade_solicitada:10});
   const[demandaConfirmacao,setDemandaConfirmacao]=useState(null);
   // WhatsApp agent states
   // Simulador
@@ -6195,9 +6199,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     setDemandas(p=>[...p,rec]);
     setShowDemandaForm(false);
     setDemandaConfirmacao(codigo);
-    setNovaDemanda({nome_campanha:"",cliente:"",regiao:"",perfil_parceiro:"",classe_social:"Qualquer",prazo_fechamento:"",quantidade_solicitada:10});
+    setNovaDemanda({nome_campanha:"",cliente:"",regiao:"",perfil_parceiro:[],classe_social:"Qualquer",prazo_fechamento:"",quantidade_solicitada:10});
     const prazoFmt=rec.prazo_fechamento?new Date(rec.prazo_fechamento+"T00:00:00").toLocaleDateString("pt-BR"):"—";
-    const msg=`📋 *Nova demanda de prospecção!*\nCódigo: ${codigo}\nCampanha: ${rec.nome_campanha}\nCliente: ${rec.cliente||"—"}\nRegião: ${rec.regiao||"—"}\nPerfil: ${rec.perfil_parceiro||"—"} | Classe: ${rec.classe_social||"—"}\nQuantidade: ${rec.quantidade_solicitada} parceiros\nPrazo: ${prazoFmt}`;
+    const perfilTxt=(Array.isArray(rec.perfil_parceiro)&&rec.perfil_parceiro.length>0)?rec.perfil_parceiro.join(", "):"—";
+    const msg=`📋 *Nova demanda de prospecção!*\nCódigo: ${codigo}\nCampanha: ${rec.nome_campanha}\nCliente: ${rec.cliente||"—"}\nRegião: ${rec.regiao||"—"}\nPerfil: ${perfilTxt} | Classe: ${rec.classe_social||"—"}\nQuantidade: ${rec.quantidade_solicitada} parceiros\nPrazo: ${prazoFmt}`;
     await sendWhatsAppNotifToRole("gerente_base",msg);
   };
 
@@ -10032,7 +10037,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 });
                 setShowConvPlan(true);
               }}
-              onSolicitarProspeccao={p=>{setNovaDemanda({nome_campanha:p.clienteNome||"",cliente:p.clienteNome||"",regiao:p.regiao||"",perfil_parceiro:p.clienteSegmento||"",classe_social:"Qualquer",prazo_fechamento:"",quantidade_solicitada:10});setShowDemandaForm(true);}}
+              onSolicitarProspeccao={p=>{const seg=p.clienteSegmento?[p.clienteSegmento]:[];setNovaDemanda({nome_campanha:p.clienteNome||"",cliente:p.clienteNome||"",regiao:p.regiao||"",perfil_parceiro:seg,classe_social:"Qualquer",prazo_fechamento:"",quantidade_solicitada:10});setShowDemandaForm(true);}}
             />
           )}
 
@@ -10049,11 +10054,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     <div style={{gridColumn:"span 2"}}><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Nome da campanha *</div><input value={novaDemanda.nome_campanha} onChange={e=>setNovaDemanda(p=>({...p,nome_campanha:e.target.value}))} style={inpD}/></div>
                     <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Cliente</div><input value={novaDemanda.cliente} onChange={e=>setNovaDemanda(p=>({...p,cliente:e.target.value}))} style={inpD}/></div>
                     <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Região</div><input value={novaDemanda.regiao} onChange={e=>setNovaDemanda(p=>({...p,regiao:e.target.value}))} style={inpD}/></div>
-                    <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Perfil do parceiro</div>
-                      <select value={novaDemanda.perfil_parceiro} onChange={e=>setNovaDemanda(p=>({...p,perfil_parceiro:e.target.value}))} style={inpD}>
-                        <option value="">Qualquer</option>
-                        {DEMANDA_SEGS.map(s=><option key={s}>{s}</option>)}
-                      </select></div>
+                    <div style={{gridColumn:"span 2"}}><div style={{fontSize:10,color:T.muted,marginBottom:6}}>Perfil do parceiro <span style={{opacity:.5}}>(múltipla seleção — deixe vazio para qualquer)</span></div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                        {DEMANDA_SEGS.map(s=>{const sel=(novaDemanda.perfil_parceiro||[]).includes(s);return(<button type="button" key={s} onClick={()=>setNovaDemanda(p=>{const cur=p.perfil_parceiro||[];return{...p,perfil_parceiro:cur.includes(s)?cur.filter(x=>x!==s):[...cur,s]};})} style={{padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:sel?700:400,cursor:"pointer",border:sel?`1px solid ${T.accentBorder}`:`1px solid ${T.border}`,background:sel?T.accentDim:T.bg,color:sel?T.accent:T.muted,transition:"all .15s"}}>{s}</button>);})}
+                      </div></div>
                     <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Classe social</div>
                       <select value={novaDemanda.classe_social} onChange={e=>setNovaDemanda(p=>({...p,classe_social:e.target.value}))} style={inpD}>
                         {["Qualquer","A","B1","B2","C1","C2","D","E"].map(c=><option key={c}>{c}</option>)}
