@@ -4497,6 +4497,8 @@ export default function App(){
     };
   },[svFullscreen]);
   const[contratoTableFilter,setContratoTableFilter]=useState("todos");
+  const[editContratoModal,setEditContratoModal]=useState(null);
+  const[editContratoData,setEditContratoData]=useState({});
   const[cadTab,setCadTab]=useState("clientes");
   const[filterSeg,setFilterSeg]=useState("todos");
   const[filterFrom,setFilterFrom]=useState("2024-11");
@@ -4823,6 +4825,34 @@ export default function App(){
     })();
   },[camps.length,users.length]);
 
+  useEffect(()=>{
+    if(baseTab!=="contratos"||!basePartners.length||!users.length)return;
+    const hoje=new Date().toISOString().slice(0,10);
+    const parseC=s=>{if(!s)return null;const d=s.includes("-")?new Date(s):new Date(s.split("/").reverse().join("-"));return isNaN(d)?null:d;};
+    (async()=>{
+      const wA=getWhatsappByName("Alessandra");
+      const wR=getWhatsappByName("Rodrigo");
+      const wComs=users.filter(u=>u.role==="comercial"&&u.whatsapp&&u.active!==false).map(u=>u.whatsapp);
+      for(const p of basePartners){
+        if(!p.contrato?.expiraEm)continue;
+        const d=parseC(p.contrato.expiraEm);
+        if(!d)continue;
+        const agora=new Date();agora.setHours(0,0,0,0);d.setHours(0,0,0,0);
+        const dias=Math.ceil((d-agora)/86400000);
+        if(dias<0||dias>90)continue;
+        const threshold=dias<=30?30:dias<=60?60:90;
+        const k=`contrato_notif_${p.id}_${threshold}_${hoje}`;
+        if(localStorage.getItem(k))continue;
+        localStorage.setItem(k,"1");
+        const fmtData=d.toLocaleDateString("pt-BR");
+        const msg=`⚠️ *Contrato vencendo em ${dias} dias!*\n*${p.name}*\nVence em ${fmtData}.`;
+        await sendWhatsAppNotif(wA,msg);
+        if(threshold<=60)for(const w of wComs)await sendWhatsAppNotif(w,msg);
+        if(threshold<=30)await sendWhatsAppNotif(wR,msg);
+      }
+    })();
+  },[baseTab,basePartners.length,users.length]);
+
   const addNotif=async(type,title,msg,campanha,color,via,tab)=>{
     const entry={id:Date.now(),type,title,msg,campanha:campanha||null,at:now(),read:false,color,via:via||["sistema"],tab:tab||null};
     setInbox(p=>[entry,...p]);
@@ -5089,6 +5119,17 @@ export default function App(){
     if(upd)await supabase.from("parceiros").upsert({id:upd.id,data:{...upd,score:calcScore(upd)}});
     setSelPartner(prev=>prev?{...prev,contrato:{...prev.contrato,status:"assinado",assinadoEm,expiraEm}}:null);
     addNotif("contrato","Contrato assinado!",basePartners.find(p=>p.id===partnerId)?.name+" assinou o contrato de exclusividade",null,T.accent,["sistema","email"]);
+  };
+  const saveContrato=async()=>{
+    const partner=basePartners.find(p=>p.id===editContratoModal);
+    if(!partner)return;
+    const novContrato={...partner.contrato,...editContratoData};
+    let upd=null;
+    setBasePartners(prev=>prev.map(p=>{if(p.id!==editContratoModal)return p;upd={...p,contrato:novContrato};return{...upd,score:calcScore(upd)};}));
+    if(upd)await supabase.from("parceiros").upsert({id:upd.id,data:upd});
+    setSelPartner(prev=>prev?.id===editContratoModal?{...prev,contrato:novContrato}:prev);
+    setEditContratoModal(null);
+    pushNotif("Contrato atualizado",partner.name,T.accent);
   };
   const addProspectToBase=async(prosp)=>{
     const already=basePartners.find(p=>p.name===prosp.name);
@@ -9603,91 +9644,152 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               )}
 
               {/* -- CONTRATOS -- */}
-              {baseTab==="contratos"&&(
-                <div>
-                  {/* Summary cards - clicáveis para filtrar */}
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
-                    {[
-                      {l:"Assinados",k:"assinado",v:basePartners.filter(p=>p.contrato.status==="assinado").length,c:T.accent},
-                      {l:"Pendentes",k:"pendente",v:basePartners.filter(p=>p.contrato.status==="pendente").length,c:T.warn},
-                      {l:"Expirando",k:"expirando",v:basePartners.filter(p=>p.contrato.status==="expirando").length,c:T.danger},
-                      {l:"Sem contrato",k:"sem contrato",v:basePartners.filter(p=>p.contrato.status==="sem contrato").length,c:T.muted},
-                    ].map((k,i)=>{
-                      const isActive=contratoTableFilter===k.k;
+              {baseTab==="contratos"&&(()=>{
+                const parseExp=s=>{if(!s)return null;const d=s.includes("-")?new Date(s):new Date(s.split("/").reverse().join("-"));return isNaN(d)?null:d;};
+                const diasParaExp=p=>{const d=parseExp(p.contrato?.expiraEm);if(!d)return null;const ag=new Date();ag.setHours(0,0,0,0);d.setHours(0,0,0,0);return Math.ceil((d-ag)/86400000);};
+                const alertColor=dias=>dias===null?null:dias<0?"#FF4D6A":dias<=30?"#FF4D6A":dias<=60?"#F5A623":dias<=90?"#FB923C":null;
+                const alertEmoji=dias=>dias===null?"":dias<0?"🔴":dias<=30?"🔴":dias<=60?"🟡":dias<=90?"🟠":"";
+                return(<div>
+                {/* Summary cards */}
+                <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8,marginBottom:16}}>
+                  {[
+                    {l:"Assinados",k:"assinado",v:basePartners.filter(p=>p.contrato.status==="assinado").length,c:T.accent},
+                    {l:"Pendentes",k:"pendente",v:basePartners.filter(p=>p.contrato.status==="pendente").length,c:T.warn},
+                    {l:"Expirando ≤90d",k:"expirando",v:basePartners.filter(p=>{const d=diasParaExp(p);return d!==null&&d>=0&&d<=90;}).length,c:"#FB923C"},
+                    {l:"Expirado",k:"expirado",v:basePartners.filter(p=>{const d=diasParaExp(p);return d!==null&&d<0;}).length,c:T.danger},
+                    {l:"Sem contrato",k:"sem contrato",v:basePartners.filter(p=>p.contrato.status==="sem contrato").length,c:T.muted},
+                  ].map((k,i)=>{
+                    const isActive=contratoTableFilter===k.k;
+                    return(
+                      <div key={i} onClick={()=>setContratoTableFilter(isActive?"todos":k.k)}
+                        className="hr"
+                        style={{background:isActive?k.c+"22":T.card,border:`2px solid ${isActive?k.c:k.c+"33"}`,borderRadius:10,padding:"12px 14px",cursor:"pointer",transition:"all 0.15s"}}>
+                        <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:20,color:k.c}}>{k.v}</div>
+                        <div style={{fontSize:9,color:isActive?k.c:T.muted,fontFamily:"Arial,sans-serif",marginTop:2}}>{k.l}</div>
+                        {isActive&&<div style={{fontSize:8,color:k.c,marginTop:4,fontFamily:"Arial,sans-serif"}}>Filtrando · clique para limpar</div>}
+                      </div>
+                    );
+                  })}
+                  </div>
+
+                {/* Priority: needs action */}
+                {basePartners.filter(p=>{const d=diasParaExp(p);return(d!==null&&d<=30)||p.contrato.status==="sem contrato";}).filter(p=>p.status==="ativo").length>0&&(
+                  <div style={{background:T.card,border:`1px solid ${T.danger}44`,borderLeft:`3px solid ${T.danger}`,borderRadius:12,padding:16,marginBottom:14}}>
+                    <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.danger,marginBottom:10}}>Ação necessária</div>
+                    {basePartners.filter(p=>{const d=diasParaExp(p);return(d!==null&&d<=30)||p.contrato.status==="sem contrato";}).filter(p=>p.status==="ativo").map((p,i)=>{
+                      const dias=diasParaExp(p);
                       return(
-                        <div key={i} onClick={()=>setContratoTableFilter(isActive?"todos":k.k)}
-                          className="hr"
-                          style={{background:isActive?k.c+"22":T.card,border:`2px solid ${isActive?k.c:k.c+"33"}`,borderRadius:10,padding:"14px 16px",cursor:"pointer",transition:"all 0.15s"}}>
-                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:22,color:k.c}}>{k.v}</div>
-                          <div style={{fontSize:10,color:isActive?k.c:T.muted,fontFamily:"Arial,sans-serif",marginTop:2}}>{k.l}</div>
-                          {isActive&&<div style={{fontSize:8,color:k.c,marginTop:4,fontFamily:"Arial,sans-serif"}}>Filtrando - · clique para limpar</div>}
+                        <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}`,gap:10,flexWrap:"wrap"}}>
+                          <div>
+                            <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div>
+                            <div style={{fontSize:9,color:T.muted}}>{p.category} · {p.city}{dias!==null?` · ${dias<0?"Expirado há "+Math.abs(dias)+"d":dias+"d restantes"}`:""}</div>
+                          </div>
+                          <Badge label={p.contrato.status} color={CONTRATO_COLOR[p.contrato.status]||T.muted}/>
+                          <button className="btn" onClick={()=>enviarContrato(p.id)} style={{padding:"6px 12px",background:`linear-gradient(135deg,${T.warn},${T.warn}AA)`,color:"#000",borderRadius:6,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10}}>{dias!==null&&dias<0?"Renovar":"Enviar"}</button>
                         </div>
                       );
                     })}
                   </div>
+                )}
 
-                  {/* Priority: needs action */}
-                  {basePartners.filter(p=>["expirando","sem contrato"].includes(p.contrato.status)&&p.status==="ativo").length>0&&(
-                    <div style={{background:T.card,border:`1px solid ${T.danger}44`,borderLeft:`3px solid ${T.danger}`,borderRadius:12,padding:16,marginBottom:14}}>
-                      <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,color:T.danger,marginBottom:10}}>- Ação necessária</div>
-                      {basePartners.filter(p=>["expirando","sem contrato"].includes(p.contrato.status)&&p.status==="ativo").map((p,i)=>(
-                        <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}`,gap:10,flexWrap:"wrap"}}>
-                          <div>
-                            <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div>
-                            <div style={{fontSize:9,color:T.muted}}>{p.category} · {p.city}</div>
-                          </div>
-                          <Badge label={p.contrato.status} color={CONTRATO_COLOR[p.contrato.status]||T.muted}/>
-                          <button className="btn" onClick={()=>enviarContrato(p.id)} style={{padding:"6px 12px",background:`linear-gradient(135deg,${T.warn},${T.warn}AA)`,color:"#000",borderRadius:6,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10}}>- Enviar</button>
-                        </div>
-                      ))}
-                      <button className="btn" onClick={()=>basePartners.filter(p=>["expirando","sem contrato"].includes(p.contrato.status)&&p.status==="ativo").forEach(p=>enviarContrato(p.id))} style={{width:"100%",marginTop:12,padding:"9px",background:T.surface,border:`1px solid ${T.border}`,color:T.warn,borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>- Enviar para todos de uma vez</button>
-                    </div>
-                  )}
-
-                  {/* All contracts table */}
-                  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
-                    {/* Filter bar */}
-                    <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                      <span style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Filtrar:</span>
-                      {[["todos","Todos"],["assinado","Assinados"],["pendente","Pendentes"],["expirando","Expirando"],["sem contrato","Sem contrato"]].map(([v,l])=>(
-                        <div key={v} onClick={()=>setContratoTableFilter(v)} className="tb"
-                          style={{fontSize:9,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontFamily:"Arial,sans-serif",
-                            background:contratoTableFilter===v?(CONTRATO_COLOR[v]||T.accent)+"22":T.surface,
-                            border:`1px solid ${contratoTableFilter===v?(CONTRATO_COLOR[v]||T.accent)+"66":T.border}`,
-                            color:contratoTableFilter===v?(CONTRATO_COLOR[v]||T.accent):T.muted}}>
-                          {l}
-                        </div>
-                      ))}
-                      {contratoTableFilter!=="todos"&&(
-                        <div style={{marginLeft:"auto",fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>
-                          {basePartners.filter(p=>p.contrato.status===contratoTableFilter).length} resultado(s)
-                        </div>
-                      )}
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:8}}>
-                      {["Parceiro","Status","Enviado em","Assinado em","Expira em","Ação"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"Arial,sans-serif"}}>{h}</div>)}
-                    </div>
-                    {basePartners.filter(p=>contratoTableFilter==="todos"||p.contrato.status===contratoTableFilter).map((p,i)=>(
-                      <div key={i} className="hr" onClick={()=>setSelPartner(p)} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
-                        <div>
-                          <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div>
-                          <div style={{fontSize:9,color:T.muted}}>{p.category}</div>
-                        </div>
-                        <Badge label={p.contrato.status} color={CONTRATO_COLOR[p.contrato.status]||T.muted}/>
-                        <div style={{fontSize:10,color:T.soft,fontFamily:"Arial,sans-serif"}}>{p.contrato.enviadoEm||"-"}</div>
-                        <div style={{fontSize:10,color:p.contrato.assinadoEm?T.accent:T.muted,fontFamily:"Arial,sans-serif"}}>{p.contrato.assinadoEm||"-"}</div>
-                        <div style={{fontSize:10,color:p.contrato.status==="expirando"?T.danger:T.soft,fontFamily:"Arial,sans-serif"}}>{p.contrato.expiraEm||"-"}</div>
-                        <div onClick={e=>e.stopPropagation()}>
-                          {p.contrato.status==="sem contrato"&&<button className="btn" onClick={()=>enviarContrato(p.id)} style={{fontSize:9,padding:"4px 8px",background:T.warnDim,border:`1px solid ${T.warn}44`,color:T.warn,borderRadius:5}}>Enviar</button>}
-                          {p.contrato.status==="pendente"&&<button className="btn" onClick={()=>assinarContrato(p.id)} style={{fontSize:9,padding:"4px 8px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:5}}>Assinar</button>}
-                          {p.contrato.status==="expirando"&&<button className="btn" onClick={()=>enviarContrato(p.id)} style={{fontSize:9,padding:"4px 8px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:5}}>Renovar</button>}
-                          {p.contrato.status==="assinado"&&<span style={{fontSize:9,color:T.accent}}>- Ok</span>}
-                        </div>
+                {/* All contracts table */}
+                <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
+                  <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                    <span style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Filtrar:</span>
+                    {[["todos","Todos"],["assinado","Assinados"],["pendente","Pendentes"],["expirando","Expirando"],["expirado","Expirado"],["sem contrato","Sem contrato"]].map(([v,l])=>(
+                      <div key={v} onClick={()=>setContratoTableFilter(v)} className="tb"
+                        style={{fontSize:9,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontFamily:"Arial,sans-serif",
+                          background:contratoTableFilter===v?(CONTRATO_COLOR[v]||T.accent)+"22":T.surface,
+                          border:`1px solid ${contratoTableFilter===v?(CONTRATO_COLOR[v]||T.accent)+"66":T.border}`,
+                          color:contratoTableFilter===v?(CONTRATO_COLOR[v]||T.accent):T.muted}}>
+                        {l}
                       </div>
                     ))}
                   </div>
+                  <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1fr 1fr",padding:"10px 16px",borderBottom:`1px solid ${T.border}`,gap:8}}>
+                    {["Parceiro","Status","Alerta","Assinado em","Expira em","Renovação","Ação"].map(h=><div key={h} style={{fontSize:8,color:T.muted,textTransform:"uppercase",letterSpacing:1.5,fontFamily:"Arial,sans-serif"}}>{h}</div>)}
+                  </div>
+                  {basePartners.filter(p=>{
+                    if(contratoTableFilter==="todos")return true;
+                    if(contratoTableFilter==="expirado"){const d=diasParaExp(p);return d!==null&&d<0;}
+                    if(contratoTableFilter==="expirando"){const d=diasParaExp(p);return d!==null&&d>=0&&d<=90;}
+                    return p.contrato.status===contratoTableFilter;
+                  }).map((p,i)=>{
+                    const dias=diasParaExp(p);
+                    const ac=alertColor(dias);
+                    const ae=alertEmoji(dias);
+                    return(
+                      <div key={i} className="hr" onClick={()=>setSelPartner(p)}
+                        style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center",background:ac?ac+"08":"transparent"}}>
+                        <div>
+                          <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div>
+                          <div style={{fontSize:9,color:T.muted}}>{p.category}</div>
+                          {p.contrato.linkContrato&&<a href={p.contrato.linkContrato} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{fontSize:8,color:T.info}}>Ver contrato</a>}
+                        </div>
+                        <Badge label={dias!==null&&dias<0?"expirado":p.contrato.status} color={dias!==null&&dias<0?T.danger:CONTRATO_COLOR[p.contrato.status]||T.muted}/>
+                        <div style={{fontSize:13,lineHeight:1}}>{ae||<span style={{color:T.muted,fontSize:9}}>—</span>}{dias!==null&&<span style={{fontSize:8,color:ac||T.muted,marginLeft:3}}>{dias<0?Math.abs(dias)+"d atraso":dias+"d"}</span>}</div>
+                        <div style={{fontSize:10,color:p.contrato.assinadoEm?T.accent:T.muted,fontFamily:"Arial,sans-serif"}}>{p.contrato.assinadoEm||"-"}</div>
+                        <div style={{fontSize:10,color:ac||T.soft,fontFamily:"Arial,sans-serif",fontWeight:ac?700:400}}>{p.contrato.expiraEm||"-"}</div>
+                        <div style={{fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>{p.contrato.renovacaoAuto?"Auto":"Manual"}</div>
+                        <div style={{display:"flex",gap:4,flexWrap:"wrap"}} onClick={e=>e.stopPropagation()}>
+                          {(p.contrato.status==="sem contrato"||(!p.contrato.enviadoEm))&&<button className="btn" onClick={()=>enviarContrato(p.id)} style={{fontSize:8,padding:"3px 7px",background:T.warnDim,border:`1px solid ${T.warn}44`,color:T.warn,borderRadius:4}}>Enviar</button>}
+                          {p.contrato.status==="pendente"&&<button className="btn" onClick={()=>assinarContrato(p.id)} style={{fontSize:8,padding:"3px 7px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:4}}>Assinar</button>}
+                          {(dias!==null&&(dias<0||dias<=30))&&<button className="btn" onClick={()=>enviarContrato(p.id)} style={{fontSize:8,padding:"3px 7px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:4}}>Renovar</button>}
+                          <button className="btn" onClick={()=>{setEditContratoModal(p.id);setEditContratoData({renovacaoAuto:p.contrato.renovacaoAuto||false,linkContrato:p.contrato.linkContrato||"",assinadoEm:p.contrato.assinadoEm||"",expiraEm:p.contrato.expiraEm||""});}} style={{fontSize:8,padding:"3px 7px",background:T.surface,border:`1px solid ${T.border}`,color:T.muted,borderRadius:4}}>Editar</button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
+
+                {/* Edit contract modal */}
+                {editContratoModal&&(()=>{
+                  const p=basePartners.find(x=>x.id===editContratoModal);
+                  if(!p)return null;
+                  return(
+                    <div style={{position:"fixed",inset:0,background:"#000000CC",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>setEditContratoModal(null)}>
+                      <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,width:"100%",maxWidth:440,padding:24}} onClick={e=>e.stopPropagation()}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+                          <div>
+                            <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:14}}>Editar Contrato</div>
+                            <div style={{fontSize:10,color:T.muted,marginTop:2}}>{p.name}</div>
+                          </div>
+                          <div onClick={()=>setEditContratoModal(null)} style={{cursor:"pointer",color:T.muted,fontSize:20}}>×</div>
+                        </div>
+                        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                          <div>
+                            <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Data de assinatura</div>
+                            <input type="text" placeholder="dd/mm/aaaa" value={editContratoData.assinadoEm||""} onChange={e=>setEditContratoData(d=>({...d,assinadoEm:e.target.value}))} style={inpS}/>
+                          </div>
+                          <div>
+                            <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Data de expiração</div>
+                            <input type="text" placeholder="dd/mm/aaaa" value={editContratoData.expiraEm||""} onChange={e=>setEditContratoData(d=>({...d,expiraEm:e.target.value}))} style={inpS}/>
+                          </div>
+                          <div>
+                            <div style={{fontSize:9,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Link do contrato (URL)</div>
+                            <input type="url" placeholder="https://..." value={editContratoData.linkContrato||""} onChange={e=>setEditContratoData(d=>({...d,linkContrato:e.target.value}))} style={inpS}/>
+                          </div>
+                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"12px 14px"}}>
+                            <div>
+                              <div style={{fontSize:11,fontWeight:600}}>Renovação automática</div>
+                              <div style={{fontSize:9,color:T.muted,marginTop:2}}>Renovar ao vencer sem intervenção manual</div>
+                            </div>
+                            <div onClick={()=>setEditContratoData(d=>({...d,renovacaoAuto:!d.renovacaoAuto}))} style={{width:36,height:20,borderRadius:10,background:editContratoData.renovacaoAuto?T.accent:T.border,position:"relative",cursor:"pointer",transition:"all 0.2s",flexShrink:0}}>
+                              <div style={{position:"absolute",top:2,left:editContratoData.renovacaoAuto?18:2,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"all 0.2s"}}/>
+                            </div>
+                          </div>
+                          <div style={{display:"flex",gap:8,marginTop:4}}>
+                            <button onClick={()=>setEditContratoModal(null)} style={{flex:1,padding:"10px",background:T.surface,border:`1px solid ${T.border}`,color:T.muted,borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,cursor:"pointer"}}>Cancelar</button>
+                            <button onClick={saveContrato} style={{flex:1,padding:"10px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11,cursor:"pointer"}}>Salvar</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+              );
+            })()}
 
 
             </div>

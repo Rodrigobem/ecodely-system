@@ -2,5 +2,11 @@
   "rewrites": [
     { "source": "/treino", "destination": "/treino.html" },
     { "source": "/((?!treino|api|assets|favicon).*)", "destination": "/" }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/financeiro-diario",
+      "schedule": "0 11 * * *"
+    }
   ]
 }
