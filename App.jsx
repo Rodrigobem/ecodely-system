@@ -3569,6 +3569,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
   const [pipeMotivo,setPipeMotivo]=useState("");
   const [pipeMotObs,setPipeMotObs]=useState("");
   const [demDirecionar,setDemDirecionar]=useState(null);
+  const [demBriefing,setDemBriefing]=useState(null);
   const [showDemandasFin,setShowDemandasFin]=useState(false);
   const canEditDemanda=(allUsers||[]).some(u=>u.name===user?.name&&["admin","gerente_base"].includes(u.role));
   const demandasAtivas=(demandas||[]).filter(d=>d.status==="ativa");
@@ -4620,7 +4621,6 @@ export default function App(){
   const DEMANDA_SEGS=["Japonesa","Italiana","Brasileira","Árabe","Mexicana","Chinesa","Fast Food","Pizza","Hamburguer","Sushi","Frutos do Mar","Vegetariana/Vegana","Churrasco","Lanches","Doces/Sobremesas","Cafeteria","Padaria","Fitness/Saudável","Variado","Outro"];
   const DEMANDA_VAZIO={nome_campanha:"",cliente:"",quantidade_embalagens:"",data_inicio:"",data_termino:"",prazo_fechamento:"",cep_referencia:"",endereco_referencia:"",regiao:"",perfil_parceiro:[],classe_social:"Qualquer",quantidade_solicitada:10,observacoes:""};
   const[novaDemanda,setNovaDemanda]=useState(DEMANDA_VAZIO);
-  const[demBriefing,setDemBriefing]=useState(null);
   const[demandaConfirmacao,setDemandaConfirmacao]=useState(null);
   // WhatsApp agent states
   // Simulador
