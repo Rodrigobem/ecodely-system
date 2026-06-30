@@ -1149,7 +1149,7 @@ const PLAN_STATUS_OPTS=[{v:"elaboracao",l:"Em elaboração",c:"#F59E0B"},{v:"pro
 const planStatusColor=v=>(PLAN_STATUS_OPTS.find(o=>o.v===v)||PLAN_STATUS_OPTS[0]).c;
 const planStatusLabel=v=>(PLAN_STATUS_OPTS.find(o=>o.v===v)||PLAN_STATUS_OPTS[0]).l;
 
-const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,showPlanWizard,setShowPlanWizard,planejamentos,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,sugerirParceiros,user,basePartners,projects,suppliers=[],onConvertToCamp,allUsers=[]})=>{
+const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanAnalise,planLoading,planGeoLoading,setPlanGeoLoading,showPlanWizard,setShowPlanWizard,planejamentos,salvarPlano,gerarPropostaPDF,geocodeEndereco,gerarAnaliseIA,sugerirParceiros,user,basePartners,projects,suppliers=[],onConvertToCamp,onSolicitarProspeccao,allUsers=[]})=>{
   const parc=(planAtivo&&Array.isArray(planAtivo.parceiros)?planAtivo.parceiros:[]);
   const outras=(planAtivo&&Array.isArray(planAtivo.outrasMidias)?planAtivo.outrasMidias:[]);
   const pl=Array.isArray(planejamentos)?planejamentos:[];
@@ -1290,6 +1290,7 @@ const PlanTab=({planAtivo,setPlanAtivo,planStep,setPlanStep,planAnalise,setPlanA
             <button onClick={()=>{setPlanAtivo(p);setPlanAnalise(p.analise||null);setPlanStep(1);setShowPlanWizard(true);}} style={{padding:"7px 14px",background:T.accentDim,border:"1px solid "+T.accentBorder,color:T.accent,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>Editar</button>
             <button onClick={async()=>{if((p.status||"elaboracao")==="elaboracao")await atualizarStatus(p,"proposta");gerarPropostaPDF(p,p.analise);}} style={{padding:"7px 14px",background:"#00E5A0",border:"none",color:"#000",borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>Proposta PDF</button>
             {onConvertToCamp&&<button onClick={async()=>{await atualizarStatus(p,"convertido");onConvertToCamp(p);}} style={{padding:"7px 14px",background:T.purple,border:"none",color:"#fff",borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>→ Criar Campanha</button>}
+            {onSolicitarProspeccao&&<button onClick={()=>onSolicitarProspeccao(p)} style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.info}55`,color:T.info,borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:700}}>📋 Solicitar Prospecção</button>}
           </div>
         </div>
       ))}
@@ -3553,7 +3554,7 @@ return(
 // ---------------------------------------------------------------------------
 // PIPELINE DE CONVERSÃO
 // ---------------------------------------------------------------------------
-function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoading,pipeMembro,setPipeMembro,pipeCampanha,setPipeCampanha,pipeDragging,setPipeDragging,pipeModalLead,setPipeModalLead,pipeNovoLead,setPipeNovoLead,pipeShowNovo,setPipeShowNovo,T,basePartners,setBasePartners,allUsers,pushNotif}){
+function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoading,pipeMembro,setPipeMembro,pipeCampanha,setPipeCampanha,pipeDragging,setPipeDragging,pipeModalLead,setPipeModalLead,pipeNovoLead,setPipeNovoLead,pipeShowNovo,setPipeShowNovo,T,basePartners,setBasePartners,allUsers,pushNotif,demandas=[],setDemandas,user}){
   const ETAPAS=[
     {id:"abordado",label:"Abordado",color:T.muted,emoji:"📤"},
     {id:"respondeu",label:"Respondeu",color:T.info,emoji:"💬"},
@@ -3567,6 +3568,11 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
   const [pipeMotModal,setPipeMotModal]=useState(null);
   const [pipeMotivo,setPipeMotivo]=useState("");
   const [pipeMotObs,setPipeMotObs]=useState("");
+  const [demDirecionar,setDemDirecionar]=useState(null);
+  const [showDemandasFin,setShowDemandasFin]=useState(false);
+  const canEditDemanda=(allUsers||[]).some(u=>u.name===user?.name&&["admin","gerente_base"].includes(u.role));
+  const demandasAtivas=(demandas||[]).filter(d=>d.status==="ativa");
+  const demandasFin=(demandas||[]).filter(d=>["finalizada","arquivada"].includes(d.status));
 
   useEffect(()=>{loadLeads();},[]);
 
@@ -3618,6 +3624,23 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
       await supabase.from("pipeline_leads").update({etapa,convertido_parceiro_id:withScore.id,atualizado_em:new Date().toISOString()}).eq("id",id);
       setPipeLeads(p=>p.map(l=>l.id===id?{...l,etapa,convertido_parceiro_id:withScore.id}:l));
       setBasePartners&&setBasePartners(prev=>[...prev,withScore]);
+      // Atualizar demanda vinculada, se houver
+      if(lead.demanda_id){
+        const dem=demandas.find(d=>String(d.id)===String(lead.demanda_id));
+        if(dem){
+          const novoConv=(dem.quantidade_convertida||0)+1;
+          const finalizada=novoConv>=dem.quantidade_solicitada;
+          const upd={quantidade_convertida:novoConv,...(finalizada?{status:"finalizada",finalizado_em:new Date().toISOString()}:{})};
+          await supabase.from("demandas_prospeccao").update(upd).eq("id",dem.id);
+          setDemandas(p=>p.map(d=>d.id===dem.id?{...d,...upd}:d));
+          if(finalizada){
+            const msgFim=`✅ *Demanda finalizada!*\n*${dem.codigo} — ${dem.nome_campanha}* atingiu ${dem.quantidade_solicitada} parceiros convertidos.`;
+            await sendWAToRole("gerente_base",msgFim);
+            const comResp=await supabase.from("usuarios").select("name,whatsapp").eq("name",dem.comercial_responsavel).single();
+            if(comResp.data?.whatsapp) await sendWA(comResp.data.whatsapp,msgFim);
+          }
+        }
+      }
       pushNotif&&pushNotif("Lead convertido!",`${lead.nome} adicionado à Base de Parceiros`,T.accent);
       const msgConv=`🎉 *Lead convertido!*\n*${lead.nome}* foi convertido e já está na Base de Parceiros.\n📍 Cidade: ${lead.cidade||"-"}\n📱 Telefone: ${lead.telefone||"-"}\n👤 Responsável: ${lead.responsavel}`;
       await sendWAToRole("gerente_base",msgConv);
@@ -3643,7 +3666,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
     const{data}=await supabase.from("pipeline_leads").insert([{...pipeNovoLead,criado_em:new Date().toISOString(),atualizado_em:new Date().toISOString()}]).select().single();
     if(data) setPipeLeads(p=>[data,...p]);
     setPipeShowNovo(false);
-    setPipeNovoLead({nome:"",responsavel:"Victória",etapa:"abordado",campanha:"",cidade:"",tipo:"",telefone:"",instagram:"",obs:"",responsavel_comercial:"",cep:"",rua:"",numero:"",bairro:"",estado:"",classe_social:""});
+    setPipeNovoLead({nome:"",responsavel:"Victória",etapa:"abordado",campanha:"",cidade:"",tipo:"",telefone:"",instagram:"",obs:"",responsavel_comercial:"",cep:"",rua:"",numero:"",bairro:"",estado:"",classe_social:"",demanda_id:""});
   };
 
   const salvarEdicao=async()=>{
@@ -3805,6 +3828,13 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
             <option value="">Nenhum</option>
             {MEMBROS_COMERCIAL.map(m=><option key={m}>{m}</option>)}
           </select></div>
+          {demandas.filter(d=>d.status==="ativa").length>0&&(
+            <div style={{gridColumn:"span 1"}}><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Demanda de Prospecção</div>
+            <select value={pipeNovoLead.demanda_id||""} onChange={e=>setPipeNovoLead(p=>({...p,demanda_id:e.target.value}))} style={inpS}>
+              <option value="">Nenhuma</option>
+              {demandas.filter(d=>d.status==="ativa").map(d=><option key={d.id} value={d.id}>{d.codigo} — {d.nome_campanha}</option>)}
+            </select></div>
+          )}
         </div>
         <div style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:6,paddingTop:8,borderTop:`1px solid ${T.border}`}}>Endereço (opcional)</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
@@ -3827,6 +3857,103 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
         <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
           <button onClick={()=>setPipeShowNovo(false)} style={{padding:"7px 14px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10,cursor:"pointer"}}>Cancelar</button>
           <button onClick={salvarLead} style={{padding:"7px 16px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer"}}>Salvar</button>
+        </div>
+      </div>
+    )}
+
+    {/* Demandas de Prospecção Ativas */}
+    {demandasAtivas.length>0&&(
+      <div style={{marginBottom:20}}>
+        <div style={{fontWeight:700,fontSize:13,marginBottom:10,color:T.text}}>📋 Demandas de Prospecção</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {demandasAtivas.map(d=>{
+            const pct=Math.min(100,d.quantidade_solicitada>0?Math.round((d.quantidade_convertida/d.quantidade_solicitada)*100):0);
+            const barColor=pct<=33?T.danger:pct<=66?T.warn:T.accent;
+            const hoje=new Date();hoje.setHours(0,0,0,0);
+            const prazoDate=d.prazo_fechamento?new Date(d.prazo_fechamento+"T00:00:00"):null;
+            if(prazoDate)prazoDate.setHours(0,0,0,0);
+            const diasPrazo=prazoDate?Math.ceil((prazoDate-hoje)/86400000):null;
+            return(
+              <div key={d.id} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"14px 16px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:12,marginBottom:2}}>{d.codigo} — {d.nome_campanha}</div>
+                    <div style={{fontSize:10,color:T.muted}}>{[d.cliente,d.regiao,d.perfil_parceiro,d.classe_social&&d.classe_social!=="Qualquer"?"Classe "+d.classe_social:null].filter(Boolean).join(" · ")}</div>
+                  </div>
+                  <div style={{textAlign:"right",flexShrink:0,marginLeft:12}}>
+                    {diasPrazo!==null&&<div style={{fontSize:9,fontWeight:700,color:diasPrazo<0?T.danger:diasPrazo<=7?T.warn:T.muted}}>{diasPrazo<0?"⚠️ "+Math.abs(diasPrazo)+"d atrasado":diasPrazo===0?"Vence hoje!":diasPrazo+"d para prazo"}</div>}
+                    <div style={{fontSize:9,color:T.muted}}>por {d.comercial_responsavel||"—"}</div>
+                  </div>
+                </div>
+                <div style={{marginBottom:8}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <div style={{fontSize:10,color:T.text}}>{d.quantidade_convertida}/{d.quantidade_solicitada} parceiros</div>
+                    <div style={{fontSize:10,fontWeight:700,color:barColor}}>{pct}%</div>
+                  </div>
+                  <div style={{height:6,background:T.border,borderRadius:3,overflow:"hidden"}}>
+                    <div style={{width:`${pct}%`,height:"100%",background:barColor,borderRadius:3,transition:"width 0.3s"}}/>
+                  </div>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6}}>
+                  <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                    {(d.funcionarios_base||[]).length===0&&<span style={{fontSize:9,color:T.muted}}>Nenhum membro direcionado</span>}
+                    {(d.funcionarios_base||[]).map(f=><span key={f} style={{fontSize:9,padding:"2px 7px",borderRadius:4,background:T.surface,border:`1px solid ${T.border}`,color:T.text}}>{f}</span>)}
+                  </div>
+                  {canEditDemanda&&<button onClick={()=>setDemDirecionar(d)} style={{padding:"4px 10px",background:"transparent",border:`1px solid ${T.info}55`,color:T.info,borderRadius:6,fontSize:9,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>👥 Direcionar equipe</button>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {demandasFin.length>0&&(
+          <button onClick={()=>setShowDemandasFin(p=>!p)} style={{marginTop:10,padding:"5px 12px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:10,cursor:"pointer"}}>
+            📁 {showDemandasFin?"Ocultar":"Ver"} demandas finalizadas ({demandasFin.length})
+          </button>
+        )}
+      </div>
+    )}
+
+    {/* Demandas Finalizadas / Histórico */}
+    {showDemandasFin&&demandasFin.length>0&&(
+      <div style={{marginBottom:20}}>
+        <div style={{fontWeight:700,fontSize:12,marginBottom:8,color:T.muted}}>📁 Demandas Finalizadas</div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {demandasFin.map(d=>{
+            const pct=d.quantidade_solicitada>0?Math.round((d.quantidade_convertida/d.quantidade_solicitada)*100):0;
+            return(
+              <div key={d.id} style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:11,marginBottom:2}}>{d.codigo} — {d.nome_campanha}</div>
+                  <div style={{fontSize:10,color:T.muted}}>{d.cliente||"—"} · {d.quantidade_convertida}/{d.quantidade_solicitada} parceiros ({pct}%) · {d.status==="finalizada"?"✅ Finalizada":"🗄 Arquivada"}</div>
+                </div>
+                {canEditDemanda&&<button onClick={async()=>{await supabase.from("demandas_prospeccao").update({status:"ativa",finalizado_em:null}).eq("id",d.id);setDemandas(p=>p.map(x=>x.id===d.id?{...x,status:"ativa",finalizado_em:null}:x));}} style={{padding:"4px 10px",background:"transparent",border:`1px solid ${T.warn}55`,color:T.warn,borderRadius:6,fontSize:9,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🔄 Reabrir</button>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    )}
+
+    {/* Modal direcionar equipe */}
+    {demDirecionar&&(
+      <div style={{position:"fixed",inset:0,background:"#000000D0",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>setDemDirecionar(null)}>
+        <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,padding:24,width:"100%",maxWidth:380}} onClick={e=>e.stopPropagation()}>
+          <div style={{fontWeight:700,fontSize:14,marginBottom:14}}>👥 Direcionar equipe — {demDirecionar.codigo}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:16}}>
+            {(allUsers||[]).filter(u=>["base","gerente_base"].includes(u.role)&&u.active!==false).map(u=>{
+              const sel=(demDirecionar.funcionarios_base||[]).includes(u.name);
+              return(
+                <label key={u.name} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"6px 10px",borderRadius:6,background:sel?T.accentDim:T.surface,border:`1px solid ${sel?T.accentBorder:T.border}`}}>
+                  <input type="checkbox" checked={sel} onChange={e=>{const list=demDirecionar.funcionarios_base||[];const next=e.target.checked?[...list,u.name]:list.filter(n=>n!==u.name);setDemDirecionar(p=>({...p,funcionarios_base:next}));}} style={{accentColor:T.accent}}/>
+                  <span style={{fontSize:11,color:T.text}}>{u.name}</span>
+                </label>
+              );
+            })}
+          </div>
+          <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+            <button onClick={()=>setDemDirecionar(null)} style={{padding:"7px 16px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:10,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={async()=>{const fb=demDirecionar.funcionarios_base||[];await supabase.from("demandas_prospeccao").update({funcionarios_base:fb}).eq("id",demDirecionar.id);setDemandas(p=>p.map(d=>d.id===demDirecionar.id?{...d,funcionarios_base:fb}:d));setDemDirecionar(null);}} style={{padding:"7px 16px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,fontWeight:700,cursor:"pointer"}}>Salvar</button>
+          </div>
         </div>
       </div>
     )}
@@ -4434,8 +4561,14 @@ export default function App(){
   const[pipeCampanha,setPipeCampanha]=useState("todas");
   const[pipeDragging,setPipeDragging]=useState(null);
   const[pipeModalLead,setPipeModalLead]=useState(null); // lead sendo editado/criado
-  const[pipeNovoLead,setPipeNovoLead]=useState({nome:"",responsavel:"Victória",etapa:"abordado",campanha:"",cidade:"",tipo:"",telefone:"",instagram:"",obs:"",responsavel_comercial:"",cep:"",rua:"",numero:"",bairro:"",estado:"",classe_social:""});
+  const[pipeNovoLead,setPipeNovoLead]=useState({nome:"",responsavel:"Victória",etapa:"abordado",campanha:"",cidade:"",tipo:"",telefone:"",instagram:"",obs:"",responsavel_comercial:"",cep:"",rua:"",numero:"",bairro:"",estado:"",classe_social:"",demanda_id:""});
   const[pipeShowNovo,setPipeShowNovo]=useState(false);
+  // Demandas de prospecção
+  const[demandas,setDemandas]=useState([]);
+  const[showDemandaForm,setShowDemandaForm]=useState(false);
+  const DEMANDA_SEGS=["Japonesa","Italiana","Brasileira","Árabe","Mexicana","Chinesa","Fast Food","Pizza","Hamburguer","Sushi","Frutos do Mar","Vegetariana/Vegana","Churrasco","Lanches","Doces/Sobremesas","Cafeteria","Padaria","Fitness/Saudável","Variado","Outro"];
+  const[novaDemanda,setNovaDemanda]=useState({nome_campanha:"",cliente:"",regiao:"",perfil_parceiro:"",classe_social:"Qualquer",prazo_fechamento:"",quantidade_solicitada:10});
+  const[demandaConfirmacao,setDemandaConfirmacao]=useState(null);
   // WhatsApp agent states
   // Simulador
   const[simMsgs,setSimMsgs]=useState([]);
@@ -4649,6 +4782,9 @@ export default function App(){
       // Clientes
       const clis=await supabase.from("clientes").select("*").order("id");
       if(clis.data?.length)setClientesDB(clis.data.map(r=>r.data&&typeof r.data==="object"?{...r.data,id:r.id}:r));
+      // Demandas de prospecção
+      const dems=await supabase.from("demandas_prospeccao").select("*").order("id");
+      if(dems.data?.length)setDemandas(dems.data);
     };
     load();
   },[]);
@@ -6045,6 +6181,24 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
       await sendWhatsAppNotifToRole("marketing",msgCriada);
       await sendWhatsAppNotifToRole("financeiro",msgCriada);
     }
+  };
+
+  const criarDemanda=async()=>{
+    if(!novaDemanda.nome_campanha.trim()||!novaDemanda.quantidade_solicitada)return;
+    const{data:existing}=await supabase.from("demandas_prospeccao").select("codigo").like("codigo","ECODATA%").order("codigo",{ascending:false}).limit(1);
+    const lastNum=existing?.[0]?.codigo?parseInt(existing[0].codigo.replace("ECODATA",""))||0:0;
+    const codigo=`ECODATA${String(lastNum+1).padStart(2,"0")}`;
+    const id=Date.now();
+    const rec={id,codigo,...novaDemanda,quantidade_solicitada:Number(novaDemanda.quantidade_solicitada),comercial_responsavel:user?.name||"",status:"ativa",quantidade_convertida:0,funcionarios_base:[],criado_em:new Date().toISOString()};
+    const{error}=await supabase.from("demandas_prospeccao").insert(rec);
+    if(error){console.error("demanda insert:",error);pushNotif&&pushNotif("Erro ao criar demanda",error.message,T.danger);return;}
+    setDemandas(p=>[...p,rec]);
+    setShowDemandaForm(false);
+    setDemandaConfirmacao(codigo);
+    setNovaDemanda({nome_campanha:"",cliente:"",regiao:"",perfil_parceiro:"",classe_social:"Qualquer",prazo_fechamento:"",quantidade_solicitada:10});
+    const prazoFmt=rec.prazo_fechamento?new Date(rec.prazo_fechamento+"T00:00:00").toLocaleDateString("pt-BR"):"—";
+    const msg=`📋 *Nova demanda de prospecção!*\nCódigo: ${codigo}\nCampanha: ${rec.nome_campanha}\nCliente: ${rec.cliente||"—"}\nRegião: ${rec.regiao||"—"}\nPerfil: ${rec.perfil_parceiro||"—"} | Classe: ${rec.classe_social||"—"}\nQuantidade: ${rec.quantidade_solicitada} parceiros\nPrazo: ${prazoFmt}`;
+    await sendWhatsAppNotifToRole("gerente_base",msg);
   };
 
   const addCommEntry=async()=>{
@@ -9655,7 +9809,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   pipeNovoLead={pipeNovoLead} setPipeNovoLead={setPipeNovoLead}
                   pipeShowNovo={pipeShowNovo} setPipeShowNovo={setPipeShowNovo}
                   T={T} basePartners={basePartners} setBasePartners={setBasePartners}
-                  allUsers={users} pushNotif={pushNotif}/>
+                  allUsers={users} pushNotif={pushNotif}
+                  demandas={demandas} setDemandas={setDemandas} user={user}/>
               )}
 
               {baseTab==="score"&&(
@@ -9877,7 +10032,53 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                 });
                 setShowConvPlan(true);
               }}
+              onSolicitarProspeccao={p=>{setNovaDemanda({nome_campanha:p.clienteNome||"",cliente:p.clienteNome||"",regiao:p.regiao||"",perfil_parceiro:p.clienteSegmento||"",classe_social:"Qualquer",prazo_fechamento:"",quantidade_solicitada:10});setShowDemandaForm(true);}}
             />
+          )}
+
+          {/* ── MODAL: SOLICITAR PROSPECÇÃO ──────────────────────────────────── */}
+          {showDemandaForm&&(
+            <div style={{position:"fixed",inset:0,background:"#000000D0",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>setShowDemandaForm(false)}>
+              <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:16,width:"100%",maxWidth:500,padding:24}} onClick={e=>e.stopPropagation()}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+                  <div style={{fontWeight:800,fontSize:16}}>📋 Solicitar Prospecção</div>
+                  <button onClick={()=>setShowDemandaForm(false)} style={{background:"none",border:"none",fontSize:20,color:T.muted,cursor:"pointer"}}>×</button>
+                </div>
+                {(()=>{const inpD={width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none",boxSizing:"border-box"};return(<>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                    <div style={{gridColumn:"span 2"}}><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Nome da campanha *</div><input value={novaDemanda.nome_campanha} onChange={e=>setNovaDemanda(p=>({...p,nome_campanha:e.target.value}))} style={inpD}/></div>
+                    <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Cliente</div><input value={novaDemanda.cliente} onChange={e=>setNovaDemanda(p=>({...p,cliente:e.target.value}))} style={inpD}/></div>
+                    <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Região</div><input value={novaDemanda.regiao} onChange={e=>setNovaDemanda(p=>({...p,regiao:e.target.value}))} style={inpD}/></div>
+                    <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Perfil do parceiro</div>
+                      <select value={novaDemanda.perfil_parceiro} onChange={e=>setNovaDemanda(p=>({...p,perfil_parceiro:e.target.value}))} style={inpD}>
+                        <option value="">Qualquer</option>
+                        {DEMANDA_SEGS.map(s=><option key={s}>{s}</option>)}
+                      </select></div>
+                    <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Classe social</div>
+                      <select value={novaDemanda.classe_social} onChange={e=>setNovaDemanda(p=>({...p,classe_social:e.target.value}))} style={inpD}>
+                        {["Qualquer","A","B1","B2","C1","C2","D","E"].map(c=><option key={c}>{c}</option>)}
+                      </select></div>
+                    <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Prazo de fechamento</div><input type="date" value={novaDemanda.prazo_fechamento} onChange={e=>setNovaDemanda(p=>({...p,prazo_fechamento:e.target.value}))} style={inpD}/></div>
+                    <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Qtd. parceiros *</div><input type="number" min={1} value={novaDemanda.quantidade_solicitada} onChange={e=>setNovaDemanda(p=>({...p,quantidade_solicitada:e.target.value}))} style={inpD}/></div>
+                  </div>
+                  <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:6}}>
+                    <button onClick={()=>setShowDemandaForm(false)} style={{padding:"8px 18px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:8,fontSize:11,cursor:"pointer"}}>Cancelar</button>
+                    <button onClick={criarDemanda} style={{padding:"8px 20px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Criar Demanda</button>
+                  </div>
+                </>);})()}
+              </div>
+            </div>
+          )}
+          {demandaConfirmacao&&(
+            <div style={{position:"fixed",inset:0,background:"#000000D0",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>setDemandaConfirmacao(null)}>
+              <div style={{background:T.surface,border:`1px solid ${T.accentBorder}`,borderRadius:16,padding:32,maxWidth:400,textAlign:"center"}} onClick={e=>e.stopPropagation()}>
+                <div style={{fontSize:32,marginBottom:12}}>✅</div>
+                <div style={{fontWeight:800,fontSize:18,marginBottom:8}}>Demanda criada!</div>
+                <div style={{fontSize:14,color:T.muted,marginBottom:4}}>Código: <strong style={{color:T.accent}}>{demandaConfirmacao}</strong></div>
+                <div style={{fontSize:12,color:T.muted,marginBottom:20}}>A equipe da Base já foi notificada via WhatsApp.</div>
+                <button onClick={()=>setDemandaConfirmacao(null)} style={{padding:"8px 24px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>Fechar</button>
+              </div>
+            </div>
           )}
 
           {/* ── MODAL: CONVERTER PLANEJAMENTO EM CAMPANHA ──────────────────── */}
