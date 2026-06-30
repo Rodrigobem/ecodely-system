@@ -3903,7 +3903,10 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
                     {(d.funcionarios_base||[]).length===0&&<span style={{fontSize:9,color:T.muted}}>Nenhum membro direcionado</span>}
                     {(d.funcionarios_base||[]).map(f=><span key={f} style={{fontSize:9,padding:"2px 7px",borderRadius:4,background:T.surface,border:`1px solid ${T.border}`,color:T.text}}>{f}</span>)}
                   </div>
-                  {canEditDemanda&&<button onClick={()=>setDemDirecionar(d)} style={{padding:"4px 10px",background:"transparent",border:`1px solid ${T.info}55`,color:T.info,borderRadius:6,fontSize:9,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>👥 Direcionar equipe</button>}
+                  <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                    {d.briefing_detalhado?.trim()&&<button onClick={()=>setDemBriefing(d)} style={{padding:"4px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:9,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>📄 Ver briefing</button>}
+                    {canEditDemanda&&<button onClick={()=>setDemDirecionar(d)} style={{padding:"4px 10px",background:"transparent",border:`1px solid ${T.info}55`,color:T.info,borderRadius:6,fontSize:9,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>👥 Direcionar equipe</button>}
+                  </div>
                 </div>
               </div>
             );
@@ -3934,6 +3937,27 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
               </div>
             );
           })}
+        </div>
+      </div>
+    )}
+
+    {/* Modal briefing detalhado */}
+    {demBriefing&&(
+      <div style={{position:"fixed",inset:0,background:"#000000D0",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>setDemBriefing(null)}>
+        <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,padding:24,width:"100%",maxWidth:520,maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <div>
+              <div style={{fontWeight:700,fontSize:14}}>📄 Briefing Detalhado</div>
+              <div style={{fontSize:10,color:T.muted,marginTop:2}}>{demBriefing.codigo} — {demBriefing.nome_campanha}</div>
+            </div>
+            <button onClick={()=>setDemBriefing(null)} style={{background:"none",border:"none",fontSize:20,color:T.muted,cursor:"pointer"}}>×</button>
+          </div>
+          <div style={{flex:1,overflowY:"auto",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"12px 14px",fontSize:12,color:T.text,lineHeight:1.7,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+            {demBriefing.briefing_detalhado||"—"}
+          </div>
+          <div style={{textAlign:"right",marginTop:14}}>
+            <button onClick={()=>setDemBriefing(null)} style={{padding:"7px 20px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer"}}>Fechar</button>
+          </div>
         </div>
       </div>
     )}
@@ -4571,7 +4595,8 @@ export default function App(){
   const[demandas,setDemandas]=useState([]);
   const[showDemandaForm,setShowDemandaForm]=useState(false);
   const DEMANDA_SEGS=["Japonesa","Italiana","Brasileira","Árabe","Mexicana","Chinesa","Fast Food","Pizza","Hamburguer","Sushi","Frutos do Mar","Vegetariana/Vegana","Churrasco","Lanches","Doces/Sobremesas","Cafeteria","Padaria","Fitness/Saudável","Variado","Outro"];
-  const[novaDemanda,setNovaDemanda]=useState({nome_campanha:"",cliente:"",regiao:"",perfil_parceiro:[],classe_social:"Qualquer",prazo_fechamento:"",quantidade_solicitada:10});
+  const[novaDemanda,setNovaDemanda]=useState({nome_campanha:"",cliente:"",regiao:"",perfil_parceiro:[],classe_social:"Qualquer",prazo_fechamento:"",quantidade_solicitada:10,briefing_detalhado:""});
+  const[demBriefing,setDemBriefing]=useState(null);
   const[demandaConfirmacao,setDemandaConfirmacao]=useState(null);
   // WhatsApp agent states
   // Simulador
@@ -6199,10 +6224,12 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     setDemandas(p=>[...p,rec]);
     setShowDemandaForm(false);
     setDemandaConfirmacao(codigo);
-    setNovaDemanda({nome_campanha:"",cliente:"",regiao:"",perfil_parceiro:[],classe_social:"Qualquer",prazo_fechamento:"",quantidade_solicitada:10});
+    setNovaDemanda({nome_campanha:"",cliente:"",regiao:"",perfil_parceiro:[],classe_social:"Qualquer",prazo_fechamento:"",quantidade_solicitada:10,briefing_detalhado:""});
     const prazoFmt=rec.prazo_fechamento?new Date(rec.prazo_fechamento+"T00:00:00").toLocaleDateString("pt-BR"):"—";
     const perfilTxt=(Array.isArray(rec.perfil_parceiro)&&rec.perfil_parceiro.length>0)?rec.perfil_parceiro.join(", "):"—";
-    const msg=`📋 *Nova demanda de prospecção!*\nCódigo: ${codigo}\nCampanha: ${rec.nome_campanha}\nCliente: ${rec.cliente||"—"}\nRegião: ${rec.regiao||"—"}\nPerfil: ${perfilTxt} | Classe: ${rec.classe_social||"—"}\nQuantidade: ${rec.quantidade_solicitada} parceiros\nPrazo: ${prazoFmt}`;
+    const briefTxt=rec.briefing_detalhado?.trim();
+    const briefResumo=briefTxt?`\n📄 *Briefing:* ${briefTxt.length>100?briefTxt.slice(0,100)+"...":briefTxt}\n_Ver briefing completo no sistema._`:"";
+    const msg=`📋 *Nova demanda de prospecção!*\nCódigo: ${codigo}\nCampanha: ${rec.nome_campanha}\nCliente: ${rec.cliente||"—"}\nRegião: ${rec.regiao||"—"}\nPerfil: ${perfilTxt} | Classe: ${rec.classe_social||"—"}\nQuantidade: ${rec.quantidade_solicitada} parceiros\nPrazo: ${prazoFmt}${briefResumo}`;
     await sendWhatsAppNotifToRole("gerente_base",msg);
   };
 
@@ -10064,6 +10091,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                       </select></div>
                     <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Prazo de fechamento</div><input type="date" value={novaDemanda.prazo_fechamento} onChange={e=>setNovaDemanda(p=>({...p,prazo_fechamento:e.target.value}))} style={inpD}/></div>
                     <div><div style={{fontSize:10,color:T.muted,marginBottom:4}}>Qtd. parceiros *</div><input type="number" min={1} value={novaDemanda.quantidade_solicitada} onChange={e=>setNovaDemanda(p=>({...p,quantidade_solicitada:e.target.value}))} style={inpD}/></div>
+                  </div>
+                  <div style={{marginBottom:12}}>
+                    <div style={{fontSize:10,color:T.muted,marginBottom:4}}>Briefing detalhado <span style={{opacity:.5}}>(opcional)</span></div>
+                    <textarea value={novaDemanda.briefing_detalhado} onChange={e=>setNovaDemanda(p=>({...p,briefing_detalhado:e.target.value}))} rows={6} placeholder={"Ex:\nQuantidade de embalagens: 5.000\nParceiros sugeridos: já temos contato com X, Y\nEndereço de referência: Setor Residencial Leste, Brasília/DF\nAções necessárias: validar com parceiros disponibilidade de fachada para grafismo"} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 12px",fontSize:11,color:T.text,outline:"none",boxSizing:"border-box",resize:"vertical",lineHeight:1.5,fontFamily:"inherit"}}/>
                   </div>
                   <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:6}}>
                     <button onClick={()=>setShowDemandaForm(false)} style={{padding:"8px 18px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:8,fontSize:11,cursor:"pointer"}}>Cancelar</button>
