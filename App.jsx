@@ -79,6 +79,7 @@ const ROLE_TO_SEC={admin:null,base:"base",comercial:"comercial",marketing:"marke
 
 // --- CAMPAIGNS ---------------------------------------------------------------
 const STAGES_CAMP=[
+  {id:0,label:"Prospecção",color:T.muted},
   {id:1,label:"Fechamento",color:T.info},
   {id:2,label:"Gráfica",color:T.purple},
   {id:3,label:"Logística",color:T.warn},
@@ -86,6 +87,7 @@ const STAGES_CAMP=[
   {id:6,label:"Veiculando",color:"#0EA5E9"},
   {id:5,label:"Finalizada",color:T.accent},
 ];
+const SLA_CAMP={1:3,2:5,3:4,4:2}; // dias máximos por etapa (id→dias)
 
 const mkTimeline=(entries)=>entries;
 const mkFiles=(files)=>files;
@@ -4314,7 +4316,7 @@ export default function App(){
   useEffect(()=>{localStorage.setItem("ecodely_tab",tab);},[tab]);
   T=THEMES[tema]||THEMES.escuro;
   // Recalcular constantes que dependem de T (para troca de tema funcionar)
-  STAGES_CAMP[0].color=T.info;STAGES_CAMP[1].color=T.purple;STAGES_CAMP[2].color=T.warn;STAGES_CAMP[3].color=T.pink;STAGES_CAMP[4].color="#0EA5E9";STAGES_CAMP[5].color=T.accent;
+  STAGES_CAMP[0].color=T.muted;STAGES_CAMP[1].color=T.info;STAGES_CAMP[2].color=T.purple;STAGES_CAMP[3].color=T.warn;STAGES_CAMP[4].color=T.pink;STAGES_CAMP[5].color="#0EA5E9";STAGES_CAMP[6].color=T.accent;
   PIPE_STAGES[0].color=T.muted;PIPE_STAGES[1].color=T.info;PIPE_STAGES[2].color=T.purple;PIPE_STAGES[3].color=T.warn;PIPE_STAGES[4].color=T.accent;
   CONTRATO_COLOR["sem contrato"]=T.muted;CONTRATO_COLOR["pendente"]=T.warn;CONTRATO_COLOR["assinado"]=T.accent;CONTRATO_COLOR["expirando"]=T.danger;CONTRATO_COLOR["expirado"]=T.danger;
   STATUS_PARTNER["prospectado"]=T.info;STATUS_PARTNER["negociando"]=T.warn;STATUS_PARTNER["ativo"]=T.accent;STATUS_PARTNER["inativo"]=T.muted;
@@ -4748,6 +4750,72 @@ export default function App(){
     return u?.whatsapp||null;
   };
 
+  const notificarTransicaoCamp=async(camp,stageId)=>{
+    const hoje=new Date().toISOString().slice(0,10);
+    const dedup=async(w,tipo,msg)=>{
+      if(!w)return;
+      const k=`notif_${camp.id}_${tipo}_${hoje}`;
+      if(localStorage.getItem(k))return;
+      localStorage.setItem(k,"1");
+      await sendWhatsAppNotif(w,msg);
+    };
+    const wA=getWhatsappByName("Alessandra");
+    const wL=getWhatsappByName("Larissa");
+    const wC=camp.responsavel?getWhatsappByName(camp.responsavel):null;
+    if(stageId===1){
+      const msg=`🎯 Campanha *${camp.name}* avançou para *Fechamento*!\nCliente: ${camp.client}\nResponsável: ${camp.responsavel||"—"}`;
+      await dedup(wA,"fechamento",msg);
+      await dedup(wL,"fechamento",msg);
+      users.filter(u=>u.role==="marketing"&&u.whatsapp&&u.active!==false).forEach(u=>dedup(u.whatsapp,"fechamento_mkt_"+u.id,msg));
+    }
+    if(stageId===2||stageId===3){
+      const label=STAGES_CAMP.find(s=>s.id===stageId)?.label;
+      const msg=`📦 Campanha *${camp.name}* avançou para *${label}*!\nCliente: ${camp.client}\nResponsável: ${camp.responsavel||"—"}`;
+      await dedup(wA,`etapa${stageId}`,msg);
+      await dedup(wL,`etapa${stageId}`,msg);
+      await dedup(wC,`etapa${stageId}_c`,msg);
+    }
+    if(stageId===4){
+      const msg=`✅ Campanha *${camp.name}* entrou em *Checking*!\nCliente: ${camp.client}\nVerificar evidências e aprovações.`;
+      await dedup(wA,"checking",msg);
+      await dedup(wL,"checking",msg);
+      await dedup(wC,"checking_c",msg);
+    }
+  };
+
+  useEffect(()=>{
+    if(!camps.length||!users.length)return;
+    const hoje=new Date().toISOString().slice(0,10);
+    (async()=>{
+      for(const camp of camps){
+        const sla=SLA_CAMP[camp.stage];
+        if(!sla||!camp.stageEnteredAt)continue;
+        const deadline=new Date(new Date(camp.stageEnteredAt).getTime()+sla*86400000);
+        deadline.setHours(0,0,0,0);
+        const agora=new Date();agora.setHours(0,0,0,0);
+        const diff=Math.ceil((deadline-agora)/86400000);
+        const stageLabel=STAGES_CAMP.find(s=>s.id===camp.stage)?.label||"";
+        if(diff<0){
+          const k=`notif_${camp.id}_atrasado_${hoje}`;
+          if(!localStorage.getItem(k)){
+            localStorage.setItem(k,"1");
+            const msg=`🔴 Campanha *${camp.name}* está *ATRASADA* em ${stageLabel}!\nCliente: ${camp.client}\nAtraso: ${Math.abs(diff)}d`;
+            await sendWhatsAppNotif(getWhatsappByName("Alessandra"),msg);
+            await sendWhatsAppNotif(getWhatsappByName("Rodrigo"),msg);
+          }
+        } else if(diff<=2){
+          const k=`notif_${camp.id}_vencendo_${hoje}`;
+          if(!localStorage.getItem(k)){
+            localStorage.setItem(k,"1");
+            const msg=`🟡 Campanha *${camp.name}* vence ${diff===0?"hoje":diff+"d"} em ${stageLabel}!\nCliente: ${camp.client}`;
+            await sendWhatsAppNotif(getWhatsappByName("Alessandra"),msg);
+            await sendWhatsAppNotif(camp.responsavel?getWhatsappByName(camp.responsavel):null,msg);
+          }
+        }
+      }
+    })();
+  },[camps.length,users.length]);
+
   const addNotif=async(type,title,msg,campanha,color,via,tab)=>{
     const entry={id:Date.now(),type,title,msg,campanha:campanha||null,at:now(),read:false,color,via:via||["sistema"],tab:tab||null};
     setInbox(p=>[entry,...p]);
@@ -4764,18 +4832,21 @@ export default function App(){
   const onCampDrop=(e,stageId)=>{
     e.preventDefault();
     if(dragCampId===null||dragCampId===undefined)return;
+    const prevCamp=camps.find(c=>c.id===dragCampId);
     let updatedCamp=null;
     setCamps(prev=>prev.map(c=>{
       if(c.id!==dragCampId)return c;
       const prevStage=STAGES_CAMP.find(s=>s.id===c.stage);
       const newStage=STAGES_CAMP.find(s=>s.id===stageId);
-      const entry={id:Date.now(),type:"stage",text:`Etapa movida: ${prevStage?.label} - ${newStage?.label}`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:newStage?.color||T.accent};
-      const newProgress=Math.round(((stageId-1)/4)*100);
-      updatedCamp={...c,stage:stageId,progress:newProgress,timeline:[...c.timeline,entry]};
+      const entry={id:Date.now(),type:"stage",text:`Etapa movida: ${prevStage?.label} → ${newStage?.label}`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:newStage?.color||T.accent};
+      const stageIdx=STAGES_CAMP.findIndex(s=>s.id===stageId);
+      const newProgress=Math.round((stageIdx/Math.max(STAGES_CAMP.length-1,1))*100);
+      updatedCamp={...c,stage:stageId,progress:newProgress,stageEnteredAt:new Date().toISOString(),timeline:[...c.timeline,entry]};
       return updatedCamp;
     }));
     if(updatedCamp)supabase.from("campanhas").upsert({id:updatedCamp.id,data:updatedCamp}).then(({error})=>{if(error)console.error("SUPABASE camp stage:",error);});
     addNotif("etapa","Campanha avancou","Movida para "+STAGES_CAMP.find(s=>s.id===stageId)?.label,STAGES_CAMP.find(s=>s.id===stageId)?.label,STAGES_CAMP.find(s=>s.id===stageId)?.color||T.accent,["sistema","whatsapp","email"]);
+    if(prevCamp&&prevCamp.stage!==stageId)notificarTransicaoCamp(prevCamp,stageId);
     setDragCampId(null);setDragOverCampStage(null);
   };
   const onCampDragEnd=()=>{setDragCampId(null);setDragOverCampStage(null);};
@@ -4824,18 +4895,21 @@ export default function App(){
     if(!stageTarget)return;
     if(type==="camp"&&campId){
       const stageId=Number(stageTarget);
-      const prevStage=STAGES_CAMP.find(s=>s.id===camps.find(x=>x.id===campId)?.stage);
+      const prevCamp=camps.find(x=>x.id===campId);
+      const prevStage=STAGES_CAMP.find(s=>s.id===prevCamp?.stage);
       const newStage=STAGES_CAMP.find(s=>s.id===stageId);
       if(prevStage?.id===stageId)return;
       let updatedCamp=null;
       setCamps(prev=>prev.map(c=>{
         if(c.id!==campId)return c;
-        const entry={id:Date.now(),type:"stage",text:`Etapa movida: ${prevStage?.label} - ${newStage?.label}`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:newStage?.color||T.accent};
-        updatedCamp={...c,stage:stageId,progress:Math.round(((stageId-1)/4)*100),timeline:[...c.timeline,entry]};
+        const entry={id:Date.now(),type:"stage",text:`Etapa movida: ${prevStage?.label} → ${newStage?.label}`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:newStage?.color||T.accent};
+        const stageIdx=STAGES_CAMP.findIndex(s=>s.id===stageId);
+        updatedCamp={...c,stage:stageId,progress:Math.round((stageIdx/Math.max(STAGES_CAMP.length-1,1))*100),stageEnteredAt:new Date().toISOString(),timeline:[...c.timeline,entry]};
         return updatedCamp;
       }));
       if(updatedCamp)supabase.from("campanhas").upsert({id:updatedCamp.id,data:updatedCamp}).then(({error})=>{if(error)console.error("SUPABASE touch camp:",error);});
-      pushNotif("Campanha movida",`- ${newStage?.label}`,newStage?.color||T.accent);
+      pushNotif("Campanha movida",`→ ${newStage?.label}`,newStage?.color||T.accent);
+      if(prevCamp&&prevCamp.stage!==stageId)notificarTransicaoCamp(prevCamp,stageId);
     }
     if(type==="prosp"&&prospId){
       const stageId=stageTarget;
@@ -5815,7 +5889,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
       segments:newCamp.segments,
       sacolasDistribuidas:null,
       progress:0,
-      stage:1,
+      stage:0,
+      stageEnteredAt:new Date().toISOString(),
       parceirosIds:[],
       tasks:{
         comercial:[{id:"c1",label:"Emitir PI",done:false},{id:"c2",label:"Enviar contrato ao cliente",done:false}],
@@ -5847,7 +5922,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     let projId=convPlanDados?.projectId?Number(convPlanDados.projectId):null;
     let projName=nome;
     if(!projId){projId=id;const np={id:projId,name:projName,active:true};setProjects(p=>[...p,np]);supabase.from("projects").insert(np);}
-    const rec={id,name:nome,client:convCampEdit.client||(convPlanDados?.clienteNome||""),agencia:"",numPI:convCampEdit.numPI||"",project:projName,projectId:projId,responsavel:user?.name||"",startDate:convCampEdit.startDate||"",endDate:convCampEdit.endDate||"",region:(convPlanDados?.regioes||[]).map(r=>r.cidade).filter(Boolean).join(", ")||(convPlanDados?.regiao||""),graficaFornecedor:"",material:"",graficaPrazo:"",logistica:"",logisticaFornecedor:"",logisticaPrazo:"",parceiros:inclParc.length,sacolas:totalEmb,valorLiquido:Number(convCampEdit.valorLiquido)||0,briefing:convCampEdit.briefing||"",segments:(convPlanDados?.clienteSegmento?[convPlanDados.clienteSegmento]:[]),sacolasDistribuidas:null,progress:0,stage:1,parceirosIds:inclParc.map(p=>p.id),parceirosVinculados:inclParc,tasks:{comercial:[{id:"c1",label:"Emitir PI",done:false},{id:"c2",label:"Enviar contrato ao cliente",done:false}],financeiro:[{id:"f1",label:"Receber PI",done:false},{id:"f2",label:"Faturar NF",done:false},{id:"f3",label:"Lançar planilha financeira",done:false}],marketing:[{id:"m1",label:"Post Instagram",done:false},{id:"m2",label:"Post LinkedIn",done:false},{id:"m3",label:"Contratar influencer",done:false}],base:[{id:"b1",label:"Confirmar base participante",done:false},{id:"b2",label:"Enviar contrato de exclusividade",done:false}],grafica:[{id:"g1",label:"Arte aprovada pelo cliente",done:false},{id:"g2",label:"Material enviado para gráfica",done:false},{id:"g3",label:"Impressão confirmada",done:false},{id:"g4",label:"Material entregue",done:false}],logistica:[{id:"l1",label:"Logística confirmada",done:false},{id:"l2",label:"Rota de entrega definida",done:false},{id:"l3",label:"Entrega realizada",done:false}]},timeline:[{id:Date.now(),type:"stage",text:`Campanha criada a partir do planejamento "${convPlanDados?.clienteNome||""}" com ${inclParc.length} parceiro(s)`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.accent}],files:[],impactos:{stories:[],influencer:[],impulsionado:[],galeria:[]}};
+    const rec={id,name:nome,client:convCampEdit.client||(convPlanDados?.clienteNome||""),agencia:"",numPI:convCampEdit.numPI||"",project:projName,projectId:projId,responsavel:user?.name||"",startDate:convCampEdit.startDate||"",endDate:convCampEdit.endDate||"",region:(convPlanDados?.regioes||[]).map(r=>r.cidade).filter(Boolean).join(", ")||(convPlanDados?.regiao||""),graficaFornecedor:"",material:"",graficaPrazo:"",logistica:"",logisticaFornecedor:"",logisticaPrazo:"",parceiros:inclParc.length,sacolas:totalEmb,valorLiquido:Number(convCampEdit.valorLiquido)||0,briefing:convCampEdit.briefing||"",segments:(convPlanDados?.clienteSegmento?[convPlanDados.clienteSegmento]:[]),sacolasDistribuidas:null,progress:0,stage:0,stageEnteredAt:new Date().toISOString(),parceirosIds:inclParc.map(p=>p.id),parceirosVinculados:inclParc,tasks:{comercial:[{id:"c1",label:"Emitir PI",done:false},{id:"c2",label:"Enviar contrato ao cliente",done:false}],financeiro:[{id:"f1",label:"Receber PI",done:false},{id:"f2",label:"Faturar NF",done:false},{id:"f3",label:"Lançar planilha financeira",done:false}],marketing:[{id:"m1",label:"Post Instagram",done:false},{id:"m2",label:"Post LinkedIn",done:false},{id:"m3",label:"Contratar influencer",done:false}],base:[{id:"b1",label:"Confirmar base participante",done:false},{id:"b2",label:"Enviar contrato de exclusividade",done:false}],grafica:[{id:"g1",label:"Arte aprovada pelo cliente",done:false},{id:"g2",label:"Material enviado para gráfica",done:false},{id:"g3",label:"Impressão confirmada",done:false},{id:"g4",label:"Material entregue",done:false}],logistica:[{id:"l1",label:"Logística confirmada",done:false},{id:"l2",label:"Rota de entrega definida",done:false},{id:"l3",label:"Entrega realizada",done:false}]},timeline:[{id:Date.now(),type:"stage",text:`Campanha criada a partir do planejamento "${convPlanDados?.clienteNome||""}" com ${inclParc.length} parceiro(s)`,user:user?.name||"Sistema",avatar:user?.avatar||"?",at:now(),color:T.accent}],files:[],impactos:{stories:[],influencer:[],impulsionado:[],galeria:[]}};
     setCamps(p=>[...p,rec]);
     setShowConvPlan(false);
     setConvPlanDados(null);
@@ -7179,7 +7254,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               )}
 
               {campView==="kanban"&&(
-                <div style={{display:"grid",gridTemplateColumns:"repeat(6,minmax(160px,1fr))",gap:8,alignItems:"start"}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(7,minmax(155px,1fr))",gap:8,alignItems:"start"}}>
                   {STAGES_CAMP.map(stage=>(
                     <div key={stage.id}
                       data-kanban-col={stage.id}
@@ -7212,10 +7287,14 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                               <div style={{fontSize:9,color:T.purple,fontFamily:"Arial,sans-serif",flex:1}}>{c.project||"—"}</div>
                               {!c.graficaFornecedor&&<div title="Operacional pendente" style={{fontSize:8,color:T.warn,background:T.warnDim,padding:"1px 5px",borderRadius:3,whiteSpace:"nowrap"}}>Op. pendente</div>}
                             </div>
-                            <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif",marginBottom:2,lineHeight:1.3}}>{c.name}</div>
+                            <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}>
+                              <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif",lineHeight:1.3,flex:1}}>{c.name}</div>
+                              {(()=>{const sla=SLA_CAMP[c.stage];if(!sla||!c.stageEnteredAt)return null;const dl=new Date(new Date(c.stageEnteredAt).getTime()+sla*86400000);dl.setHours(0,0,0,0);const ag=new Date();ag.setHours(0,0,0,0);const df=Math.ceil((dl-ag)/86400000);return<span title={df>0?`${df}d restantes (SLA ${sla}d)`:df===0?"Vence hoje":"Atrasado "+Math.abs(df)+"d"} style={{fontSize:12,lineHeight:1,flexShrink:0}}>{df>2?"🟢":df>=0?"🟡":"🔴"}</span>;})()}
+                            </div>
                             <div style={{fontSize:9,color:T.soft,marginBottom:1}}>{c.client}</div>
-                            {c.agencia&&<div style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif",marginBottom:6}}>{c.agencia}</div>}
-                            {!c.agencia&&<div style={{marginBottom:4}}/>}
+                            {(c.startDate||c.endDate)&&(()=>{const fmt=d=>d?new Date(d+"T00:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}):"?";return<div style={{fontSize:8,color:T.info,marginBottom:3,fontFamily:"Arial,sans-serif"}}>{fmt(c.startDate)} → {fmt(c.endDate)}</div>;})()}
+                            {c.agencia&&<div style={{fontSize:8,color:T.muted,fontFamily:"Arial,sans-serif",marginBottom:4}}>{c.agencia}</div>}
+                            {!c.agencia&&<div style={{marginBottom:2}}/>}
 
                             {/* Bloco operacional */}
                             {(c.graficaFornecedor||c.material||c.logistica||c.sacolas)?(
