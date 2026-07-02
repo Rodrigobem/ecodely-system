@@ -4583,7 +4583,7 @@ export default function App(){
   const[dashTab,setDashTab]=useState("geral");
   const[dashPeriod,setDashPeriod]=useState("mes");
   const hoje_=new Date();
-  const[dashFiltro,setDashFiltro]=useState({inicio:`${hoje_.getFullYear()}-${String(hoje_.getMonth()+1).padStart(2,"0")}-01`,fim:`${hoje_.getFullYear()}-${String(hoje_.getMonth()+1).padStart(2,"0")}-${String(new Date(hoje_.getFullYear(),hoje_.getMonth()+1,0).getDate()).padStart(2,"0")}`,uf:"todos",cidade:"todos",segmento:"todos",responsavel:"todos"});
+  const[dashFiltro,setDashFiltro]=useState({inicio:`${hoje_.getFullYear()}-${String(hoje_.getMonth()+1).padStart(2,"0")}-01`,fim:`${hoje_.getFullYear()}-${String(hoje_.getMonth()+1).padStart(2,"0")}-${String(new Date(hoje_.getFullYear(),hoje_.getMonth()+1,0).getDate()).padStart(2,"0")}`,uf:"todos",cidade:"todos",segmento:"todos",responsavel:"todos",tipo:"todos",status_financeiro:"todos",etapa:"todos",status_lead:"todos"});
   // Financial module state
   const[opTab,setOpTab]=useState("grafica");
   const[opLogSearch,setOpLogSearch]=useState("");
@@ -6679,7 +6679,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             const fCamps=camps.filter(c=>inPeriod(c.startDate||c.dataInicio||c.createdAt));
             const fLanc=lancamentos.filter(l=>inPeriodLanc(l)&&l.tipo!=="Saldo Anterior");
             const fPipe=pipeLeads.filter(l=>dashFiltro.responsavel==="todos"||l.responsavel===dashFiltro.responsavel);
-            const filtrosAtivos=dashFiltro.uf!=="todos"||dashFiltro.cidade!=="todos"||dashFiltro.segmento!=="todos"||dashFiltro.responsavel!=="todos";
+            const filtrosAtivos=dashFiltro.uf!=="todos"||dashFiltro.cidade!=="todos"||dashFiltro.segmento!=="todos"||dashFiltro.responsavel!=="todos"||dashFiltro.tipo!=="todos"||dashFiltro.status_financeiro!=="todos"||dashFiltro.etapa!=="todos"||dashFiltro.status_lead!=="todos";
             const ufsDisp=[...new Set(basePartners.map(p=>p.state).filter(Boolean))].sort();
             const cidadesDisp=[...new Set(basePartners.filter(p=>dashFiltro.uf==="todos"||p.state===dashFiltro.uf).map(p=>normalizarCidade(p.city)).filter(Boolean))].sort();
             const responsaveisDisp=[...new Set(users.filter(u=>u.active).map(u=>u.name).filter(Boolean))].sort();
@@ -6728,7 +6728,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
             // -- DASH COMERCIAL --
             const DashComercial=()=>(
-              <div>{FiltroBar}
+              <div><FiltroBar campos={["periodo","responsavel"]}/>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
                   <KCard label="Leads no pipeline" value={fPipe.filter(l=>user.role==="admin"||l.responsavel===user.name).length} sub={filtrosAtivos?"filtrado":"total"} color={T.info} icon="-" onClick={()=>{setTab("base");setBaseTab("pipeline");}} hint="Ver pipeline -"/>
                   <KCard label="Convertidos" value={fPipe.filter(l=>l.etapa==="convertido"&&(user.role==="admin"||l.responsavel===user.name)).length} sub="parceiros fechados" color={T.accent} icon="-"/>
@@ -6819,7 +6819,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               const influAtivos=fCamps.flatMap(c=>(c.impactos?.influencer||[])).length;
               const campsComStories=fCamps.filter(c=>(c.impactos?.stories||[]).length>0).length;
               return(
-                <div>{FiltroBar}
+                <div><FiltroBar campos={["periodo"]}/>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
                     <KCard label="Campanhas no ar" value={campsAtivas.length} sub="em andamento" color={T.accent} icon="-" onClick={()=>setTab("campanhas")} hint="Ver campanhas -"/>
                     <KCard label="Influenciadores ativos" value={influAtivos} sub="no período" color={T.purple} icon="-"/>
@@ -6895,12 +6895,24 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             };
 
             // -- DASH FINANCEIRO --
-            const DashFinanceiro=()=>(
-              <div>{FiltroBar}
+            const DashFinanceiro=()=>{
+              const fLancFin=fLanc.filter(l=>{
+                if(dashFiltro.tipo==="receita"&&!(l.entrada>0))return false;
+                if(dashFiltro.tipo==="despesa"&&!(l.saida>0))return false;
+                if(dashFiltro.status_financeiro==="pago"&&l.status!=="pago"&&l.pago!==true)return false;
+                if(dashFiltro.status_financeiro==="em_aberto"&&(l.status==="pago"||l.pago===true||l.status==="vencido"))return false;
+                if(dashFiltro.status_financeiro==="vencido"&&l.status!=="vencido")return false;
+                return true;
+              });
+              const receitaFin=fLancFin.reduce((a,l)=>a+(l.entrada||0),0);
+              const despesaFin=fLancFin.reduce((a,l)=>a+(l.saida||0),0);
+              const resultadoFin=receitaFin-despesaFin;
+              return(
+              <div><FiltroBar campos={["periodo","tipo","status_financeiro"]}/>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-                  <KCard label="Receita do período" value={fmt(receitaMes)} sub={mesRefDash} color={T.accent} icon="-" onClick={()=>{setTab("financeiro-modulo");setFinTab("fluxo");}} hint="Ver fluxo -"/>
-                  <KCard label="Despesas do período" value={fmt(despesaMes)} sub={mesRefDash} color={T.danger} icon="-"/>
-                  <KCard label="Resultado" value={fmt(Math.abs(resultadoMes))} sub={resultadoMes>=0?"superávit":"déficit"} color={resultadoMes>=0?T.accent:T.danger} icon="-"/>
+                  <KCard label="Receita do período" value={fmt(receitaFin)} sub={mesRefDash} color={T.accent} icon="-" onClick={()=>{setTab("financeiro-modulo");setFinTab("fluxo");}} hint="Ver fluxo -"/>
+                  <KCard label="Despesas do período" value={fmt(despesaFin)} sub={mesRefDash} color={T.danger} icon="-"/>
+                  <KCard label="Resultado" value={fmt(Math.abs(resultadoFin))} sub={resultadoFin>=0?"superávit":"déficit"} color={resultadoFin>=0?T.accent:T.danger} icon="-"/>
                   <KCard label="Saldo em caixa" value={fmt(saldoCaixaReal)} sub="todas as contas" color={T.info} icon="-" onClick={()=>{setTab("financeiro-modulo");setFinTab("visao");}} hint="Ver contas -"/>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
@@ -6918,7 +6930,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   <div style={{display:"flex",flexDirection:"column",gap:12}}>
                     <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16}}>
                       <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,marginBottom:10}}>DRE — {mesAtual}</div>
-                      {[{l:"Receita bruta",v:receitaReal,c:T.accent},{l:"Despesas totais",v:-despesaReal,c:T.danger},{l:"Resultado líquido",v:receitaReal-despesaReal,c:receitaReal>despesaReal?T.accent:T.danger}].map((k,i)=>(
+                      {[{l:"Receita bruta",v:receitaFin,c:T.accent},{l:"Despesas totais",v:-despesaFin,c:T.danger},{l:"Resultado líquido",v:receitaFin-despesaFin,c:receitaFin>despesaFin?T.accent:T.danger}].map((k,i)=>(
                         <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${T.border}`}}>
                           <span style={{fontSize:10,color:T.soft}}>{k.l}</span>
                           <span style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:k.c,fontSize:12}}>{k.v<0?"-":""}{fmtK(Math.abs(k.v))}</span>
@@ -6958,14 +6970,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   ))}
                 </div>
               </div>
-            );
+              );
+            };
 
             // -- DASH OPERACIONAL --
             const DashOperacional=()=>{
-              const campsGrafica=camps.filter(c=>c.stage===2);
-              const campsLogistica=camps.filter(c=>c.stage===3);
+              const fCampsOp=dashFiltro.etapa==="grafica"?fCamps.filter(c=>c.stage===2):dashFiltro.etapa==="logistica"?fCamps.filter(c=>c.stage===3):dashFiltro.etapa==="checking"?fCamps.filter(c=>c.stage===4):fCamps;
+              const campsGrafica=fCampsOp.filter(c=>c.stage===2);
+              const campsLogistica=fCampsOp.filter(c=>c.stage===3);
               return(
-                <div>{FiltroBar}
+                <div><FiltroBar campos={["periodo","etapa"]}/>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
                     <KCard label="Em gráfica" value={campsGrafica.length} sub="aguardando impressão" color={T.purple} icon="-"/>
                     <KCard label="Em logística" value={campsLogistica.length} sub="em distribuição" color={T.warn} icon="-"/>
@@ -7002,11 +7016,12 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             // -- DASH BASE --
             const DashBase=()=>{
               // Dados filtrados do Pipeline
-              const pipeAbordados=fPipe.filter(l=>l.etapa==="abordado").length;
-              const pipeRespondeu=fPipe.filter(l=>l.etapa==="respondeu").length;
-              const pipeInteressado=fPipe.filter(l=>l.etapa==="interessado").length;
-              const pipeConvertido=fPipe.filter(l=>l.etapa==="convertido").length;
-              const pipeTotal2=fPipe.length;
+              const fPipeB=dashFiltro.status_lead==="todos"?fPipe:fPipe.filter(l=>l.etapa===dashFiltro.status_lead);
+              const pipeAbordados=fPipeB.filter(l=>l.etapa==="abordado").length;
+              const pipeRespondeu=fPipeB.filter(l=>l.etapa==="respondeu").length;
+              const pipeInteressado=fPipeB.filter(l=>l.etapa==="interessado").length;
+              const pipeConvertido=fPipeB.filter(l=>l.etapa==="convertido").length;
+              const pipeTotal2=fPipeB.length;
               const taxa=pipeTotal2>0?Math.round((pipeConvertido/pipeTotal2)*100):0;
               // Parceiros filtrados
               const parcAtivos=fParc.filter(p=>p.status==="ativo").length;
@@ -7014,10 +7029,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
               const parcContrat=fParc.filter(p=>p.contrato?.status==="assinado").length;
               const scoreMedio=fParc.length>0?Math.round(fParc.reduce((a,p)=>a+(p.score||0),0)/fParc.length):0;
               // Pipeline por membro (dinâmico dos usuários)
-              const membros=[...new Set(fPipe.map(l=>l.responsavel).filter(Boolean))];
-              const porMembro=membros.map(m=>({nome:m,total:fPipe.filter(l=>l.responsavel===m).length,convertidos:fPipe.filter(l=>l.responsavel===m&&l.etapa==="convertido").length})).filter(m=>m.total>0).sort((a,b)=>b.total-a.total);
+              const membros=[...new Set(fPipeB.map(l=>l.responsavel).filter(Boolean))];
+              const porMembro=membros.map(m=>({nome:m,total:fPipeB.filter(l=>l.responsavel===m).length,convertidos:fPipeB.filter(l=>l.responsavel===m&&l.etapa==="convertido").length})).filter(m=>m.total>0).sort((a,b)=>b.total-a.total);
               return(
-                <div>{FiltroBar}
+                <div><FiltroBar campos={["cidade","uf","segmento","status_lead"]}/>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:12}}>
                     <KCard label="Na base" value={fParc.length} sub={filtrosAtivos?"filtrado":"total parceiros"} color={T.info} icon="-" onClick={()=>setTab("base")} hint="Ver base -"/>
                     <KCard label="Ativos" value={parcAtivos} sub={`${parcContrat} contratados`} color={T.accent} icon="-"/>
@@ -7081,17 +7096,17 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             const DashGerenteBase=()=>{
               const parseD=s=>{if(!s)return null;const d=s.includes("-")?new Date(s):new Date(s.split("/").reverse().join("-"));return isNaN(d)?null:d;};
               const diasAteD=s=>{const d=parseD(s);return d?Math.ceil((d-new Date())/86400000):null;};
-              const campsLogistica=camps.filter(c=>c.stage===3);
-              const campsVeiculando=camps.filter(c=>c.stage===6);
-              const contratosExp30=basePartners.filter(p=>{const d=diasAteD(p.contrato?.expiraEm);return d!==null&&d>=0&&d<=30;});
-              const teamTasks=camps.flatMap(c=>{
+              const campsLogistica=fCamps.filter(c=>c.stage===3);
+              const campsVeiculando=fCamps.filter(c=>c.stage===6);
+              const contratosExp30=fParc.filter(p=>{const d=diasAteD(p.contrato?.expiraEm);return d!==null&&d>=0&&d<=30;});
+              const teamTasks=fCamps.flatMap(c=>{
                 const baseTasks=(c.tasks?.base||[]).map(t=>({...t,sector:"base",campName:c.name,campId:c.id}));
                 const logTasks=(c.tasks?.logistica||[]).map(t=>({...t,sector:"logistica",campName:c.name,campId:c.id}));
                 return [...baseTasks,...logTasks];
               }).filter(t=>!t.done);
-              const contratosExp60=basePartners.filter(p=>{const d=diasAteD(p.contrato?.expiraEm);return d!==null&&d>=0&&d<=60;}).map(p=>({...p,dias:diasAteD(p.contrato?.expiraEm)})).sort((a,b)=>a.dias-b.dias);
+              const contratosExp60=fParc.filter(p=>{const d=diasAteD(p.contrato?.expiraEm);return d!==null&&d>=0&&d<=60;}).map(p=>({...p,dias:diasAteD(p.contrato?.expiraEm)})).sort((a,b)=>a.dias-b.dias);
               return(
-                <div>{FiltroBar}
+                <div><FiltroBar campos={["cidade","uf","segmento","responsavel_base"]}/>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
                     <KCard label="Em Logística" value={campsLogistica.length} sub="campanhas na etapa" color={T.warn} icon="-" onClick={()=>setTab("campanhas")} hint="Ver campanhas -"/>
                     <KCard label="Veiculando" value={campsVeiculando.length} sub="campanhas ativas" color={"#0EA5E9"} icon="-" onClick={()=>setTab("campanhas")} hint="Ver campanhas -"/>
@@ -7177,29 +7192,65 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             const leadsTotal=fPipe.length;
             const taxaConvDash=leadsTotal>0?Math.round((leadsConvertidos/leadsTotal)*100):0;
 
-            // -- BARRA DE FILTROS (reutilizada em todos os dashboards) --
+            // -- BARRA DE FILTROS (por dashboard) --
             const selSF={background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"5px 9px",fontSize:10,color:T.text,outline:"none",cursor:"pointer"};
-            const FiltroBar=(
+            const responsaveisBaseDisp=[...new Set(users.filter(u=>["base","gerente_base"].includes(u.role)&&u.active).map(u=>u.name).filter(Boolean))].sort();
+            const FiltroBar=({campos=["periodo","uf","cidade","segmento","responsavel"]})=>(
               <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"10px 16px",marginBottom:16,display:"flex",flexWrap:"wrap",gap:8,alignItems:"center"}}>
                 <span style={{fontSize:9,color:T.muted,textTransform:"uppercase",letterSpacing:1,fontWeight:700,marginRight:2}}>Filtros</span>
-                <div style={{display:"flex",alignItems:"center",gap:5}}>
-                  <span style={{fontSize:9,color:T.muted}}>De</span>
-                  <input type="date" value={dashFiltro.inicio} onChange={e=>setDashFiltro(p=>({...p,inicio:e.target.value}))} style={selSF}/>
-                  <span style={{fontSize:9,color:T.muted}}>até</span>
-                  <input type="date" value={dashFiltro.fim} onChange={e=>setDashFiltro(p=>({...p,fim:e.target.value}))} style={selSF}/>
-                </div>
-                <FilterCombobox options={ufsDisp} value={dashFiltro.uf} onChange={v=>setDashFiltro(p=>({...p,uf:v,cidade:"todos"}))} placeholder="Estado (UF)" allLabel="Todos estados"/>
-                <FilterCombobox options={cidadesDisp} value={dashFiltro.cidade} onChange={v=>setDashFiltro(p=>({...p,cidade:v}))} placeholder="Cidade" allLabel="Todas cidades"/>
-                <FilterCombobox options={SEGMENTOS_PARCEIRO} value={dashFiltro.segmento} onChange={v=>setDashFiltro(p=>({...p,segmento:v}))} placeholder="Segmento" allLabel="Todos segmentos"/>
-                <FilterCombobox options={responsaveisDisp} value={dashFiltro.responsavel} onChange={v=>setDashFiltro(p=>({...p,responsavel:v}))} placeholder="Responsável" allLabel="Todos"/>
-                {filtrosAtivos&&<button onClick={()=>setDashFiltro(p=>({...p,uf:"todos",cidade:"todos",segmento:"todos",responsavel:"todos"}))} style={{padding:"4px 10px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,fontSize:9,cursor:"pointer",fontWeight:700}}>✕ Limpar</button>}
+                {campos.includes("periodo")&&(
+                  <div style={{display:"flex",alignItems:"center",gap:5}}>
+                    <span style={{fontSize:9,color:T.muted}}>De</span>
+                    <input type="date" value={dashFiltro.inicio} onChange={e=>setDashFiltro(p=>({...p,inicio:e.target.value}))} style={selSF}/>
+                    <span style={{fontSize:9,color:T.muted}}>até</span>
+                    <input type="date" value={dashFiltro.fim} onChange={e=>setDashFiltro(p=>({...p,fim:e.target.value}))} style={selSF}/>
+                  </div>
+                )}
+                {campos.includes("uf")&&<FilterCombobox options={ufsDisp} value={dashFiltro.uf} onChange={v=>setDashFiltro(p=>({...p,uf:v,cidade:"todos"}))} placeholder="Estado (UF)" allLabel="Todos estados"/>}
+                {campos.includes("cidade")&&<FilterCombobox options={cidadesDisp} value={dashFiltro.cidade} onChange={v=>setDashFiltro(p=>({...p,cidade:v}))} placeholder="Cidade" allLabel="Todas cidades"/>}
+                {campos.includes("segmento")&&<FilterCombobox options={SEGMENTOS_PARCEIRO} value={dashFiltro.segmento} onChange={v=>setDashFiltro(p=>({...p,segmento:v}))} placeholder="Segmento" allLabel="Todos segmentos"/>}
+                {campos.includes("responsavel")&&<FilterCombobox options={responsaveisDisp} value={dashFiltro.responsavel} onChange={v=>setDashFiltro(p=>({...p,responsavel:v}))} placeholder="Responsável" allLabel="Todos"/>}
+                {campos.includes("responsavel_base")&&<FilterCombobox options={responsaveisBaseDisp} value={dashFiltro.responsavel} onChange={v=>setDashFiltro(p=>({...p,responsavel:v}))} placeholder="Responsável (Base)" allLabel="Todos"/>}
+                {campos.includes("tipo")&&(
+                  <select value={dashFiltro.tipo} onChange={e=>setDashFiltro(p=>({...p,tipo:e.target.value}))} style={selSF}>
+                    <option value="todos">Tipo: Todos</option>
+                    <option value="receita">Receita</option>
+                    <option value="despesa">Despesa</option>
+                  </select>
+                )}
+                {campos.includes("status_financeiro")&&(
+                  <select value={dashFiltro.status_financeiro} onChange={e=>setDashFiltro(p=>({...p,status_financeiro:e.target.value}))} style={selSF}>
+                    <option value="todos">Status: Todos</option>
+                    <option value="pago">Pago</option>
+                    <option value="em_aberto">Em aberto</option>
+                    <option value="vencido">Vencido</option>
+                  </select>
+                )}
+                {campos.includes("etapa")&&(
+                  <select value={dashFiltro.etapa} onChange={e=>setDashFiltro(p=>({...p,etapa:e.target.value}))} style={selSF}>
+                    <option value="todos">Etapa: Todas</option>
+                    <option value="grafica">Gráfica</option>
+                    <option value="logistica">Logística</option>
+                    <option value="checking">Checking</option>
+                  </select>
+                )}
+                {campos.includes("status_lead")&&(
+                  <select value={dashFiltro.status_lead} onChange={e=>setDashFiltro(p=>({...p,status_lead:e.target.value}))} style={selSF}>
+                    <option value="todos">Status: Todos</option>
+                    <option value="abordado">Abordado</option>
+                    <option value="respondeu">Respondeu</option>
+                    <option value="interessado">Interessado</option>
+                    <option value="convertido">Convertido</option>
+                  </select>
+                )}
+                {filtrosAtivos&&<button onClick={()=>setDashFiltro(p=>({...p,uf:"todos",cidade:"todos",segmento:"todos",responsavel:"todos",tipo:"todos",status_financeiro:"todos",etapa:"todos",status_lead:"todos"}))} style={{padding:"4px 10px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,fontSize:9,cursor:"pointer",fontWeight:700}}>✕ Limpar</button>}
                 {filtrosAtivos&&<span style={{fontSize:9,color:T.accent,fontWeight:700,background:T.accentDim,padding:"4px 10px",borderRadius:6,border:`1px solid ${T.accentBorder}`}}>⚡ Dados filtrados</span>}
               </div>
             );
 
             const DashGeral=()=>(
               <div>
-                {FiltroBar}
+                <FiltroBar campos={["periodo","uf","cidade"]}/>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
                   <div>
                     <div style={{fontFamily:"Arial,sans-serif",fontWeight:800,fontSize:18}}>Dashboard</div>
@@ -7221,7 +7272,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   <KCard label="Campanhas ativas" value={campsAtivas.length} sub="em andamento" color={T.purple} icon="-" onClick={()=>setTab("campanhas")} hint="Ver campanhas -"/>
                   <KCard label="Leads convertidos" value={leadsConvertidos} sub={`${taxaConvDash}% de conversão`} color={T.accent} icon="-" onClick={()=>{setTab("base");setBaseTab("pipeline");}} hint="Ver pipeline -"/>
                   <KCard label="Leads em negociação" value={leadsAtivos} sub="respondeu + interesse" color={T.warn} icon="-" onClick={()=>{setTab("base");setBaseTab("pipeline");}} hint="Ver pipeline -"/>
-                  <KCard label="Conversas WhatsApp" value={waConversas.filter(c=>c.status!=="encerrado").length} sub="ativas" color={T.green} icon="-" onClick={()=>setTab("whatsapp")} hint="Ver conversas -"/>
+                  <KCard label="Conversas WhatsApp" value={waConversas.filter(c=>c.status!=="encerrado"&&(!dfIni||!c.created_at||(new Date(c.created_at)>=dfIni&&(!dfFim||new Date(c.created_at)<=dfFim)))).length} sub="ativas" color={T.green} icon="-" onClick={()=>setTab("whatsapp")} hint="Ver conversas -"/>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:12}}>
                   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20}}>
@@ -7413,16 +7464,18 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
             // -- RENDER by role --
             const DashRepresentante=()=>{
-              const meusPros=prospects.filter(p=>p.owner===user.name);
+              const meusPros=prospects.filter(p=>p.owner===user.name&&inPeriod(p.createdAt||p.created_at));
               const meusFechados=meusPros.filter(p=>p.stage==="fechado");
               const receitaGerada=meusFechados.reduce((a,p)=>a+(p.value||0),0);
               const pipeline=meusPros.filter(p=>p.stage!=="fechado").reduce((a,p)=>a+(p.value||0),0);
               const META_REP=user.meta||10000;
               const myComm=closings.filter(c=>c.userId===user.id);
               const comAprovada=myComm.filter(c=>c.status==="aprovado"&&!c.pago).reduce((a,c)=>a+c.value,0);
-              const campsAtivas=camps.filter(c=>c.stage<6);
+              const campsAtivas=fCamps.filter(c=>c.stage<6);
               const pct=META_REP>0?Math.min(Math.round(receitaGerada/META_REP*100),100):0;
               return(
+                <div>
+                <FiltroBar campos={["periodo"]}/>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
                   <KCard label="Pipeline ativo" value={fmt(pipeline)} sub={`${meusPros.filter(p=>p.stage!=="fechado").length} prospects`} color={T.info} icon="-"/>
                   <KCard label="Receita gerada" value={fmt(receitaGerada)} sub={`${meusFechados.length} fechados`} color={T.accent} icon="-"/>
@@ -7449,11 +7502,12 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     </div>
                   )}
                 </div>
+                </div>
               );
             };
 
             if(user.role==="admin"){
-              const DASH_TABS=[["geral","Geral"],["comercial","Comercial"],["marketing","Marketing"],["financeiro","Financeiro"],["operacional","Operacional"],["base","Base"]];
+              const DASH_TABS=[["geral","Geral"],["comercial","Comercial"],["marketing","Marketing"],["financeiro","Financeiro"],["operacional","Operacional"],["base","Base"],["gerente_base","Ger. Base"]];
               return(
                 <div>
                   <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid ${T.border}`}}>
@@ -7467,6 +7521,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   {dashTab==="financeiro"&&<DashFinanceiro/>}
                   {dashTab==="operacional"&&<DashOperacional/>}
                   {dashTab==="base"&&<DashBase/>}
+                  {dashTab==="gerente_base"&&<DashGerenteBase/>}
                 </div>
               );
             }
