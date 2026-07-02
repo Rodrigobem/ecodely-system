@@ -1463,18 +1463,6 @@ const hashPass=async(pass)=>{
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
 };
 
-// fetch com timeout — usado nas chamadas ao proxy de instâncias WhatsApp (VPS Evolution API)
-// pra nunca deixar uma tela travada em "Carregando..." caso o servidor esteja fora do ar/lento
-const fetchComTimeout=async(url,opts={},ms=6000)=>{
-  const controller=new AbortController();
-  const timeoutId=setTimeout(()=>controller.abort(),ms);
-  try{
-    return await fetch(url,{...opts,signal:controller.signal});
-  }finally{
-    clearTimeout(timeoutId);
-  }
-};
-
 const GaleriaItem=({g,onRemove,editable=false})=>{
   const[playing,setPlaying]=useState(false);
   const embed=toEmbedUrl(g.url);
@@ -3818,16 +3806,10 @@ function WhatsAppInstanciasPanel({supabase,allUsers,waInstancias,setWaInstancias
 
   const loadInstancias=async()=>{
     setLoading(true);
-    let data=null;
+    const{data}=await supabase.from("wa_instancias").select("*").order("criado_em",{ascending:false});
+    setWaInstancias(data||[]);
     try{
-      const res=await supabase.from("wa_instancias").select("*").order("criado_em",{ascending:false});
-      data=res.data;
-      setWaInstancias(data||[]);
-    }catch(e){console.error("wa_instancias select:",e.message);}
-    // status ao vivo é um "nice to have" — se o Evolution API (VPS) estiver fora do ar/lento,
-    // nunca pode travar a tela: timeout curto + fallback silencioso pro status já salvo no banco
-    try{
-      const r=await fetchComTimeout("/api/whatsapp/instance",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"status"})},6000);
+      const r=await fetch("/api/whatsapp/instance",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"status"})});
       const{instances}=await r.json();
       if(Array.isArray(instances)&&instances.length>0&&Array.isArray(data)){
         for(const row of data){
@@ -3843,8 +3825,8 @@ function WhatsAppInstanciasPanel({supabase,allUsers,waInstancias,setWaInstancias
           }
         }
       }
-    }catch(e){console.error("status instancias (Evolution API indisponível/lenta):",e.message);}
-    finally{setLoading(false);}
+    }catch(e){console.error("status instancias:",e.message);}
+    setLoading(false);
   };
 
   if(waInstancias.length===0&&!loading) loadInstancias();
@@ -3856,22 +3838,21 @@ function WhatsAppInstanciasPanel({supabase,allUsers,waInstancias,setWaInstancias
   const conectar=async(inst)=>{
     setActionLoading(inst.instancia_nome);
     try{
-      const r=await fetchComTimeout("/api/whatsapp/instance",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"connect",instanceName:inst.instancia_nome})},8000);
+      const r=await fetch("/api/whatsapp/instance",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"connect",instanceName:inst.instancia_nome})});
       const data=await r.json();
       if(data.base64) setQrModal({instancia_nome:inst.instancia_nome,base64:data.base64});
-      else console.error("connect: resposta sem QR code",data);
-    }catch(e){console.error("connect (Evolution API indisponível/lenta):",e.message);}
-    finally{setActionLoading(null);}
+    }catch(e){console.error("connect:",e.message);}
+    setActionLoading(null);
   };
   const desconectar=async(inst)=>{
     if(!confirm(`Desconectar ${inst.instancia_nome}?`))return;
     setActionLoading(inst.instancia_nome);
     try{
-      await fetchComTimeout("/api/whatsapp/instance",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"logout",instanceName:inst.instancia_nome})},8000);
+      await fetch("/api/whatsapp/instance",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"logout",instanceName:inst.instancia_nome})});
       await supabase.from("wa_instancias").update({status:"desconectado"}).eq("id",inst.id);
       setWaInstancias(p=>p.map(x=>x.id===inst.id?{...x,status:"desconectado"}:x));
-    }catch(e){console.error("logout (Evolution API indisponível/lenta):",e.message);}
-    finally{setActionLoading(null);}
+    }catch(e){console.error("logout:",e.message);}
+    setActionLoading(null);
   };
 
   return(
@@ -6660,8 +6641,8 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     if(["base","gerente_base"].includes(roleToSave)){
       const instanciaNome="ecodely_"+rec.id;
       try{
-        await fetchComTimeout("/api/whatsapp/instance",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"create",instanceName:instanciaNome})},8000);
-      }catch(e){console.error("Erro ao criar instância WhatsApp (Evolution API indisponível/lenta):",e.message);}
+        await fetch("/api/whatsapp/instance",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"create",instanceName:instanciaNome})});
+      }catch(e){console.error("Erro ao criar instância WhatsApp:",e.message);}
       const instRec={id:Date.now()+1,user_id:rec.id,instancia_nome:instanciaNome,status:"desconectado"};
       setWaInstancias(p=>[...p,instRec]);
       await supabase.from("wa_instancias").insert(instRec);
