@@ -5028,11 +5028,13 @@ export default function App(){
       await dedupToRole("gerente_base","grafica_ok",`🖨️ *Gráfica finalizada!*\n*${camp.name}*\nMaterial pronto para logística.`);
       await dedup(wC,"grafica_ok_c",`🖨️ *Gráfica finalizada!*\n*${camp.name}*\nMaterial em produção concluído.`);
       await dedupToRole("financeiro","grafica_ok",`🖨️ *Gráfica finalizada!*\n*${camp.name}*\nVerificar pagamento da gráfica.`);
+      await dedupToRole("comercial","grafica_ok",`🖨️ *Gráfica finalizada!*\n*${camp.name}*\nMaterial pronto — logística em andamento.`);
     }
     if(stageId===4){
       await dedupToRole("gerente_base","entrega",`🚚 *Entrega confirmada!*\n*${camp.name}*\nMaterial entregue aos parceiros.`);
       await dedup(wC,"entrega_c",`🚚 *Entrega confirmada!*\n*${camp.name}*\nCampanha iniciada!`);
       await dedupToRole("financeiro","entrega",`🚚 *Entrega confirmada!*\n*${camp.name}*\nVerificar pagamento da transportadora.`);
+      await dedupToRole("comercial","entrega",`🚚 *Entrega confirmada!*\n*${camp.name}*\nMaterial entregue aos parceiros — campanha no ar!`);
     }
   };
 
@@ -5296,6 +5298,7 @@ export default function App(){
         const msgCheckin=`📸 *Check-in recebido!*\n*${prevCampImp.name}*\nEvidências dos parceiros disponíveis no sistema.`;
         if(wC)sendWhatsAppNotif(wC,msgCheckin);
         sendWhatsAppNotifToRole("gerente_base",msgCheckin);
+        sendWhatsAppNotifToRole("comercial",msgCheckin);
       }
     }
   };
