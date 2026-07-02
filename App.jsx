@@ -142,7 +142,7 @@ const getNav=(role,queueCount,notifCount,extraRoles=[])=>[
   {id:"relatorios",label:"Relatórios",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base","gerente_base"]},
   {id:"cadastros",label:"Cadastros",icon:"-",roles:["admin","comercial","operacional","gerente_base"]},
   {id:"whatsapp",label:"WhatsApp IA",icon:"-",roles:["admin","comercial","base","gerente_base"]},
-  {id:"usuarios",label:"Usuários",icon:"-",roles:["admin"]},
+  {id:"usuarios",label:"Usuários",icon:"-",roles:["admin","gerente_base"]},
   {id:"organograma",label:"Organograma",icon:"◈",roles:["admin"]},
 ].filter(n=>n.roles.includes(role)||extraRoles.some(r=>n.roles.includes(r)));
 
@@ -6275,12 +6275,18 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
 
   const addUser=async()=>{
     if(!newUser.name||!newUser.email||!newUser.pass)return;
-    const passHash=await hashPass(newUser.pass);
-    const rec={id:Date.now(),...newUser,pass:passHash,avatar:newUser.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2),active:true,lastAccess:"nunca"};
+    const passPlain=newUser.pass;
+    const passHash=await hashPass(passPlain);
+    const roleToSave=user.role==="gerente_base"?"base":newUser.role;
+    const rec={id:Date.now(),...newUser,role:roleToSave,pass:passHash,avatar:newUser.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2),active:true,lastAccess:"nunca"};
     setUsers(p=>[...p,rec]);
     setNewUser({name:"",email:"",pass:"",role:"base",regiao:[],comissao_pct:5,whatsapp:"",cargo:"",tipo_contrato:""});setShowNewUser(false);
     const{error}=await supabase.from("usuarios").insert(rec);
-    if(error)console.error("SUPABASE addUser erro:",error.message,error.details);
+    if(error){console.error("SUPABASE addUser erro:",error.message,error.details);return;}
+    if(rec.whatsapp){
+      const msgBV=`👋 *Bem-vindo(a) à Ecodely!*\n\nSeu acesso ao sistema foi criado.\n\n🔗 *Link:* https://ecodely-sistema.vercel.app\n📧 *Email:* ${rec.email}\n🔑 *Senha:* ${passPlain}\n\nEm caso de dúvidas, fale com sua gestora. 🚀`;
+      await sendWhatsAppNotif(rec.whatsapp,msgBV);
+    }
   };
 
   // -- LOGIN ------------------------------------------------------------------
@@ -12198,19 +12204,22 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             const ABAS=[["pessoal","Pessoal"],["contato","Contato"],["endereco","Endereço"],["profissional","Profissional"],["docs","Documentos"]];
             const tcAtual=userFichaModal?FD("tipo_contrato"):"";
             return(<div>
-              {user.role==="admin"&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}><button className="btn" onClick={()=>setShowNewUser(true)} style={{padding:"8px 18px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>+ Novo Usuário</button></div>}
-              {showNewUser&&user.role==="admin"&&(
+              {["admin","gerente_base"].includes(user.role)&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}><button className="btn" onClick={()=>setShowNewUser(true)} style={{padding:"8px 18px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>+ Novo Usuário</button></div>}
+              {showNewUser&&["admin","gerente_base"].includes(user.role)&&(
                 <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:18,marginBottom:16}} className="fade">
-                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,marginBottom:12,fontSize:13}}>Novo Usuário</div>
+                  <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,color:T.accent,marginBottom:12,fontSize:13}}>Novo Usuário{user.role==="gerente_base"&&<span style={{fontSize:10,color:T.muted,fontWeight:400,marginLeft:8}}>· Perfil fixo: Base</span>}</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
                     {[["Nome *","name","text"],["E-mail *","email","email"],["Senha *","pass","password"],["Cargo","cargo","text"],["WhatsApp","whatsapp","tel"]].map(([l,k,t])=>(
                       <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}</div><input type={t} value={newUser[k]||""} onChange={e=>setNewUser(p=>({...p,[k]:k==="whatsapp"?e.target.value.replace(/\D/g,""):e.target.value}))} style={inpS}/></div>
                     ))}
-                    <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Perfil</div><select value={newUser.role} onChange={e=>setNewUser(p=>({...p,role:e.target.value}))} style={selS}>{Object.entries(ROLE_LABELS).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
-                    <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Tipo Contrato</div><select value={newUser.tipo_contrato||""} onChange={e=>setNewUser(p=>({...p,tipo_contrato:e.target.value}))} style={selS}><option value="">—</option>{["CLT","PJ","Freelancer","Estágio","Sócio"].map(t=><option key={t} value={t}>{t}</option>)}</select></div>
-                    {newUser.role==="representante"&&<div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Comissão (%)</div><input type="number" min="0" max="100" step="0.5" value={newUser.comissao_pct} onChange={e=>setNewUser(p=>({...p,comissao_pct:Number(e.target.value)}))} style={inpS}/></div>}
+                    {user.role==="admin"
+                      ?<><div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Perfil</div><select value={newUser.role} onChange={e=>setNewUser(p=>({...p,role:e.target.value}))} style={selS}>{Object.entries(ROLE_LABELS).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
+                        <div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Tipo Contrato</div><select value={newUser.tipo_contrato||""} onChange={e=>setNewUser(p=>({...p,tipo_contrato:e.target.value}))} style={selS}><option value="">—</option>{["CLT","PJ","Freelancer","Estágio","Sócio"].map(t=><option key={t} value={t}>{t}</option>)}</select></div>
+                        {newUser.role==="representante"&&<div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Comissão (%)</div><input type="number" min="0" max="100" step="0.5" value={newUser.comissao_pct} onChange={e=>setNewUser(p=>({...p,comissao_pct:Number(e.target.value)}))} style={inpS}/></div>}</>
+                      :<div><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Tipo Contrato</div><select value={newUser.tipo_contrato||""} onChange={e=>setNewUser(p=>({...p,tipo_contrato:e.target.value}))} style={selS}><option value="">—</option>{["CLT","PJ","Freelancer","Estágio","Sócio"].map(t=><option key={t} value={t}>{t}</option>)}</select></div>
+                    }
                   </div>
-                  {newUser.role==="representante"&&<div style={{marginBottom:10}}><div style={{fontSize:9,color:T.muted,marginBottom:6,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Regiões de atuação</div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"].map(uf=>{const s=(newUser.regiao||[]).includes(uf);return(<div key={uf} onClick={()=>setNewUser(p=>({...p,regiao:s?p.regiao.filter(r=>r!==uf):[...(p.regiao||[]),uf]}))} style={{fontSize:10,padding:"3px 9px",borderRadius:5,cursor:"pointer",border:`1px solid ${s?"#F59E0B66":T.border}`,background:s?"#F59E0B22":T.surface,color:s?"#F59E0B":T.muted,fontFamily:"Arial,sans-serif",fontWeight:s?700:400}}>{uf}</div>);})}</div></div>}
+                  {user.role==="admin"&&newUser.role==="representante"&&<div style={{marginBottom:10}}><div style={{fontSize:9,color:T.muted,marginBottom:6,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Regiões de atuação</div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"].map(uf=>{const s=(newUser.regiao||[]).includes(uf);return(<div key={uf} onClick={()=>setNewUser(p=>({...p,regiao:s?p.regiao.filter(r=>r!==uf):[...(p.regiao||[]),uf]}))} style={{fontSize:10,padding:"3px 9px",borderRadius:5,cursor:"pointer",border:`1px solid ${s?"#F59E0B66":T.border}`,background:s?"#F59E0B22":T.surface,color:s?"#F59E0B":T.muted,fontFamily:"Arial,sans-serif",fontWeight:s?700:400}}>{uf}</div>);})}</div></div>}
                   <div style={{display:"flex",gap:8}}><button className="btn" onClick={addUser} style={{padding:"8px 16px",background:T.accent,color:"#000",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>Criar</button><button className="btn" onClick={()=>setShowNewUser(false)} style={{padding:"8px 12px",background:T.card,border:`1px solid ${T.border}`,color:T.muted,borderRadius:7,fontSize:11}}>Cancelar</button></div>
                 </div>
               )}
