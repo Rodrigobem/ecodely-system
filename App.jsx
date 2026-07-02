@@ -126,8 +126,30 @@ const BASE_PARTNERS_INIT=[];
 const CONTRATO_COLOR={"sem contrato":T.muted,"pendente":T.warn,"assinado":T.accent,"expirando":T.danger,"expirado":T.danger};
 const STATUS_PARTNER={"prospectado":T.info,"negociando":T.warn,"ativo":T.accent,"inativo":T.muted};
 
+// --- PERM MATRIX -------------------------------------------------------------
+const PERM_MATRIX={
+  admin:{dashboard:"full","minha-fila":"full",campanhas:"full",calendario:"full",operacoes:"full","financeiro-modulo":"full",comercial:"full",comissoes:"full",parceiros:"full",base:"full","planejamento-midia":"full",relatorios:"full",cadastros:"full",whatsapp:"full",usuarios:"full",organograma:"full"},
+  gerente_base:{dashboard:"full","minha-fila":"full",campanhas:"full",calendario:"full",operacoes:"full",comissoes:"full",parceiros:"full",base:"full","planejamento-midia":"full",relatorios:"read",cadastros:"full",whatsapp:"full",usuarios:"full",organograma:"full"},
+  base:{dashboard:"full","minha-fila":"full",base:"full",parceiros:"full",comissoes:"full",whatsapp:"full"},
+  financeiro:{dashboard:"full","minha-fila":"full","financeiro-modulo":"full",relatorios:"read"},
+  marketing:{dashboard:"full","minha-fila":"full",campanhas:"read",comissoes:"full"},
+  comercial:{dashboard:"full","minha-fila":"full",comercial:"full",campanhas:"full","planejamento-midia":"full",comissoes:"full"},
+  representante:{dashboard:"full","minha-fila":"full",comercial:"read",campanhas:"read","planejamento-midia":"full",comissoes:"full"},
+  operacional:{dashboard:"full","minha-fila":"full",campanhas:"full",calendario:"full",operacoes:"full",relatorios:"full",cadastros:"full"},
+};
+const PERM_SCREENS=[
+  {id:"dashboard",label:"Dashboard"},{id:"minha-fila",label:"Minha Fila"},
+  {id:"campanhas",label:"Campanhas"},{id:"calendario",label:"Calendário"},
+  {id:"operacoes",label:"Operações"},{id:"financeiro-modulo",label:"Financeiro"},
+  {id:"comercial",label:"Comercial"},{id:"comissoes",label:"Comissões"},
+  {id:"parceiros",label:"Buscar Parceiros"},{id:"base",label:"Base"},
+  {id:"planejamento-midia",label:"Planejamento de Mídia"},{id:"relatorios",label:"Relatórios"},
+  {id:"cadastros",label:"Cadastros"},{id:"whatsapp",label:"WhatsApp IA"},
+  {id:"usuarios",label:"Usuários"},{id:"organograma",label:"Organograma"},
+];
+
 // --- NAV ---------------------------------------------------------------------
-const getNav=(role,queueCount,notifCount,extraRoles=[])=>[
+const getNav=(role,queueCount,notifCount,extraRoles=[],permissoesCustom=null)=>[
   {id:"dashboard",label:"Dashboard",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base","representante","gerente_base"]},
   {id:"minha-fila",label:"Minha Fila",icon:"-",roles:["comercial","operacional","marketing","financeiro","base","admin","gerente_base"],badge:queueCount||null},
   {id:"campanhas",label:"Campanhas",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","representante","gerente_base"]},
@@ -144,7 +166,7 @@ const getNav=(role,queueCount,notifCount,extraRoles=[])=>[
   {id:"whatsapp",label:"WhatsApp IA",icon:"-",roles:["admin","comercial","base","gerente_base"]},
   {id:"usuarios",label:"Usuários",icon:"-",roles:["admin","gerente_base"]},
   {id:"organograma",label:"Organograma",icon:"◈",roles:["admin"]},
-].filter(n=>n.roles.includes(role)||extraRoles.some(r=>n.roles.includes(r)));
+].filter(n=>{if(permissoesCustom&&Object.keys(permissoesCustom).length>0)return permissoesCustom[n.id]===true;return n.roles.includes(role)||extraRoles.some(r=>n.roles.includes(r));});
 
 // --- HELPERS -----------------------------------------------------------------
 const Badge=({label,color})=>(<span style={{fontSize:9,padding:"2px 8px",borderRadius:4,background:color+"22",color,border:`1px solid ${color}33`,fontFamily:"Arial,sans-serif",whiteSpace:"nowrap"}}>{label}</span>);
@@ -4590,6 +4612,7 @@ export default function App(){
   const[newComm,setNewComm]=useState({typeId:"",projectId:"",value:""});
   const[users,setUsers]=useState(USERS_DB);
   const[showNewUser,setShowNewUser]=useState(false);
+  const[userPermEdit,setUserPermEdit]=useState(null);
   const[newUser,setNewUser]=useState({name:"",email:"",pass:"",role:"base",regiao:[],comissao_pct:5,whatsapp:"",cargo:"",tipo_contrato:""});
   const[editingUserId,setEditingUserId]=useState(null);
   const[editingUserData,setEditingUserData]=useState({});
@@ -4914,7 +4937,7 @@ export default function App(){
   const pipeTotal=prospects.reduce((a,p)=>a+(p.value||0),0);
   const forecastTotal=prospects.reduce((a,p)=>{const s=PIPE_STAGES.find(x=>x.id===p.stage);return a+(p.value||0)*(s?.prob||0)/100;},0);
 
-  const nav=user?getNav(user.role,pendingQueue.length,0,user.extraRoles||[]):[];
+  const nav=user?getNav(user.role,pendingQueue.length,0,user.extraRoles||[],user.permissoes_custom||null):[];
   const TemaSelector=()=>(<div style={{display:"flex",gap:4,alignItems:"center"}}>
     {Object.entries(THEMES).map(([k,v])=>(
       <button key={k} onClick={()=>setTema(k)} title={v.name} style={{width:20,height:20,borderRadius:"50%",border:tema===k?"3px solid #fff":"2px solid transparent",cursor:"pointer",background:v.bg==="transparent"?v.surface:v.bg,outline:tema===k?"2px solid "+v.accent:"none",outlineOffset:1,transition:"all .2s"}}/>
@@ -12170,7 +12193,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             const podeDadosBancarios=(tu)=>user.role==="admin"||tu.id===user.id;
             const visibleUsers=users.filter(u=>user.role==="admin"||(user.role==="gerente_base"&&(u.role==="base"||u.id===user.id))||u.id===user.id);
             const salvarFicha=async()=>{const updated={...userFichaModal,...userFichaData};setUsers(p=>p.map(x=>x.id===userFichaModal.id?updated:x));if(userFichaModal.id===user.id)setUser(p=>({...p,...userFichaData}));await supabase.from("usuarios").update(userFichaData).eq("id",userFichaModal.id);setUserFichaModal(updated);setUserFichaEditMode(false);pushNotif("Ficha salva","Dados atualizados",T.accent);};
-            const abrirFicha=(u)=>{setUserFichaModal(u);setUserFichaData({});setUserFichaAba("pessoal");setUserFichaEditMode(false);};
+            const abrirFicha=(u)=>{setUserFichaModal(u);setUserFichaData({});setUserFichaAba("pessoal");setUserFichaEditMode(false);setUserPermEdit(u.permissoes_custom?{...u.permissoes_custom}:null);};
             const uploadFotoUsuario=async(file)=>{
               if(!file||!userFichaModal)return;
               const uid=userFichaModal.id;
@@ -12201,7 +12224,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
             const rhI={...inpS,fontSize:12,padding:"7px 10px",width:"100%",boxSizing:"border-box"};
             const rhS={...selS,fontSize:12,padding:"7px 10px",width:"100%",boxSizing:"border-box"};
             const FL=l=><div style={{fontSize:9,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}</div>;
-            const ABAS=[["pessoal","Pessoal"],["contato","Contato"],["endereco","Endereço"],["profissional","Profissional"],["docs","Documentos"]];
+            const ABAS=[["pessoal","Pessoal"],["contato","Contato"],["endereco","Endereço"],["profissional","Profissional"],["docs","Documentos"],["permissoes","🔐 Permissões"]];
             const tcAtual=userFichaModal?FD("tipo_contrato"):"";
             return(<div>
               {["admin","gerente_base"].includes(user.role)&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}><button className="btn" onClick={()=>setShowNewUser(true)} style={{padding:"8px 18px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",borderRadius:8,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:11}}>+ Novo Usuário</button></div>}
@@ -12306,6 +12329,59 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           :<div style={{gridColumn:"1/-1",padding:"12px 14px",background:T.surface,borderRadius:8,fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>Dados bancários visíveis apenas para admin e o próprio colaborador.</div>
                         }
                       </div>}
+                      {userFichaAba==="permissoes"&&(()=>{
+                        const roleTarget=userFichaModal.role;
+                        const defaults=PERM_MATRIX[roleTarget]||{};
+                        const canEdit=user.role==="admin";
+                        const pc=userPermEdit;
+                        const hasCustom=pc&&Object.keys(pc).length>0;
+                        const getAccess=(id)=>{if(hasCustom)return pc[id]===true?"full":pc[id]===false?"none":null;return defaults[id]||"none";};
+                        const accessIcon=(a)=>a==="full"?"✅":a==="read"?"👁️":"❌";
+                        const salvarPermissoes=async()=>{
+                          const payload=pc&&Object.keys(pc).length>0?pc:null;
+                          await supabase.from("usuarios").update({permissoes_custom:payload}).eq("id",userFichaModal.id);
+                          const updated={...userFichaModal,permissoes_custom:payload};
+                          setUsers(p=>p.map(x=>x.id===userFichaModal.id?updated:x));
+                          setUserFichaModal(updated);
+                          if(userFichaModal.id===user.id)setUser(p=>({...p,permissoes_custom:payload}));
+                          pushNotif("Permissões salvas","Acesso do usuário atualizado",T.accent);
+                        };
+                        const restaurar=async()=>{
+                          setUserPermEdit(null);
+                          await supabase.from("usuarios").update({permissoes_custom:null}).eq("id",userFichaModal.id);
+                          const updated={...userFichaModal,permissoes_custom:null};
+                          setUsers(p=>p.map(x=>x.id===userFichaModal.id?updated:x));
+                          setUserFichaModal(updated);
+                          if(userFichaModal.id===user.id)setUser(p=>({...p,permissoes_custom:null}));
+                          pushNotif("Permissões restauradas","Usando padrões do perfil",T.warn);
+                        };
+                        return(<div>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                            <div>
+                              <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:13}}>Permissões de acesso</div>
+                              <div style={{fontSize:10,color:T.muted,marginTop:2}}>Perfil base: <strong style={{color:ROLE_COLOR[roleTarget]||T.muted}}>{ROLE_LABELS[roleTarget]||roleTarget}</strong>{hasCustom&&<span style={{marginLeft:8,fontSize:9,color:T.warn,border:`1px solid ${T.warn}44`,borderRadius:4,padding:"1px 6px"}}>⚠ Customizado</span>}</div>
+                            </div>
+                            {canEdit&&<div style={{display:"flex",gap:8}}>
+                              {hasCustom&&<button onClick={restaurar} style={{padding:"6px 12px",background:"transparent",border:`1px solid ${T.warn}66`,color:T.warn,borderRadius:7,fontSize:10,cursor:"pointer",fontFamily:"Arial,sans-serif"}}>Restaurar padrão</button>}
+                              <button onClick={salvarPermissoes} style={{padding:"6px 14px",background:T.accent,border:"none",color:"#000",borderRadius:7,fontSize:10,cursor:"pointer",fontFamily:"Arial,sans-serif",fontWeight:700}}>Salvar permissões</button>
+                            </div>}
+                          </div>
+                          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                            {PERM_SCREENS.map(s=>{
+                              const defAccess=defaults[s.id]||"none";
+                              const curAccess=hasCustom?(pc[s.id]===true?"full":pc[s.id]===false?"none":defAccess):defAccess;
+                              const isOn=curAccess!=="none";
+                              return(<div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:8,background:isOn?T.accentDim+"55":T.surface,border:`1px solid ${isOn?T.accentBorder:T.border}`}}>
+                                <span style={{fontSize:13,width:20,textAlign:"center"}}>{isOn?(defAccess==="read"&&!hasCustom?"👁️":"✅"):"❌"}</span>
+                                <span style={{flex:1,fontSize:11,fontFamily:"Arial,sans-serif",color:isOn?T.text:T.muted}}>{s.label}</span>
+                                {defAccess==="read"&&!hasCustom&&<span style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>somente leitura</span>}
+                                {canEdit&&<button onClick={()=>{const next=!isOn;setUserPermEdit(prev=>{const base=prev?{...prev}:{};PERM_SCREENS.forEach(x=>{if(!(x.id in base))base[x.id]=!!(defaults[x.id]&&defaults[x.id]!=="none");});base[s.id]=next;return base;});}} style={{padding:"3px 10px",borderRadius:5,fontSize:9,fontWeight:700,cursor:"pointer",border:"none",background:isOn?T.danger+"22":T.accent+"22",color:isOn?T.danger:T.accent,fontFamily:"Arial,sans-serif"}}>{isOn?"Revogar":"Conceder"}</button>}
+                              </div>);
+                            })}
+                          </div>
+                          {!canEdit&&<div style={{marginTop:12,padding:"8px 12px",background:T.surface,borderRadius:8,fontSize:10,color:T.muted,fontFamily:"Arial,sans-serif"}}>Somente administradores podem editar permissões.</div>}
+                        </div>);
+                      })()}
                       {userFichaAba==="docs"&&<div style={{display:"flex",flexDirection:"column",gap:16}}>
                         {[["link_documentos","Link de Documentos (Drive, Dropbox, etc.)"],["link_contrato","Link do Contrato"]].map(([k,l])=>(
                           <div key={k}><div style={{fontSize:9,color:T.muted,marginBottom:6,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>{l}</div><div style={{display:"flex",gap:8}}><input value={FD(k)} onChange={e=>setFD(k,e.target.value)} disabled={!userFichaEditMode} placeholder="https://..." style={{...rhI,flex:1,width:"auto",opacity:userFichaEditMode?1:0.75}}/>{(userFichaData[k]||userFichaModal[k])&&<a href={userFichaData[k]||userFichaModal[k]} target="_blank" rel="noopener noreferrer" style={{padding:"7px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,fontSize:10,textDecoration:"none",display:"flex",alignItems:"center",whiteSpace:"nowrap"}}>Abrir</a>}</div></div>
