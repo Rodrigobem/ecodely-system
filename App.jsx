@@ -154,6 +154,41 @@ const UFS_BR=["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","
 const CIDADE_NORM={"Sao Paulo":"São Paulo","São paulo":"São Paulo","SP Capital":"São Paulo","S. Paulo":"São Paulo","S.Paulo":"São Paulo","Sao paulo":"São Paulo","SAO PAULO":"São Paulo","Rio de janeiro":"Rio de Janeiro","RJ Capital":"Rio de Janeiro","Rio":"Rio de Janeiro","Belo horizonte":"Belo Horizonte","BH":"Belo Horizonte","Porto alegre":"Porto Alegre","POA":"Porto Alegre","Floripa":"Florianópolis","florianopolis":"Florianópolis","Florianopolis":"Florianópolis","Goiania":"Goiânia","Goiânia":"Goiânia","Sao Luis":"São Luís","Joao Pessoa":"João Pessoa","Joao pessoa":"João Pessoa","Sao Jose dos Campos":"São José dos Campos","Sao Bernardo":"São Bernardo do Campo","ABC":"São Bernardo do Campo"};
 const normalizarCidade=city=>CIDADE_NORM[city]||city;
 
+// --- FILTER COMBOBOX ----------------------------------------------------------
+function FilterCombobox({options,value,onChange,placeholder,allLabel="Todos"}){
+  const [open,setOpen]=useState(false);
+  const [search,setSearch]=useState("");
+  const ref=useRef(null);
+  useEffect(()=>{
+    if(!open)return;
+    const h=e=>{if(ref.current&&!ref.current.contains(e.target)){setOpen(false);setSearch("");}};
+    document.addEventListener("mousedown",h);
+    return()=>document.removeEventListener("mousedown",h);
+  },[open]);
+  const hasVal=value&&value!=="todos";
+  const inputVal=open?search:(hasVal?value:"");
+  const filtered=options.filter(o=>!search||o.toLowerCase().includes(search.toLowerCase()));
+  const handleSelect=v=>{onChange(v);setSearch("");setOpen(false);};
+  return(
+    <div ref={ref} style={{position:"relative",minWidth:130}}>
+      <div style={{display:"flex",alignItems:"center",background:T.bg,border:`1px solid ${open?T.accent:T.border}`,borderRadius:7,overflow:"hidden"}}>
+        <input value={inputVal} onChange={e=>setSearch(e.target.value)} onFocus={()=>{setOpen(true);setSearch("");}} placeholder={placeholder} style={{flex:1,background:"transparent",border:"none",outline:"none",padding:"5px 9px",fontSize:10,color:hasVal&&!open?T.accent:T.text,minWidth:0,fontWeight:hasVal&&!open?600:400,cursor:"pointer"}}/>
+        {hasVal&&!open&&<button onMouseDown={e=>{e.stopPropagation();onChange("todos");setSearch("");}} style={{padding:"0 6px",background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:10,lineHeight:1,flexShrink:0}}>✕</button>}
+        <span style={{padding:"0 7px",color:T.muted,fontSize:8,userSelect:"none",flexShrink:0}}>{open?"▲":"▼"}</span>
+      </div>
+      {open&&(
+        <div style={{position:"absolute",top:"calc(100% + 3px)",left:0,minWidth:"100%",background:T.card,border:`1px solid ${T.border}`,borderRadius:8,zIndex:9999,maxHeight:220,overflowY:"auto",boxShadow:"0 6px 20px rgba(0,0,0,0.22)"}}>
+          <div onMouseDown={()=>handleSelect("todos")} style={{padding:"7px 12px",fontSize:10,cursor:"pointer",color:T.muted,borderBottom:`1px solid ${T.border}`,fontStyle:"italic"}}>{allLabel}</div>
+          {filtered.length===0
+            ?<div style={{padding:"8px 12px",fontSize:10,color:T.muted,fontStyle:"italic"}}>Nenhuma opção encontrada</div>
+            :filtered.map(o=><div key={o} onMouseDown={()=>handleSelect(o)} style={{padding:"7px 12px",fontSize:10,cursor:"pointer",color:o===value?T.accent:T.text,background:o===value?T.accentDim:"transparent",fontWeight:o===value?700:400}}>{o}</div>)
+          }
+        </div>
+      )}
+    </div>
+  );
+}
+
 // --- NAV ---------------------------------------------------------------------
 const getNav=(role,queueCount,notifCount,extraRoles=[],permissoesCustom=null)=>[
   {id:"dashboard",label:"Dashboard",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base","representante","gerente_base"]},
@@ -7153,22 +7188,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                   <span style={{fontSize:9,color:T.muted}}>até</span>
                   <input type="date" value={dashFiltro.fim} onChange={e=>setDashFiltro(p=>({...p,fim:e.target.value}))} style={selSF}/>
                 </div>
-                <select value={dashFiltro.uf} onChange={e=>setDashFiltro(p=>({...p,uf:e.target.value,cidade:"todos"}))} style={selSF}>
-                  <option value="todos">Todos estados</option>
-                  {ufsDisp.map(uf=><option key={uf}>{uf}</option>)}
-                </select>
-                <select value={dashFiltro.cidade} onChange={e=>setDashFiltro(p=>({...p,cidade:e.target.value}))} style={selSF}>
-                  <option value="todos">Todas cidades</option>
-                  {cidadesDisp.map(c=><option key={c}>{c}</option>)}
-                </select>
-                <select value={dashFiltro.segmento} onChange={e=>setDashFiltro(p=>({...p,segmento:e.target.value}))} style={selSF}>
-                  <option value="todos">Todos segmentos</option>
-                  {SEGMENTOS_PARCEIRO.map(s=><option key={s}>{s}</option>)}
-                </select>
-                <select value={dashFiltro.responsavel} onChange={e=>setDashFiltro(p=>({...p,responsavel:e.target.value}))} style={selSF}>
-                  <option value="todos">Todos responsáveis</option>
-                  {responsaveisDisp.map(r=><option key={r}>{r}</option>)}
-                </select>
+                <FilterCombobox options={ufsDisp} value={dashFiltro.uf} onChange={v=>setDashFiltro(p=>({...p,uf:v,cidade:"todos"}))} placeholder="Estado (UF)" allLabel="Todos estados"/>
+                <FilterCombobox options={cidadesDisp} value={dashFiltro.cidade} onChange={v=>setDashFiltro(p=>({...p,cidade:v}))} placeholder="Cidade" allLabel="Todas cidades"/>
+                <FilterCombobox options={SEGMENTOS_PARCEIRO} value={dashFiltro.segmento} onChange={v=>setDashFiltro(p=>({...p,segmento:v}))} placeholder="Segmento" allLabel="Todos segmentos"/>
+                <FilterCombobox options={responsaveisDisp} value={dashFiltro.responsavel} onChange={v=>setDashFiltro(p=>({...p,responsavel:v}))} placeholder="Responsável" allLabel="Todos"/>
                 {filtrosAtivos&&<button onClick={()=>setDashFiltro(p=>({...p,uf:"todos",cidade:"todos",segmento:"todos",responsavel:"todos"}))} style={{padding:"4px 10px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,fontSize:9,cursor:"pointer",fontWeight:700}}>✕ Limpar</button>}
                 {filtrosAtivos&&<span style={{fontSize:9,color:T.accent,fontWeight:700,background:T.accentDim,padding:"4px 10px",borderRadius:6,border:`1px solid ${T.accentBorder}`}}>⚡ Dados filtrados</span>}
               </div>
