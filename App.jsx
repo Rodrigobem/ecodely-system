@@ -148,6 +148,11 @@ const PERM_SCREENS=[
   {id:"usuarios",label:"Usuários"},{id:"organograma",label:"Organograma"},
 ];
 
+// --- PARCEIROS LISTAS ---------------------------------------------------------
+const SEGMENTOS_PARCEIRO=["Japonesa","Italiana","Brasileira","Árabe","Mexicana","Chinesa","Fast Food","Pizza","Hamburguer","Sushi","Frutos do Mar","Vegetariana/Vegana","Churrasco","Lanches","Doces/Sobremesas","Cafeteria","Padaria","Fitness/Saudável","Variado","Outro"];
+const CIDADE_NORM={"Sao Paulo":"São Paulo","São paulo":"São Paulo","SP Capital":"São Paulo","S. Paulo":"São Paulo","S.Paulo":"São Paulo","Sao paulo":"São Paulo","SAO PAULO":"São Paulo","Rio de janeiro":"Rio de Janeiro","RJ Capital":"Rio de Janeiro","Rio":"Rio de Janeiro","Belo horizonte":"Belo Horizonte","BH":"Belo Horizonte","Porto alegre":"Porto Alegre","POA":"Porto Alegre","Floripa":"Florianópolis","florianopolis":"Florianópolis","Florianopolis":"Florianópolis","Goiania":"Goiânia","Goiânia":"Goiânia","Sao Luis":"São Luís","Joao Pessoa":"João Pessoa","Joao pessoa":"João Pessoa","Sao Jose dos Campos":"São José dos Campos","Sao Bernardo":"São Bernardo do Campo","ABC":"São Bernardo do Campo"};
+const normalizarCidade=city=>CIDADE_NORM[city]||city;
+
 // --- NAV ---------------------------------------------------------------------
 const getNav=(role,queueCount,notifCount,extraRoles=[],permissoesCustom=null)=>[
   {id:"dashboard",label:"Dashboard",icon:"-",roles:["admin","comercial","operacional","marketing","financeiro","base","representante","gerente_base"]},
@@ -9361,7 +9366,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Segmento / Culinária *</div>
                             <select value={selPartner.category||""} onChange={e=>setSelPartner(p=>({...p,category:e.target.value}))} style={inpS}>
                               <option value="">Selecione...</option>
-                              {["Japonesa","Italiana","Brasileira","Árabe","Mexicana","Chinesa","Fast Food","Pizza","Hamburguer","Sushi","Frutos do Mar","Vegetariana/Vegana","Churrasco","Lanches","Doces/Sobremesas","Cafeteria","Padaria","Fitness/Saudável","Variado","Outro"].map(s=><option key={s} value={s}>{s}</option>)}
+                              {SEGMENTOS_PARCEIRO.map(s=><option key={s} value={s}>{s}</option>)}
                             </select>
                           </div>
                           <div>
@@ -9796,11 +9801,11 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     </select>
                     <select value={baseCidade} onChange={e=>setBaseCidade(e.target.value)} style={{...selS,width:"auto"}}>
                       <option value="todos">Todas cidades</option>
-                      {[...new Set(basePartners.filter(p=>baseEstado==="todos"||p.state===baseEstado).map(p=>p.city).filter(Boolean))].sort().map(c=><option key={c}>{c}</option>)}
+                      {[...new Set(basePartners.filter(p=>baseEstado==="todos"||p.state===baseEstado).map(p=>normalizarCidade(p.city)).filter(Boolean))].sort().map(c=><option key={c}>{c}</option>)}
                     </select>
                     <select value={baseSegmento} onChange={e=>setBaseSegmento(e.target.value)} style={{...selS,width:"auto"}}>
                       <option value="todos">Todos segmentos</option>
-                      {[...new Set(basePartners.map(p=>p.category).filter(Boolean))].sort().map(s=><option key={s}>{s}</option>)}
+                      {(()=>{const existSegs=new Set(basePartners.map(p=>p.category).filter(Boolean));return[...SEGMENTOS_PARCEIRO.filter(s=>existSegs.has(s)),...[...existSegs].filter(s=>!SEGMENTOS_PARCEIRO.includes(s)).sort()];})().map(s=><option key={s}>{s}</option>)}
                     </select>
                     </div>
                     <button onClick={()=>setSelPartner({id:Date.now(),name:"",handle:"",city:"",state:"",category:"",deliveries:0,status:"prospectado",mesesNaBase:0,campanhas:0,engajamento:2,avaliacaoGoogle:0,avaliacaoIfood:0,contrato:{status:"sem contrato",enviadoEm:null,assinadoEm:null,expiraEm:null},whatsapp:"",instagram_seguidores:0,foto_fachada:"",address:"",_isNew:true})} style={{padding:"7px 16px",background:`linear-gradient(135deg,${T.accent},#00B87A)`,color:"#000",border:"none",borderRadius:7,fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:10,cursor:"pointer",whiteSpace:"nowrap"}}>+ Novo Parceiro</button>
@@ -9812,7 +9817,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                     {basePartners.filter(p=>{
                       const ms=baseFilter==="todos"||p.status===baseFilter;
                       const mEstado=baseEstado==="todos"||p.state===baseEstado;
-                      const mCidade=baseCidade==="todos"||p.city===baseCidade;
+                      const mCidade=baseCidade==="todos"||normalizarCidade(p.city)===baseCidade;
                       const mSeg=baseSegmento==="todos"||p.category===baseSegmento;
                       const mq=p.name.toLowerCase().includes(baseSearch.toLowerCase())||p.handle.toLowerCase().includes(baseSearch.toLowerCase());
                       const ms2=p.score>=baseScoreMin;
