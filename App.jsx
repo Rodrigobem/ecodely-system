@@ -3309,20 +3309,11 @@ return(
 // ---------------------------------------------------------------------------
 // WHATSAPP PANEL — componente próprio (evita side effect em IIFE)
 // ---------------------------------------------------------------------------
-function WhatsAppPanel({supabase,waConversas,setWaConversas,waMensagens,setWaMensagens,waSelConv,setWaSelConv,waInput,setWaInput,waLoading,setWaLoading,waFiltro,setWaFiltro,waNovoNumero,setWaNovoNumero,waNovoModo,setWaNovoModo,waInstancias,setWaInstancias,simMsgs,setSimMsgs,simInput,setSimInput,simLoading,setSimLoading,simModo,setSimModo,simStarted,setSimStarted,user,allUsers,basePartners,pipeLeads,pushNotif,getWhatsappByRole,setTab,setBaseTab,T}){
+function WhatsAppPanel({supabase,waConversas,setWaConversas,waMensagens,setWaMensagens,waSelConv,setWaSelConv,waInput,setWaInput,waLoading,setWaLoading,waFiltro,setWaFiltro,waNovoNumero,setWaNovoNumero,waNovoModo,setWaNovoModo,simMsgs,setSimMsgs,simInput,setSimInput,simLoading,setSimLoading,simModo,setSimModo,simStarted,setSimStarted,T}){
 // Estados locais de feedback
 const[showFeedbacks,setShowFeedbacks]=useState(false);
 const[feedbacks,setFeedbacks]=useState([]);
 const[feedbacksLoading,setFeedbacksLoading]=useState(false);
-// Estados da caixa de entrada unificada (Fase 1 CRM multiagente)
-const[waFiltroAtendente,setWaFiltroAtendente]=useState("todos");
-const[waFiltroEtiqueta,setWaFiltroEtiqueta]=useState("");
-const[waFiltroInstancia,setWaFiltroInstancia]=useState(null);
-const[showEtiquetas,setShowEtiquetas]=useState(false);
-const[etiquetasInput,setEtiquetasInput]=useState("");
-const[showNota,setShowNota]=useState(false);
-const[notaTemp,setNotaTemp]=useState("");
-const[showTransferir,setShowTransferir]=useState(false);
 // Scroll automático do simulador
 useEffect(()=>{
   const el=document.getElementById("sim-bottom");
@@ -3352,137 +3343,26 @@ const enviarManual=async()=>{
   if(!waInput.trim()||!waSelConv)return;
   const msg=waInput.trim();
   setWaInput("");
-  const instanciaEnvio=waSelConv.instancia||"victoria";
   // Otimista: adicionar na tela
   const temp={id:Date.now(),conversa_id:waSelConv.id,role:"assistant",conteudo:msg,criado_em:new Date().toISOString()};
   setWaMensagens(p=>[...p,temp]);
-  await fetch("/api/whatsapp/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({number:waSelConv.numero,text:msg,instance:instanciaEnvio})});
-  // Persiste no banco — sem isso a resposta some ao recarregar e ninguém mais vê na caixa unificada
-  await supabase.from("wa_mensagens").insert({conversa_id:waSelConv.id,role:"assistant",conteudo:msg});
-  const agora=new Date().toISOString();
-  await supabase.from("wa_conversas").update({atualizado_em:agora}).eq("id",waSelConv.id);
-  setWaConversas(p=>p.map(c=>c.id===waSelConv.id?{...c,atualizado_em:agora}:c));
+  await fetch("/api/whatsapp/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({number:waSelConv.numero,text:msg})});
 };
 const iniciarConversa=async()=>{
   if(!waNovoNumero.trim())return;
   const num=waNovoNumero.replace(/\D/g,"");
-  const instanciaAtual=user&&user.role==="base"?"ecodely_"+user.id:"victoria";
-  const{data}=await supabase.from("wa_conversas").upsert({numero:num,modo:waNovoModo,status:"novo",instancia:instanciaAtual},{onConflict:"numero,instancia"}).select().single();
+  const{data}=await supabase.from("wa_conversas").upsert({numero:num,modo:waNovoModo,status:"novo"},{onConflict:"numero"}).select().single();
   if(data){setWaConversas(p=>[data,...p.filter(c=>c.id!==data.id)]);selecionarConversa(data);}
   setWaNovoNumero("");
 };
 
-// Normaliza número pra comparar entre formatos com/sem DDI 55
-const normNum=(v)=>{
-  if(!v) return "";
-  const d=String(v).replace(/\D/g,"");
-  return d.length>11&&d.startsWith("55")?d.slice(2):d;
-};
-const findParceiro=(conv)=>(basePartners||[]).find(p=>{const w=p?.whatsapp||p?.data?.whatsapp;return w&&normNum(w)===normNum(conv.numero);});
-const findLead=(conv)=>(pipeLeads||[]).find(l=>l?.telefone&&normNum(l.telefone)===normNum(conv.numero));
-const getAtendente=(conv)=>(allUsers||[]).find(u=>u.id===conv.atendente_id);
-const semResposta=(conv)=>conv.status==="aguardando"&&conv.atualizado_em&&(Date.now()-new Date(conv.atualizado_em).getTime())>2*60*60*1000;
-// Visibilidade por papel: admin vê tudo, gerente_base vê o setor base (+ Maya), base só a própria instância
-const podeVer=(conv)=>{
-  if(!user||user.role==="admin") return true;
-  if(user.role==="gerente_base") return conv.instancia==="victoria"||(conv.instancia||"").startsWith("ecodely_");
-  if(user.role==="base") return conv.instancia==="ecodely_"+user.id;
-  return true;
-};
-
-const salvarEtiquetas=async(texto)=>{
-  const lista=texto.split(",").map(s=>s.trim()).filter(Boolean);
-  await supabase.from("wa_conversas").update({etiquetas:lista}).eq("id",waSelConv.id);
-  setWaSelConv(p=>({...p,etiquetas:lista}));
-  setWaConversas(p=>p.map(c=>c.id===waSelConv.id?{...c,etiquetas:lista}:c));
-  setShowEtiquetas(false);
-};
-const salvarNota=async()=>{
-  await supabase.from("wa_conversas").update({notas_internas:notaTemp}).eq("id",waSelConv.id);
-  setWaSelConv(p=>({...p,notas_internas:notaTemp}));
-  setWaConversas(p=>p.map(c=>c.id===waSelConv.id?{...c,notas_internas:notaTemp}:c));
-  setShowNota(false);
-};
-const transferirPara=async(novoUserId)=>{
-  const anterior=getAtendente(waSelConv);
-  await supabase.from("wa_conversas").update({atendente_id:novoUserId,transferido_de:anterior?.name||null}).eq("id",waSelConv.id);
-  setWaSelConv(p=>({...p,atendente_id:novoUserId,transferido_de:anterior?.name||null}));
-  setWaConversas(p=>p.map(c=>c.id===waSelConv.id?{...c,atendente_id:novoUserId,transferido_de:anterior?.name||null}:c));
-  setShowTransferir(false);
-};
-const finalizarConversa=async()=>{
-  const agora=new Date().toISOString();
-  await supabase.from("wa_conversas").update({status:"finalizado",finalizado_em:agora}).eq("id",waSelConv.id);
-  setWaSelConv(p=>({...p,status:"finalizado",finalizado_em:agora}));
-  setWaConversas(p=>p.map(c=>c.id===waSelConv.id?{...c,status:"finalizado",finalizado_em:agora}:c));
-};
-const adicionarComoLead=async()=>{
-  const rec={nome:waSelConv.nome||waSelConv.numero,responsavel:user?.name||"Sistema",telefone:waSelConv.numero,etapa:"abordado",origem:"whatsapp_humano"};
-  const{data}=await supabase.from("pipeline_leads").insert(rec).select().single();
-  if(data){
-    await supabase.from("wa_conversas").update({lead_id:data.id}).eq("id",waSelConv.id);
-    setWaSelConv(p=>({...p,lead_id:data.id}));
-    setWaConversas(p=>p.map(c=>c.id===waSelConv.id?{...c,lead_id:data.id}:c));
-    pushNotif&&pushNotif("Lead criado","Adicionado ao pipeline de conversão",T.accent);
-  }
-};
-
-const STATUS_COLOR={"novo":T.info,"em_andamento":T.warn,"aguardando":T.purple,"em_atendimento":T.warn,"convertido":T.accent,"finalizado":T.muted,"encerrado":T.muted};
-const STATUS_LABEL={"novo":"Novo","em_andamento":"Em andamento","aguardando":"Aguardando","em_atendimento":"Em atendimento","convertido":"Convertido","finalizado":"Finalizado","encerrado":"Encerrado"};
-const MODO_COLOR={"prospecto":T.info,"parceiro":T.accent,"equipe":T.purple,"cobranca":T.warn,"lead":T.pink,"desconhecido":T.muted};
-const convsFilt=waConversas.filter(podeVer)
-  .filter(c=>waFiltro==="todos"?true:c.status===waFiltro)
-  .filter(c=>waFiltroAtendente==="todos"?true:c.atendente_id===waFiltroAtendente)
-  .filter(c=>waFiltroEtiqueta?(c.etiquetas||[]).includes(waFiltroEtiqueta):true)
-  .filter(c=>waFiltroInstancia?c.instancia===waFiltroInstancia:true);
-const setorAtendentes=(allUsers||[]).filter(u=>["base","gerente_base"].includes(u.role)&&u.active!==false);
+const STATUS_COLOR={"novo":T.info,"em_andamento":T.warn,"aguardando":T.purple,"convertido":T.accent,"encerrado":T.muted};
+const STATUS_LABEL={"novo":"Novo","em_andamento":"Em andamento","aguardando":"Aguardando","convertido":"Convertido","encerrado":"Encerrado"};
+const MODO_COLOR={"prospecto":T.info,"parceiro":T.accent,"equipe":T.purple,"cobranca":T.warn};
+const convsFilt=waFiltro==="todos"?waConversas:waConversas.filter(c=>c.status===waFiltro);
 
 // Carregar ao montar
 if(waConversas.length===0&&!waLoading) loadConversas();
-
-// Polling leve (sem Realtime no projeto ainda) + alerta de conversa sem resposta há 2h+
-useEffect(()=>{
-  const interval=setInterval(()=>{
-    loadConversas();
-    if(user&&["admin","gerente_base"].includes(user.role)){
-      const hoje=new Date().toISOString().slice(0,10);
-      waConversas.filter(podeVer).filter(semResposta).forEach(c=>{
-        const chave=`wa_alerta_${c.id}_${hoje}`;
-        if(!localStorage.getItem(chave)){
-          localStorage.setItem(chave,"1");
-          const atendenteNome=getAtendente(c)?.name||"—";
-          const msg=`⚠️ Conversa sem resposta há 2h+\nContato: ${c.nome||c.numero}\nAtendente: ${atendenteNome}`;
-          (getWhatsappByRole?getWhatsappByRole("gerente_base"):[]).forEach(num=>{
-            fetch("/api/whatsapp/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({number:num,text:msg})});
-          });
-        }
-      });
-    }
-  },15000);
-  return()=>clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-},[waConversas,user]);
-
-const subTabs=[["conversas","Conversas"],["simulador","🧪 Simulador"]];
-if(user&&["admin","gerente_base"].includes(user.role)) subTabs.push(["instancias","⚙️ Instâncias"]);
-const subTabBar=(
-  <div style={{display:"flex",gap:4,marginBottom:10}}>
-    {subTabs.map(([v,l])=>{
-      const ativo=v==="conversas"?!["simulador","instancias"].includes(waFiltro):waFiltro===v;
-      return <button key={v} onClick={()=>setWaFiltro(v==="conversas"?"todos":v)} style={{padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:600,cursor:"pointer",border:`1px solid ${ativo?T.accentBorder:T.border}`,background:ativo?T.accentDim:"transparent",color:ativo?T.accent:T.muted}}>{l}</button>;
-    })}
-  </div>
-);
-
-if(waFiltro==="instancias"){
-  return(
-    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
-      <div style={{padding:"14px 16px",borderBottom:`1px solid ${T.border}`}}>{subTabBar}</div>
-      <WhatsAppInstanciasPanel supabase={supabase} allUsers={allUsers} waInstancias={waInstancias} setWaInstancias={setWaInstancias} T={T}
-        onVerConversas={(inst)=>{setWaFiltroInstancia(inst);setWaFiltro("todos");}}/>
-    </div>
-  );
-}
 
 return(
 <div style={{display:"grid",gridTemplateColumns:"300px 1fr",gap:0,height:"calc(100vh - 120px)",background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
@@ -3496,7 +3376,11 @@ return(
         <button onClick={loadConversas} style={{background:"none",border:"none",color:T.muted,cursor:"pointer",fontSize:14}}>↻</button>
       </div>
       {/* Sub-tabs */}
-      {subTabBar}
+      <div style={{display:"flex",gap:4,marginBottom:10}}>
+        {[["conversas","Conversas"],["simulador","🧪 Simulador"]].map(([v,l])=>(
+          <button key={v} onClick={()=>setWaFiltro(v==="simulador"?"simulador":waFiltro==="simulador"?"todos":waFiltro)} style={{padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:600,cursor:"pointer",border:`1px solid ${(v==="simulador"?waFiltro==="simulador":waFiltro!=="simulador")?T.accentBorder:T.border}`,background:(v==="simulador"?waFiltro==="simulador":waFiltro!=="simulador")?T.accentDim:"transparent",color:(v==="simulador"?waFiltro==="simulador":waFiltro!=="simulador")?T.accent:T.muted}}>{l}</button>
+        ))}
+      </div>
       {/* Nova conversa */}
       <div style={{display:"flex",gap:4,marginBottom:8}}>
         <input value={waNovoNumero} onChange={e=>setWaNovoNumero(e.target.value)} placeholder="+5511999999999" onKeyDown={e=>e.key==="Enter"&&iniciarConversa()} style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"5px 8px",fontSize:10,color:T.text,outline:"none"}}/>
@@ -3508,30 +3392,17 @@ return(
         <button onClick={iniciarConversa} style={{padding:"5px 10px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer"}}>+</button>
       </div>
       {/* Filtros */}
-      <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>
-        {[["todos","Todos"],["aguardando","Aguardando"],["em_atendimento","Em atend."],["finalizado","Finalizado"],["novo","Novos"],["em_andamento","Ativos"],["convertido","Convertidos"],["encerrado","Enc."]].map(([v,l])=>(
+      <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+        {[["todos","Todos"],["novo","Novos"],["em_andamento","Ativos"],["convertido","Convertidos"],["encerrado","Enc."]].map(([v,l])=>(
           <button key={v} onClick={()=>setWaFiltro(v)} style={{padding:"3px 7px",borderRadius:4,fontSize:8,cursor:"pointer",border:`1px solid ${waFiltro===v?T.accentBorder:T.border}`,background:waFiltro===v?T.accentDim:"transparent",color:waFiltro===v?T.accent:T.muted}}>{l}</button>
         ))}
       </div>
-      {setorAtendentes.length>0&&(
-        <div style={{display:"flex",gap:4}}>
-          <select value={waFiltroAtendente} onChange={e=>setWaFiltroAtendente(e.target.value==="todos"?"todos":Number(e.target.value))} style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"4px 6px",fontSize:9,color:T.text,outline:"none"}}>
-            <option value="todos">Todos atendentes</option>
-            {setorAtendentes.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
-          </select>
-          {waFiltroInstancia&&<button onClick={()=>setWaFiltroInstancia(null)} style={{padding:"4px 8px",fontSize:8,borderRadius:5,border:`1px solid ${T.border}`,background:"transparent",color:T.muted,cursor:"pointer"}}>✕ instância</button>}
-        </div>
-      )}
     </div>
     {/* Lista */}
     <div style={{flex:1,overflowY:"auto"}}>
       {waLoading&&<div style={{padding:20,textAlign:"center",color:T.muted,fontSize:11}}>Carregando...</div>}
       {!waLoading&&convsFilt.length===0&&<div style={{padding:20,textAlign:"center",color:T.muted,fontSize:11}}>Nenhuma conversa</div>}
-      {convsFilt.map(conv=>{
-        const parceiro=findParceiro(conv);
-        const lead=!parceiro&&findLead(conv);
-        const atendente=getAtendente(conv);
-        return(
+      {convsFilt.map(conv=>(
         <div key={conv.id} onClick={()=>selecionarConversa(conv)} style={{padding:"12px 14px",borderBottom:`1px solid ${T.border}`,cursor:"pointer",background:waSelConv?.id===conv.id?T.surface:"transparent",transition:"background 0.1s"}}
           onMouseEnter={e=>e.currentTarget.style.background=T.surface}
           onMouseLeave={e=>e.currentTarget.style.background=waSelConv?.id===conv.id?T.surface:"transparent"}>
@@ -3539,20 +3410,13 @@ return(
             <div style={{fontWeight:600,fontSize:11}}>{conv.nome||conv.numero}</div>
             <div style={{width:7,height:7,borderRadius:"50%",background:STATUS_COLOR[conv.status]||T.muted,flexShrink:0,marginTop:3}}/>
           </div>
-          <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+          <div style={{display:"flex",gap:4}}>
             <span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:(MODO_COLOR[conv.modo]||T.muted)+"22",color:MODO_COLOR[conv.modo]||T.muted}}>{conv.modo}</span>
             <span style={{fontSize:8,color:T.muted}}>{STATUS_LABEL[conv.status]||conv.status}</span>
-            {parceiro&&<span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:T.accentDim,color:T.accent,fontWeight:700}}>PARCEIRO</span>}
-            {lead&&<span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:T.pink+"22",color:T.pink,fontWeight:700}}>LEAD</span>}
-            {semResposta(conv)&&<span style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:T.dangerDim,color:T.danger,fontWeight:700}}>⚠️ Sem resposta</span>}
           </div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:2}}>
-            {conv.dados_lead?.tipo&&<div style={{fontSize:9,color:T.muted}}>{conv.dados_lead.tipo} · {conv.dados_lead.cidade}</div>}
-            {atendente&&<div title={atendente.name} style={{marginLeft:"auto",width:16,height:16,borderRadius:"50%",background:T.accentDim,color:T.accent,fontSize:7,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{atendente.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2)}</div>}
-          </div>
+          {conv.dados_lead?.tipo&&<div style={{fontSize:9,color:T.muted,marginTop:2}}>{conv.dados_lead.tipo} · {conv.dados_lead.cidade}</div>}
         </div>
-        );
-      })}
+      ))}
     </div>
     {/* Stats */}
     <div style={{padding:"10px 14px",borderTop:`1px solid ${T.border}`,display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
@@ -3707,62 +3571,18 @@ return(
   ):(
     <div style={{display:"flex",flexDirection:"column"}}>
       {/* Header chat */}
-      <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+      <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div>
           <div style={{fontWeight:700,fontSize:13}}>{waSelConv.nome||waSelConv.numero}</div>
-          <div style={{fontSize:10,color:T.muted}}>{waSelConv.numero} · <span style={{color:MODO_COLOR[waSelConv.modo]||T.muted}}>{waSelConv.modo}</span>{waSelConv.instancia&&<> · {waSelConv.instancia}</>}</div>
+          <div style={{fontSize:10,color:T.muted}}>{waSelConv.numero} · <span style={{color:MODO_COLOR[waSelConv.modo]||T.muted}}>{waSelConv.modo}</span></div>
         </div>
-        <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-          <div style={{padding:"3px 10px",borderRadius:5,fontSize:9,background:(STATUS_COLOR[waSelConv.status]||T.muted)+"22",color:STATUS_COLOR[waSelConv.status]||T.muted,fontWeight:700}}>{STATUS_LABEL[waSelConv.status]||waSelConv.status}</div>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          <div style={{padding:"3px 10px",borderRadius:5,fontSize:9,background:(STATUS_COLOR[waSelConv.status]||T.muted)+"22",color:STATUS_COLOR[waSelConv.status]||T.muted,fontWeight:700}}>{STATUS_LABEL[waSelConv.status]}</div>
           {waSelConv.status!=="convertido"&&["prospecto","parceiro"].includes(waSelConv.modo)&&(
             <button onClick={async()=>{await supabase.from("wa_conversas").update({status:"convertido",modo:"parceiro"}).eq("id",waSelConv.id);setWaSelConv(p=>({...p,status:"convertido",modo:"parceiro"}));setWaConversas(p=>p.map(c=>c.id===waSelConv.id?{...c,status:"convertido",modo:"parceiro"}:c));}} style={{padding:"3px 10px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:5,fontSize:9,fontWeight:700,cursor:"pointer"}}>✓ Converter</button>
           )}
-          <button onClick={()=>{setEtiquetasInput((waSelConv.etiquetas||[]).join(", "));setShowEtiquetas(true);}} style={{padding:"3px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.soft,borderRadius:5,fontSize:9,cursor:"pointer"}}>🏷️ Etiquetas</button>
-          <button onClick={()=>{setNotaTemp(waSelConv.notas_internas||"");setShowNota(true);}} style={{padding:"3px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.soft,borderRadius:5,fontSize:9,cursor:"pointer"}}>📝 Nota interna</button>
-          {setorAtendentes.length>0&&<button onClick={()=>setShowTransferir(true)} style={{padding:"3px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.soft,borderRadius:5,fontSize:9,cursor:"pointer"}}>↗️ Transferir</button>}
-          {waSelConv.status!=="finalizado"&&<button onClick={finalizarConversa} style={{padding:"3px 10px",background:T.dangerDim,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:5,fontSize:9,fontWeight:700,cursor:"pointer"}}>✅ Finalizar</button>}
         </div>
       </div>
-      {/* Ações de contato */}
-      <div style={{padding:"8px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-        {waSelConv.parceiro_id?(
-          <button onClick={()=>setTab&&setTab("base")} style={{padding:"3px 10px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:5,fontSize:9,cursor:"pointer"}}>👤 Ver parceiro</button>
-        ):waSelConv.lead_id?(
-          <button onClick={()=>{setTab&&setTab("base");setBaseTab&&setBaseTab("pipeline");}} style={{padding:"3px 10px",background:T.pink+"18",border:`1px solid ${T.pink}44`,color:T.pink,borderRadius:5,fontSize:9,cursor:"pointer"}}>📋 Ver lead</button>
-        ):(
-          <button onClick={adicionarComoLead} style={{padding:"3px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.soft,borderRadius:5,fontSize:9,cursor:"pointer"}}>+ Adicionar como lead</button>
-        )}
-        {(waSelConv.etiquetas||[]).map(tag=>(
-          <span key={tag} style={{fontSize:8,padding:"2px 7px",borderRadius:4,background:T.surface,border:`1px solid ${T.border}`,color:T.soft}}>{tag}</span>
-        ))}
-      </div>
-      {showEtiquetas&&(
-        <div style={{padding:"8px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",gap:6}}>
-          <input value={etiquetasInput} onChange={e=>setEtiquetasInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")salvarEtiquetas(etiquetasInput);}} placeholder="etiqueta1, etiqueta2..." autoFocus style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:10,color:T.text,outline:"none"}}/>
-          <button onClick={()=>salvarEtiquetas(etiquetasInput)} style={{padding:"6px 12px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,fontSize:10,cursor:"pointer"}}>Salvar</button>
-        </div>
-      )}
-      {showNota&&(
-        <div style={{padding:"8px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",flexDirection:"column",gap:6}}>
-          <textarea value={notaTemp} onChange={e=>setNotaTemp(e.target.value)} rows={2} placeholder="Nota interna (visível só pra equipe)..." style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:10,color:T.text,outline:"none",resize:"vertical"}}/>
-          <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
-            <button onClick={()=>setShowNota(false)} style={{padding:"5px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:9,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={salvarNota} style={{padding:"5px 10px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,fontSize:9,cursor:"pointer"}}>Salvar</button>
-          </div>
-        </div>
-      )}
-      {showTransferir&&(
-        <div style={{padding:"8px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",gap:6}}>
-          <select onChange={e=>e.target.value&&transferirPara(Number(e.target.value))} defaultValue="" style={{flex:1,background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 8px",fontSize:10,color:T.text,outline:"none"}}>
-            <option value="" disabled>Transferir para...</option>
-            {setorAtendentes.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
-          </select>
-          <button onClick={()=>setShowTransferir(false)} style={{padding:"6px 12px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:10,cursor:"pointer"}}>Cancelar</button>
-        </div>
-      )}
-      {waSelConv.notas_internas&&(
-        <div style={{padding:"8px 16px",background:T.warnDim,borderBottom:`1px solid ${T.border}`,fontSize:10,color:T.warn}}>📝 {waSelConv.notas_internas}</div>
-      )}
       {/* Dados do lead */}
       {waSelConv.dados_lead&&Object.keys(waSelConv.dados_lead).length>0&&(
         <div style={{padding:"8px 16px",background:T.accentDim,borderBottom:`1px solid ${T.accentBorder}`,display:"flex",gap:12,flexWrap:"wrap"}}>
@@ -3782,7 +3602,6 @@ return(
             </div>
           </div>
         ))}
-        <div id="chat-bottom"/>
       </div>
       {/* Input */}
       <div style={{padding:"12px 16px",borderTop:`1px solid ${T.border}`,display:"flex",gap:8}}>
@@ -3794,105 +3613,6 @@ return(
 </div>
 );
 
-}
-
-// ---------------------------------------------------------------------------
-// WHATSAPP INSTÂNCIAS — gerenciamento de instâncias Evolution por atendente
-// ---------------------------------------------------------------------------
-function WhatsAppInstanciasPanel({supabase,allUsers,waInstancias,setWaInstancias,T,onVerConversas}){
-  const[loading,setLoading]=useState(false);
-  const[qrModal,setQrModal]=useState(null);
-  const[actionLoading,setActionLoading]=useState(null);
-
-  const loadInstancias=async()=>{
-    setLoading(true);
-    const{data}=await supabase.from("wa_instancias").select("*").order("criado_em",{ascending:false});
-    setWaInstancias(data||[]);
-    try{
-      const r=await fetch("/api/whatsapp/instance",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"status"})});
-      const{instances}=await r.json();
-      if(Array.isArray(instances)&&instances.length>0&&Array.isArray(data)){
-        for(const row of data){
-          const found=instances.find(i=>(i.instance?.instanceName||i.instanceName||i.name)===row.instancia_nome);
-          if(found){
-            const st=(found.instance?.state||found.state||found.connectionStatus||"").toLowerCase();
-            const status=st.includes("open")||st==="connected"?"conectado":st.includes("connecting")?"conectando":"desconectado";
-            const numero=found.instance?.owner||found.owner||found.number||row.numero;
-            if(status!==row.status||numero!==row.numero){
-              await supabase.from("wa_instancias").update({status,numero}).eq("id",row.id);
-              setWaInstancias(p=>p.map(x=>x.id===row.id?{...x,status,numero}:x));
-            }
-          }
-        }
-      }
-    }catch(e){console.error("status instancias:",e.message);}
-    setLoading(false);
-  };
-
-  if(waInstancias.length===0&&!loading) loadInstancias();
-
-  const usuariosBase=(allUsers||[]).filter(u=>["base","gerente_base"].includes(u.role));
-  const linhas=usuariosBase.map(u=>({usuario:u,inst:(waInstancias||[]).find(i=>i.user_id===u.id)}));
-  const STATUS_ICON={conectado:"🟢",desconectado:"🔴",conectando:"🟡"};
-
-  const conectar=async(inst)=>{
-    setActionLoading(inst.instancia_nome);
-    try{
-      const r=await fetch("/api/whatsapp/instance",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"connect",instanceName:inst.instancia_nome})});
-      const data=await r.json();
-      if(data.base64) setQrModal({instancia_nome:inst.instancia_nome,base64:data.base64});
-    }catch(e){console.error("connect:",e.message);}
-    setActionLoading(null);
-  };
-  const desconectar=async(inst)=>{
-    if(!confirm(`Desconectar ${inst.instancia_nome}?`))return;
-    setActionLoading(inst.instancia_nome);
-    try{
-      await fetch("/api/whatsapp/instance",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"logout",instanceName:inst.instancia_nome})});
-      await supabase.from("wa_instancias").update({status:"desconectado"}).eq("id",inst.id);
-      setWaInstancias(p=>p.map(x=>x.id===inst.id?{...x,status:"desconectado"}:x));
-    }catch(e){console.error("logout:",e.message);}
-    setActionLoading(null);
-  };
-
-  return(
-    <div style={{padding:20}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:14}}>Instâncias WhatsApp</div>
-        <button onClick={loadInstancias} style={{padding:"5px 12px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:10,cursor:"pointer"}}>↻ Atualizar status</button>
-      </div>
-      {loading&&<div style={{textAlign:"center",padding:30,color:T.muted,fontSize:11}}>Carregando...</div>}
-      {!loading&&linhas.length===0&&<div style={{textAlign:"center",padding:30,color:T.muted,fontSize:11}}>Nenhum funcionário base/gerente_base cadastrado ainda</div>}
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {linhas.map(({usuario,inst})=>(
-          <div key={usuario.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,flexWrap:"wrap"}}>
-            <div style={{width:32,height:32,borderRadius:"50%",background:T.accentDim,color:T.accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,flexShrink:0}}>{usuario.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2)}</div>
-            <div style={{flex:1,minWidth:120}}>
-              <div style={{fontSize:12,fontWeight:600}}>{usuario.name}</div>
-              <div style={{fontSize:9,color:T.muted}}>{inst?.numero||"sem número"} · {inst?.instancia_nome||"sem instância"}</div>
-            </div>
-            <div style={{fontSize:11,whiteSpace:"nowrap"}}>{STATUS_ICON[inst?.status]||"🔴"} {inst?.status||"desconectado"}</div>
-            <div style={{display:"flex",gap:6}}>
-              {inst&&<>
-                <button disabled={actionLoading===inst.instancia_nome} onClick={()=>conectar(inst)} style={{padding:"5px 10px",background:T.accentDim,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,fontSize:9,fontWeight:600,cursor:"pointer"}}>Conectar</button>
-                <button disabled={actionLoading===inst.instancia_nome} onClick={()=>desconectar(inst)} style={{padding:"5px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:9,cursor:"pointer"}}>Desconectar</button>
-                <button onClick={()=>onVerConversas&&onVerConversas(inst.instancia_nome)} style={{padding:"5px 10px",background:"transparent",border:`1px solid ${T.border}`,color:T.soft,borderRadius:6,fontSize:9,cursor:"pointer"}}>Ver conversas</button>
-              </>}
-            </div>
-          </div>
-        ))}
-      </div>
-      {qrModal&&(
-        <div onClick={()=>setQrModal(null)} style={{position:"fixed",inset:0,background:"#000000cc",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200}}>
-          <div onClick={e=>e.stopPropagation()} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:24,textAlign:"center"}}>
-            <div style={{fontSize:12,fontWeight:700,marginBottom:12}}>Escaneie com o WhatsApp — {qrModal.instancia_nome}</div>
-            <img src={qrModal.base64.startsWith("data:")?qrModal.base64:`data:image/png;base64,${qrModal.base64}`} alt="QR Code" style={{width:260,height:260,borderRadius:8}}/>
-            <div style={{marginTop:12}}><button onClick={()=>setQrModal(null)} style={{padding:"6px 16px",background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,fontSize:10,cursor:"pointer"}}>Fechar</button></div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -4984,7 +4704,6 @@ export default function App(){
   const[waFiltro,setWaFiltro]=useState("todos");
   const[waNovoNumero,setWaNovoNumero]=useState("");
   const[waNovoModo,setWaNovoModo]=useState("prospecto");
-  const[waInstancias,setWaInstancias]=useState([]);
   const[baseTab,setBaseTab]=useState("parceiros"); // parceiros | contratos | score
   const[selPartner,setSelPartner]=useState(null);
   const[svFullscreen,setSvFullscreen]=useState(null);
@@ -6637,15 +6356,6 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
     if(rec.whatsapp){
       const msgBV=`👋 *Bem-vindo(a) à Ecodely!*\n\nSeu acesso ao sistema foi criado.\n\n🔗 *Link:* https://ecodely-sistema.vercel.app\n📧 *Email:* ${rec.email}\n🔑 *Senha:* ${passPlain}\n\nEm caso de dúvidas, fale com sua gestora. 🚀`;
       await sendWhatsAppNotif(rec.whatsapp,msgBV);
-    }
-    if(["base","gerente_base"].includes(roleToSave)){
-      const instanciaNome="ecodely_"+rec.id;
-      try{
-        await fetch("/api/whatsapp/instance",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"create",instanceName:instanciaNome})});
-      }catch(e){console.error("Erro ao criar instância WhatsApp:",e.message);}
-      const instRec={id:Date.now()+1,user_id:rec.id,instancia_nome:instanciaNome,status:"desconectado"};
-      setWaInstancias(p=>[...p,instRec]);
-      await supabase.from("wa_instancias").insert(instRec);
     }
   };
 
@@ -12665,7 +12375,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
           {/* --------------------------------------
               WHATSAPP IA
           -------------------------------------- */}
-          {tab==="whatsapp"&&<WhatsAppPanel supabase={supabase} waConversas={waConversas} setWaConversas={setWaConversas} waMensagens={waMensagens} setWaMensagens={setWaMensagens} waSelConv={waSelConv} setWaSelConv={setWaSelConv} waInput={waInput} setWaInput={setWaInput} waLoading={waLoading} setWaLoading={setWaLoading} waFiltro={waFiltro} setWaFiltro={setWaFiltro} waNovoNumero={waNovoNumero} setWaNovoNumero={setWaNovoNumero} waNovoModo={waNovoModo} setWaNovoModo={setWaNovoModo} waInstancias={waInstancias} setWaInstancias={setWaInstancias} simMsgs={simMsgs} setSimMsgs={setSimMsgs} simInput={simInput} setSimInput={setSimInput} simLoading={simLoading} setSimLoading={setSimLoading} simModo={simModo} setSimModo={setSimModo} simStarted={simStarted} setSimStarted={setSimStarted} user={user} allUsers={users} basePartners={basePartners} pipeLeads={pipeLeads} pushNotif={pushNotif} getWhatsappByRole={getWhatsappByRole} setTab={setTab} setBaseTab={setBaseTab} T={T}/>}
+          {tab==="whatsapp"&&<WhatsAppPanel supabase={supabase} waConversas={waConversas} setWaConversas={setWaConversas} waMensagens={waMensagens} setWaMensagens={setWaMensagens} waSelConv={waSelConv} setWaSelConv={setWaSelConv} waInput={waInput} setWaInput={setWaInput} waLoading={waLoading} setWaLoading={setWaLoading} waFiltro={waFiltro} setWaFiltro={setWaFiltro} waNovoNumero={waNovoNumero} setWaNovoNumero={setWaNovoNumero} waNovoModo={waNovoModo} setWaNovoModo={setWaNovoModo} simMsgs={simMsgs} setSimMsgs={setSimMsgs} simInput={simInput} setSimInput={setSimInput} simLoading={simLoading} setSimLoading={setSimLoading} simModo={simModo} setSimModo={setSimModo} simStarted={simStarted} setSimStarted={setSimStarted} T={T}/>}
 
           {/* --------------------------------------
               USUÁRIOS — mini RH

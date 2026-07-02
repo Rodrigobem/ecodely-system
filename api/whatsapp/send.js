@@ -3,9 +3,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { number, text, instance } = req.body;
+  const { number, text } = req.body;
 
-  console.log('[whatsapp/send] chamada recebida — number:', number, '| text:', text, '| instance:', instance);
+  console.log('[whatsapp/send] chamada recebida — number:', number, '| text:', text);
 
   if (!number || !text) {
     return res.status(400).json({ error: 'number and text are required' });
@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 
   const evolutionUrl = process.env.EVOLUTION_URL;
   const evolutionKey = process.env.EVOLUTION_KEY;
-  const evolutionInstance = instance || process.env.EVOLUTION_INSTANCE || 'victoria';
+  const evolutionInstance = process.env.EVOLUTION_INSTANCE;
 
   try {
     const response = await fetch(`${evolutionUrl}/message/sendText/${evolutionInstance}`, {

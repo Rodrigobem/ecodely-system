@@ -5,10 +5,7 @@ const SUPA_KEY = process.env.SUPABASE_ANON_KEY;
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 const EVOLUTION_URL = process.env.EVOLUTION_URL;
 const EVOLUTION_KEY = process.env.EVOLUTION_KEY;
-// nome técnico real da instância Evolution da Maya é "victoria" (persona "Maya" é só o nome de fachada).
-// process.env.EVOLUTION_INSTANCEANCE nunca é setado na Vercel (o var real é EVOLUTION_INSTANCE, usado em send.js) —
-// por isso sempre caía no default errado "maya", que não existe como instância.
-const EVOLUTION_INSTANCEANCE = process.env.EVOLUTION_INSTANCE || process.env.EVOLUTION_INSTANCEANCE || "victoria";
+const EVOLUTION_INSTANCEANCE = process.env.EVOLUTION_INSTANCEANCE || "maya";
 
 const FOTOS_CASES = [
   "https://drive.usercontent.google.com/download?id=1qNEXechEqIf5BxAe5TcYlplKTFXFYqim&export=download",
@@ -50,28 +47,12 @@ const DB = {
     );
     return r.json();
   },
-  // match por múltiplas colunas — usado pelo fluxo humano (numero + instancia)
-  async getMulti(table, filters) {
-    const qs = Object.entries(filters).map(([c, v]) => `${c}=eq.${encodeURIComponent(v)}`).join("&");
-    const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${qs}&limit=1`, { headers: H });
-    const d = await r.json();
-    return Array.isArray(d) && d.length > 0 ? d[0] : null;
-  },
-  // filtro livre (usado para consultar parceiros/pipeline_leads por telefone e usuarios por role)
-  async where(table, rawFilter, select = "*") {
-    const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${rawFilter}&select=${encodeURIComponent(select)}`, { headers: H });
-    const d = await r.json();
-    return Array.isArray(d) ? d : [];
-  },
 };
 
 // ── Evolution API ────────────────────────────────────────────────────────────
-// nota: sendText/sendImagem recebem a instância explicitamente — o fluxo Maya
-// sempre passa EVOLUTION_INSTANCEANCE (mesmo valor de antes), o fluxo humano
-// passa a instância do atendente ("ecodely_<id>")
-async function sendText(instancia, numero, texto) {
+async function sendText(numero, texto) {
   try {
-    await fetch(`${EVOLUTION_URL}/message/sendText/${instancia}`, {
+    await fetch(`${EVOLUTION_URL}/message/sendText/${EVOLUTION_INSTANCE}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: EVOLUTION_KEY },
       body: JSON.stringify({ number: numero, text: texto }),
@@ -79,9 +60,9 @@ async function sendText(instancia, numero, texto) {
   } catch (e) { console.error("sendText:", e.message); }
 }
 
-async function sendImagem(instancia, numero, url, caption = "") {
+async function sendImagem(numero, url, caption = "") {
   try {
-    await fetch(`${EVOLUTION_URL}/message/sendMedia/${instancia}`, {
+    await fetch(`${EVOLUTION_URL}/message/sendMedia/${EVOLUTION_INSTANCE}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: EVOLUTION_KEY },
       body: JSON.stringify({ number: numero, mediatype: "image", mimetype: "image/jpeg", caption, media: url }),
@@ -261,97 +242,6 @@ async function upsertPipeline(conversaId, etapa, dados = {}) {
   } catch (e) { console.error("upsertPipeline:", e.message); }
 }
 
-// ── Fluxo humano (instâncias "ecodely_<user.id>") ────────────────────────────
-function variantesNumero(numero) {
-  const d = numero.replace(/\D/g, "");
-  const sem55 = d.startsWith("55") ? d.slice(2) : d;
-  const com55 = d.startsWith("55") ? d : "55" + d;
-  return [...new Set([d, sem55, com55])];
-}
-
-async function identificarContato(numero) {
-  for (const v of variantesNumero(numero)) {
-    const parceiros = await DB.where("parceiros", `data->>whatsapp=eq.${encodeURIComponent(v)}`, "id");
-    if (parceiros.length > 0) return { modo: "parceiro", parceiro_id: parceiros[0].id, lead_id: null };
-  }
-  for (const v of variantesNumero(numero)) {
-    const leads = await DB.where("pipeline_leads", `telefone=eq.${encodeURIComponent(v)}`, "id");
-    if (leads.length > 0) return { modo: "lead", parceiro_id: null, lead_id: leads[0].id };
-  }
-  return { modo: "desconhecido", parceiro_id: null, lead_id: null };
-}
-
-async function getAtendenteIdByInstancia(instancia) {
-  const inst = await DB.getMulti("wa_instancias", { instancia_nome: instancia });
-  return inst?.user_id || null;
-}
-
-async function getNomeUsuario(userId) {
-  if (!userId) return null;
-  const u = await DB.get("usuarios", "id", userId);
-  return u?.name || null;
-}
-
-async function getWhatsappsByRoleServer(role) {
-  const usuarios = await DB.where("usuarios", `role=eq.${encodeURIComponent(role)}&active=eq.true&whatsapp=not.is.null`, "whatsapp");
-  return usuarios.map(u => u.whatsapp).filter(Boolean);
-}
-
-async function handleInstanciaHumana(req, res, body, instancia) {
-  try {
-    const rawJid = body?.data?.key?.remoteJid || "";
-    if (rawJid.includes("@g.us")) return res.status(200).json({ ok: true, skipped: "group" });
-    if (body?.data?.key?.fromMe) return res.status(200).json({ ok: true, skipped: "fromMe" });
-
-    const numero = rawJid.replace("@s.whatsapp.net", "").replace("@c.us", "").replace("@lid", "") || body?.numero;
-    const texto =
-      body?.data?.message?.conversation ||
-      body?.data?.message?.extendedTextMessage?.text ||
-      body?.mensagem;
-
-    if (!numero || !texto) return res.status(200).json({ ok: true, skipped: "no text" });
-    console.log(`[humano:${instancia}] [${numero}] ${texto.substring(0, 120)}`);
-
-    let conversa = await DB.getMulti("wa_conversas", { numero, instancia });
-    if (!conversa) {
-      const contato = await identificarContato(numero);
-      const atendenteId = await getAtendenteIdByInstancia(instancia);
-      conversa = await DB.insert("wa_conversas", {
-        numero, instancia,
-        modo: contato.modo,
-        status: "aguardando",
-        parceiro_id: contato.parceiro_id,
-        lead_id: contato.lead_id,
-        atendente_id: atendenteId,
-      });
-    } else {
-      await DB.update("wa_conversas", "id", conversa.id, {
-        status: "aguardando",
-        atualizado_em: new Date().toISOString(),
-      });
-    }
-    if (!conversa?.id) return res.status(200).json({ ok: true, skipped: "db error" });
-
-    await DB.insert("wa_mensagens", { conversa_id: conversa.id, role: "user", conteudo: texto });
-
-    // Alerta ao gerente_base — no máximo 1x a cada 30min por conversa
-    const agora = Date.now();
-    const ultimaNotif = conversa.notificado_gerente_em ? new Date(conversa.notificado_gerente_em).getTime() : 0;
-    if (agora - ultimaNotif > 30 * 60 * 1000) {
-      const atendenteNome = (await getNomeUsuario(conversa.atendente_id)) || "atendimento";
-      const msg = `💬 Nova mensagem de ${numero} para ${atendenteNome}`;
-      const gerentes = await getWhatsappsByRoleServer("gerente_base");
-      for (const num of gerentes) await sendText(EVOLUTION_INSTANCEANCE, num, msg);
-      await DB.update("wa_conversas", "id", conversa.id, { notificado_gerente_em: new Date().toISOString() });
-    }
-
-    return res.status(200).json({ ok: true, acao: "mensagem_humana_recebida" });
-  } catch (err) {
-    console.error("webhook humano error:", err);
-    try { res.status(500).json({ error: err.message }); } catch (_) {}
-  }
-}
-
 // ── Handler principal ─────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -363,12 +253,7 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body;
-    const instancia = body?.instance || body?.data?.instance || EVOLUTION_INSTANCEANCE;
-    if (typeof instancia === "string" && instancia.startsWith("ecodely_")) {
-      return await handleInstanciaHumana(req, res, body, instancia);
-    }
 
-    // ── FLUXO MAYA (existente, comportamento inalterado) ──
     // Extrair JID e número
     const rawJid = body?.data?.key?.remoteJid || "";
     if (rawJid.includes("@g.us")) return res.status(200).json({ ok: true, skipped: "group" });
@@ -380,7 +265,7 @@ export default async function handler(req, res) {
     // Resolver @lid
     if (rawJid.includes("@lid")) {
       try {
-        const msgResp = await fetch(`${EVOLUTION_URL}/chat/findMessages/${EVOLUTION_INSTANCEANCE}`, {
+        const msgResp = await fetch(`${EVOLUTION_URL}/chat/findMessages/${EVOLUTION_INSTANCE}`, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: EVOLUTION_KEY },
           body: JSON.stringify({ where: { key: { remoteJid: rawJid } }, limit: 5 }),
@@ -427,16 +312,16 @@ export default async function handler(req, res) {
     if (temPalavra(textoRecebido, FOTO_KW)) {
       const msg = "aqui vão alguns cases das nossas embalagens 📸";
       await DB.insert("wa_mensagens", { conversa_id: conversa.id, role: "assistant", conteudo: msg });
-      await sendText(EVOLUTION_INSTANCEANCE, jid, msg);
+      await sendText(jid, msg);
       const fotos = [...FOTOS_CASES].sort(() => Math.random() - 0.5).slice(0, 3);
-      for (const url of fotos) await sendImagem(EVOLUTION_INSTANCEANCE, jid, url);
+      for (const url of fotos) await sendImagem(jid, url);
       return res.status(200).json({ ok: true, acao: "fotos" });
     }
 
     if (temPalavra(textoRecebido, HUMAN_KW)) {
       const msg = "claro! vou chamar alguém da equipe agora pra continuar com você 👍";
       await DB.insert("wa_mensagens", { conversa_id: conversa.id, role: "assistant", conteudo: msg });
-      await sendText(EVOLUTION_INSTANCEANCE, jid, msg);
+      await sendText(jid, msg);
       await DB.update("wa_conversas", "id", conversa.id, { status: "aguardando_humano" });
       await upsertPipeline(conversa.id, "interessado", conversa.dados_lead || {});
       return res.status(200).json({ ok: true, acao: "passar_para_humano" });
@@ -478,7 +363,7 @@ export default async function handler(req, res) {
     // Texto normal
     if (resposta && !resposta.trim().startsWith("{") && resposta.length > 2) {
       await DB.insert("wa_mensagens", { conversa_id: conversa.id, role: "assistant", conteudo: resposta });
-      await sendText(EVOLUTION_INSTANCEANCE, jid, resposta);
+      await sendText(jid, resposta);
     }
 
     return res.status(200).json({ ok: true, acao: "resposta", resposta });
@@ -557,12 +442,12 @@ async function processarAcao(parsed, conversa, numero, jid, res) {
 
   if (texto) {
     await DB.insert("wa_mensagens", { conversa_id: conversa.id, role: "assistant", conteudo: texto });
-    await sendText(EVOLUTION_INSTANCEANCE, jid, texto);
+    await sendText(jid, texto);
   }
 
   if (enviarFotos) {
     const fotos = [...FOTOS_CASES].sort(() => Math.random() - 0.5).slice(0, 3);
-    for (const url of fotos) await sendImagem(EVOLUTION_INSTANCEANCE, jid, url);
+    for (const url of fotos) await sendImagem(jid, url);
   }
 
   return res.status(200).json({ ok: true, acao: parsed.acao, resposta: texto });
