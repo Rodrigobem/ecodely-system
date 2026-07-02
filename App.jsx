@@ -150,6 +150,7 @@ const PERM_SCREENS=[
 
 // --- PARCEIROS LISTAS ---------------------------------------------------------
 const SEGMENTOS_PARCEIRO=["Japonesa","Italiana","Brasileira","Árabe","Mexicana","Chinesa","Fast Food","Pizza","Hamburguer","Sushi","Frutos do Mar","Vegetariana/Vegana","Churrasco","Lanches","Doces/Sobremesas","Cafeteria","Padaria","Fitness/Saudável","Variado","Outro"];
+const UFS_BR=["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
 const CIDADE_NORM={"Sao Paulo":"São Paulo","São paulo":"São Paulo","SP Capital":"São Paulo","S. Paulo":"São Paulo","S.Paulo":"São Paulo","Sao paulo":"São Paulo","SAO PAULO":"São Paulo","Rio de janeiro":"Rio de Janeiro","RJ Capital":"Rio de Janeiro","Rio":"Rio de Janeiro","Belo horizonte":"Belo Horizonte","BH":"Belo Horizonte","Porto alegre":"Porto Alegre","POA":"Porto Alegre","Floripa":"Florianópolis","florianopolis":"Florianópolis","Florianopolis":"Florianópolis","Goiania":"Goiânia","Goiânia":"Goiânia","Sao Luis":"São Luís","Joao Pessoa":"João Pessoa","Joao pessoa":"João Pessoa","Sao Jose dos Campos":"São José dos Campos","Sao Bernardo":"São Bernardo do Campo","ABC":"São Bernardo do Campo"};
 const normalizarCidade=city=>CIDADE_NORM[city]||city;
 
@@ -3791,7 +3792,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
             <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Bairro</div>
             <input value={pipeModalLead.bairro||""} onChange={e=>setPipeModalLead(p=>({...p,bairro:e.target.value}))} style={inpS}/></div>
             <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Estado (UF)</div>
-            <input value={pipeModalLead.estado||""} onChange={e=>setPipeModalLead(p=>({...p,estado:e.target.value.toUpperCase().slice(0,2)}))} placeholder="SP" maxLength={2} style={inpS}/></div>
+            <select value={pipeModalLead.estado||""} onChange={e=>setPipeModalLead(p=>({...p,estado:e.target.value}))} style={inpS}><option value="">UF</option>{UFS_BR.map(uf=><option key={uf}>{uf}</option>)}</select></div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
             <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Classe Social</div>
@@ -3871,7 +3872,7 @@ function PipelinePanel({supabase,pipeLeads,setPipeLeads,pipeLoading,setPipeLoadi
           <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Número</div>
           <input value={pipeNovoLead.numero||""} onChange={e=>setPipeNovoLead(p=>({...p,numero:e.target.value}))} style={inpS}/></div>
           <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Estado (UF)</div>
-          <input value={pipeNovoLead.estado||""} onChange={e=>setPipeNovoLead(p=>({...p,estado:e.target.value.toUpperCase().slice(0,2)}))} placeholder="SP" maxLength={2} style={inpS}/></div>
+          <select value={pipeNovoLead.estado||""} onChange={e=>setPipeNovoLead(p=>({...p,estado:e.target.value}))} style={inpS}><option value="">UF</option>{UFS_BR.map(uf=><option key={uf}>{uf}</option>)}</select></div>
           <div style={{gridColumn:"span 2"}}><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Rua</div>
           <input value={pipeNovoLead.rua||""} onChange={e=>setPipeNovoLead(p=>({...p,rua:e.target.value}))} style={inpS}/></div>
           <div><div style={{fontSize:9,color:T.muted,marginBottom:3}}>Bairro</div>
@@ -9400,7 +9401,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           </div>
                           <div>
                             <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Estado (UF)</div>
-                            <input value={selPartner.state||""} onChange={e=>setSelPartner(p=>({...p,state:e.target.value.toUpperCase().slice(0,2)}))} placeholder="SP" style={inpS}/>
+                            <select value={selPartner.state||""} onChange={e=>setSelPartner(p=>({...p,state:e.target.value}))} style={inpS}><option value="">UF</option>{UFS_BR.map(uf=><option key={uf}>{uf}</option>)}</select>
                           </div>
                           <div>
                             <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Responsável</div>
@@ -9550,7 +9551,7 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                         </div>
                         <div>
                           <div style={{fontSize:8,color:T.muted,marginBottom:4,fontFamily:"Arial,sans-serif",textTransform:"uppercase",letterSpacing:1}}>Estado (UF)</div>
-                          <input value={selPartner.state||""} onChange={e=>setSelPartner(p=>({...p,state:e.target.value.toUpperCase().slice(0,2)}))} placeholder="SP" style={{...inpS,textTransform:"uppercase"}} maxLength={2}/>
+                          <select value={selPartner.state||""} onChange={e=>setSelPartner(p=>({...p,state:e.target.value}))} style={inpS}><option value="">UF</option>{UFS_BR.map(uf=><option key={uf}>{uf}</option>)}</select>
                         </div>
                         </div>
                         {selPartner.endereco?.lat&&(
