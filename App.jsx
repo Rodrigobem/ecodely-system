@@ -1829,6 +1829,7 @@ const CampModal=({camp,user,allPartners,onClose,onToggleTask,onAddComment,onAddF
                               <div style={{display:"flex",gap:12,flexWrap:"wrap",marginTop:2}}>
                                 {p.phone&&<span style={{fontSize:9,color:T.info}}>📞 {p.phone}</span>}
                                 {p.responsavel&&<span style={{fontSize:9,color:T.muted}}>Resp: {p.responsavel}</span>}
+                                {(()=>{const bp=(allPartners||[]).find(x=>String(x.id)===String(p.id));const lu=bp?.logo_url||p.logo_url;return lu?<a href={lu} target="_blank" rel="noreferrer" style={{fontSize:9,color:T.accent,textDecoration:"none",cursor:"pointer",fontWeight:700}}>📁 Logo disponível</a>:<span style={{fontSize:9,color:T.muted}}>⚠️ Sem logo</span>;})()}
                               </div>
                             </div>
                             <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
@@ -9438,6 +9439,16 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                             <input type="number" min="0" max="5" step="0.1" value={selPartner.avaliacaoIfood||""} onChange={e=>setSelPartner(p=>({...p,avaliacaoIfood:Number(e.target.value)}))} placeholder="Ex: 4.7" style={inpS}/>
                           </div>
                         </div>
+                        {/* Arquivos */}
+                        <div style={{marginBottom:10}}>
+                          <div style={{fontFamily:"Arial,sans-serif",fontWeight:700,fontSize:12,marginBottom:8,color:T.text,borderTop:`1px solid ${T.border}`,paddingTop:12}}>📁 Arquivos</div>
+                          <div style={{fontSize:8,color:T.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Logo do parceiro (link)</div>
+                          <div style={{display:"flex",gap:6,marginBottom:4}}>
+                            <input value={selPartner.logo_url||""} onChange={e=>setSelPartner(p=>({...p,logo_url:e.target.value}))} placeholder="https://drive.google.com/file/..." style={{...inpS,flex:1}}/>
+                            {selPartner.logo_url&&<button onClick={()=>window.open(selPartner.logo_url,"_blank")} style={{padding:"0 10px",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,cursor:"pointer",fontSize:11,color:T.info,whiteSpace:"nowrap",flexShrink:0}}>📁 Abrir logo</button>}
+                          </div>
+                          <div style={{fontSize:8,color:T.muted,lineHeight:1.6}}>Preferencialmente arquivo vetorial (AI, EPS, PDF) ou PNG de alta resolução. Salve no Google Drive e cole o link aqui.</div>
+                        </div>
                         <button onClick={async()=>{
                           const upd={...selPartner,score:calcScore(selPartner)};
                           setSelPartner(upd);
@@ -9871,7 +9882,10 @@ Seja conciso, profissional e positivo. 3-4 frases. Não use markdown.`}]})});
                           setSelPartner(parceiro);
                         }} style={{display:"grid",gridTemplateColumns:"2.5fr 1fr 1fr 0.8fr 1fr 1fr 1fr",padding:"12px 16px",borderBottom:`1px solid ${T.border}`,gap:8,alignItems:"center"}}>
                         <div>
-                          <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div>
+                          <div style={{display:"flex",alignItems:"center",gap:5}}>
+                            <div style={{fontSize:12,fontWeight:700,fontFamily:"Arial,sans-serif"}}>{p.name}</div>
+                            {p.logo_url&&<span title="Logo cadastrado" style={{fontSize:11,color:T.info,lineHeight:1}}>📁</span>}
+                          </div>
                           <div style={{fontSize:9,color:T.muted,fontFamily:"Arial,sans-serif"}}>{p.handle}</div>
                           {p.classe_social&&<span style={{fontSize:7,fontWeight:700,padding:"1px 5px",borderRadius:3,background:["A"].includes(p.classe_social)?"#14532d22":["B1","B2"].includes(p.classe_social)?"#1d4ed822":["C1","C2"].includes(p.classe_social)?"#92400e22":"#37415122",color:["A"].includes(p.classe_social)?"#15803d":["B1","B2"].includes(p.classe_social)?"#1d4ed8":["C1","C2"].includes(p.classe_social)?"#b45309":"#6b7280"}}>Classe {p.classe_social}</span>}
                         </div>
