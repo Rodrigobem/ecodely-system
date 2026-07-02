@@ -149,7 +149,7 @@ const PERM_SCREENS=[
 ];
 
 // --- PARCEIROS LISTAS ---------------------------------------------------------
-const SEGMENTOS_PARCEIRO=["Japonesa","Italiana","Brasileira","Árabe","Mexicana","Chinesa","Fast Food","Pizza","Hamburguer","Sushi","Frutos do Mar","Vegetariana/Vegana","Churrasco","Lanches","Doces/Sobremesas","Cafeteria","Padaria","Fitness/Saudável","Variado","Outro"];
+const SEGMENTOS_PARCEIRO=["Japonesa","Italiana","Brasileira","Árabe","Mexicana","Chinesa","Fast Food","Pizza","Hamburguer","Frutos do Mar","Vegetariana/Vegana","Churrasco","Lanches","Doces/Sobremesas","Cafeteria","Padaria","Fitness/Saudável","Variado","Outro"];
 const UFS_BR=["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
 const CIDADE_NORM={"Sao Paulo":"São Paulo","São paulo":"São Paulo","SP Capital":"São Paulo","S. Paulo":"São Paulo","S.Paulo":"São Paulo","Sao paulo":"São Paulo","SAO PAULO":"São Paulo","Rio de janeiro":"Rio de Janeiro","RJ Capital":"Rio de Janeiro","Rio":"Rio de Janeiro","Belo horizonte":"Belo Horizonte","BH":"Belo Horizonte","Porto alegre":"Porto Alegre","POA":"Porto Alegre","Floripa":"Florianópolis","florianopolis":"Florianópolis","Florianopolis":"Florianópolis","Goiania":"Goiânia","Goiânia":"Goiânia","Sao Luis":"São Luís","Joao Pessoa":"João Pessoa","Joao pessoa":"João Pessoa","Sao Jose dos Campos":"São José dos Campos","Sao Bernardo":"São Bernardo do Campo","ABC":"São Bernardo do Campo"};
 const normalizarCidade=city=>CIDADE_NORM[city]||city;
